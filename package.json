@@ -1,0 +1,35 @@
+{
+  "name": "rush-n-relax",
+  "version": "1.0.0",
+  "description": "Cannabis retail PWA with Firestore backend",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:emulators": "firebase emulators:start",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:emulators\"",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && firebase deploy",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"**/*.{ts,css,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,css,json,md}\"",
+    "functions:shell": "firebase functions:shell",
+    "functions:logs": "firebase functions:log",
+    "test": "echo \"Tests coming in Phase 2\" && exit 0"
+  },
+  "dependencies": {
+    "firebase": "^10.7.1"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "firebase-tools": "^13.0.2",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11",
+    "vite-plugin-pwa": "^0.17.4"
+  }
+}
