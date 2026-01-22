@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Footer } from '../../components/Footer';
+import { Footer } from './index';
 
 describe('Footer', () => {
   test('renders email addresses', () => {

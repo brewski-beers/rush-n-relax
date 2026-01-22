@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Hero } from '../../components/Hero';
+import { Hero } from './index';
 
 describe('Hero', () => {
   test('calls onShopNow when button clicked', () => {

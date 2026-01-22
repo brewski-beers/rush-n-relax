@@ -1,12 +1,24 @@
+export type ProductCategory = 'flower' | 'edibles' | 'vapes' | 'accessories';
+
+export interface Category {
+  id: ProductCategory;
+  name: string;
+  description: string;
+  imageUrl: string;
+}
+
 export interface Product {
   id: string;
   name: string;
+  slug: string;
   description: string;
   price: number;
   stock: number;
   locationId: string;
   imageUrl?: string;
-  category: string;
+  category: ProductCategory;
+  thcContent?: string;
+  cbdContent?: string;
   createdAt: Date;
   updatedAt: Date;
 }
