@@ -1,5 +1,3 @@
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
 import { Hero } from '@/components/Hero';
 import CategoryGrid from '@/components/CategoryGrid';
 import type { Category } from '@/types';
@@ -31,6 +29,12 @@ const CATEGORIES: Category[] = [
   }
 ];
 
+/**
+ * Home Page
+ * 
+ * Landing page with hero section and category navigation.
+ * No data fetching - uses static content only.
+ */
 export function Home() {
   const handleShopNow = () => {
     document.getElementById('category-grid')?.scrollIntoView({ behavior: 'smooth' });
@@ -38,15 +42,11 @@ export function Home() {
 
   return (
     <>
-      <Header />
-      <main className="main">
-        <Hero onShopNow={handleShopNow} />
-        <section className="categories-section">
-          <h2>Shop by Category</h2>
-          <CategoryGrid categories={CATEGORIES} />
-        </section>
-      </main>
-      <Footer />
+      <Hero onShopNow={handleShopNow} />
+      <section className="categories-section">
+        <h2>Shop by Category</h2>
+        <CategoryGrid categories={CATEGORIES} />
+      </section>
     </>
   );
 }

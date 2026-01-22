@@ -42,6 +42,10 @@ export default defineConfig({
       '@/types': path.resolve(__dirname, './src/types'),
       '@/utils': path.resolve(__dirname, './src/utils'),
       '@/styles': path.resolve(__dirname, './src/styles'),
+      '@/layouts': path.resolve(__dirname, './src/layouts'),
+      '@/repositories': path.resolve(__dirname, './src/repositories'),
+      '@/queries': path.resolve(__dirname, './src/queries'),
+      '@/lib': path.resolve(__dirname, './src/lib'),
     },
   },
   build: {

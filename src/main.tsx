@@ -1,7 +1,10 @@
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import '@/styles/index.css';
 import { initializeApp } from '@/firebase';
+import { RootLayout } from '@/layouts/RootLayout';
+import { AppLayout } from '@/layouts/AppLayout';
+import { PageLayout } from '@/layouts/PageLayout';
 import { Home } from '@/pages/Home';
 import { ProductDetail } from '@/pages/ProductDetail';
 import { Admin } from '@/pages/Admin';
@@ -9,23 +12,60 @@ import CategoryProducts from '@/pages/CategoryProducts';
 
 initializeApp();
 
-function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/products/category/:category" element={<CategoryProducts />} />
-        <Route path="/products/:category/:slug" element={<ProductDetail />} />
-        <Route path="/admin" element={<Admin />} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
+/**
+ * Application router with nested layouts
+ * Structure:
+ * - RootLayout (providers + error boundary)
+ *   - AppLayout (header + main + footer)
+ *     - PageLayout (suspense + error boundary per page)
+ *       - Page Component
+ */
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <RootLayout />,
+    children: [
+      {
+        element: <AppLayout />,
+        children: [
+          {
+            path: '/',
+            element: <Home />,
+          },
+          {
+            path: '/products/category/:category',
+            element: (
+              <PageLayout>
+                <CategoryProducts />
+              </PageLayout>
+            ),
+          },
+          {
+            path: '/products/:category/:slug',
+            element: (
+              <PageLayout>
+                <ProductDetail />
+              </PageLayout>
+            ),
+          },
+          {
+            path: '/admin',
+            element: (
+              <PageLayout>
+                <Admin />
+              </PageLayout>
+            ),
+          },
+        ],
+      },
+    ],
+  },
+]);
 
 const appRoot = document.getElementById('app');
 if (appRoot) {
   const root = ReactDOM.createRoot(appRoot);
-  root.render(<App />);
+  root.render(<RouterProvider router={router} />);
 } else {
   console.error('Root element #app not found. Check index.html.');
 }

@@ -1,44 +1,17 @@
-import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { useProductQueries } from '@/contexts/RepositoryContext';
 import type { Product, ProductCategory } from '@/types';
 
-interface UseProductsByCategoryReturn {
-  products: Product[];
-  loading: boolean;
-  error: Error | null;
-}
-
-export default function useProductsByCategory(category: ProductCategory): UseProductsByCategoryReturn {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const productsCollection = collection(db, 'products');
-        const q = query(productsCollection, where('category', '==', category));
-        const querySnapshot = await getDocs(q);
-
-        const fetchedProducts: Product[] = [];
-        querySnapshot.forEach((doc) => {
-          fetchedProducts.push({ id: doc.id, ...doc.data() } as Product);
-        });
-
-        setProducts(fetchedProducts);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Unknown error'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, [category]);
-
-  return { products, loading, error };
+/**
+ * Hook to fetch products filtered by category using TanStack Query.
+ * Uses Suspense for loading states - wrap component in <Suspense> boundary.
+ * Throws errors to be caught by ErrorBoundary.
+ * 
+ * @param category - Product category to filter by
+ * @returns Array of products in the specified category
+ */
+export default function useProductsByCategory(category: ProductCategory): Product[] {
+  const productQueries = useProductQueries();
+  const { data } = useSuspenseQuery(productQueries.byCategory(category));
+  return data;
 }

@@ -24,7 +24,11 @@
       "@/contexts/*": ["src/contexts/*"],
       "@/types/*": ["src/types/*"],
       "@/utils/*": ["src/utils/*"],
-      "@/styles/*": ["src/styles/*"]
+      "@/styles/*": ["src/styles/*"],
+      "@/layouts/*": ["src/layouts/*"],
+      "@/repositories/*": ["src/repositories/*"],
+      "@/queries/*": ["src/queries/*"],
+      "@/lib/*": ["src/lib/*"]
     }
   },
   "include": ["src"],

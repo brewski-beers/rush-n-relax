@@ -48,12 +48,14 @@ describe('useProductsByCategory', () => {
         slug: 'product-1',
         category: 'flower',
         price: 29.99,
+        stock: 10,
+        locationId: 'loc1',
         description: 'Test',
-        image: '/test.jpg',
+        imageUrl: '/test.jpg',
         thcContent: '20%',
         cbdContent: '1%',
-        effects: [],
-        inStock: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     ];
 
