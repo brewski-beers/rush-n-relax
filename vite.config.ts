@@ -1,8 +1,10 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
+    react(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
@@ -21,7 +23,7 @@ export default defineConfig({
               cacheName: 'firestore-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 24 * 60 * 60, // 24 hours
+                maxAgeSeconds: 24 * 60 * 60,
               },
             },
           },
@@ -35,5 +37,10 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/tests/setup.ts',
   },
 });

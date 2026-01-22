@@ -1,0 +1,11 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions for rush-n-relax",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-functions": "^7.0.3"
+  }
+}
