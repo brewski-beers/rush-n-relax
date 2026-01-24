@@ -47,6 +47,13 @@ firebase-debug.*.log
 firestore-debug.log
 ui-debug.log
 emulator-data/
+.firebase/
+
+# Compiled Cloud Functions output
+functions/lib/
+
+# Local tool caches
+.vite/
 
 # Package managers
 pnpm-lock.yaml

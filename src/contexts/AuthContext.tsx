@@ -59,39 +59,34 @@ function AuthProvider({ children }: { children: ReactNode }) {
               console.log('[Auth] Updating user role from claims:', { old: userData.role, new: roleFromClaims });
               await setDoc(userRef, { role: roleFromClaims, updatedAt: new Date() }, { merge: true });
             }
-            // Update presence
-            await setDoc(userRef, { lastActiveAt: new Date() }, { merge: true });
-            // If previously invited, mark as registered on first auth hydrate
-            if (userData.status === 'invited' && !userData.acceptedAt) {
-              await setDoc(userRef, { status: 'registered', acceptedAt: new Date(), updatedAt: new Date() }, { merge: true });
-            }
             
             setUser({
-              id: firebaseUser.uid,
+              uid: firebaseUser.uid,
               email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || undefined,
+              displayName: firebaseUser.displayName || '',
               role: roleFromClaims,
-              lastActiveAt: new Date(),
-              locationId: userData.locationId,
+              employeeId: userData.employeeId || null,
+              employeeStatus: userData.employeeStatus || null,
+              transactionAuthority: userData.transactionAuthority || false,
+              createdBy: userData.createdBy || null,
               createdAt: userData.createdAt?.toDate?.() || new Date(),
               updatedAt: userData.updatedAt?.toDate?.() || new Date(),
             });
           } else {
             // First login - create user document with role from claims
             console.log('[Auth] Creating new user document...');
-            const baseUser = {
-              id: firebaseUser.uid,
+            const newUser: User = {
+              uid: firebaseUser.uid,
               email: firebaseUser.email || '',
+              displayName: firebaseUser.displayName || '',
               role: customRole,
-              status: 'registered' as const,
-              lastActiveAt: new Date(),
+              employeeId: null,
+              employeeStatus: null,
+              transactionAuthority: false,
+              createdBy: null,
               createdAt: new Date(),
               updatedAt: new Date(),
             };
-
-            const newUser: User = firebaseUser.displayName
-              ? { ...baseUser, displayName: firebaseUser.displayName }
-              : baseUser;
 
             console.log('[Auth] Prepared user data with role from claims:', newUser);
             console.log('[Auth] Writing to users/' + firebaseUser.uid);
@@ -234,10 +229,14 @@ function AuthProvider({ children }: { children: ReactNode }) {
       // Create user document in Firestore
       const userRef = doc(getFirestore$(), 'users', result.user.uid);
       const newUser: User = {
-        id: result.user.uid,
+        uid: result.user.uid,
         email,
         displayName,
         role: 'customer',
+        employeeId: null,
+        employeeStatus: null,
+        transactionAuthority: false,
+        createdBy: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

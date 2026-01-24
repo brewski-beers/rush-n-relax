@@ -26,7 +26,7 @@ export function EditDisplayName({ user, onSuccess, compact = false }: EditDispla
 
   if (!currentUser) return null;
 
-  const canEdit = canUpdateDisplayName(currentUser.role, user.id, currentUser.id, user.role);
+  const canEdit = canUpdateDisplayName(currentUser.role, user.uid, currentUser.uid, user.role);
 
   if (!canEdit) {
     return (
@@ -43,9 +43,9 @@ export function EditDisplayName({ user, onSuccess, compact = false }: EditDispla
 
     try {
       await UserRepository.updateDisplayName(
-        user.id,
+        user.uid,
         displayName,
-        currentUser.id,
+        currentUser.uid,
         currentUser.role
       );
       setSuccess(true);
@@ -80,7 +80,7 @@ export function EditDisplayName({ user, onSuccess, compact = false }: EditDispla
         <button
           className="edit-btn"
           onClick={() => setIsEditing(true)}
-          title={currentUser.id === user.id ? 'Edit your display name' : 'Edit this user\'s display name'}
+          title={currentUser.uid === user.uid ? 'Edit your display name' : 'Edit this user\'s display name'}
           aria-label="Edit display name"
         >
           ✏️

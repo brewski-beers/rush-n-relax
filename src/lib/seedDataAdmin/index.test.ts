@@ -54,13 +54,12 @@ const mockProducts: ProductAdmin[] = [
     description: 'Premium flower',
     cost: 25.0,
     markup: 80,
-    stock: 100,
-    stockThreshold: 10,
+    inventory: 100,
+    sku: 'GB-001',
     imageUrl: 'https://example.com/image.jpg',
     isActive: true,
     tags: ['premium', 'sativa'],
     notes: 'High demand item',
-    locationId: 'default',
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -73,13 +72,12 @@ const mockProducts: ProductAdmin[] = [
     description: 'Cannabis gummies',
     cost: 5.0,
     markup: 200,
-    stock: 500,
-    stockThreshold: 50,
+    inventory: 500,
+    sku: 'GG-001',
     imageUrl: 'https://example.com/gummy.jpg',
     isActive: true,
     tags: ['edible'],
     notes: 'Best seller',
-    locationId: 'default',
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -236,7 +234,7 @@ describe('seedDataAdmin', () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should preserve cost, markup, and stock fields', async () => {
+    it('should preserve cost, markup, and inventory fields', async () => {
       const { seedProductsAdmin } = await import('.');
 
       mockBatch.set.mockClear();
@@ -251,7 +249,7 @@ describe('seedDataAdmin', () => {
 
       expect(firstProduct).toHaveProperty('cost', mockProducts[0].cost);
       expect(firstProduct).toHaveProperty('markup', mockProducts[0].markup);
-      expect(firstProduct).toHaveProperty('stock', mockProducts[0].stock);
+      expect(firstProduct).toHaveProperty('inventory', mockProducts[0].inventory);
     });
 
     it('should add server timestamps to products', async () => {

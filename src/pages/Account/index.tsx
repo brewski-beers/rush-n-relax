@@ -59,48 +59,18 @@ export function Account() {
             </div>
             <p className="help-text">Contact an administrator to request role changes</p>
           </div>
-
-          {user.locationId && (
-            <div className="form-group">
-              <label>Location</label>
-              <div className="form-value readonly">
-                <code>{user.locationId}</code>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="account-section">
-          <h2>Account Status</h2>
+          <h2>Account Information</h2>
           
           <div className="status-grid">
             <div className="status-item">
-              <span className="status-label">Status:</span>
-              <span className={`status-badge status-${user.status}`}>
-                {user.status || 'unknown'}
+              <span className="status-label">Account Created:</span>
+              <span className="status-value">
+                {user.createdAt && new Date(user.createdAt).toLocaleDateString()}
               </span>
             </div>
-
-            {user.contactVerified && (
-              <div className="status-item">
-                <span className="status-label">Contact Verified:</span>
-                <span className="status-badge status-verified">✓ Verified</span>
-              </div>
-            )}
-
-            <div className="status-item">
-              <span className="status-label">Contact Method:</span>
-              <span className="status-value">{user.contactMethod || 'email'}</span>
-            </div>
-
-            {user.createdAt && (
-              <div className="status-item">
-                <span className="status-label">Member Since:</span>
-                <span className="status-value">
-                  {new Date(user.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-            )}
           </div>
         </div>
 

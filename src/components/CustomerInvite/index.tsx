@@ -21,7 +21,7 @@ export function CustomerInvite() {
 
     try {
       setSubmitting(true);
-      await UserRepository.inviteUser(email, 'customer', user.id);
+      await UserRepository.inviteUser(email, 'customer', user.uid);
       setMessage(`Invitation sent to ${email}.`);
       setEmail('');
     } catch (err) {

@@ -23,11 +23,10 @@ const mockProductGuest: ProductGuest = {
 
 const mockProductStaff: ProductStaff = {
   ...mockProductGuest,
-  stock: 15,
-  stockThreshold: 5,
+  inventory: 15,
+  sku: 'BD-001',
   cost: 28,
   tags: ['sativa', 'hybrid'],
-  locationId: 'default',
 };
 
 const mockProductAdmin: ProductAdmin = {
@@ -39,9 +38,14 @@ const mockProductAdmin: ProductAdmin = {
 };
 
 const mockUser: User = {
-  id: 'user-123',
+  uid: 'user-123',
   email: 'test@example.com',
+  displayName: 'Test User',
   role: 'customer',
+  employeeId: null,
+  employeeStatus: null,
+  transactionAuthority: false,
+  createdBy: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -64,7 +68,7 @@ describe('ProductRepository - ID-Based Queries', () => {
       const productId = 'prod-blue-dream-123';
 
       // When: query by ID as guest
-      // Then: should return ProductGuest without cost/stock/markup
+      // Then: should return ProductGuest without cost/inventory/markup
       // (implementation will call:
       //   doc(db, 'categories', categoryId, 'products', productId)
       //   getDoc(docRef)
@@ -95,7 +99,7 @@ describe('ProductRepository - ID-Based Queries', () => {
     it('should not include cost/stock in guest response', async () => {
       const guest = mockProductGuest;
       expect(guest).not.toHaveProperty('cost');
-      expect(guest).not.toHaveProperty('stock');
+      expect(guest).not.toHaveProperty('inventory');
       expect(guest).not.toHaveProperty('markup');
     });
   });
@@ -106,15 +110,15 @@ describe('ProductRepository - ID-Based Queries', () => {
       const productId = 'prod-blue-dream-123';
       const user = mockStaffUser;
 
-      // Staff should see cost + stock
+      // Staff should see cost + inventory
       expect(productId).toBeDefined();
       expect(categoryId).toBeDefined();
       expect(user.role).toBe('staff');
     });
 
-    it('should include stock and cost for staff', async () => {
+    it('should include inventory and cost for staff', async () => {
       const staff = mockProductStaff;
-      expect(staff.stock).toBe(15);
+      expect(staff.inventory).toBe(15);
       expect(staff.cost).toBe(28);
       expect(staff.tags).toContain('sativa');
     });

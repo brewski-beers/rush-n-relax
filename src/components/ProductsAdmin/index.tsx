@@ -20,7 +20,7 @@ export function ProductsAdmin() {
   }
 
   const { data: products, refetch } = useSuspenseQuery({
-    queryKey: ['products', 'admin', 'all', user.id],
+    queryKey: ['products', 'admin', 'all', user.uid],
     queryFn: () => productRepository.getAllProductsAsAdmin(user),
     staleTime: 2 * 60 * 1000,
   });
@@ -102,12 +102,12 @@ export function ProductsAdmin() {
                 <td>
                   <span
                     className={`stock-badge ${
-                      product.stock > product.stockThreshold
+                      product.inventory > 5
                         ? 'in-stock'
                         : 'low-stock'
                     }`}
                   >
-                    {product.stock}
+                    {product.inventory}
                   </span>
                 </td>
                 <td>
@@ -166,8 +166,8 @@ function ProductForm({ onSuccess }: { onSuccess: () => void }) {
     categoryId: 'flower',
     displayPrice: '',
     cost: '',
-    stock: '',
-    stockThreshold: '5',
+    inventory: '',
+    sku: '',
     description: '',
     imageUrl: '',
     thcContent: '',
@@ -203,8 +203,8 @@ function ProductForm({ onSuccess }: { onSuccess: () => void }) {
           categoryId: formData.categoryId,
           displayPrice: parseFloat(formData.displayPrice),
           cost: parseFloat(formData.cost),
-          stock: parseInt(formData.stock),
-          stockThreshold: parseInt(formData.stockThreshold) || 5,
+          inventory: parseInt(formData.inventory),
+          sku: formData.sku,
           description: formData.description,
           imageUrl: formData.imageUrl,
           thcContent: formData.thcContent,
@@ -212,7 +212,6 @@ function ProductForm({ onSuccess }: { onSuccess: () => void }) {
           markup: 0,
           notes: '',
           tags: [],
-          locationId: 'default',
           isActive: formData.isActive,
         },
         user
@@ -298,11 +297,11 @@ function ProductForm({ onSuccess }: { onSuccess: () => void }) {
           />
         </div>
         <div className="form-group">
-          <label>Stock *</label>
+          <label>Inventory *</label>
           <input
             type="number"
-            name="stock"
-            value={formData.stock}
+            name="inventory"
+            value={formData.inventory}
             onChange={handleChange}
             required
             disabled={isLoading}
@@ -312,14 +311,15 @@ function ProductForm({ onSuccess }: { onSuccess: () => void }) {
 
       <div className="form-row">
         <div className="form-group">
-          <label>Stock Threshold</label>
+          <label>SKU *</label>
           <input
-            type="number"
-            name="stockThreshold"
-            value={formData.stockThreshold}
+            type="text"
+            name="sku"
+            value={formData.sku}
             onChange={handleChange}
+            required
             disabled={isLoading}
-            placeholder="e.g., 5"
+            placeholder="e.g., BD-001"
           />
         </div>
         <div className="form-group">
@@ -400,8 +400,8 @@ function ProductEditor({
   const [formData, setFormData] = useState({
     displayPrice: product?.displayPrice.toString() || '',
     cost: product?.cost.toString() || '',
-    stock: product?.stock.toString() || '',
-    stockThreshold: product?.stockThreshold.toString() || '5',
+    inventory: product?.inventory.toString() || '',
+    sku: product?.sku || '',
     isActive: product?.isActive || true,
   });
 
@@ -429,8 +429,8 @@ function ProductEditor({
         {
           displayPrice: parseFloat(formData.displayPrice),
           cost: parseFloat(formData.cost),
-          stock: parseInt(formData.stock),
-          stockThreshold: parseInt(formData.stockThreshold),
+          inventory: parseInt(formData.inventory),
+          sku: formData.sku,
           isActive: formData.isActive,
         },
         user
@@ -484,23 +484,24 @@ function ProductEditor({
 
             <div className="form-row">
               <div className="form-group">
-                <label>Stock *</label>
+                <label>Inventory *</label>
                 <input
                   type="number"
-                  name="stock"
-                  value={formData.stock}
+                  name="inventory"
+                  value={formData.inventory}
                   onChange={handleChange}
                   required
                   disabled={isLoading}
                 />
               </div>
               <div className="form-group">
-                <label>Stock Threshold</label>
+                <label>SKU *</label>
                 <input
-                  type="number"
-                  name="stockThreshold"
-                  value={formData.stockThreshold}
+                  type="text"
+                  name="sku"
+                  value={formData.sku}
                   onChange={handleChange}
+                  required
                   disabled={isLoading}
                 />
               </div>

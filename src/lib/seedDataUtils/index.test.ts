@@ -186,15 +186,14 @@ describe('seedDataUtils - Seed data business logic', () => {
         displayPrice: 45,
         cost: 28,
         imageUrl: 'https://example.com/blue-dream.jpg',
-        stock: 15,
-        stockThreshold: 5,
+        inventory: 15,
+        sku: 'BD-001',
         thcContent: '22%',
         cbdContent: '1%',
         isActive: true,
         tags: ['hybrid', 'sativa'],
         notes: 'Popular strain',
         markup: 60.71,
-        locationId: 'default',
       },
     ];
 
@@ -254,8 +253,8 @@ describe('seedDataUtils - Seed data business logic', () => {
         categoryId: 'flower',
         displayPrice: 45,
         cost: 28,
-        stock: 15,
-        stockThreshold: 5,
+        inventory: 15,
+        sku: 'BD-001',
         isActive: true,
       });
       expect(setData.createdAt).toBeDefined();
@@ -276,12 +275,12 @@ describe('seedDataUtils - Seed data business logic', () => {
         displayPrice: 50,
         cost: 25,
         imageUrl: '',
-        stock: 10,
-        stockThreshold: 3,
+        inventory: 10,
+        sku: 'TST-001',
         thcContent: '',
         cbdContent: '',
         isActive: true,
-        // No tags, notes, markup, locationId
+        // No tags, notes, markup
       } as any;
 
       await seedProducts([productWithoutOptionals]);

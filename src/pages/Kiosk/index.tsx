@@ -51,7 +51,7 @@ function KioskContent({ staffUser }: { staffUser: User }) {
   const guestsAndCustomers = allUsers.filter(
     (u) => u.role === 'guest' || u.role === 'customer'
   );
-  const selectedGuest = selectedGuestId ? guestsAndCustomers.find((u) => u.id === selectedGuestId) : null;
+  const selectedGuest = selectedGuestId ? guestsAndCustomers.find((u) => u.uid === selectedGuestId) : null;
 
   const handleAddToCart = (productId: string) => {
     setCart((prev) => {
@@ -75,7 +75,7 @@ function KioskContent({ staffUser }: { staffUser: User }) {
 
     // Stub order creation
     const orderData = {
-      customerId: selectedGuest.id,
+      customerId: selectedGuest.uid,
       items: cart.map((item) => {
         const product = allProducts.find((p) => p.id === item.productId);
         return {
@@ -92,7 +92,7 @@ function KioskContent({ staffUser }: { staffUser: User }) {
       tax: 0,
       total: 0,
       paymentMethod: 'cash',
-      staffId: staffUser.id,
+      staffId: staffUser.uid,
       status: 'completed',
       createdAt: new Date(),
     };
@@ -105,7 +105,7 @@ function KioskContent({ staffUser }: { staffUser: User }) {
   const handlePromoteGuest = async (guestId: string) => {
     if (!window.confirm('Promote this guest to customer?')) return;
     try {
-      await UserRepository.updateUserRole(guestId, 'customer', staffUser.id, staffUser.role);
+      await UserRepository.updateUserRole(guestId, 'customer', staffUser.uid, staffUser.role);
       queryClient.invalidateQueries({ queryKey: ['users', 'kiosk'] });
       alert('Guest promoted to customer!');
     } catch (err) {
@@ -139,9 +139,9 @@ function KioskContent({ staffUser }: { staffUser: User }) {
             ) : (
               guestsAndCustomers.map((u) => (
                 <div
-                  key={u.id}
-                  className={`customer-card ${selectedGuestId === u.id ? 'selected' : ''}`}
-                  onClick={() => setSelectedGuestId(u.id)}
+                  key={u.uid}
+                  className={`customer-card ${selectedGuestId === u.uid ? 'selected' : ''}`}
+                  onClick={() => setSelectedGuestId(u.uid)}
                 >
                   <div className="customer-name">
                     {u.displayName || u.email}
@@ -152,7 +152,7 @@ function KioskContent({ staffUser }: { staffUser: User }) {
                       className="promote-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handlePromoteGuest(u.id);
+                        handlePromoteGuest(u.uid);
                       }}
                     >
                       Promote
@@ -170,7 +170,7 @@ function KioskContent({ staffUser }: { staffUser: User }) {
               queryClient.invalidateQueries({ queryKey: ['users', 'kiosk'] });
               setActiveTab('customers');
             }}
-            createdBy={staffUser.id}
+            createdBy={staffUser.uid}
           />
         )}
       </aside>
@@ -308,7 +308,7 @@ function RegisterGuestForm({ onSuccess, createdBy }: { onSuccess: () => void; cr
 
     try {
       setSubmitting(true);
-      await UserRepository.createGuest({ displayName, contactMethod, contact }, createdBy);
+      await UserRepository.createGuest({ displayName }, createdBy);
       setMessage('Guest registered!');
       setDisplayName('');
       setContact('');

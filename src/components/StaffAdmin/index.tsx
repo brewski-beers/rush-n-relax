@@ -75,7 +75,7 @@ export function StaffAdmin() {
         ) : (
           <div className="staff-grid">
             {staffMembers.map(member => (
-              <StaffCard key={member.id} member={member} />
+              <StaffCard key={member.uid} member={member} />
             ))}
           </div>
         )}

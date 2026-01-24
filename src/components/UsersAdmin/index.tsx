@@ -48,7 +48,7 @@ export function UsersAdmin() {
 
     setUpdating(userId);
     try {
-      await UserRepository.updateUserRole(userId, newRole, currentUser.id, currentUser.role);
+      await UserRepository.updateUserRole(userId, newRole, currentUser.uid, currentUser.role);
       // Revalidate query
       queryClient.invalidateQueries({ queryKey: ['users', 'admin'] });
     } catch (error) {
@@ -120,9 +120,7 @@ export function UsersAdmin() {
               <th></th>
               <th>Email</th>
               <th>Name</th>
-              <th>Status</th>
               <th>Current Role</th>
-              <th>Invited By</th>
               <th>Action</th>
               <th>Joined</th>
             </tr>
@@ -137,14 +135,14 @@ export function UsersAdmin() {
             ) : (
               filteredUsers.map(user => (
                 <>
-                  <tr key={user.id} className="user-row">
+                  <tr key={user.uid} className="user-row">
                     <td className="expand-cell">
                       <button
                         className="expand-btn"
-                        onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
+                        onClick={() => setExpandedUser(expandedUser === user.uid ? null : user.uid)}
                         title="View details"
                       >
-                        {expandedUser === user.id ? '▼' : '▶'}
+                        {expandedUser === user.uid ? '▼' : '▶'}
                       </button>
                     </td>
                     <td className="email-cell">
@@ -154,9 +152,6 @@ export function UsersAdmin() {
                       <EditDisplayName user={user} />
                     </td>
                     <td>
-                      <StatusBadge user={user} />
-                    </td>
-                    <td>
                       <span 
                         className={`role-badge role-${user.role}`}
                         style={{ borderLeftColor: ROLE_CONFIG[user.role]?.color }}
@@ -164,20 +159,13 @@ export function UsersAdmin() {
                         {ROLE_CONFIG[user.role]?.label || user.role}
                       </span>
                     </td>
-                    <td className="inviter-cell">
-                      {user.invitedBy ? (
-                        <span className="inviter-info">👤 Admin</span>
-                      ) : (
-                        <span className="self-signup">Self</span>
-                      )}
-                    </td>
                     <td className="action-cell">
                       {modifiableRoles.includes(user.role) ? (
                         <div className="role-selector">
                           <select
                             value={user.role}
-                            onChange={e => handleRoleChange(user.id, e.target.value as UserRole)}
-                            disabled={updating === user.id}
+                            onChange={e => handleRoleChange(user.uid, e.target.value as UserRole)}
+                            disabled={updating === user.uid}
                             className="role-select"
                           >
                             {modifiableRoles.map(role => (
@@ -197,31 +185,11 @@ export function UsersAdmin() {
                   </tr>
                   
                   {/* Expanded Details Row */}
-                  {expandedUser === user.id && (
+                  {expandedUser === user.uid && (
                     <tr className="details-row">
                       <td colSpan={8}>
                         <div className="user-details">
                           <div className="details-grid">
-                            <div className="detail-section">
-                              <h4>Invite Information</h4>
-                              <dl>
-                                <dt>Status:</dt>
-                                <dd>{user.status || 'unknown'}</dd>
-                                {user.invitedAt && (
-                                  <>
-                                    <dt>Invited On:</dt>
-                                    <dd>{new Date(user.invitedAt).toLocaleString()}</dd>
-                                  </>
-                                )}
-                                {user.acceptedAt && (
-                                  <>
-                                    <dt>Accepted On:</dt>
-                                    <dd>{new Date(user.acceptedAt).toLocaleString()}</dd>
-                                  </>
-                                )}
-                              </dl>
-                            </div>
-
                             <div className="detail-section">
                               <h4>Role & Permissions</h4>
                               <dl>
@@ -242,21 +210,6 @@ export function UsersAdmin() {
                               </dl>
                             </div>
 
-                            <div className="detail-section">
-                              <h4>Contact & Location</h4>
-                              <dl>
-                                <dt>Contact Method:</dt>
-                                <dd>{user.contactMethod || 'email'}</dd>
-                                <dt>Contact Verified:</dt>
-                                <dd>{user.contactVerified ? '✓ Yes' : '✗ No'}</dd>
-                                {user.locationId && (
-                                  <>
-                                    <dt>Location:</dt>
-                                    <dd><code>{user.locationId}</code></dd>
-                                  </>
-                                )}
-                              </dl>
-                            </div>
                           </div>
                         </div>
                       </td>
@@ -548,16 +501,3 @@ export function UsersAdmin() {
   );
 }
 
-function StatusBadge({ user }: { user: User }) {
-  const FIVE_MIN = 5 * 60 * 1000;
-  const now = Date.now();
-  const last = user.lastActiveAt ? user.lastActiveAt.getTime() : 0;
-  const isLive = last > 0 && now - last < FIVE_MIN;
-
-  const label = user.status === 'invited' ? 'Invited' : isLive ? 'Live' : 'Offline';
-  const cls = user.status === 'invited' ? 'status-invited' : isLive ? 'status-live' : 'status-offline';
-
-  // Use global badge styles
-  const globalCls = cls.replace('status-', 'badge-');
-  return <span className={`badge ${globalCls}`}>{label}</span>;
-}

@@ -235,13 +235,12 @@ export class FirestoreProductRepository implements ProductRepository {
       displayPrice: product.displayPrice,
       cost: product.cost,
       imageUrl: product.imageUrl,
-      stock: product.stock,
-      stockThreshold: product.stockThreshold,
+      inventory: product.inventory,
+      sku: product.sku,
       isActive: product.isActive,
       thcContent: product.thcContent,
       cbdContent: product.cbdContent,
       tags: product.tags,
-      locationId: product.locationId,
     };
   }
 
@@ -271,14 +270,13 @@ export class FirestoreProductRepository implements ProductRepository {
       cost: product.cost,
       markup: product.markup,
       imageUrl: product.imageUrl,
-      stock: product.stock,
-      stockThreshold: product.stockThreshold,
+      inventory: product.inventory,
+      sku: product.sku,
       isActive: product.isActive,
       thcContent: product.thcContent,
       cbdContent: product.cbdContent,
       tags: product.tags,
       notes: product.notes,
-      locationId: product.locationId,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };
@@ -365,11 +363,10 @@ export class FirestoreProductRepository implements ProductRepository {
       isActive: product.isActive,
       thcContent: product.thcContent,
       cbdContent: product.cbdContent,
-      stock: product.stock,
-      stockThreshold: product.stockThreshold,
+      inventory: product.inventory,
+      sku: product.sku,
       cost: product.cost,
       tags: product.tags,
-      locationId: product.locationId,
     };
   }
 
@@ -404,11 +401,10 @@ export class FirestoreProductRepository implements ProductRepository {
         isActive: product.isActive,
         thcContent: product.thcContent,
         cbdContent: product.cbdContent,
-        stock: product.stock,
-        stockThreshold: product.stockThreshold,
+        inventory: product.inventory,
+        sku: product.sku,
         cost: product.cost,
         tags: product.tags,
-        locationId: product.locationId,
       };
     });
   }

@@ -14,9 +14,14 @@ const baseContext: AuthContextType = {
 };
 
 const mockUser = (role: User['role']): User => ({
-  id: 'user-1',
+  uid: 'user-1',
   email: 'user@example.com',
+  displayName: 'Test User',
   role,
+  employeeId: null,
+  employeeStatus: null,
+  transactionAuthority: false,
+  createdBy: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 });

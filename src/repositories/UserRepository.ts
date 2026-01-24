@@ -28,18 +28,14 @@ export const UserRepository = {
     return snapshot.docs.map(doc => {
       const data = doc.data();
       return {
-        id: doc.id,
+        uid: doc.id,
         email: data.email || '',
-        displayName: data.displayName,
+        displayName: data.displayName || '',
         role: (data.role as UserRole) || 'customer',
-        status: data.status,
-        contactMethod: data.contactMethod,
-        contactVerified: data.contactVerified,
-        locationId: data.locationId,
-        invitedBy: data.invitedBy,
-        invitedAt: data.invitedAt?.toDate?.(),
-        acceptedAt: data.acceptedAt?.toDate?.(),
-        lastActiveAt: data.lastActiveAt?.toDate?.(),
+        employeeId: data.employeeId || null,
+        employeeStatus: data.employeeStatus || null,
+        transactionAuthority: data.transactionAuthority || false,
+        createdBy: data.createdBy || null,
         createdAt: data.createdAt?.toDate?.() || new Date(),
         updatedAt: data.updatedAt?.toDate?.() || new Date(),
       } as User;
@@ -148,26 +144,20 @@ export const UserRepository = {
   async createGuest(
     input: {
       displayName?: string;
-      contactMethod?: 'email' | 'phone';
-      contact?: string; // email or phone based on method
-      locationId?: string;
-      contactVerified?: boolean;
     },
     createdBy: string
   ): Promise<string> {
     const usersRef = collection(getFirestore$(), 'users');
     const newRef = doc(usersRef);
 
-    const email = input.contactMethod === 'email' ? (input.contact || '') : '';
     const payload = {
-      id: newRef.id,
-      email,
-      displayName: input.displayName || null,
+      uid: newRef.id,
+      email: '',
+      displayName: input.displayName || '',
       role: 'guest' as const,
-      status: 'registered' as const,
-      contactMethod: input.contactMethod || null,
-      contactVerified: !!input.contactVerified,
-      locationId: input.locationId || null,
+      employeeId: null,
+      employeeStatus: null,
+      transactionAuthority: false,
       createdBy,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),

@@ -166,7 +166,7 @@ function AdminDashboardContent({ user }: { user: any }) {
   // Calculate metrics
   const totalProducts = products.length;
   const lowStockItems = products.filter(
-    (p) => p.stock <= p.stockThreshold
+    (p) => p.inventory <= 5
   ).length;
   const avgMarkup =
     products.length > 0

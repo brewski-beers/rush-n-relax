@@ -204,15 +204,14 @@ export async function seedProducts(
       displayPrice: prod.displayPrice,
       cost: prod.cost,
       imageUrl: prod.imageUrl,
-      stock: prod.stock,
-      stockThreshold: prod.stockThreshold,
+      inventory: prod.inventory,
+      sku: prod.sku,
       thcContent: prod.thcContent,
       cbdContent: prod.cbdContent,
       isActive: prod.isActive,
       tags: prod.tags || [],
       notes: prod.notes || '',
       markup: prod.markup || 0,
-      locationId: prod.locationId || 'default',
     }));
 
     return result;

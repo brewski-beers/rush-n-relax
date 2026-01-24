@@ -33,8 +33,8 @@ export function CreateGuestStaff() {
     try {
       setSubmitting(true);
       await UserRepository.createGuest(
-        { displayName, contactMethod, contact, contactVerified },
-        user.id
+        { displayName },
+        user.uid
       );
       setMessage('Guest registered. You can promote to customer when ready.');
       setDisplayName('');

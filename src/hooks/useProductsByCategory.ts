@@ -33,7 +33,7 @@ export function useProductsByCategory(
   // Staff query
   if (user.role === 'staff') {
     const { data } = useSuspenseQuery({
-      queryKey: ['products', 'staff', 'category', categoryId, user.id],
+      queryKey: ['products', 'staff', 'category', categoryId, user.uid],
       queryFn: () =>
         productRepository.getProductsByCategoryAsStaff(categoryId, user),
       staleTime: 2 * 60 * 1000,
@@ -45,7 +45,7 @@ export function useProductsByCategory(
   // Admin/Manager query
   if (user.role === 'admin' || user.role === 'manager') {
     const { data } = useSuspenseQuery({
-      queryKey: ['products', 'admin', 'category', categoryId, user.id],
+      queryKey: ['products', 'admin', 'category', categoryId, user.uid],
       queryFn: () => productRepository.getAllProductsAsAdmin(user),
       staleTime: 1 * 60 * 1000,
     });

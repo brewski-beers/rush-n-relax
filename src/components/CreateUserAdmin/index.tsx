@@ -38,7 +38,7 @@ export function CreateUserAdmin() {
     try {
       setSubmitting(true);
       const inviteRole = role === 'admin' ? 'manager' : (role as 'manager' | 'staff' | 'customer');
-      await UserRepository.inviteUser(email, inviteRole, currentUser.id);
+      await UserRepository.inviteUser(email, inviteRole, currentUser.uid);
       setMessage(`Invitation sent to ${email} for ${ROLE_CONFIG[role]?.label || role}.`);
       setEmail('');
       setRole(allowedInviteRoles[0]);
