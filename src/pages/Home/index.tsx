@@ -1,7 +1,6 @@
 import { Hero } from '@/components/Hero';
 import CategoryGrid from '@/components/CategoryGrid';
 import { useCategories } from '@/hooks/useCategories';
-import { useNavigate } from 'react-router-dom';
 import { CustomerInvite } from '@/components/CustomerInvite';
 import { CreateGuestStaff } from '@/components/CreateGuestStaff';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,24 +14,18 @@ import { useAuth } from '@/contexts/AuthContext';
  */
 export function Home() {
   const categories = useCategories();
-  const navigate = useNavigate();
   const { user } = useAuth();
-  
-  const handleShopNow = () => {
-    document.getElementById('category-grid')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const handleSignIn = () => {
-    navigate('/login');
-  };
+  const categoryNames = categories.map((c) => c.name).filter(Boolean);
+  const heroSubtitle = categoryNames.length
+    ? `Explore ${categoryNames.slice(0, 3).join(', ')}${categoryNames.length > 3 ? ', and more.' : ''}`
+    : 'Browse our curated categories below.';
 
   return (
     <>
-      <Hero onShopNow={handleShopNow} onSignIn={handleSignIn} />
-      <section className="categories-section">
-        <h2>Shop by Category</h2>
+      <Hero title="Shop by Category" subtitle={heroSubtitle}>
+        <p className="hero-intro">Discover your next favorite strain, edible, or accessory—all in one place.</p>
         <CategoryGrid categories={categories} />
-      </section>
+      </Hero>
       {user && (user.role === 'customer') && <CustomerInvite />}
       {user && (user.role === 'staff' || user.role === 'manager' || user.role === 'admin') && <CreateGuestStaff />}
     </>

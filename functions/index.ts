@@ -60,7 +60,7 @@ export const inviteUser = functions.https.onCall(async (data, context) => {
 
   const inviterUid = context.auth.uid;
   const inviterRole = (context.auth.token?.role as string) || 'customer';
-  const { email, role = 'customer', displayName, locationId, contactMethod, contactVerified } = data || {};
+  const { email, role = 'customer', displayName, employeeId, employeeStatus, transactionAuthority } = data || {};
 
   if (!email || typeof email !== 'string') {
     throw new functions.https.HttpsError('invalid-argument', 'Email is required');
@@ -110,18 +110,24 @@ export const inviteUser = functions.https.onCall(async (data, context) => {
   // Apply custom claims for role
   await admin.auth().setCustomUserClaims(created.uid, { role });
 
-  // Seed Firestore user doc (status=invited)
-  await admin.firestore().doc(`users/${created.uid}`).set({
-    id: created.uid,
-    email,
-    displayName: displayName || null,
+  // Apply custom claims for role + optional employee data
+  await admin.auth().setCustomUserClaims(created.uid, {
     role,
-    status: 'invited',
-    contactMethod: contactMethod || 'email',
-    contactVerified: !!contactVerified,
-    locationId: locationId || null,
-    invitedBy: inviterUid,
-    invitedAt: admin.firestore.Timestamp.now(),
+    employeeId: employeeId || null,
+    employeeStatus: employeeStatus || null,
+    transactionAuthority: !!transactionAuthority,
+  });
+
+  // Seed Firestore user doc with new schema (uid-first, no legacy fields)
+  await admin.firestore().doc(`users/${created.uid}`).set({
+    uid: created.uid,
+    email,
+    displayName: displayName || '',
+    role,
+    employeeId: employeeId || null,
+    employeeStatus: employeeStatus || null,
+    transactionAuthority: !!transactionAuthority,
+    createdBy: inviterUid,
     createdAt: admin.firestore.Timestamp.now(),
     updatedAt: admin.firestore.Timestamp.now(),
   }, { merge: true });
@@ -179,9 +185,8 @@ export const updateUserEmail = functions.https.onCall(async (data, context) => {
   // Sync Firestore user document
   await userDocRef.set(
     {
+      uid: userId,
       email,
-      contactMethod: 'email',
-      contactVerified: false,
       updatedAt: admin.firestore.Timestamp.now(),
       updatedBy: actorUid,
     },
@@ -208,17 +213,25 @@ export const onAuthUserCreate = functions.auth.user().onCreate(async (user) => {
     if (existing.exists) {
       return;
     }
+
     const fullUser = await admin.auth().getUser(uid);
     const role = (fullUser.customClaims?.role as string) || 'customer';
+    const employeeId = (fullUser.customClaims?.employeeId as string) || null;
+    const employeeStatus = (fullUser.customClaims?.employeeStatus as string) || null;
+    const transactionAuthority = Boolean(fullUser.customClaims?.transactionAuthority);
+
     await admin.firestore().doc(`users/${uid}`).set({
-      id: uid,
+      uid,
       email: user.email || '',
-      displayName: user.displayName || null,
+      displayName: user.displayName || '',
       role,
-      status: 'invited',
+      employeeId,
+      employeeStatus,
+      transactionAuthority,
+      createdBy: null,
       createdAt: admin.firestore.Timestamp.now(),
       updatedAt: admin.firestore.Timestamp.now(),
-    });
+    }, { merge: true });
   } catch (err) {
     logger.error('Failed to seed user doc on auth create', { uid, err });
   }

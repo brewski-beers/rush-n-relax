@@ -92,11 +92,12 @@ export function CreateUserAdmin() {
 
       <style>{`
         .invite-card {
-          border: 1px solid var(--color-border);
-          border-radius: 0.5rem;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 0.75rem;
           padding: 1rem;
           margin-bottom: 1.5rem;
-          background: var(--color-bg-secondary);
+          background: linear-gradient(145deg, rgba(16, 24, 21, 0.9), rgba(16, 24, 21, 0.82));
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32);
         }
         .invite-title {
           margin: 0 0 0.75rem 0;
@@ -116,7 +117,7 @@ export function CreateUserAdmin() {
         }
         .field label {
           font-size: 0.85rem;
-          color: var(--color-text-secondary);
+          color: rgba(245, 245, 245, 0.7);
         }
         .field input, .field select {
           padding: 0.5rem 0.6rem;

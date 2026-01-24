@@ -1,26 +1,33 @@
-import { describe, test, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, test, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { Hero } from './index';
 
 describe('Hero', () => {
-  test('calls onShopNow when button clicked', () => {
-    const onShopNow = vi.fn();
-    render(<Hero onShopNow={onShopNow} />);
-    
-    fireEvent.click(screen.getByText('Shop Now'));
-    
-    expect(onShopNow).toHaveBeenCalledOnce();
+  test('displays default title', () => {
+    render(<Hero />);
+
+    expect(screen.getByRole('heading', { name: 'Shop by Category' })).toBeInTheDocument();
   });
 
-  test('displays tagline', () => {
-    render(<Hero onShopNow={() => {}} />);
-    
-    expect(screen.getByText(/Cannabis is more than a product/)).toBeInTheDocument();
+  test('displays provided subtitle', () => {
+    render(<Hero subtitle="Explore Flower, Vapes, and more." />);
+
+    expect(screen.getByText('Explore Flower, Vapes, and more.')).toBeInTheDocument();
   });
 
-  test('displays main heading', () => {
-    render(<Hero onShopNow={() => {}} />);
-    
-    expect(screen.getByRole('heading', { name: 'Rush N Relax' })).toBeInTheDocument();
+  test('allows custom title', () => {
+    render(<Hero title="Featured Collections" />);
+
+    expect(screen.getByRole('heading', { name: 'Featured Collections' })).toBeInTheDocument();
+  });
+
+  test('renders children content', () => {
+    render(
+      <Hero>
+        <div>Child content</div>
+      </Hero>
+    );
+
+    expect(screen.getByText('Child content')).toBeInTheDocument();
   });
 });

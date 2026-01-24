@@ -269,8 +269,10 @@ export function UsersAdmin() {
 
         .users-table-wrapper {
           overflow-x: auto;
-          border: 1px solid var(--color-border);
-          border-radius: 0.5rem;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 0.75rem;
+          background: linear-gradient(145deg, rgba(16, 24, 21, 0.9), rgba(16, 24, 21, 0.82));
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32);
         }
 
         .users-table {
@@ -280,12 +282,12 @@ export function UsersAdmin() {
         }
 
         .users-table th {
-          background: var(--color-bg-tertiary);
+          background: rgba(255, 255, 255, 0.04);
           padding: 1rem;
           text-align: left;
           font-weight: 600;
-          border-bottom: 1px solid var(--color-border);
-          color: var(--color-text-secondary);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          color: rgba(245, 245, 245, 0.75);
         }
 
         .users-table td {
@@ -294,7 +296,7 @@ export function UsersAdmin() {
         }
 
         .user-row:hover {
-          background: var(--color-bg-secondary);
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
         }
 
         .email-cell code {
@@ -312,12 +314,14 @@ export function UsersAdmin() {
         .role-badge {
           display: inline-block;
           padding: 0.25rem 0.75rem;
-          border-radius: 0.25rem;
+          border-radius: 0.35rem;
           font-size: 0.8rem;
           font-weight: 600;
           text-transform: uppercase;
           border-left: 3px solid;
-          background: rgba(0, 0, 0, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.06);
+          color: rgba(245, 245, 245, 0.9);
         }
 
         /* status badge styles provided globally; keep minimal overrides here if necessary */
@@ -389,10 +393,11 @@ export function UsersAdmin() {
         }
 
         .user-details {
-          border: 1px solid var(--color-border);
-          border-radius: 0.5rem;
-          background: var(--color-bg);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 0.75rem;
+          background: linear-gradient(145deg, rgba(16, 24, 21, 0.92), rgba(16, 24, 21, 0.86));
           padding: 1.5rem;
+          box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
         }
 
         .details-grid {

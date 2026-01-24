@@ -13,7 +13,7 @@ export function Header() {
         <span className="logo-mark">TB</span>
         <span className="logo-text">techByBrewski</span>
       </div>
-      <nav className="nav">
+      <nav id="primary-nav" className="nav">
         <Link to="/">Shop</Link>
         <Link to="/about">About</Link>
         <Link to="/locations">Locations</Link>

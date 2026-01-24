@@ -1,19 +1,17 @@
+import { type ReactNode } from 'react';
+
 interface HeroProps {
-  onShopNow: () => void;
-  onSignIn?: () => void;
+  title?: string;
+  subtitle?: string;
+  children?: ReactNode;
 }
 
-export function Hero({ onShopNow, onSignIn }: HeroProps) {
+export function Hero({ title = 'Shop by Category', subtitle, children }: HeroProps) {
   return (
     <section className="hero grain-soft">
-      <h1>Rush N Relax</h1>
-      <p className="tagline">Cannabis is more than a product—it's an experience.</p>
-      <div className="cta-row">
-        <button className="cta" onClick={onShopNow}>Shop Now</button>
-        {onSignIn && (
-          <button className="cta-secondary" onClick={onSignIn}>Sign in</button>
-        )}
-      </div>
+      <h1>{title}</h1>
+      {subtitle && <p className="tagline">{subtitle}</p>}
+      {children && <div className="hero-content">{children}</div>}
     </section>
   );
 }

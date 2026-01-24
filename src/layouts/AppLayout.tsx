@@ -1,6 +1,7 @@
 import { Outlet, ScrollRestoration } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { AmbientOverlay } from '@/components/AmbientOverlay';
 
 /**
  * App Layout - Main application layout with persistent navigation
@@ -17,6 +18,7 @@ import { Footer } from '@/components/Footer';
 export function AppLayout() {
   return (
     <div className="app-layout">
+      <AmbientOverlay />
       <Header />
       <main className="main-content">
         <Outlet />

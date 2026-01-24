@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where, orderBy, type Firestore } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, doc, getDoc } from 'firebase/firestore';
 import { getFirestore$ } from '@/firebase';
 import type { Category } from '@/types';
 
@@ -58,16 +58,14 @@ export class FirestoreCategoryRepository implements CategoryRepository {
   }
 
   async getById(id: string): Promise<Category | null> {
-    const categoriesCollection = collection(getFirestore$(), this.collectionName);
-    const q = query(categoriesCollection, where('id', '==', id));
-    const snapshot = await getDocs(q);
-    
-    if (snapshot.empty) {
+    const docRef = doc(getFirestore$(), this.collectionName, id);
+    const snapshot = await getDoc(docRef);
+
+    if (!snapshot.exists()) {
       return null;
     }
-    
-    const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as Category;
+
+    return { id: snapshot.id, ...snapshot.data() } as Category;
   }
 }
 

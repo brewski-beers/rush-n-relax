@@ -105,18 +105,19 @@ export function StaffAdmin() {
         }
 
         .stat-card {
-          background: var(--color-bg-secondary);
+          background: linear-gradient(150deg, rgba(16, 24, 21, 0.9), rgba(16, 24, 21, 0.82));
           padding: 1.5rem;
-          border-radius: 0.5rem;
-          border: 1px solid var(--color-border);
+          border-radius: 0.75rem;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32);
         }
 
         .stat-label {
           font-size: 0.85rem;
-          color: var(--color-text-secondary);
+          color: rgba(245, 245, 245, 0.7);
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.35rem;
           font-weight: 600;
         }
 
@@ -128,7 +129,7 @@ export function StaffAdmin() {
 
         .stat-subtext {
           font-size: 0.8rem;
-          color: var(--color-text-secondary);
+          color: rgba(245, 245, 245, 0.6);
         }
 
         .staff-section {
@@ -144,6 +145,21 @@ export function StaffAdmin() {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
           gap: 1.5rem;
+          padding: 1rem;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 0.75rem;
+          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+        }
+
+        @media (max-width: 768px) {
+          .staff-grid {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1rem;
+          }
+          .staff-card {
+            padding: 1.25rem;
+          }
         }
 
         .empty-placeholder {
@@ -201,16 +217,29 @@ function StaffCard({ member }: { member: User }) {
 
       <style>{`
         .staff-card {
-          background: var(--color-bg-secondary);
-          border: 1px solid var(--color-border);
-          border-radius: 0.5rem;
+          background: linear-gradient(145deg, rgba(16, 24, 21, 0.9), rgba(16, 24, 21, 0.8));
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 0.75rem;
           padding: 1.5rem;
-          transition: all 0.2s;
+          box-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+          transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .staff-card::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 55%);
+          pointer-events: none;
+          opacity: 0.6;
         }
 
         .staff-card:hover {
-          border-color: var(--color-primary);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          border-color: var(--color-primary, #d5b36a);
+          box-shadow: 0 18px 42px rgba(0, 0, 0, 0.4);
+          transform: translateY(-2px);
         }
 
         .staff-header {
