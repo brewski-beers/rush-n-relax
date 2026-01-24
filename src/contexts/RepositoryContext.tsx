@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useMemo } from 'react';
-import { db } from '@/firebase';
 import {
   FirestoreProductRepository,
   type ProductRepository,
@@ -23,7 +22,7 @@ const RepositoryContext = createContext<RepositoryContextValue | null>(null);
  */
 export function RepositoryProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<RepositoryContextValue>(() => {
-    const productRepository = new FirestoreProductRepository(db);
+    const productRepository = new FirestoreProductRepository();
     const productQueries = createProductQueries(productRepository);
 
     return {

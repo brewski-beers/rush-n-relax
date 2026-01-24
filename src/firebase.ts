@@ -64,3 +64,5 @@ export function getFunctions$() {
   if (!functions) throw new Error('Firebase Functions not initialized. Call initializeApp() first.');
   return functions;
 }
+
+export { db };
