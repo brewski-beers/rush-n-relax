@@ -2,15 +2,29 @@ import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import '@/styles/index.css';
 import { initializeApp } from '@/firebase';
+import { reportWebVitals, logWebVitals, sendToFirebase } from '@/utils/reportWebVitals';
 import { RootLayout } from '@/layouts/RootLayout';
 import { AppLayout } from '@/layouts/AppLayout';
 import { PageLayout } from '@/layouts/PageLayout';
 import { Home } from '@/pages/Home';
 import { ProductDetail } from '@/pages/ProductDetail';
 import { Admin } from '@/pages/Admin';
+import { Account } from '@/pages/Account';
+import { Kiosk } from '@/pages/Kiosk';
+import { Login } from '@/pages/Login';
+import { About } from '@/pages/About';
+import { Locations } from '@/pages/Locations';
+import { Contact } from '@/pages/Contact';
 import CategoryProducts from '@/pages/CategoryProducts';
 
 initializeApp();
+
+// Initialize Web Vitals reporting
+if (import.meta.env.DEV) {
+  reportWebVitals(logWebVitals);
+} else {
+  reportWebVitals(sendToFirebase);
+}
 
 /**
  * Application router with nested layouts
@@ -26,11 +40,55 @@ const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       {
+        path: '/login',
+        element: (
+          <PageLayout>
+            <Login />
+          </PageLayout>
+        ),
+      },
+      {
         element: <AppLayout />,
         children: [
           {
             path: '/',
-            element: <Home />,
+            element: (
+              <PageLayout>
+                <Home />
+              </PageLayout>
+            ),
+          },
+          {
+            path: '/about',
+            element: (
+              <PageLayout>
+                <About />
+              </PageLayout>
+            ),
+          },
+          {
+            path: '/locations',
+            element: (
+              <PageLayout>
+                <Locations />
+              </PageLayout>
+            ),
+          },
+          {
+            path: '/contact',
+            element: (
+              <PageLayout>
+                <Contact />
+              </PageLayout>
+            ),
+          },
+          {
+            path: '/account',
+            element: (
+              <PageLayout>
+                <Account />
+              </PageLayout>
+            ),
           },
           {
             path: '/products/category/:category',
@@ -41,7 +99,7 @@ const router = createBrowserRouter([
             ),
           },
           {
-            path: '/products/:category/:slug',
+            path: '/products/:categorySlug/:productSlug',
             element: (
               <PageLayout>
                 <ProductDetail />
@@ -53,6 +111,14 @@ const router = createBrowserRouter([
             element: (
               <PageLayout>
                 <Admin />
+              </PageLayout>
+            ),
+          },
+          {
+            path: '/kiosk',
+            element: (
+              <PageLayout>
+                <Kiosk />
               </PageLayout>
             ),
           },

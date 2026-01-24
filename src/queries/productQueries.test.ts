@@ -12,11 +12,11 @@ describe('productKeys', () => {
     expect(productKeys.lists()).toEqual(['products', 'list']);
   });
 
-  it('should generate list key with category filter', () => {
-    expect(productKeys.list({ category: 'flower' })).toEqual([
+  it('should generate list key with categoryId filter', () => {
+    expect(productKeys.list({ categoryId: 'flower' })).toEqual([
       'products',
       'list',
-      { category: 'flower' },
+      { categoryId: 'flower' },
     ]);
   });
 
@@ -24,10 +24,21 @@ describe('productKeys', () => {
     expect(productKeys.details()).toEqual(['products', 'detail']);
   });
 
-  it('should generate detail key with category and slug', () => {
-    expect(productKeys.detail('flower', 'blue-dream')).toEqual([
+  it('should generate detail key with category and productId', () => {
+    expect(productKeys.detailById('flower', 'prod-123')).toEqual([
       'products',
       'detail',
+      'byId',
+      'flower',
+      'prod-123',
+    ]);
+  });
+
+  it('should generate detail key by slug for backward compat', () => {
+    expect(productKeys.detailBySlug('flower', 'blue-dream')).toEqual([
+      'products',
+      'detail',
+      'bySlug',
       'flower',
       'blue-dream',
     ]);
@@ -40,14 +51,20 @@ describe('createProductQueries', () => {
       id: '1',
       name: 'Test Flower',
       slug: 'test-flower',
-      category: 'flower',
-      price: 29.99,
+      categoryId: 'flower',
+      isActive: true,
+      displayPrice: 29.99,
+      cost: 18.00,
+      markup: 66.61,
       stock: 10,
+      stockThreshold: 3,
       locationId: 'loc1',
       description: 'Test description',
       imageUrl: '/test.jpg',
       thcContent: '20%',
       cbdContent: '1%',
+      tags: ['popular'],
+      notes: 'Test note',
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -55,8 +72,20 @@ describe('createProductQueries', () => {
 
   const mockRepository: ProductRepository = {
     getAllProducts: vi.fn().mockResolvedValue(mockProducts),
-    getProductsByCategory: vi.fn().mockResolvedValue(mockProducts),
+    getProductsByCategoryId: vi.fn().mockResolvedValue(mockProducts),
     getProductBySlug: vi.fn().mockResolvedValue(mockProducts[0]),
+    getProductsBySlugAsGuest: vi.fn(),
+    getProductsByCategoryAsGuest: vi.fn(),
+    getProductsBySlugAsStaff: vi.fn(),
+    getProductsByCategoryAsStaff: vi.fn(),
+    getProductsBySlugAsAdmin: vi.fn(),
+    getAllProductsAsAdmin: vi.fn(),
+    getProductByIdAsGuest: vi.fn().mockResolvedValue(mockProducts[0]),
+    getProductByIdAsStaff: vi.fn().mockResolvedValue(mockProducts[0]),
+    getProductByIdAsAdmin: vi.fn().mockResolvedValue(mockProducts[0]),
+    createProduct: vi.fn().mockResolvedValue('new-product-id'),
+    updateProduct: vi.fn().mockResolvedValue(undefined),
+    deleteProduct: vi.fn().mockResolvedValue(undefined),
   };
 
   describe('all query', () => {
@@ -81,27 +110,27 @@ describe('createProductQueries', () => {
     });
   });
 
-  describe('byCategory query', () => {
+  describe('byCategoryId query', () => {
     it('should create query configuration for category products', () => {
       const queries = createProductQueries(mockRepository);
-      const queryConfig = queries.byCategory('flower');
+      const queryConfig = queries.byCategoryId('flower');
 
       expect(queryConfig.queryKey).toEqual([
         'products',
         'list',
-        { category: 'flower' },
+        { categoryId: 'flower' },
       ]);
       expect(queryConfig.staleTime).toBe(5 * 60 * 1000);
       expect(queryConfig.gcTime).toBe(10 * 60 * 1000);
     });
 
-    it('should call repository.getProductsByCategory when queryFn is invoked', async () => {
+    it('should call repository.getProductsByCategoryId when queryFn is invoked', async () => {
       const queries = createProductQueries(mockRepository);
-      const queryConfig = queries.byCategory('edibles');
+      const queryConfig = queries.byCategoryId('edibles');
 
       const result = await queryConfig.queryFn?.({ queryKey: queryConfig.queryKey } as any);
 
-      expect(mockRepository.getProductsByCategory).toHaveBeenCalledWith(
+      expect(mockRepository.getProductsByCategoryId).toHaveBeenCalledWith(
         'edibles'
       );
       expect(result).toEqual(mockProducts);
@@ -116,6 +145,7 @@ describe('createProductQueries', () => {
       expect(queryConfig.queryKey).toEqual([
         'products',
         'detail',
+        'bySlug',
         'flower',
         'test-flower',
       ]);

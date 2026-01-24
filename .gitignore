@@ -12,6 +12,7 @@ build/
 # Environment
 .env
 .env.local
+.env(copy)
 .env.*.local
 firebase-config.json
 
@@ -33,12 +34,35 @@ firebase-debug.log
 # Testing
 coverage/
 .nyc_output/
+test-results/
+playwright-report/
+playwright/.cache/
+*.spec.js.snap
+*.spec.ts.snap
 
 # Firebase
 functions/node_modules/
 .firebaserc
 firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+emulator-data/
 
 # Package managers
 pnpm-lock.yaml
 yarn.lock
+
+# Build cache
+*.tsbuildinfo
+.turbo/
+.cache/
+.parcel-cache/
+
+# Bundle analysis
+stats.html
+dist/stats.html
+
+# Temporary files
+*.tmp
+*.temp
+.eslintcache

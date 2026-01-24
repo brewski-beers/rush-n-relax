@@ -1,156 +1,317 @@
-import { initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import type { Product } from '../src/types';
+/**
+ * Seed products script
+ * Pure data definition + utility functions
+ * No Firebase logic - uses seedDataAdmin for all operations
+ */
 
-// Initialize Firebase Admin with emulator settings
-process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+import 'dotenv/config';
+import { seedProductsAdmin } from '../src/lib/seedDataAdmin';
+import { adminDb } from '../src/lib/firebaseAdminServer';
+import type { ProductAdmin } from '../src/types';
 
-initializeApp({
-  projectId: 'rush-n-relax',
-});
-
-const db = getFirestore();
-
-// Verify connection
-console.log('🔧 Connecting to Firestore Emulator at:', process.env.FIRESTORE_EMULATOR_HOST);
-console.log('🔧 Project ID:', 'rush-n-relax');
-
-const SEED_PRODUCTS: Omit<Product, 'id'>[] = [
+const PRODUCTS: Omit<ProductAdmin, 'id' | 'createdAt' | 'updatedAt'>[] = [
+  // Flower products
   {
+    categoryId: 'flower',
     name: 'Blue Dream',
     slug: 'blue-dream',
-    description: 'A legendary sativa-dominant hybrid combining Blueberry and Haze genetics. Blue Dream delivers swift symptom relief with balanced full-body relaxation and gentle cerebral invigoration. Perfect for both novice and veteran cannabis users seeking a harmonious blend of therapeutic benefits and uplifting effects.',
-    price: 45,
-    stock: 50,
-    locationId: 'main-store',
-    imageUrl: 'https://placehold.co/800x600/4287f5/white?text=Blue+Dream',
-    category: 'flower',
-    thcContent: '18-24%',
-    cbdContent: '<1%',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    description: 'A sativa-dominant hybrid with balanced effects',
+    displayPrice: 45,
+    cost: 28,
+    imageUrl:
+      'https://images.unsplash.com/photo-1597733336794-12d05021d510?w=400&h=300&fit=crop',
+    stock: 15,
+    stockThreshold: 5,
+    thcContent: '22%',
+    cbdContent: '1%',
+    isActive: true,
+    tags: ['hybrid', 'sativa', 'balanced'],
+    notes: 'Popular strain, consistent quality',
+    markup: 60.71,
+    locationId: 'default',
   },
   {
+    categoryId: 'flower',
     name: 'OG Kush',
     slug: 'og-kush',
-    description: 'The backbone of West Coast cannabis genetics. This classic indica-dominant hybrid delivers a complex aroma of fuel, skunk, and spice with stress-relieving and euphoric effects. OG Kush is celebrated for its ability to crush stress under the weight of its heavy tranquility.',
-    price: 50,
-    stock: 35,
-    locationId: 'main-store',
-    imageUrl: 'https://placehold.co/800x600/2e7d32/white?text=OG+Kush',
-    category: 'flower',
-    thcContent: '20-25%',
-    cbdContent: '<1%',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    description: 'Classic indica with earthy, pine flavors',
+    displayPrice: 50,
+    cost: 32,
+    imageUrl:
+      'https://images.unsplash.com/photo-1597733336794-12d05021d510?w=400&h=300&fit=crop',
+    stock: 8,
+    stockThreshold: 5,
+    thcContent: '24%',
+    cbdContent: '0.5%',
+    isActive: true,
+    tags: ['indica', 'classic', 'earthy'],
+    notes: 'Limited stock, reorder soon',
+    markup: 56.25,
+    locationId: 'default',
   },
   {
-    name: 'Strawberry Gummies',
-    slug: 'strawberry-gummies',
-    description: 'Delicious and precisely dosed strawberry-flavored gummies made with premium cannabis extract. Each piece contains exactly 10mg of THC, making it easy to find your perfect dose. Made with real fruit flavors and all-natural ingredients for a consistent, enjoyable edible experience.',
-    price: 25,
-    stock: 100,
-    locationId: 'main-store',
-    imageUrl: 'https://placehold.co/800x600/e91e63/white?text=Strawberry+Gummies',
-    category: 'edibles',
+    categoryId: 'flower',
+    name: 'Girl Scout Cookies',
+    slug: 'girl-scout-cookies',
+    description: 'Sweet and earthy hybrid with strong effects',
+    displayPrice: 55,
+    cost: 35,
+    imageUrl:
+      'https://images.unsplash.com/photo-1597733336794-12d05021d510?w=400&h=300&fit=crop',
+    stock: 12,
+    stockThreshold: 5,
+    thcContent: '26%',
+    cbdContent: '0.3%',
+    isActive: true,
+    tags: ['hybrid', 'sweet', 'potent'],
+    notes: 'Premium strain, high demand',
+    markup: 57.14,
+    locationId: 'default',
+  },
+
+  // Edibles
+  {
+    categoryId: 'edibles',
+    name: 'Gummy Bears (10mg)',
+    slug: 'gummy-bears-10mg',
+    description: 'Fruit-flavored gummies, 10mg THC each',
+    displayPrice: 20,
+    cost: 8,
+    imageUrl:
+      'https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=400&h=300&fit=crop',
+    stock: 30,
+    stockThreshold: 10,
     thcContent: '10mg per piece',
-    cbdContent: '<1mg',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    cbdContent: '0%',
+    isActive: true,
+    tags: ['gummies', 'fruit', 'beginner-friendly'],
+    notes: 'Best seller, restock frequently',
+    markup: 150,
+    locationId: 'default',
   },
   {
-    name: 'Dark Chocolate Bar 100mg',
-    slug: 'dark-chocolate-bar-100mg',
-    description: 'Artisanal dark chocolate (70% cacao) infused with 100mg of premium THC distillate. Each bar is divided into 10 perfectly scored 10mg squares for easy, accurate dosing. Rich, smooth chocolate taste with no cannabis aftertaste. Perfect for chocolate lovers seeking a sophisticated edible experience.',
-    price: 30,
-    stock: 60,
-    locationId: 'main-store',
-    imageUrl: 'https://placehold.co/800x600/5d4037/white?text=Dark+Chocolate',
-    category: 'edibles',
-    thcContent: '100mg total (10mg per square)',
-    cbdContent: '<5mg',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    categoryId: 'edibles',
+    name: 'Chocolate Bars (5mg)',
+    slug: 'chocolate-bars-5mg',
+    description: 'Dark chocolate infused with 5mg THC',
+    displayPrice: 15,
+    cost: 6,
+    imageUrl:
+      'https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=400&h=300&fit=crop',
+    stock: 45,
+    stockThreshold: 15,
+    thcContent: '5mg per bar',
+    cbdContent: '0%',
+    isActive: true,
+    tags: ['chocolate', 'microdose', 'popular'],
+    notes: 'High margin product',
+    markup: 150,
+    locationId: 'default',
   },
   {
-    name: 'Sour Diesel Vape',
-    slug: 'sour-diesel-vape',
-    description: 'All-in-one disposable vape pen featuring Sour Diesel, the legendary sativa strain. Contains 85% pure THC distillate with naturally derived terpenes for an authentic strain-specific experience. Delivers energizing, dreamy cerebral effects perfect for daytime use. No charging or filling required.',
-    price: 40,
-    stock: 75,
-    locationId: 'main-store',
-    imageUrl: 'https://placehold.co/800x600/ff9800/white?text=Sour+Diesel+Vape',
-    category: 'vapes',
+    categoryId: 'edibles',
+    name: 'Peanut Butter Cups (20mg)',
+    slug: 'peanut-butter-cups-20mg',
+    description: 'Creamy peanut butter with dark chocolate coating',
+    displayPrice: 25,
+    cost: 10,
+    imageUrl:
+      'https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=400&h=300&fit=crop',
+    stock: 20,
+    stockThreshold: 8,
+    thcContent: '20mg per cup',
+    cbdContent: '0%',
+    isActive: true,
+    tags: ['peanut-butter', 'chocolate', 'premium'],
+    notes: 'Premium edible, steady demand',
+    markup: 150,
+    locationId: 'default',
+  },
+
+  // Vapes
+  {
+    categoryId: 'vapes',
+    name: 'Sativa Cartridge',
+    slug: 'sativa-cartridge',
+    description: 'Energizing sativa blend, 1g cartridge',
+    displayPrice: 35,
+    cost: 18,
+    imageUrl:
+      'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=300&fit=crop',
+    stock: 20,
+    stockThreshold: 5,
     thcContent: '85%',
-    cbdContent: '<1%',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    cbdContent: '0%',
+    isActive: true,
+    tags: ['cartridge', 'sativa', 'concentrate'],
+    notes: 'Popular morning option',
+    markup: 94.44,
+    locationId: 'default',
   },
   {
+    categoryId: 'vapes',
+    name: 'Indica Cartridge',
+    slug: 'indica-cartridge',
+    description: 'Relaxing indica blend, 1g cartridge',
+    displayPrice: 35,
+    cost: 18,
+    imageUrl:
+      'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=300&fit=crop',
+    stock: 25,
+    stockThreshold: 5,
+    thcContent: '87%',
+    cbdContent: '0%',
+    isActive: true,
+    tags: ['cartridge', 'indica', 'concentrate'],
+    notes: 'Evening favorite',
+    markup: 94.44,
+    locationId: 'default',
+  },
+  {
+    categoryId: 'vapes',
     name: 'Hybrid Blend Cartridge',
     slug: 'hybrid-blend-cartridge',
-    description: 'Premium 1-gram vape cartridge featuring a carefully balanced hybrid blend. Made with pure cannabis oil and botanically derived terpenes. Compatible with any 510-thread battery. Delivers smooth, flavorful vapor with balanced mind and body effects ideal for any time of day.',
-    price: 35,
-    stock: 80,
-    locationId: 'main-store',
-    imageUrl: 'https://placehold.co/800x600/9c27b0/white?text=Hybrid+Cart',
-    category: 'vapes',
-    thcContent: '78-82%',
-    cbdContent: '<2%',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    description: 'Balanced hybrid cartridge, 1g',
+    displayPrice: 40,
+    cost: 20,
+    imageUrl:
+      'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=300&fit=crop',
+    stock: 15,
+    stockThreshold: 5,
+    thcContent: '90%',
+    cbdContent: '0%',
+    isActive: true,
+    tags: ['cartridge', 'hybrid', 'concentrate', 'premium'],
+    notes: 'Premium concentrate, higher margin',
+    markup: 100,
+    locationId: 'default',
+  },
+
+  // Accessories
+  {
+    categoryId: 'accessories',
+    name: 'Herb Grinder (4-piece)',
+    slug: 'herb-grinder-4piece',
+    description: '4-piece aluminum grinder with kief catcher',
+    displayPrice: 25,
+    cost: 10,
+    imageUrl:
+      'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=400&h=300&fit=crop',
+    stock: 50,
+    stockThreshold: 15,
+    thcContent: '0%',
+    cbdContent: '0%',
+    isActive: true,
+    tags: ['grinder', 'aluminum', 'kief-catcher'],
+    notes: 'Best seller in accessories',
+    markup: 150,
+    locationId: 'default',
   },
   {
-    name: 'Helix Glass Pipe',
-    slug: 'helix-glass-pipe',
-    description: 'Premium hand-blown borosilicate glass pipe featuring the innovative Helix design. The unique chamber creates a spinning vortex that cools and filters smoke for incredibly smooth hits. Durable, heat-resistant glass with microventuri technology. Approximately 6 inches in length.',
-    price: 35,
-    stock: 25,
-    locationId: 'main-store',
-    imageUrl: 'https://placehold.co/800x600/00bcd4/white?text=Helix+Glass+Pipe',
-    category: 'accessories',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    name: 'Organic Hemp Rolling Papers',
-    slug: 'organic-hemp-rolling-papers',
-    description: 'Ultra-thin, slow-burning rolling papers made from 100% organic hemp. Each pack contains 50 sheets of natural, unbleached paper with no added chemicals or flavors. Features a natural gum Arabic adhesive. Perfect for those who prefer to roll their own and value purity and sustainability.',
-    price: 5,
+    categoryId: 'accessories',
+    name: 'Rolling Papers Pack',
+    slug: 'rolling-papers-pack',
+    description: 'Premium rolling papers, 50-pack',
+    displayPrice: 5,
+    cost: 1.5,
+    imageUrl:
+      'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=400&h=300&fit=crop',
     stock: 200,
-    locationId: 'main-store',
-    imageUrl: 'https://placehold.co/800x600/8bc34a/white?text=Rolling+Papers',
-    category: 'accessories',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    stockThreshold: 50,
+    thcContent: '0%',
+    cbdContent: '0%',
+    isActive: true,
+    tags: ['papers', 'rolling', 'consumable'],
+    notes: 'High volume, low margin',
+    markup: 233.33,
+    locationId: 'default',
+  },
+  {
+    categoryId: 'accessories',
+    name: 'Glass Tips (25-pack)',
+    slug: 'glass-tips-25pack',
+    description: 'Reusable glass filter tips',
+    displayPrice: 8,
+    cost: 3,
+    imageUrl:
+      'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=400&h=300&fit=crop',
+    stock: 100,
+    stockThreshold: 25,
+    thcContent: '0%',
+    cbdContent: '0%',
+    isActive: true,
+    tags: ['tips', 'glass', 'filters'],
+    notes: 'Eco-friendly option',
+    markup: 166.67,
+    locationId: 'default',
+  },
+  {
+    categoryId: 'accessories',
+    name: 'Smell-Proof Container',
+    slug: 'smell-proof-container',
+    description: 'Airtight stash container with locking lid',
+    displayPrice: 15,
+    cost: 6,
+    imageUrl:
+      'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=400&h=300&fit=crop',
+    stock: 30,
+    stockThreshold: 10,
+    thcContent: '0%',
+    cbdContent: '0%',
+    isActive: true,
+    tags: ['container', 'storage', 'discrete'],
+    notes: 'Quality accessory, steady demand',
+    markup: 150,
+    locationId: 'default',
   },
 ];
 
-async function seedProducts() {
-  console.log('🌱 Seeding products to Firestore emulator...');
+async function main() {
+  console.log('🌱 Seeding products collection...\n');
+
+  // First, fetch category IDs by slug
+  console.log('📖 Fetching category IDs...');
+  const categoriesSnapshot = await adminDb.collection('categories').get();
   
-  const batch = db.batch();
-  
-  for (const product of SEED_PRODUCTS) {
-    const docRef = db.collection('products').doc();
-    batch.set(docRef, {
-      ...product,
-      id: docRef.id,
-    });
+  if (categoriesSnapshot.empty) {
+    console.error('❌ No categories found. Please run seed:categories first.');
+    process.exit(1);
   }
-  
-  await batch.commit();
-  
-  console.log(`✅ Successfully seeded ${SEED_PRODUCTS.length} products`);
-  
-  // Verify
-  const snapshot = await db.collection('products').get();
-  console.log(`📊 Total products in database: ${snapshot.size}`);
-  
-  process.exit(0);
+
+  const categoryMap = new Map<string, string>();
+  categoriesSnapshot.forEach((doc) => {
+    const data = doc.data();
+    categoryMap.set(data.slug, doc.id);
+  });
+
+  console.log(`✓ Found ${categoryMap.size} categories\n`);
+
+  // Replace category slugs with actual IDs
+  const productsWithIds = PRODUCTS.map((product) => {
+    const categoryId = categoryMap.get(product.categoryId);
+    if (!categoryId) {
+      throw new Error(`Category not found for slug: ${product.categoryId}`);
+    }
+    return {
+      ...product,
+      categoryId,
+    };
+  });
+
+  const result = await seedProductsAdmin(productsWithIds);
+
+  if (result.success) {
+    console.log(`✅ Successfully created ${result.created} products!\n`);
+    console.log('📍 Location: Firestore > products collection');
+    process.exit(0);
+  } else {
+    console.error(`❌ Error seeding products:`);
+    result.errors.forEach((err) => console.error(`   - ${err}`));
+    process.exit(1);
+  }
 }
 
-seedProducts().catch((error) => {
-  console.error('❌ Error seeding products:', error);
+main().catch((error) => {
+  console.error('❌ Unexpected error:', error);
   process.exit(1);
 });

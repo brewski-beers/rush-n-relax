@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import type { ProductCategory } from '@/types';
 
 interface ProductGridProps {
   products: Array<{ 
@@ -7,19 +6,20 @@ interface ProductGridProps {
     name: string; 
     slug: string; 
     imageUrl: string;
-    category: ProductCategory;
+    categoryId: string;
   }>;
+  categorySlug: string;
 }
 
-export function ProductGrid({ products }: ProductGridProps) {
+export function ProductGrid({ products, categorySlug }: ProductGridProps) {
   return (
     <section className="product-grid" id="products">
       <div className="grid">
         {products.map(product => (
           <Link 
             key={product.id} 
-            to={`/products/${product.category}/${product.slug}`}
-            className="product"
+            to={`/products/${categorySlug}/${product.slug}`}
+            className="product grain-soft"
           >
             <img src={product.imageUrl} alt={product.name} />
             <h3>{product.name}</h3>

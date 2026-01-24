@@ -131,20 +131,56 @@ import { useAuth } from '@/hooks/useAuth';
 - Clear function and variable names that describe purpose
 - Avoid magic numbers or strings without constants
 
-### 6. Test Coverage Requirements
-**Principle**: All business logic must have test coverage.
+### 6. TDD / BDD is Mandatory
+**Principle**: Tests are NOT optional. All code must be test-driven.
 
 **Requirements**:
-- Components: Test rendering, props, user interactions
-- Hooks: Test state changes, loading states, error handling
-- Utilities: Test edge cases and error conditions
-- Pages: Integration tests preferred over unit tests
+- **Write tests BEFORE implementation** (TDD)
+- **Every utility, hook, and component must have tests**
+- **Every behaviour must be explicitly tested**
+- **Test file naming**: `index.test.ts` colocated with implementation
+- **Test organization**: Describe blocks for features, it blocks for behaviours
 
-**Minimum Coverage**:
-- Critical paths: 100%
-- Business logic: 90%
-- UI components: 80%
-- Overall project: 70%
+**Test Coverage Minimums**:
+- **Utilities**: 100% coverage (pure functions)
+- **Hooks**: 100% coverage (state + side effects)
+- **Repositories**: 100% coverage (data layer)
+- **Components**: 80% coverage (UI + interactions)
+- **Pages**: 70% coverage (integration level)
+- **Overall**: Target 85% across codebase
+
+**Test Types**:
+```typescript
+// Unit Tests: Pure logic in isolation
+describe('calculateMarkup', () => {
+  it('should calculate markup percentage correctly', () => {
+    expect(calculateMarkup(100, 50)).toBe(100); // (100-50)/50 * 100
+  });
+  
+  it('should return 0 when cost is 0', () => {
+    expect(calculateMarkup(100, 0)).toBe(0);
+  });
+});
+
+// Integration Tests: Multiple units working together
+describe('ProductForm', () => {
+  it('should submit form and save product to repository', async () => {
+    const mockRepository = mock(ProductRepository);
+    render(<ProductForm repository={mockRepository} />);
+    
+    await user.type(screen.getByLabelText('Price'), '50');
+    await user.click(screen.getByText('Save'));
+    
+    expect(mockRepository.createProduct).toHaveBeenCalled();
+  });
+});
+```
+
+**Regression Prevention**:
+- When a bug is found, write a failing test first
+- Test must pass only after fix is implemented
+- Prevents same bug from reoccurring
+- Becomes part of test suite permanently
 
 ### 7. Type Safety
 **Principle**: TypeScript strict mode enabled, no `any` types except in test mocks.
@@ -163,6 +199,51 @@ import { useAuth } from '@/hooks/useAuth';
 - Memoize expensive computations
 - Avoid unnecessary re-renders
 - Keep bundle size under 700KB (gzipped < 180KB)
+
+---
+
+## 7. Test Execution Requirements
+
+**Principle**: Tests must complete and exit, never hang or block delivery momentum.
+
+**Watch Mode Prohibition**:
+- ❌ **DO NOT** run tests in watch mode unless explicitly requested for debugging
+- ✅ **MUST** use `--run` flag to ensure tests complete and exit
+- ✅ **MUST** run tests with full completion (all tests executed, results reported, process terminates)
+
+**Execution Pattern**:
+```bash
+# ✅ CORRECT: Tests run and exit
+npm test -- --run
+
+# ✅ CORRECT: Specific test file with completion
+npm test -- src/lib/seedDataUtils.test.ts --run
+
+# ❌ WRONG: Watch mode hangs
+npm test
+npm run test:watch
+
+# ❌ WRONG: Incomplete execution
+npm test (without --run flag in CI contexts)
+```
+
+**Rationale**:
+- Watch mode is for interactive debugging only
+- Hanging processes block CI/CD pipelines and delivery
+- Test results must be deterministic and complete
+- Delivery momentum is more valuable than partial feedback
+
+**When Watch Mode Is Acceptable**:
+- Only when explicitly debugging a specific test
+- Only when user says "let me investigate this test"
+- Only when user says "watch this for changes"
+- User must manually terminate when done
+
+**Implementation**:
+- Use `npm test -- --run` for all automated test execution
+- Use `npm test` only for interactive local development (then manually quit)
+- Add `--run` to all test commands in CI/CD pipelines
+- Configure Vitest `run` as default in watch-unfriendly contexts
 
 ---
 

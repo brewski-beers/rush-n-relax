@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Firestore } from 'firebase/firestore';
 import { FirestoreProductRepository } from './ProductRepository';
-import type { Product, ProductCategory } from '@/types';
+import type { Product } from '@/types';
 
 // Mock Firestore functions
 const mockGetDocs = vi.fn();
@@ -29,14 +29,20 @@ describe('FirestoreProductRepository', () => {
       id: '1',
       name: 'Test Flower',
       slug: 'test-flower',
-      category: 'flower',
-      price: 29.99,
+      categoryId: 'flower',
+      isActive: true,
+      displayPrice: 29.99,
+      cost: 18.00,
+      markup: 66.61,
       stock: 10,
+      stockThreshold: 3,
       locationId: 'loc1',
       description: 'Test description',
       imageUrl: '/test.jpg',
       thcContent: '20%',
       cbdContent: '1%',
+      tags: ['popular', 'sativa'],
+      notes: 'Popular strain',
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -44,14 +50,20 @@ describe('FirestoreProductRepository', () => {
       id: '2',
       name: 'Test Edible',
       slug: 'test-edible',
-      category: 'edibles',
-      price: 19.99,
+      categoryId: 'edibles',
+      isActive: true,
+      displayPrice: 19.99,
+      cost: 12.00,
+      markup: 66.58,
       stock: 5,
+      stockThreshold: 2,
       locationId: 'loc1',
       description: 'Test edible description',
       imageUrl: '/test-edible.jpg',
       thcContent: '10mg',
       cbdContent: '0mg',
+      tags: ['edible', 'gummy'],
+      notes: 'Lab tested',
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -60,7 +72,7 @@ describe('FirestoreProductRepository', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = {} as Firestore;
-    repository = new FirestoreProductRepository(mockDb);
+    repository = new FirestoreProductRepository();
     mockCollection.mockReturnValue('mock-collection');
     mockWhere.mockReturnValue('mock-where-clause');
     mockQuery.mockReturnValue('mock-query');
@@ -103,9 +115,9 @@ describe('FirestoreProductRepository', () => {
     });
   });
 
-  describe('getProductsByCategory', () => {
+  describe('getProductsByCategoryId', () => {
     it('should fetch products filtered by category', async () => {
-      const flowerProducts = mockProducts.filter((p) => p.category === 'flower');
+      const flowerProducts = mockProducts.filter((p) => p.categoryId === 'flower');
       mockGetDocs.mockResolvedValue({
         docs: flowerProducts.map((product) => ({
           id: product.id,
@@ -116,20 +128,20 @@ describe('FirestoreProductRepository', () => {
         })),
       });
 
-      const products = await repository.getProductsByCategory('flower');
+      const products = await repository.getProductsByCategoryId('flower');
 
       expect(mockCollection).toHaveBeenCalledWith(mockDb, 'products');
-      expect(mockWhere).toHaveBeenCalledWith('category', '==', 'flower');
+      expect(mockWhere).toHaveBeenCalledWith('categoryId', '==', 'flower');
       expect(mockQuery).toHaveBeenCalled();
       expect(mockGetDocs).toHaveBeenCalled();
       expect(products).toHaveLength(1);
-      expect(products[0].category).toBe('flower');
+      expect(products[0].categoryId).toBe('flower');
     });
 
     it('should return empty array when no products in category', async () => {
       mockGetDocs.mockResolvedValue({ docs: [] });
 
-      const products = await repository.getProductsByCategory('vapes' as ProductCategory);
+      const products = await repository.getProductsByCategoryId('vapes');
 
       expect(products).toEqual([]);
     });
@@ -138,7 +150,7 @@ describe('FirestoreProductRepository', () => {
       mockGetDocs.mockRejectedValue(new Error('Query failed'));
 
       await expect(
-        repository.getProductsByCategory('edibles')
+        repository.getProductsByCategoryId('edibles')
       ).rejects.toThrow('Query failed');
     });
   });
@@ -162,7 +174,7 @@ describe('FirestoreProductRepository', () => {
       const product = await repository.getProductBySlug('flower', 'test-flower');
 
       expect(mockCollection).toHaveBeenCalledWith(mockDb, 'products');
-      expect(mockWhere).toHaveBeenCalledWith('category', '==', 'flower');
+      expect(mockWhere).toHaveBeenCalledWith('categoryId', '==', 'flower');
       expect(mockWhere).toHaveBeenCalledWith('slug', '==', 'test-flower');
       expect(mockQuery).toHaveBeenCalled();
       expect(product).toEqual(targetProduct);

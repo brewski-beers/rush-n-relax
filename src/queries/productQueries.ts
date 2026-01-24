@@ -1,19 +1,23 @@
 import { queryOptions } from '@tanstack/react-query';
 import type { ProductRepository } from '@/repositories/ProductRepository';
-import type { ProductCategory } from '@/types';
 
 /**
  * Query key factory for products.
  * Centralizes all query key generation for consistent cache management.
+ * 
+ * NOTE: Keys now use product ID (immutable) instead of slug for primary queries.
+ * Slug queries kept for backward compatibility.
  */
 export const productKeys = {
   all: ['products'] as const,
   lists: () => [...productKeys.all, 'list'] as const,
-  list: (filters?: { category?: ProductCategory }) =>
+  list: (filters?: { categoryId?: string }) =>
     [...productKeys.lists(), filters] as const,
   details: () => [...productKeys.all, 'detail'] as const,
-  detail: (category: ProductCategory, slug: string) =>
-    [...productKeys.details(), category, slug] as const,
+  detailBySlug: (categoryId: string, slug: string) =>
+    [...productKeys.details(), 'bySlug', categoryId, slug] as const,
+  detailById: (categoryId: string, productId: string) =>
+    [...productKeys.details(), 'byId', categoryId, productId] as const,
 };
 
 /**
@@ -30,29 +34,46 @@ export const createProductQueries = (repository: ProductRepository) => ({
     queryOptions({
       queryKey: productKeys.lists(),
       queryFn: () => repository.getAllProducts(),
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-    }),
-
-  /**
-   * Query configuration for fetching products by category
-   */
-  byCategory: (category: ProductCategory) =>
-    queryOptions({
-      queryKey: productKeys.list({ category }),
-      queryFn: () => repository.getProductsByCategory(category),
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
     }),
 
   /**
-   * Query configuration for fetching a single product by slug
+   * Query configuration for fetching products by category ID
    */
-  bySlug: (category: ProductCategory, slug: string) =>
+  byCategoryId: (categoryId: string) =>
     queryOptions({
-      queryKey: productKeys.detail(category, slug),
+      queryKey: productKeys.list({ categoryId }),
+      queryFn: () => repository.getProductsByCategoryId(categoryId),
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+    }),
+
+  /**
+   * ID-based query for fetching a single product (preferred API)
+   */
+  byId: (categoryId: string, productId: string) =>
+    queryOptions({
+      queryKey: productKeys.detailById(categoryId, productId),
       queryFn: async () => {
-        const product = await repository.getProductBySlug(category, slug);
+        const product = await repository.getProductByIdAsGuest(categoryId, productId);
+        if (!product) {
+          throw new Error('Product not found');
+        }
+        return product;
+      },
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+    }),
+
+  /**
+   * Slug-based query for fetching a single product (legacy, backward compat)
+   */
+  bySlug: (categoryId: string, slug: string) =>
+    queryOptions({
+      queryKey: productKeys.detailBySlug(categoryId, slug),
+      queryFn: async () => {
+        const product = await repository.getProductBySlug(categoryId, slug);
         if (!product) {
           throw new Error('Product not found');
         }

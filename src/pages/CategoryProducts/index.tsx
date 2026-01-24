@@ -1,16 +1,8 @@
 import { useParams, Navigate } from 'react-router-dom';
 import { ProductGrid } from '@/components/ProductGrid';
+import { NoProductsEmptyState } from '@/components/EmptyState';
 import useProductsByCategory from '@/hooks/useProductsByCategory';
-import type { ProductCategory } from '@/types';
-
-const VALID_CATEGORIES: ProductCategory[] = ['flower', 'edibles', 'vapes', 'accessories'];
-
-const CATEGORY_NAMES: Record<ProductCategory, string> = {
-  flower: 'Flower',
-  edibles: 'Edibles',
-  vapes: 'Vapes',
-  accessories: 'Accessories'
-};
+import { useCategoryBySlug } from '@/hooks/useCategories';
 
 /**
  * CategoryProducts Page
@@ -21,22 +13,23 @@ const CATEGORY_NAMES: Record<ProductCategory, string> = {
  * No manual loading/error state management - follows "headless UI" principles.
  */
 export default function CategoryProducts() {
-  const { category } = useParams<{ category: string }>();
+  const { category: categorySlug } = useParams<{ category: string }>();
 
-  // Validate category
-  if (!category || !VALID_CATEGORIES.includes(category as ProductCategory)) {
+  // Validate category slug
+  if (!categorySlug) {
     return <Navigate to="/" replace />;
   }
 
-  const validCategory = category as ProductCategory;
-  const products = useProductsByCategory(validCategory);
+  // Fetch category (will throw if not found, caught by ErrorBoundary)
+  const category = useCategoryBySlug(categorySlug);
+  const products = useProductsByCategory(category.id);
 
   const displayProducts = products.map((p) => ({
     id: p.id,
     name: p.name,
     slug: p.slug,
     imageUrl: p.imageUrl || '',
-    category: p.category
+    categoryId: p.categoryId
   }));
 
   return (
@@ -45,15 +38,16 @@ export default function CategoryProducts() {
         <nav className="breadcrumb">
           <a href="/">Home</a>
           <span> / </span>
-          <span>{CATEGORY_NAMES[validCategory]}</span>
+          <span>{category.name}</span>
         </nav>
-        <h1>{CATEGORY_NAMES[validCategory]}</h1>
+        <h1>{category.name}</h1>
+        {category.description && <p className="category-description">{category.description}</p>}
       </div>
 
       {products.length === 0 ? (
-        <p className="empty-state">No products available in this category.</p>
+        <NoProductsEmptyState />
       ) : (
-        <ProductGrid products={displayProducts} />
+        <ProductGrid products={displayProducts} categorySlug={category.slug} />
       )}
     </div>
   );

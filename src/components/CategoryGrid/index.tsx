@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Category } from '@/types';
+import { usePrefetchCategoryProducts } from '@/hooks/usePrefetch';
 
 interface CategoryGridProps {
   categories: Category[];
@@ -16,19 +17,24 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
 
   return (
     <section id="category-grid" className="category-grid">
-      {categories.map((category) => (
-        <Link
-          key={category.id}
-          to={`/products/category/${category.id}`}
-          className="category-card"
-        >
-          <img src={category.imageUrl} alt={category.name} />
-          <div className="category-info">
-            <h3>{category.name}</h3>
-            <p>{category.description}</p>
-          </div>
-        </Link>
-      ))}
+      {categories.map((category) => {
+        const prefetchProducts = usePrefetchCategoryProducts(category.id);
+        
+        return (
+          <Link
+            key={category.id}
+            to={`/products/category/${category.slug}`}
+            className="category-card grain-soft"
+            onMouseEnter={prefetchProducts}
+          >
+            <img src={category.imageUrl} alt={category.name} />
+            <div className="category-info">
+              <h3>{category.name}</h3>
+              <p>{category.description}</p>
+            </div>
+          </Link>
+        );
+      })}
     </section>
   );
 }

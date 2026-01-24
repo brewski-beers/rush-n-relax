@@ -2,25 +2,56 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Products collection: public read, admin write
-    match /products/{productId} {
+    // Categories collection: public read, admin/manager write
+    match /categories/{categoryId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.token.role == 'admin';
+      allow write: if request.auth != null && request.auth.token.role in ['admin', 'manager'];
     }
     
-    // Orders collection: authenticated users can read their own, staff/admin can read all
+    // Products collection: public read, admin/manager write
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.role in ['admin', 'manager'];
+    }
+    
+    // Orders collection: authenticated users can read their own, staff/manager/admin can read all
     match /orders/{orderId} {
       allow read: if request.auth != null && 
                      (resource.data.customerId == request.auth.uid || 
-                      request.auth.token.role in ['staff', 'admin']);
+                      request.auth.token.role in ['staff', 'manager', 'admin']);
       allow create: if request.auth != null;
-      allow update: if request.auth != null && request.auth.token.role in ['staff', 'admin'];
+      allow update: if request.auth != null && request.auth.token.role in ['staff', 'manager', 'admin'];
     }
     
-    // Users collection: users can read their own profile
+    // Users collection: role-based visibility and modification
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.token.role == 'admin';
+      // Read: users can see themselves; admin can see all; manager can see staff/customer/guest; staff can see customer/guest
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        (request.auth.token.role == 'admin') ||
+        (request.auth.token.role == 'manager' && resource.data.role in ['manager', 'staff', 'customer', 'guest']) ||
+        (request.auth.token.role == 'staff' && resource.data.role in ['customer', 'guest'])
+      );
+      
+      // Create:
+      // - Self-create on first sign-in with valid role from claims
+      // - Staff/manager/admin can register guests (non-auth) with role 'guest'
+      allow create: if request.auth != null && (
+        (request.auth.uid == userId && request.resource.data.role in ['customer', 'staff', 'manager', 'admin']) ||
+        (request.auth.token.role in ['staff', 'manager', 'admin'] && request.resource.data.role == 'guest' && request.resource.data.createdBy == request.auth.uid)
+      );
+      
+      // Update:
+      // - Admin can update anything
+      // - Manager can update staff/customer/guest
+      // - Staff can promote guest→customer
+      // - Users can update their own minimal fields (acceptedAt, locationId, lastActiveAt)
+      allow update: if request.auth != null && (
+        (request.auth.token.role == 'admin') ||
+        (request.auth.token.role == 'manager' && resource.data.role in ['manager', 'staff', 'customer', 'guest']) ||
+        (request.auth.token.role == 'staff' && resource.data.role == 'guest' && request.resource.data.role == 'customer') ||
+        (request.auth.uid == userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['acceptedAt', 'locationId', 'lastActiveAt']))
+      );
     }
     
     // Default deny

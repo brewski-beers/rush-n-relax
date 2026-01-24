@@ -6,13 +6,13 @@ import { ProductGrid } from './index';
 describe('ProductGrid', () => {
   test('renders all products', () => {
     const products = [
-      { id: '1', name: 'Product A', slug: 'product-a', imageUrl: 'https://example.com/a.jpg', category: 'flower' as const },
-      { id: '2', name: 'Product B', slug: 'product-b', imageUrl: 'https://example.com/b.jpg', category: 'edibles' as const },
+      { id: '1', name: 'Product A', slug: 'product-a', imageUrl: 'https://example.com/a.jpg', categoryId: 'flower' },
+      { id: '2', name: 'Product B', slug: 'product-b', imageUrl: 'https://example.com/b.jpg', categoryId: 'edibles' },
     ];
     
     render(
       <BrowserRouter>
-        <ProductGrid products={products} />
+        <ProductGrid products={products} categorySlug="flower" />
       </BrowserRouter>
     );
     
@@ -23,7 +23,7 @@ describe('ProductGrid', () => {
   test('renders empty grid when no products', () => {
     render(
       <BrowserRouter>
-        <ProductGrid products={[]} />
+        <ProductGrid products={[]} categorySlug="flower" />
       </BrowserRouter>
     );
     
@@ -32,14 +32,14 @@ describe('ProductGrid', () => {
 
   test('renders correct number of product images', () => {
     const products = [
-      { id: '1', name: 'Product A', slug: 'product-a', imageUrl: 'https://example.com/a.jpg', category: 'flower' as const },
-      { id: '2', name: 'Product B', slug: 'product-b', imageUrl: 'https://example.com/b.jpg', category: 'vapes' as const },
-      { id: '3', name: 'Product C', slug: 'product-c', imageUrl: 'https://example.com/c.jpg', category: 'accessories' as const },
+      { id: '1', name: 'Product A', slug: 'product-a', imageUrl: 'https://example.com/a.jpg', categoryId: 'flower' },
+      { id: '2', name: 'Product B', slug: 'product-b', imageUrl: 'https://example.com/b.jpg', categoryId: 'vapes' },
+      { id: '3', name: 'Product C', slug: 'product-c', imageUrl: 'https://example.com/c.jpg', categoryId: 'accessories' },
     ];
     
     render(
       <BrowserRouter>
-        <ProductGrid products={products} />
+        <ProductGrid products={products} categorySlug="flower" />
       </BrowserRouter>
     );
     
@@ -50,7 +50,7 @@ describe('ProductGrid', () => {
   test('has products section id for navigation', () => {
     render(
       <BrowserRouter>
-        <ProductGrid products={[]} />
+        <ProductGrid products={[]} categorySlug="flower" />
       </BrowserRouter>
     );
     
@@ -60,12 +60,12 @@ describe('ProductGrid', () => {
 
   test('generates hierarchical URLs with category', () => {
     const products = [
-      { id: '1', name: 'Product A', slug: 'product-a', imageUrl: 'https://example.com/a.jpg', category: 'flower' as const },
+      { id: '1', name: 'Product A', slug: 'product-a', imageUrl: 'https://example.com/a.jpg', categoryId: 'flower' },
     ];
     
     render(
       <BrowserRouter>
-        <ProductGrid products={products} />
+        <ProductGrid products={products} categorySlug="flower" />
       </BrowserRouter>
     );
     
