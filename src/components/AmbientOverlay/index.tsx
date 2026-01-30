@@ -2,14 +2,23 @@ import { useEffect, useState } from 'react';
 import { getStorage$, initializeApp } from '@/firebase';
 import { getDownloadURL, ref, getStorage } from 'firebase/storage';
 
+interface ResolvedUrls {
+  desktop: string | null;
+  mobile: string | null;
+}
+
 export function AmbientOverlay() {
   const directUrl = import.meta.env.VITE_AMBIENT_VIDEO_URL as string | undefined;
   const posterUrl = import.meta.env.VITE_AMBIENT_VIDEO_POSTER as string | undefined;
   const storagePath = import.meta.env.VITE_AMBIENT_STORAGE_PATH as string | undefined;
+  const mobileStoragePath = import.meta.env.VITE_AMBIENT_MOBILE_PATH as string | undefined;
   const customBucket = import.meta.env.VITE_AMBIENT_STORAGE_BUCKET as string | undefined;
   const envEnabled = String(import.meta.env.VITE_AMBIENT_ENABLED ?? 'true').toLowerCase() !== 'false';
 
-  const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
+  const [resolvedUrls, setResolvedUrls] = useState<ResolvedUrls>({
+    desktop: null,
+    mobile: null,
+  });
   const [enabled, setEnabled] = useState<boolean>(() => {
     try {
       const ls = localStorage.getItem('ambientEnabled');
@@ -24,28 +33,54 @@ export function AmbientOverlay() {
 
     let cancelled = false;
 
-    async function resolveUrl() {
+    async function resolveUrls() {
       try {
+        const urls: ResolvedUrls = { desktop: null, mobile: null };
+
+        // Resolve desktop (4K) video
         if (storagePath) {
-          const storage = customBucket ? getStorage(undefined, `gs://${customBucket}`) : getStorage$();
-          const videoRef = ref(storage, storagePath);
-          const url = await getDownloadURL(videoRef);
-          if (!cancelled) setResolvedUrl(url);
-          return;
+          try {
+            const storage = customBucket ? getStorage(undefined, `gs://${customBucket}`) : getStorage$();
+            const videoRef = ref(storage, storagePath);
+            const url = await getDownloadURL(videoRef);
+            if (!cancelled) urls.desktop = url;
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn('AmbientOverlay: failed to resolve desktop video URL', err);
+            if (directUrl) urls.desktop = directUrl;
+          }
+        } else if (directUrl) {
+          urls.desktop = directUrl;
         }
-        if (directUrl) {
-          setResolvedUrl(directUrl);
+
+        // Resolve mobile (1080p) video
+        if (mobileStoragePath) {
+          try {
+            const storage = customBucket ? getStorage(undefined, `gs://${customBucket}`) : getStorage$();
+            const videoRef = ref(storage, mobileStoragePath);
+            const url = await getDownloadURL(videoRef);
+            if (!cancelled) urls.mobile = url;
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn('AmbientOverlay: failed to resolve mobile video URL', err);
+            // Fall back to desktop if mobile fails
+            urls.mobile = urls.desktop;
+          }
+        } else {
+          // Fall back to desktop if no mobile path
+          urls.mobile = urls.desktop;
         }
+
+        if (!cancelled) setResolvedUrls(urls);
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.warn('AmbientOverlay: failed to resolve video URL', err);
-        if (directUrl) setResolvedUrl(directUrl);
+        console.error('AmbientOverlay: critical error resolving URLs', err);
       }
     }
 
-    resolveUrl();
+    resolveUrls();
     return () => { cancelled = true; };
-  }, [directUrl, storagePath, customBucket]);
+  }, [directUrl, storagePath, mobileStoragePath, customBucket]);
 
   // Listen for preference changes dispatched by UI (custom event) or storage updates
   useEffect(() => {
@@ -67,13 +102,12 @@ export function AmbientOverlay() {
     };
   }, [envEnabled]);
 
-  if (!enabled || !resolvedUrl) return null;
+  if (!enabled || (!resolvedUrls.desktop && !resolvedUrls.mobile)) return null;
 
   return (
     <div className="ambient-overlay" aria-hidden="true">
       <video
         className="ambient-video"
-        src={resolvedUrl}
         poster={posterUrl}
         autoPlay
         muted
@@ -83,7 +117,14 @@ export function AmbientOverlay() {
         crossOrigin="anonymous"
         disablePictureInPicture
         controls={false}
-      />
+      >
+        {resolvedUrls.mobile && (
+          <source src={resolvedUrls.mobile} media="(max-width: 768px)" type="video/mp4" />
+        )}
+        {resolvedUrls.desktop && (
+          <source src={resolvedUrls.desktop} type="video/mp4" />
+        )}
+      </video>
     </div>
   );
 }

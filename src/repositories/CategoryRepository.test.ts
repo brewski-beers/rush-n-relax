@@ -2,7 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FirestoreCategoryRepository } from './CategoryRepository';
 import type { Category } from '@/types';
 
-vi.mock('@/firebase', () => ({ db: {} }));
+const mockDb = {} as any;
+
+vi.mock('@/firebase', () => ({
+  getFirestore$: () => mockDb,
+}));
+
 vi.mock('firebase/firestore');
 
 describe('FirestoreCategoryRepository', () => {
@@ -53,7 +58,6 @@ describe('FirestoreCategoryRepository', () => {
           data: () => ({ name: 'Flower', isActive: true }),
         }],
       } as any);
-
       const categories = await repository.getActive();
 
       expect(categories).toHaveLength(1);
@@ -89,18 +93,17 @@ describe('FirestoreCategoryRepository', () => {
 
   describe('getById', () => {
     it('returns category when found', async () => {
-      const { getDocs } = await import('firebase/firestore');
-      vi.mocked(getDocs).mockResolvedValue({
-        empty: false,
-        docs: [{
-          id: 'flower',
-          data: () => ({ name: 'Flower', id: 'flower' }),
-        }],
+      const { getDoc } = await import('firebase/firestore');
+      vi.mocked(getDoc).mockResolvedValue({
+        exists: () => true,
+        id: 'flower',
+        data: () => ({ name: 'Flower', id: 'flower' }),
       } as any);
 
       const category = await repository.getById('flower');
 
       expect(category).toBeDefined();
+      expect(category?.id).toBe('flower');
     });
   });
 });

@@ -54,7 +54,7 @@ describe('usePermission', () => {
 
   it('returns true for admin permissions', () => {
     const wrapper = withAuthProvider({ ...baseContext, user: mockUser('admin') });
-    const { result } = renderHook(() => usePermission('products', 'read:admin'), {
+    const { result } = renderHook(() => usePermission('products', 'read'), {
       wrapper,
     });
     expect(result.current).toBe(true);

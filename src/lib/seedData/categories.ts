@@ -1,16 +1,6 @@
-/**
- * Seed categories script
- * Pure data definition + utility functions
- * No Firebase logic - uses seedDataUtils for all operations
- *
- * Run with: npm run seed:categories
- */
+import type { Category } from '@/types';
 
-import 'dotenv/config';
-import { seedCategoriesAdmin } from '../src/lib/seedDataAdmin';
-import type { Category } from '../src/types';
-
-const CATEGORIES: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>[] = [
+export const SEED_CATEGORIES: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>[] = [
   {
     name: 'Flower',
     slug: 'flower',
@@ -57,24 +47,3 @@ const CATEGORIES: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>[] = [
     seoDescription: 'Grinders, papers, and all your cannabis accessories.',
   },
 ];
-
-async function main() {
-  console.log('🌱 Seeding categories collection...\n');
-
-  const result = await seedCategoriesAdmin(CATEGORIES);
-
-  if (result.success) {
-    console.log(`✅ Successfully created ${result.created} categories!\n`);
-    console.log('📍 Location: Firestore > categories collection');
-    process.exit(0);
-  } else {
-    console.error(`❌ Error seeding categories:`);
-    result.errors.forEach((err) => console.error(`   - ${err}`));
-    process.exit(1);
-  }
-}
-
-main().catch((error) => {
-  console.error('❌ Unexpected error:', error);
-  process.exit(1);
-});

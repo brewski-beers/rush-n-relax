@@ -1,15 +1,6 @@
-/**
- * Seed products script
- * Pure data definition + utility functions
- * No Firebase logic - uses seedDataAdmin for all operations
- */
+import type { ProductAdmin } from '@/types';
 
-import 'dotenv/config';
-import { seedProductsAdmin } from '../src/lib/seedDataAdmin';
-import { adminDb } from '../src/lib/firebaseAdminServer';
-import type { ProductAdmin } from '../src/types';
-
-const PRODUCTS: Omit<ProductAdmin, 'id' | 'createdAt' | 'updatedAt'>[] = [
+export const SEED_PRODUCTS: Omit<ProductAdmin, 'id' | 'createdAt' | 'updatedAt'>[] = [
   // Flower products
   {
     categoryId: 'flower',
@@ -252,53 +243,3 @@ const PRODUCTS: Omit<ProductAdmin, 'id' | 'createdAt' | 'updatedAt'>[] = [
     markup: 150,
   },
 ];
-
-async function main() {
-  console.log('🌱 Seeding products collection...\n');
-
-  // First, fetch category IDs by slug
-  console.log('📖 Fetching category IDs...');
-  const categoriesSnapshot = await adminDb.collection('categories').get();
-  
-  if (categoriesSnapshot.empty) {
-    console.error('❌ No categories found. Please run seed:categories first.');
-    process.exit(1);
-  }
-
-  const categoryMap = new Map<string, string>();
-  categoriesSnapshot.forEach((doc) => {
-    const data = doc.data();
-    categoryMap.set(data.slug, doc.id);
-  });
-
-  console.log(`✓ Found ${categoryMap.size} categories\n`);
-
-  // Replace category slugs with actual IDs
-  const productsWithIds = PRODUCTS.map((product) => {
-    const categoryId = categoryMap.get(product.categoryId);
-    if (!categoryId) {
-      throw new Error(`Category not found for slug: ${product.categoryId}`);
-    }
-    return {
-      ...product,
-      categoryId,
-    };
-  });
-
-  const result = await seedProductsAdmin(productsWithIds);
-
-  if (result.success) {
-    console.log(`✅ Successfully created ${result.created} products!\n`);
-    console.log('📍 Location: Firestore > products collection');
-    process.exit(0);
-  } else {
-    console.error(`❌ Error seeding products:`);
-    result.errors.forEach((err) => console.error(`   - ${err}`));
-    process.exit(1);
-  }
-}
-
-main().catch((error) => {
-  console.error('❌ Unexpected error:', error);
-  process.exit(1);
-});

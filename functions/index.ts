@@ -236,3 +236,240 @@ export const onAuthUserCreate = functions.auth.user().onCreate(async (user) => {
     logger.error('Failed to seed user doc on auth create', { uid, err });
   }
 });
+
+/**
+ * Admin-only callable function to seed categories
+ * Use this to populate initial category data
+ */
+export const seedCategories = functions.https.onCall(async (data, context) => {
+  // Verify authentication
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated',
+      'User must be authenticated to seed data.'
+    );
+  }
+
+  // Verify admin role
+  try {
+    const userDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
+    const userData = userDoc.data();
+    
+    if (userData?.role !== 'admin') {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'Only admins can seed data.'
+      );
+    }
+  } catch (err) {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'Could not verify admin privileges.'
+    );
+  }
+
+  // Check if categories already exist to avoid duplicates
+  const existing = await admin.firestore().collection('categories').limit(1).get();
+  if (!existing.empty) {
+    return {
+      success: false,
+      message: 'Categories already exist. Skipping seed.',
+      created: 0,
+    };
+  }
+
+  // Seed categories
+  const CATEGORIES = [
+    {
+      name: 'Flower',
+      slug: 'flower',
+      description: 'Premium cannabis flower strains',
+      imageUrl:
+        'https://images.unsplash.com/photo-1597733336794-12d05021d510?w=800&h=600&fit=crop',
+      order: 1,
+      isActive: true,
+      seoTitle: 'Cannabis Flower | Rush N Relax',
+      seoDescription: 'Browse our selection of premium cannabis flower strains.',
+    },
+    {
+      name: 'Edibles',
+      slug: 'edibles',
+      description: 'Delicious cannabis-infused treats',
+      imageUrl:
+        'https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=800&h=600&fit=crop',
+      order: 2,
+      isActive: true,
+      seoTitle: 'Cannabis Edibles | Rush N Relax',
+      seoDescription: 'Delicious cannabis-infused edibles and treats.',
+    },
+    {
+      name: 'Vapes',
+      slug: 'vapes',
+      description: 'Portable vaporizers and cartridges',
+      imageUrl:
+        'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=800&h=600&fit=crop',
+      order: 3,
+      isActive: true,
+      seoTitle: 'Vaporizers & Cartridges | Rush N Relax',
+      seoDescription: 'High-quality vaporizers and cannabis cartridges.',
+    },
+    {
+      name: 'Accessories',
+      slug: 'accessories',
+      description: 'Everything you need for a great session',
+      imageUrl:
+        'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=800&h=600&fit=crop',
+      order: 4,
+      isActive: true,
+      seoTitle: 'Cannabis Accessories | Rush N Relax',
+      seoDescription: 'Grinders, papers, and all your cannabis accessories.',
+    },
+  ];
+
+  try {
+    const batch = admin.firestore().batch();
+    let created = 0;
+
+    for (const category of CATEGORIES) {
+      const docRef = admin.firestore().collection('categories').doc();
+      batch.set(docRef, {
+        ...category,
+        createdAt: admin.firestore.Timestamp.now(),
+        updatedAt: admin.firestore.Timestamp.now(),
+      });
+      created++;
+    }
+
+    await batch.commit();
+
+    logger.info(`Successfully seeded ${created} categories`);
+    return {
+      success: true,
+      message: `Successfully seeded ${created} categories`,
+      created,
+    };
+  } catch (err) {
+    logger.error('Error seeding categories', { error: err });
+    throw new functions.https.HttpsError(
+      'internal',
+      `Error seeding categories: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+});
+
+/**
+ * Admin-only callable function to seed products
+ * Requires categories to exist first
+ */
+export const seedProducts = functions.https.onCall(async (data, context) => {
+  // Verify authentication
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated',
+      'User must be authenticated to seed data.'
+    );
+  }
+
+  // Verify admin role
+  try {
+    const userDoc = await admin.firestore().collection('users').doc(context.auth.uid).get();
+    const userData = userDoc.data();
+    
+    if (userData?.role !== 'admin') {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'Only admins can seed data.'
+      );
+    }
+  } catch (err) {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'Could not verify admin privileges.'
+    );
+  }
+
+  // Check if products already exist
+  const existing = await admin.firestore().collection('products').limit(1).get();
+  if (!existing.empty) {
+    return {
+      success: false,
+      message: 'Products already exist. Skipping seed.',
+      created: 0,
+    };
+  }
+
+  // Verify categories exist and build map
+  const categoriesSnapshot = await admin.firestore().collection('categories').get();
+  if (categoriesSnapshot.empty) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'No categories found. Run seedCategories first.'
+    );
+  }
+
+  const categoryMap = new Map<string, string>();
+  categoriesSnapshot.forEach((doc) => {
+    const catData = doc.data();
+    categoryMap.set(catData.slug, doc.id);
+  });
+
+  // Product data
+  const PRODUCTS = [
+    // Flower
+    { categorySlug: 'flower', name: 'Blue Dream', slug: 'blue-dream', description: 'A sativa-dominant hybrid with balanced effects', displayPrice: 45, cost: 28, imageUrl: 'https://images.unsplash.com/photo-1597733336794-12d05021d510?w=400&h=300&fit=crop', inventory: 15, sku: 'BD-001', thcContent: '22%', cbdContent: '1%', isActive: true, tags: ['hybrid', 'sativa', 'balanced'], notes: 'Popular strain, consistent quality', markup: 60.71 },
+    { categorySlug: 'flower', name: 'OG Kush', slug: 'og-kush', description: 'Classic indica with earthy, pine flavors', displayPrice: 50, cost: 32, imageUrl: 'https://images.unsplash.com/photo-1597733336794-12d05021d510?w=400&h=300&fit=crop', inventory: 8, sku: 'OGK-001', thcContent: '24%', cbdContent: '0.5%', isActive: true, tags: ['indica', 'classic', 'earthy'], notes: 'Limited stock, reorder soon', markup: 56.25 },
+    { categorySlug: 'flower', name: 'Girl Scout Cookies', slug: 'girl-scout-cookies', description: 'Sweet and earthy hybrid with strong effects', displayPrice: 55, cost: 35, imageUrl: 'https://images.unsplash.com/photo-1597733336794-12d05021d510?w=400&h=300&fit=crop', inventory: 12, sku: 'GSC-001', thcContent: '26%', cbdContent: '0.3%', isActive: true, tags: ['hybrid', 'sweet', 'potent'], notes: 'Premium strain, high demand', markup: 57.14 },
+    // Edibles
+    { categorySlug: 'edibles', name: 'Gummy Bears (10mg)', slug: 'gummy-bears-10mg', description: 'Fruit-flavored gummies, 10mg THC each', displayPrice: 20, cost: 8, imageUrl: 'https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=400&h=300&fit=crop', inventory: 30, sku: 'GB-10MG-001', thcContent: '10mg per piece', cbdContent: '0%', isActive: true, tags: ['gummies', 'fruit', 'beginner-friendly'], notes: 'Best seller, restock frequently', markup: 150 },
+    { categorySlug: 'edibles', name: 'Chocolate Bars (5mg)', slug: 'chocolate-bars-5mg', description: 'Dark chocolate infused with 5mg THC', displayPrice: 15, cost: 6, imageUrl: 'https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=400&h=300&fit=crop', inventory: 45, sku: 'CB-5MG-001', thcContent: '5mg per bar', cbdContent: '0%', isActive: true, tags: ['chocolate', 'microdose', 'popular'], notes: 'High margin product', markup: 150 },
+    { categorySlug: 'edibles', name: 'Peanut Butter Cups (20mg)', slug: 'peanut-butter-cups-20mg', description: 'Creamy peanut butter with dark chocolate coating', displayPrice: 25, cost: 10, imageUrl: 'https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?w=400&h=300&fit=crop', inventory: 20, sku: 'PBC-20MG-001', thcContent: '20mg per cup', cbdContent: '0%', isActive: true, tags: ['peanut-butter', 'chocolate', 'premium'], notes: 'Premium edible, steady demand', markup: 150 },
+    // Vapes
+    { categorySlug: 'vapes', name: 'Sativa Cartridge', slug: 'sativa-cartridge', description: 'Energizing sativa blend, 1g cartridge', displayPrice: 35, cost: 18, imageUrl: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=300&fit=crop', inventory: 20, sku: 'SAT-CART-001', thcContent: '85%', cbdContent: '0%', isActive: true, tags: ['cartridge', 'sativa', 'concentrate'], notes: 'Popular morning option', markup: 94.44 },
+    { categorySlug: 'vapes', name: 'Indica Cartridge', slug: 'indica-cartridge', description: 'Relaxing indica blend, 1g cartridge', displayPrice: 35, cost: 18, imageUrl: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=300&fit=crop', inventory: 25, sku: 'IND-CART-001', thcContent: '87%', cbdContent: '0%', isActive: true, tags: ['cartridge', 'indica', 'concentrate'], notes: 'Evening favorite', markup: 94.44 },
+    { categorySlug: 'vapes', name: 'Hybrid Blend Cartridge', slug: 'hybrid-blend-cartridge', description: 'Balanced hybrid cartridge, 1g', displayPrice: 40, cost: 20, imageUrl: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=300&fit=crop', inventory: 15, sku: 'HYB-CART-001', thcContent: '90%', cbdContent: '0%', isActive: true, tags: ['cartridge', 'hybrid', 'concentrate', 'premium'], notes: 'Premium concentrate, higher margin', markup: 100 },
+    // Accessories
+    { categorySlug: 'accessories', name: 'Herb Grinder (4-piece)', slug: 'herb-grinder-4piece', description: '4-piece aluminum grinder with kief catcher', displayPrice: 25, cost: 10, imageUrl: 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=400&h=300&fit=crop', inventory: 50, sku: 'GR-4P-001', thcContent: '0%', cbdContent: '0%', isActive: true, tags: ['grinder', 'aluminum', 'kief-catcher'], notes: 'Best seller in accessories', markup: 150 },
+    { categorySlug: 'accessories', name: 'Rolling Papers Pack', slug: 'rolling-papers-pack', description: 'Premium rolling papers, 50-pack', displayPrice: 5, cost: 1.5, imageUrl: 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=400&h=300&fit=crop', inventory: 200, sku: 'RP-50-001', thcContent: '0%', cbdContent: '0%', isActive: true, tags: ['papers', 'rolling', 'consumable'], notes: 'High volume, low margin', markup: 233.33 },
+    { categorySlug: 'accessories', name: 'Glass Tips (25-pack)', slug: 'glass-tips-25pack', description: 'Reusable glass filter tips', displayPrice: 8, cost: 3, imageUrl: 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=400&h=300&fit=crop', inventory: 100, sku: 'GT-25-001', thcContent: '0%', cbdContent: '0%', isActive: true, tags: ['tips', 'glass', 'filters'], notes: 'Eco-friendly option', markup: 166.67 },
+    { categorySlug: 'accessories', name: 'Smell-Proof Container', slug: 'smell-proof-container', description: 'Airtight stash container with locking lid', displayPrice: 15, cost: 6, imageUrl: 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=400&h=300&fit=crop', inventory: 30, sku: 'SP-CONT-001', thcContent: '0%', cbdContent: '0%', isActive: true, tags: ['container', 'storage', 'discrete'], notes: 'Quality accessory, steady demand', markup: 150 },
+  ];
+
+  try {
+    const batch = admin.firestore().batch();
+    let created = 0;
+
+    for (const product of PRODUCTS) {
+      const categoryId = categoryMap.get(product.categorySlug);
+      if (!categoryId) {
+        logger.warn(`Skipping product ${product.name}: category not found`);
+        continue;
+      }
+
+      const docRef = admin.firestore().collection('products').doc();
+      const { categorySlug, ...productData } = product;
+      
+      batch.set(docRef, {
+        ...productData,
+        categoryId,
+        createdAt: admin.firestore.Timestamp.now(),
+        updatedAt: admin.firestore.Timestamp.now(),
+      });
+      created++;
+    }
+
+    await batch.commit();
+
+    logger.info(`Successfully seeded ${created} products`);
+    return {
+      success: true,
+      message: `Successfully seeded ${created} products`,
+      created,
+    };
+  } catch (err) {
+    logger.error('Error seeding products', { error: err });
+    throw new functions.https.HttpsError(
+      'internal',
+      `Error seeding products: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+});

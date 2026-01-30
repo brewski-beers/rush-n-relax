@@ -3,6 +3,12 @@ import type { Firestore } from 'firebase/firestore';
 import { FirestoreProductRepository } from './ProductRepository';
 import type { Product } from '@/types';
 
+const mockDb = {} as Firestore;
+
+vi.mock('@/firebase', () => ({
+  getFirestore$: () => mockDb,
+}));
+
 // Mock Firestore functions
 const mockGetDocs = vi.fn();
 const mockCollection = vi.fn();

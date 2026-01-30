@@ -10,6 +10,7 @@ import { ProductsAdmin } from '@/components/ProductsAdmin';
 import { CategoriesAdmin } from '@/components/CategoriesAdmin';
 import { UsersAdmin } from '@/components/UsersAdmin';
 import { StaffAdmin } from '@/components/StaffAdmin';
+import { SeedDataAdmin } from '@/components/SeedDataAdmin';
 import { Skeleton } from '@/components/Skeleton';
 
 /**
@@ -235,6 +236,8 @@ function AdminDashboardContent({ user }: { user: any }) {
           </div>
         </div>
       </div>
+
+      <SeedDataAdmin />
     </div>
   );
 }

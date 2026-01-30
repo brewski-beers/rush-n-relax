@@ -1,0 +1,126 @@
+.seed-data-admin {
+  margin: 2rem 0;
+  padding: 2rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid #0f3460;
+  border-radius: 12px;
+}
+
+.seed-section {
+  max-width: 600px;
+}
+
+.seed-section h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  color: #ffffff;
+}
+
+.seed-description {
+  margin: 0 0 1.5rem 0;
+  color: #a0aec0;
+  line-height: 1.6;
+}
+
+.seed-error {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: #742a2a;
+  border: 1px solid #f56565;
+  border-radius: 6px;
+  color: #fbb6ce;
+  font-size: 0.95rem;
+}
+
+.seed-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.seed-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.seed-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.seed-button-categories {
+  background-color: #0f3460;
+  color: #e0e7ff;
+  border: 1px solid #1e5a8e;
+}
+
+.seed-button-categories:hover:not(:disabled) {
+  background-color: #1e5a8e;
+  border-color: #3182ce;
+}
+
+.seed-button-products {
+  background-color: #0f3460;
+  color: #e0e7ff;
+  border: 1px solid #1e5a8e;
+}
+
+.seed-button-products:hover:not(:disabled) {
+  background-color: #1e5a8e;
+  border-color: #3182ce;
+}
+
+.seed-result {
+  padding: 0.75rem 1rem;
+  background-color: #1a2e1a;
+  border: 1px solid #2d5016;
+  border-radius: 6px;
+  color: #86efac;
+  font-size: 0.9rem;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.seed-info {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: rgba(15, 52, 96, 0.3);
+  border-left: 4px solid #3182ce;
+  border-radius: 4px;
+}
+
+.seed-info p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #cbd5e0;
+  line-height: 1.5;
+}
+
+.seed-info p:first-child {
+  margin-top: 0;
+}
+
+.seed-info p:last-child {
+  margin-bottom: 0;
+}
+
+.seed-info strong {
+  color: #e0e7ff;
+}

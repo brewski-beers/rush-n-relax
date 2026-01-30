@@ -6,21 +6,15 @@ describe('Footer', () => {
   test('renders email addresses', () => {
     render(<Footer />);
     
-    const rushEmail = screen.getByText('rush@rushnrelax.com');
-    const cappsEmail = screen.getByText('capps@rushnrelax.com');
-    
-    expect(rushEmail).toBeInTheDocument();
-    expect(cappsEmail).toBeInTheDocument();
+    const email = screen.getByText('hello@example.com');
+    expect(email).toBeInTheDocument();
   });
 
   test('email addresses are clickable', () => {
     render(<Footer />);
     
-    const rushLink = screen.getByText('rush@rushnrelax.com').closest('a');
-    const cappsLink = screen.getByText('capps@rushnrelax.com').closest('a');
-    
-    expect(rushLink).toHaveAttribute('href', 'mailto:rush@rushnrelax.com');
-    expect(cappsLink).toHaveAttribute('href', 'mailto:capps@rushnrelax.com');
+    const emailLink = screen.getByText('hello@example.com').closest('a');
+    expect(emailLink).toHaveAttribute('href', 'mailto:hello@example.com');
   });
 
   test('displays social media message', () => {

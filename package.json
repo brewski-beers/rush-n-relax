@@ -22,8 +22,6 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "seed:categories": "tsx scripts/seed-categories.ts",
-    "seed:products": "tsx scripts/seed-products.ts",
     "functions:shell": "firebase functions:shell",
     "functions:logs": "firebase functions:log"
   },
