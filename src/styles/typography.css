@@ -1,0 +1,225 @@
+/**
+ * Typography and Font Optimization
+ * Font loading with font-display: swap for performance
+ */
+
+/* System font stack (fastest) */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  --font-mono: 'Monaco', 'Courier New', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: #e8e8e8;
+  margin-bottom: 0.5rem;
+}
+
+h1 {
+  font-size: 1.875rem;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+
+h3 {
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+h4 {
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+
+h5,
+h6 {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Body text */
+p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #b0b0b0;
+  margin-bottom: 1rem;
+}
+
+p strong {
+  font-weight: 600;
+  color: #e8e8e8;
+}
+
+p em {
+  font-style: italic;
+  color: #c0c0c0;
+}
+
+/* Lists */
+ul,
+ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+ul li,
+ol li {
+  margin-bottom: 0.5rem;
+  color: #b0b0b0;
+}
+
+/* Code */
+code {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  color: #d5b36a;
+}
+
+pre {
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  color: #e8e8e8;
+}
+
+/* Blockquote */
+blockquote {
+  border-left: 4px solid #d5b36a;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #b0b0b0;
+  font-style: italic;
+}
+
+/* Links */
+a {
+  color: #d5b36a;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #e8d4a2;
+  text-decoration: underline;
+}
+
+a:visited {
+  color: #b8934a;
+}
+
+/* Small text */
+small,
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Text alignment utilities */
+.text-left {
+  text-align: left;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-justify {
+  text-align: justify;
+}
+
+/* Text transformation */
+.uppercase {
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.lowercase {
+  text-transform: lowercase;
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+/* Text colors */
+.text-primary {
+  color: #2f3b32;
+}
+
+.text-secondary {
+  color: #d5b36a;
+}
+
+.text-muted {
+  color: #b0b0b0;
+}
+
+.text-error {
+  color: #ff6b6b;
+}
+
+.text-success {
+  color: #51cf66;
+}
+
+.text-warning {
+  color: #ffd93d;
+}
+
+/* Text weight utilities */
+.font-light {
+  font-weight: 300;
+}
+
+.font-normal {
+  font-weight: 400;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}

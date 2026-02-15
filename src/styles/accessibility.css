@@ -1,0 +1,268 @@
+/**
+ * Accessibility Styles
+ * WCAG 2.1 AA compliance patterns
+ */
+
+/* Focus management */
+*:focus-visible {
+  outline: 2px solid #d5b36a;
+  outline-offset: 2px;
+}
+
+/* Remove focus outline for mouse users  */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Ensure interactive elements are keyboard accessible */
+a,
+button,
+input,
+textarea,
+select {
+  outline-offset: 2px;
+}
+
+/* Skip to main content link (visible on focus) */
+.skip-to-main {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #d5b36a;
+  color: #181c1f;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 100;
+}
+
+.skip-to-main:focus {
+  top: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: more) {
+  button,
+  .btn {
+    border: 2px solid currentColor;
+  }
+
+  a {
+    text-decoration: underline;
+  }
+
+  input,
+  textarea,
+  select {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Color contrast - dark mode text on light backgrounds */
+@media (prefers-color-scheme: light) {
+  body {
+    background-color: #fafafa;
+    color: #181c1f;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #181c1f;
+  }
+
+  p {
+    color: #404040;
+  }
+
+  a {
+    color: #2f3b32;
+  }
+
+  a:visited {
+    color: #4a5a4d;
+  }
+
+  button,
+  .btn {
+    background-color: #2f3b32;
+    color: #fafafa;
+    border-color: #2f3b32;
+  }
+
+  button:hover,
+  .btn:hover {
+    background-color: #d5b36a;
+    color: #181c1f;
+    border-color: #d5b36a;
+  }
+
+  input,
+  textarea,
+  select {
+    background-color: #ffffff;
+    color: #181c1f;
+    border-color: #d0d0d0;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: #2f3b32;
+  }
+
+  header {
+    background-color: #fafafa;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  footer {
+    background-color: #f0f0f0;
+    border-top: 1px solid #e0e0e0;
+  }
+}
+
+/* Visually hidden content - still accessible to screen readers */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus visible on larger touch targets */
+@media (pointer: coarse) {
+  a,
+  button,
+  input,
+  textarea,
+  select {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  button,
+  .btn {
+    padding: 12px 24px;
+  }
+
+  nav a {
+    padding: 12px;
+  }
+}
+
+/* Ensure text readable on any background */
+.text-readable {
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Loading state for buttons */
+button:disabled,
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Error states with color + icon */
+[role='alert'],
+.alert {
+  padding: 1rem;
+  border-radius: 0.25rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid;
+}
+
+.alert-error {
+  background-color: rgba(255, 107, 107, 0.1);
+  border-left-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.alert-success {
+  background-color: rgba(81, 207, 102, 0.1);
+  border-left-color: #51cf66;
+  color: #51cf66;
+}
+
+.alert-warning {
+  background-color: rgba(255, 217, 61, 0.1);
+  border-left-color: #ffd93d;
+  color: #ffd93d;
+}
+
+.alert-info {
+  background-color: rgba(74, 144, 226, 0.1);
+  border-left-color: #4a90e2;
+  color: #4a90e2;
+}
+
+/* Form field validation states */
+input:valid {
+  border-color: #51cf66;
+}
+
+input:invalid {
+  border-color: #ff6b6b;
+}
+
+/* Required field indicator */
+label::after {
+  content: '';
+}
+
+label.required::after {
+  content: ' *';
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+/* Image alt text fallback for missing images */
+img:invalid {
+  background-color: #f0f0f0;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  font-size: 0.875rem;
+}
+
+/* Links in text should be distinct */
+body p a {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+body p a:hover {
+  text-decoration: none;
+}
+
+/* Reduce motion for animations */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    opacity: 0.7;
+    border-top-color: transparent;
+    border-right-color: #d5b36a;
+  }
+}

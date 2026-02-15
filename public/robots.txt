@@ -1,0 +1,16 @@
+# Rush N Relax - SEO Crawling Rules
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api
+Disallow: /.env
+Disallow: /.git
+Disallow: /node_modules
+Disallow: /dist
+Disallow: /functions
+
+# Specify sitemap
+Sitemap: https://www.rushnrelax.com/sitemap.xml
+
+# Crawl delay (ms) to be respectful
+Crawl-delay: 1

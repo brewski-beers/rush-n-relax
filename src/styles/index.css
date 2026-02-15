@@ -1,0 +1,25 @@
+/**
+ * Global Stylesheet
+ * Imports all CSS modules in performance-optimized order
+ */
+
+/* Critical path styles (can be inlined in head for best performance) */
+@import './critical.css';
+
+/* Reset and base styles */
+@import './reset.css';
+
+/* Mobile-first base styles (320px) */
+@import './mobile-base.css';
+
+/* Responsive breakpoints */
+@import './responsive.css';
+
+/* Typography and fonts */
+@import './typography.css';
+
+/* Utility classes */
+@import './utilities.css';
+
+/* Accessibility patterns and high contrast support */
+@import './accessibility.css';
