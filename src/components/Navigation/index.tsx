@@ -88,7 +88,7 @@ export function Navigation() {
                   {SOCIAL_LINKS.map((social) => {
                     return (
                       <a
-                        key={social.name}
+                        key={social.id}
                         href={social.url}
                         target="_blank"
                         rel="noopener noreferrer"

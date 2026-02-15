@@ -21,6 +21,7 @@ export interface SocialIconObject {
 }
 
 export interface SocialLink {
+  id: SocialId;
   name: string;
   url: string;
   icon: string | SocialIconObject;
@@ -34,18 +35,21 @@ export const isSocialIconObject = (icon: string | SocialIconObject): icon is Soc
 
 export const SOCIAL_METADATA: Record<SocialId, SocialLink> = {
   [SocialId.FACEBOOK_MARYVILLE]: {
+    id: SocialId.FACEBOOK_MARYVILLE,
     name: 'Facebook',
     url: 'https://www.facebook.com/profile.php?id=61585628978171',
     icon: { src: facebookIcon, alt: 'Facebook' },
     ariaLabel: 'Visit Rush N Relax Maryville on Facebook',
   },
   [SocialId.FACEBOOK_OAK_RIDGE]: {
+    id: SocialId.FACEBOOK_OAK_RIDGE,
     name: 'Facebook',
     url: 'https://www.facebook.com/search/top/?q=rush%20n%20relax%20oak%20ridge',
     icon: { src: facebookIcon, alt: 'Facebook' },
     ariaLabel: 'Visit Rush N Relax Oak Ridge on Facebook',
   },
   [SocialId.FACEBOOK_SEYMOUR]: {
+    id: SocialId.FACEBOOK_SEYMOUR,
     name: 'Facebook',
     url: 'https://www.facebook.com/profile.php?id=61585953144207',
     icon: { src: facebookIcon, alt: 'Facebook' },
