@@ -46,14 +46,17 @@ export default function Locations() {
                     <p className="hours">
                       <strong>Hours:</strong> {location.hours}
                     </p>
-                    <a
-                      href={`tel:${location.phone.replace(/\D/g, '')}`}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = `tel:${location.phone.replace(/\D/g, '')}`;
+                      }}
                       className="phone-link"
-                      onClick={(e) => e.stopPropagation()}
                       title={`Call ${location.name}`}
                     >
                       {location.phone}
-                    </a>
+                    </button>
                   </div>
                   <p className="description">{location.description}</p>
                   <span className="btn btn-secondary mt-3">
