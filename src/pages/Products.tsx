@@ -22,7 +22,7 @@ export default function Products() {
 
         <section className="products-grid-section">
           <div className="container">
-            <CardGrid columns="2" gap="lg">
+            <CardGrid columns="auto" gap="lg">
               {PRODUCTS.map((product) => (
                 <Link
                   key={product.id}
