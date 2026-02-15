@@ -6,7 +6,7 @@
 /* 375px - iPhone SE and small phones */
 @media (min-width: 375px) {
   main {
-    padding: 1.25rem;
+    padding: 0.75rem;
   }
 
   h1 {
@@ -21,29 +21,21 @@
     font-size: 1.0625rem;
   }
 
-  /* Location cards */
-  .location-info-section {
-    padding: 1.5rem 1rem;
-  }
-
+  /* Location cards stay single column */
   .location-detail-grid {
-    gap: 1.25rem;
+    gap: 0.75rem;
   }
 
   .info-card {
-    padding: 1.25rem;
-  }
-
-  .info-card h2 {
-    font-size: 1.2rem;
+    padding: 1rem;
   }
 
   .cta-buttons {
-    gap: 1rem;
+    gap: 0.75rem;
   }
 
   .map-container iframe {
-    height: 400px;
+    height: 350px;
   }
 }
 
@@ -102,8 +94,9 @@
     margin-bottom: 3rem;
   }
 
-  /* Location cards on tablets */
+  /* Location cards on tablets - switch to 2-column */
   .location-detail-grid {
+    display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
   }
@@ -117,7 +110,12 @@
   }
 
   .cta-buttons {
-    gap: 1.5rem;
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .cta-buttons .btn {
+    flex: 1;
   }
 }
 
