@@ -372,7 +372,7 @@
 @media (max-width: 767px) {
   .modal-backdrop,
   .modal-content {
-    display: none;
+    display: none !important;
   }
 
   .mobile-drawer {
@@ -390,6 +390,10 @@
 
 /* Desktop: Show radial menu, hide mobile drawer */
 @media (min-width: 768px) {
+  .nav-toggle {
+    display: none;
+  }
+
   .mobile-drawer {
     display: none;
   }
