@@ -1,198 +1,54 @@
 /**
- * Responsive Styles
- * Mobile-first breakpoints: 375px (iPhone SE), 768px (tablet), 1024px (desktop)
+ * Component Responsive Styles
+ * Works alongside containers.css breakpoint system
+ * Breakpoints: sm:640px | md:768px | lg:1024px | xl:1280px
+ * Component-specific responsive rules only
  */
 
-/* 375px - iPhone SE and small phones */
-@media (min-width: 375px) {
-  main {
-    padding: 0.75rem;
-  }
-
+/* Typography Responsive Sizes */
+@media (min-width: 640px) {
   h1 {
-    font-size: 2.25rem; /* 36px */
+    font-size: 2.25rem;
   }
 
   h2 {
-    font-size: 1.75rem; /* 28px */
+    font-size: 1.75rem;
   }
 
   p {
     font-size: 1.0625rem;
   }
-
-  /* Location cards stay single column */
-  .location-detail-grid {
-    gap: 0.75rem;
-  }
-
-  .info-card {
-    padding: 1rem;
-  }
-
-  .cta-buttons {
-    gap: 0.75rem;
-  }
-
-  .map-container iframe {
-    height: 350px;
-  }
 }
 
-/* 768px - Tablets */
 @media (min-width: 768px) {
-  main {
-    padding: 2rem;
-  }
-
   h1 {
-    font-size: 2.75rem; /* 44px */
+    font-size: 2.75rem;
   }
 
   h2 {
-    font-size: 2rem; /* 32px */
+    font-size: 2rem;
   }
 
   h3 {
-    font-size: 1.5rem; /* 24px */
+    font-size: 1.5rem;
   }
 
   p {
     font-size: 1.125rem;
   }
-
-  .container {
-    max-width: 728px;
-    margin: 0 auto;
-  }
-
-  /* Grid layouts for tablets */
-  .grid-2 {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
-  }
-
-  nav ul {
-    gap: 2rem;
-  }
-
-  form {
-    max-width: 80%;
-    margin: 0 auto;
-  }
-
-  header {
-    padding: 1.5rem 2rem;
-  }
-
-  footer {
-    padding: 3rem 2rem;
-  }
-
-  section {
-    margin-bottom: 3rem;
-  }
-
-  /* Location cards on tablets - switch to 2-column */
-  .location-detail-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
-  }
-
-  .info-card {
-    padding: 1.5rem;
-  }
-
-  .map-container iframe {
-    height: 450px;
-  }
-
-  .cta-buttons {
-    flex-direction: row;
-    gap: 1rem;
-  }
-
-  .cta-buttons .btn {
-    flex: 1;
-  }
 }
 
-/* 1024px - Desktop and larger */
 @media (min-width: 1024px) {
-  main {
-    padding: 3rem;
-  }
-
   h1 {
-    font-size: 3.5rem; /* 56px */
+    font-size: 3.5rem;
   }
 
   h2 {
-    font-size: 2.5rem; /* 40px */
-  }
-
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  /* Grid for desktop */
-  .grid-2 {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 3rem;
-  }
-
-  .grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 3rem;
-  }
-
-  /* Hide hamburger on desktop */
-  .hamburger-btn {
-    display: none;
-  }
-
-  /* Show desktop nav */
-  nav {
-    display: block;
-  }
-
-  form {
-    max-width: 60%;
-    margin: 0 auto;
-  }
-
-  section {
-    margin-bottom: 4rem;
-  }
-
-  footer {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 3rem;
-    text-align: left;
-  }
-
-  .footer-section {
-    text-align: left;
-  }
-
-  .footer-section h3 {
-    margin-bottom: 1rem;
+    font-size: 2.5rem;
   }
 }
 
-/* Tablet and up: Hide mobile menu button, show nav */
-@media (min-width: 768px) {
-  .mobile-nav-toggle {
-    display: none;
-  }
-}
-
-/* Mobile only: Hamburger menu and drawer */
+/* Navigation - Mobile only */
 @media (max-width: 767px) {
   nav {
     display: none;
@@ -259,26 +115,50 @@
   .mobile-nav-toggle.active span:nth-child(3) {
     transform: rotate(-45deg) translate(8px, -8px);
   }
+}
 
-  /* Tablet grid layouts */
+/* Navigation - Tablet and up */
+@media (min-width: 768px) {
+  .mobile-nav-toggle {
+    display: none;
+  }
+
+  nav {
+    display: block !important;
+    position: static !important;
+    background: none !important;
+    backdrop-filter: none !important;
+    z-index: auto !important;
+    min-height: auto !important;
+    padding: 0 !important;
+  }
+
+  nav ul {
+    gap: 2rem;
+  }
+
+  nav li {
+    border-bottom: none !important;
+  }
+
+  nav a {
+    padding: 0.5rem;
+    width: auto;
+    justify-content: center;
+  }
+}
+
+/* Grid Layout Responsive */
+@media (min-width: 640px) {
   .values-grid,
-  .team-grid,
-  .locations-grid {
+  .team-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
   }
 
-  .hero-ctas {
-    flex-direction: row;
-  }
-
-  .contact-methods {
-    flex-direction: row;
+  .locations-grid {
+    grid-template-columns: repeat(2, 1fr);
     gap: 2rem;
-  }
-
-  .contact-method {
-    flex: 1;
   }
 
   .info-grid {
@@ -287,31 +167,48 @@
   }
 }
 
-/* Desktop: 3 columns */
+@media (min-width: 768px) {
+  form {
+    max-width: 80%;
+    margin: 0 auto;
+  }
+
+  .location-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  .info-card {
+    padding: 1.5rem;
+  }
+
+  .social-links-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .cta-buttons {
+    flex-direction: row;
+    gap: 1rem;
+  }
+
+  .cta-buttons .btn {
+    flex: 1;
+  }
+}
+
 @media (min-width: 1024px) {
   .values-grid,
-  .team-grid,
-  .locations-grid {
+  .team-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 3rem;
   }
 
-  .location-detail-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .locations-grid {
+    grid-template-columns: repeat(3, 1fr);
     gap: 3rem;
-  }
-
-  .location-map-section {
-    padding: 3rem 1rem;
-  }
-
-  .map-container {
-    max-width: 100%;
-    margin-bottom: 2rem;
-  }
-
-  .map-container iframe {
-    height: 550px;
   }
 
   .info-grid {
@@ -319,27 +216,41 @@
     gap: 3rem;
   }
 
-  .hero-ctas {
-    flex-direction: row;
-    gap: 2rem;
+  form {
+    max-width: 60%;
+    margin: 0 auto;
   }
 
-  .cta-buttons {
-    flex-direction: row;
-    gap: 2rem;
-  }
-
-  .cta-buttons .btn {
-    flex: 1;
-  }
-
-  .contact-methods {
-    flex-direction: row;
+  .location-detail-grid {
+    grid-template-columns: repeat(2, 1fr);
     gap: 3rem;
   }
 
-  .contact-method {
-    flex: 1;
+  .map-container iframe {
+    height: 550px;
+  }
+}
+
+/* Map Container */
+.map-container iframe {
+  height: 300px;
+}
+
+@media (min-width: 640px) {
+  .map-container iframe {
+    height: 350px;
+  }
+}
+
+@media (min-width: 768px) {
+  .map-container iframe {
+    height: 450px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .map-container iframe {
+    height: 550px;
   }
 }
 
@@ -368,9 +279,5 @@
   nav,
   footer {
     display: none;
-  }
-
-  main {
-    padding: 0;
   }
 }

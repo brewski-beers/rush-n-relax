@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Navigation } from '../components/Navigation';
-import { Footer } from '../components/Footer';
 import { getLocationBySlug, getLocationSEO } from '../constants/locations';
+import { getSocialLink, isSocialIconObject } from '../constants/social';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -18,84 +17,47 @@ export default function LocationDetail() {
     }
   }, [location, navigate]);
 
-  // Update SEO meta tags
+  // Update SEO meta tags and JSON-LD schemas (with proper cleanup)
   useEffect(() => {
     if (!location) return;
 
     const seo = getLocationSEO(location);
     document.title = seo.title;
 
-    // Description
+    // Helper: Reuse or create meta tags by selector
+    const setMeta = (selector: string, content: string) => {
+      let el = document.querySelector(selector);
+      if (!el) {
+        el = document.createElement('meta');
+        if (selector.includes('[property=')) {
+          const prop = selector.match(/property="([^"]+)"/)?.[1];
+          if (prop) el.setAttribute('property', prop);
+        } else {
+          const name = selector.match(/name="([^"]+)"/)?.[1];
+          if (name) el.setAttribute('name', name);
+        }
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    };
+
+    // Update description meta
     const descMeta = document.querySelector('meta[name="description"]');
     if (descMeta) descMeta.setAttribute('content', seo.description);
 
-    // Keywords
-    let keywordsMeta = document.querySelector('meta[name="keywords"]');
-    if (!keywordsMeta) {
-      keywordsMeta = document.createElement('meta');
-      keywordsMeta.setAttribute('name', 'keywords');
-      document.head.appendChild(keywordsMeta);
-    }
-    keywordsMeta.setAttribute('content', seo.keywords);
+    // Update or create additional meta tags
+    setMeta('meta[name="keywords"]', seo.keywords);
 
-    // Open Graph
-    let ogTitle = document.querySelector('meta[property="og:title"]');
-    if (!ogTitle) {
-      ogTitle = document.createElement('meta');
-      ogTitle.setAttribute('property', 'og:title');
-      document.head.appendChild(ogTitle);
-    }
-    ogTitle.setAttribute('content', seo.title);
+    // Open Graph Meta Tags
+    setMeta('meta[property="og:title"]', seo.title);
+    setMeta('meta[property="og:description"]', seo.description);
+    setMeta('meta[property="og:url"]', seo.url);
+    setMeta('meta[property="og:image"]', 'https://www.rushnrelax.com/og-image.png');
+    setMeta('meta[property="og:image:width"]', '1200');
+    setMeta('meta[property="og:image:height"]', '630');
 
-    let ogDesc = document.querySelector('meta[property="og:description"]');
-    if (!ogDesc) {
-      ogDesc = document.createElement('meta');
-      ogDesc.setAttribute('property', 'og:description');
-      document.head.appendChild(ogDesc);
-    }
-    ogDesc.setAttribute('content', seo.description);
-
-    let ogUrl = document.querySelector('meta[property="og:url"]');
-    if (!ogUrl) {
-      ogUrl = document.createElement('meta');
-      ogUrl.setAttribute('property', 'og:url');
-      document.head.appendChild(ogUrl);
-    }
-    ogUrl.setAttribute('content', seo.url);
-
-    // og:image for social sharing
-    let ogImage = document.querySelector('meta[property="og:image"]');
-    if (!ogImage) {
-      ogImage = document.createElement('meta');
-      ogImage.setAttribute('property', 'og:image');
-      document.head.appendChild(ogImage);
-    }
-    ogImage.setAttribute('content', 'https://www.rushnrelax.com/og-image.png');
-
-    let ogImageWidth = document.querySelector('meta[property="og:image:width"]');
-    if (!ogImageWidth) {
-      ogImageWidth = document.createElement('meta');
-      ogImageWidth.setAttribute('property', 'og:image:width');
-      document.head.appendChild(ogImageWidth);
-    }
-    ogImageWidth.setAttribute('content', '1200');
-
-    let ogImageHeight = document.querySelector('meta[property="og:image:height"]');
-    if (!ogImageHeight) {
-      ogImageHeight = document.createElement('meta');
-      ogImageHeight.setAttribute('property', 'og:image:height');
-      document.head.appendChild(ogImageHeight);
-    }
-    ogImageHeight.setAttribute('content', '630');
-
-    // Twitter image
-    let twitterImage = document.querySelector('meta[name="twitter:image"]');
-    if (!twitterImage) {
-      twitterImage = document.createElement('meta');
-      twitterImage.setAttribute('name', 'twitter:image');
-      document.head.appendChild(twitterImage);
-    }
-    twitterImage.setAttribute('content', 'https://www.rushnrelax.com/twitter-image.png');
+    // Twitter Meta Tags
+    setMeta('meta[name="twitter:image"]', 'https://www.rushnrelax.com/twitter-image.png');
 
     // Canonical URL
     let canonical = document.querySelector('link[rel="canonical"]');
@@ -106,15 +68,11 @@ export default function LocationDetail() {
     }
     canonical.setAttribute('href', seo.url);
 
-    // Remove old location schemas (LocalBusiness and Breadcrumb)
-    const existingSchemas = document.querySelectorAll('script[type="application/ld+json"]');
-    existingSchemas.forEach((script) => {
-      const content = script.textContent;
-      if (content && (content.includes('LocalBusiness') || content.includes('BreadcrumbList'))) {
-        script.remove();
-      }
-    });
+    // Remove old location-specific schemas
+    const oldSchemas = document.querySelectorAll('script[data-location-schema]');
+    oldSchemas.forEach((script) => script.remove());
 
+    // LocalBusiness JSON-LD Schema
     const schema = {
       '@context': 'https://schema.org',
       '@type': 'LocalBusiness',
@@ -147,6 +105,7 @@ export default function LocationDetail() {
 
     const schemaEl = document.createElement('script');
     schemaEl.setAttribute('type', 'application/ld+json');
+    schemaEl.setAttribute('data-location-schema', location.id.toString());
     schemaEl.textContent = JSON.stringify(schema);
     document.head.appendChild(schemaEl);
 
@@ -178,17 +137,24 @@ export default function LocationDetail() {
 
     const breadcrumbEl = document.createElement('script');
     breadcrumbEl.setAttribute('type', 'application/ld+json');
+    breadcrumbEl.setAttribute('data-location-schema', `breadcrumb-${location.id}`);
     breadcrumbEl.textContent = JSON.stringify(breadcrumbSchema);
     document.head.appendChild(breadcrumbEl);
+
+    // Cleanup: Remove schemas when component unmounts or location changes
+    return () => {
+      const toRemove = document.querySelectorAll(
+        `script[data-location-schema="${location.id}"], script[data-location-schema="breadcrumb-${location.id}"]`
+      );
+      toRemove.forEach((el) => el.remove());
+    };
   }, [location]);
 
   if (!location) return null;
 
   return (
-    <>
-      <Navigation />
-      <main className="location-detail-page">
-        <section className="location-hero">
+    <main className="location-detail-page">
+      <section className="location-hero">
           <div className="container">
             <h1>{location.name}</h1>
             <p className="lead">{location.description}</p>
@@ -221,6 +187,37 @@ export default function LocationDetail() {
                 </a>
                 <p className="text-secondary">Available during business hours</p>
               </div>
+
+              {location.socialLinkIds && location.socialLinkIds.length > 0 && (
+                <div className="info-card glass">
+                  <h2>Follow Us</h2>
+                  <div className="social-links-grid">
+                    {location.socialLinkIds.map((socialId) => {
+                      const social = getSocialLink(socialId);
+                      return (
+                        <a
+                          key={socialId}
+                          href={social.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-link-item"
+                          aria-label={social.ariaLabel}
+                          title={social.name}
+                        >
+                          <span className="social-icon">
+                            {isSocialIconObject(social.icon) ? (
+                              <img src={social.icon.src} alt={social.icon.alt} className="social-icon-img" />
+                            ) : (
+                              social.icon
+                            )}
+                          </span>
+                          <span className="social-name">{social.name}</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {location.coordinates && (
                 <div className="info-card glass">
@@ -294,7 +291,5 @@ export default function LocationDetail() {
           </div>
         </section>
       </main>
-      <Footer />
-    </>
-  );
-}
+    );
+  }

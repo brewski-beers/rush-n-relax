@@ -1,7 +1,5 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Navigation } from '../components/Navigation';
-import { Footer } from '../components/Footer';
 import { LOCATIONS } from '../constants/locations';
 
 export default function Locations() {
@@ -17,10 +15,8 @@ export default function Locations() {
   }, []);
 
   return (
-    <>
-      <Navigation />
-      <main className="locations-page">
-        <section id="locations-hero" className="locations-hero">
+    <main className="locations-page">
+      <section id="locations-hero" className="locations-hero">
           <div className="container">
             <h1>Our Locations</h1>
             <p className="lead">
@@ -103,7 +99,5 @@ export default function Locations() {
           </div>
         </section>
       </main>
-      <Footer />
-    </>
-  );
+    );
 }

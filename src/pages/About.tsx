@@ -1,6 +1,4 @@
 import { useEffect } from 'react';
-import { Navigation } from '../components/Navigation';
-import { Footer } from '../components/Footer';
 
 export default function About() {
   useEffect(() => {
@@ -15,9 +13,7 @@ export default function About() {
   }, []);
 
   return (
-    <>
-      <Navigation />
-      <main className="about-page">
+    <main className="about-page">
         <section id="about-hero" className="about-hero">
           <div className="container">
             <h1>About Rush N Relax</h1>
@@ -100,8 +96,6 @@ export default function About() {
             </a>
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }

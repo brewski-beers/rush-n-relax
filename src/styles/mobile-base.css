@@ -26,18 +26,16 @@
 main {
   flex: 1;
   width: 100%;
-  padding: 0.5rem;
   max-width: 100%;
   overflow-x: hidden;
+  padding-top: 1.5rem;
 }
 
 /* Sections */
 section {
-  margin-bottom: 2rem;
-}
-
-section:last-child {
-  margin-bottom: 0;
+  width: 100%;
+  overflow-x: hidden;
+  padding-top: 1rem;
 }
 
 /* Header and Navigation */
@@ -395,7 +393,10 @@ button:focus-visible,
 .hero,
 .about-hero,
 .locations-hero,
-.contact-hero {
+.contact-hero,
+.products-hero,
+.product-hero,
+.location-hero {
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 100%);
   padding: 3rem 1rem;
   text-align: center;
@@ -409,7 +410,10 @@ button:focus-visible,
 .hero h1,
 .about-hero h1,
 .locations-hero h1,
-.contact-hero h1 {
+.contact-hero h1,
+.products-hero h1,
+.product-hero h1,
+.location-hero h1 {
   color: #d5b36a;
   font-size: 2.5rem;
   margin-bottom: 1rem;
@@ -455,17 +459,22 @@ button:focus-visible,
   grid-template-columns: 1fr;
   gap: 1.5rem;
   margin: 2rem 0;
+  width: 100%;
+  min-width: 0;
 }
 
 .value-card,
 .team-member,
 .location-card,
 .info-card {
-  padding: 1.5rem;
+  padding: 1rem;
   background-color: rgba(16, 24, 21, 0.5);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.5rem;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .value-card h3,
@@ -518,6 +527,94 @@ address {
   color: #e8d4a2;
 }
 
+/* Location Contact Section */
+.location-contact {
+  padding: 1.5rem 1rem;
+  background: linear-gradient(180deg, rgba(15, 20, 25, 0.5) 0%, rgba(15, 20, 25, 0.7) 100%);
+}
+
+.location-contact h2 {
+  color: #d5b36a;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+
+.section-lead {
+  font-size: 1rem;
+  color: #b0b0b0;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.locations-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.location-card {
+  padding: 1rem;
+  background-color: rgba(16, 24, 21, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.location-card:hover {
+  background-color: rgba(16, 24, 21, 0.7);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.location-card h3 {
+  color: #d5b36a;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.location-address {
+  color: #b0b0b0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.location-contact-info {
+  margin: 0.75rem 0;
+}
+
+.location-contact-info p {
+  color: #c0c0c0;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.location-contact-info strong {
+  color: #d5b36a;
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.location-contact-info a {
+  color: #d5b36a;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s ease;
+  word-break: break-word;
+}
+
+.location-contact-info a:hover {
+  color: #e8d4a2;
+}
+
 /* Blur content when age gate is active */
 .content-wrapper.age-gate-blur {
   display: none;
@@ -526,24 +623,6 @@ address {
 /* Location Detail Page */
 .location-detail-page {
   min-height: 100vh;
-}
-
-.location-hero {
-  padding: 2rem 1rem;
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.location-hero h1 {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  color: #e8e8e8;
-}
-
-.location-hero .lead {
-  font-size: 1.1rem;
-  color: #b0b0b0;
-  margin: 0;
 }
 
 .location-info-section {
@@ -819,4 +898,55 @@ address {
   font-size: 0.9rem;
   color: #909090;
   margin-bottom: 0.5rem;
+}
+
+/* Social Links Grid */
+.social-links-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.social-link-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: rgba(213, 179, 106, 0.05);
+  border: 1px solid rgba(213, 179, 106, 0.15);
+  text-decoration: none;
+  color: #c8c8c8;
+  transition: all 0.3s ease;
+}
+
+.social-link-item:hover {
+  background-color: rgba(213, 179, 106, 0.1);
+  border-color: rgba(213, 179, 106, 0.3);
+  color: #d5b36a;
+  transform: translateX(4px);
+}
+
+.social-link-item:active {
+  transform: translateX(2px);
+}
+
+.social-icon {
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+}
+
+.social-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.social-icon-img {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: block;
+  transition: all 0.2s ease;
 }

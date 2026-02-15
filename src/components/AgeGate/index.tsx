@@ -121,7 +121,11 @@ export function AgeGate() {
             </div>
           </div>
 
-          {error && <p className="age-gate-error">{error}</p>}
+          {error && (
+            <p className="age-gate-error" role="alert" aria-live="polite">
+              {error}
+            </p>
+          )}
 
           <button type="submit" className="btn btn-primary age-gate-button">
             Enter

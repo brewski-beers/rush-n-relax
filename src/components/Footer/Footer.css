@@ -1,130 +1,138 @@
 /**
  * Footer Component Styles
+ * Minimal sticky footer on desktop, hidden on mobile
  */
 
-.footer {
-  position: relative;
-  z-index: 20;
-  background-color: rgba(15, 20, 25, 0.95);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  margin-top: auto;
-  padding: 2rem 1rem;
+/* Hide footer on mobile */
+@media (max-width: 767px) {
+  .footer {
+    display: none;
+  }
 }
 
-.footer-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-.footer-section {
-  flex: 1;
-}
-
-.footer-section h3 {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  color: #d5b36a;
-}
-
-.footer-section p {
-  font-size: 0.875rem;
-  line-height: 1.6;
-  color: #b0b0b0;
-  margin: 0;
-}
-
-.footer-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.footer-list li {
-  font-size: 0.875rem;
-}
-
-.footer-list a {
-  color: #b0b0b0;
-  text-decoration: none;
-  transition: color 0.2s ease;
-  display: inline-block;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  padding: 6px 0;
-}
-
-.footer-list a:hover {
-  color: #d5b36a;
-}
-
-.footer-list span {
-  color: #b0b0b0;
-  display: flex;
-  align-items: center;
-  min-height: 48px;
-}
-
-.footer-bottom {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-top: 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  text-align: center;
-  font-size: 0.75rem;
-  color: #909090;
-}
-
-.footer-bottom p {
-  margin: 0.5rem 0;
-}
-
-/* Tablet layout: 2 columns */
+/* Desktop/Web Footer - Sticky */
 @media (min-width: 768px) {
   .footer {
-    padding: 3rem 2rem;
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    background-color: rgba(15, 20, 25, 0.98);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.25rem 2rem;
   }
 
-  .footer-content {
-    flex-direction: row;
-    gap: 3rem;
-    margin-bottom: 3rem;
+  .footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
   }
 
-  .footer-section {
-    flex: 1;
-    text-align: left;
+  /* Branding */
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    white-space: nowrap;
   }
 
+  .footer-brand h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+    color: #d5b36a;
+    letter-spacing: 0.5px;
+  }
+
+  .footer-tagline {
+    font-size: 0.75rem;
+    color: #909090;
+    margin: 0;
+  }
+
+  /* Social Links - Horizontal Container */
+  .footer-social {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .social-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: #d5b36a;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 1.25rem;
+  }
+
+  .social-icon:hover {
+    color: #e8d4a2;
+    transform: scale(1.1);
+  }
+
+  .social-icon-img {
+    width: 20px;
+    height: 20px;
+    display: block;
+    transition: all 0.2s ease;
+  }
+
+  .social-icon:hover .social-icon-img {
+    filter: brightness(0.8);
+  }
+
+  /* Footer Bottom */
   .footer-bottom {
     display: flex;
-    justify-content: space-between;
+    gap: 1.5rem;
     align-items: center;
-    text-align: left;
+    font-size: 0.75rem;
+    color: #909090;
+    white-space: nowrap;
   }
 
   .footer-bottom p {
     margin: 0;
   }
-}
 
-/* Desktop: 3 columns */
-@media (min-width: 1024px) {
-  .footer {
-    padding: 4rem 3rem;
+  .copyright {
+    white-space: nowrap;
   }
 
-  .footer-content {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4rem;
+  .tech-credit a {
+    color: #909090;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .tech-credit a:hover {
+    color: #d5b36a;
+  }
+
+  .legal {
+    white-space: nowrap;
+  }
+}
+
+/* Larger screens: Adjust spacing */
+@media (min-width: 1024px) {
+  .footer {
+    padding: 1.5rem 3rem;
+  }
+
+  .footer-container {
+    gap: 3rem;
+  }
+
+  .footer-social {
+    gap: 2.5rem;
   }
 }

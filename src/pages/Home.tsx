@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
-import { Navigation } from '../components/Navigation';
-import { Footer } from '../components/Footer';
+import { Link } from 'react-router-dom';
+import { CardGrid } from '../components/CardGrid';
+import { LOCATIONS } from '../constants/locations';
+import { PRODUCTS } from '../constants/products';
 
 export default function Home() {
   useEffect(() => {
@@ -15,10 +17,8 @@ export default function Home() {
   }, []);
 
   return (
-    <>
-      <Navigation />
-      <main className="home-page">
-        <section id="hero" className="hero">
+    <main className="home-page">
+      <section id="hero" className="hero">
           <div className="hero-content">
             <h1 className="hero-title">RUSH N RELAX</h1>
             <p className="hero-subtitle">
@@ -74,8 +74,6 @@ export default function Home() {
             </a>
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }

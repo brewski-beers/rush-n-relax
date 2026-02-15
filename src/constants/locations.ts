@@ -1,3 +1,5 @@
+import { SocialId } from './social';
+
 export interface Location {
   id: number;
   slug: string;
@@ -13,52 +15,56 @@ export interface Location {
     lat: number;
     lng: number;
   };
+  socialLinkIds?: SocialId[];
 }
 
 export const LOCATIONS: Location[] = [
   {
     id: 1,
     slug: 'oak-ridge',
-    name: 'Rush N Relax - Oak Ridge',
+    name: 'Oak Ridge',
     address: '110 Bus Terminal Road',
     city: 'Oak Ridge',
     state: 'TN',
     zip: '37830',
     phone: '+1 (865) 936-3069',
     hours: 'Mon-Sun: 10am - 10pm',
-    description: 'Visit our premium dispensary and lounge in Oak Ridge. Upscale atmosphere with carefully curated cannabis selection.',
+    description: 'Experience premium cannabis retail and our signature speakeasy-style lounge in Oak Ridge. Expert guidance in a sophisticated atmosphere.',
     coordinates: { lat: 36.023978, lng: -84.24072 },
+    socialLinkIds: [SocialId.FACEBOOK_OAK_RIDGE],
   },
   {
     id: 2,
     slug: 'maryville',
-    name: 'Rush N Relax - Maryville',
+    name: 'Maryville',
     address: '729 Watkins Road',
     city: 'Maryville',
     state: 'TN',
     zip: '37801',
     phone: '+1 (865) 265-4102',
     hours: 'Mon-Sun: 10am - 10pm',
-    description: 'Experience premium cannabis retail and speakeasy-style lounge in Maryville. Expert knowledge and welcoming atmosphere.',
+    description: 'Experience premium cannabis retail in Maryville. Upscale atmosphere with carefully curated selection and expert service.',
     coordinates: { lat: 35.750658, lng: -83.992662 },
+    socialLinkIds: [SocialId.FACEBOOK_MARYVILLE],
   },
   {
     id: 3,
     slug: 'seymour',
-    name: 'Rush N Relax - Seymour',
+    name: 'Seymour',
     address: '500 Maryville Hwy, Suite 205',
     city: 'Seymour',
     state: 'TN',
     zip: '37865',
     phone: '+1 (865) 415-4225',
     hours: 'Mon-Sun: 10am - 10pm',
-    description: 'Discover our Seymour location with premium selection and relaxed lounge environment. Open 7 days a week.',
+    description: 'Experience premium cannabis retail in Seymour. Relaxed lounge environment with expert selection and welcoming hospitality.',
     coordinates: { lat: 35.861584, lng: -83.770727 },
+    socialLinkIds: [SocialId.FACEBOOK_SEYMOUR],
   },
   {
     id: 4,
     slug: 'knoxville',
-    name: 'Rush N Relax - Knoxville',
+    name: 'Knoxville',
     address: '4001 Bruhin Road',
     city: 'Knoxville',
     state: 'TN',
