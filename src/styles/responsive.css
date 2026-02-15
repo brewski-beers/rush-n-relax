@@ -20,6 +20,31 @@
   p {
     font-size: 1.0625rem;
   }
+
+  /* Location cards */
+  .location-info-section {
+    padding: 1.5rem 1rem;
+  }
+
+  .location-detail-grid {
+    gap: 1.25rem;
+  }
+
+  .info-card {
+    padding: 1.25rem;
+  }
+
+  .info-card h2 {
+    font-size: 1.2rem;
+  }
+
+  .cta-buttons {
+    gap: 1rem;
+  }
+
+  .map-container iframe {
+    height: 400px;
+  }
 }
 
 /* 768px - Tablets */
@@ -75,6 +100,24 @@
 
   section {
     margin-bottom: 3rem;
+  }
+
+  /* Location cards on tablets */
+  .location-detail-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+
+  .info-card {
+    padding: 1.5rem;
+  }
+
+  .map-container iframe {
+    height: 450px;
+  }
+
+  .cta-buttons {
+    gap: 1.5rem;
   }
 }
 
