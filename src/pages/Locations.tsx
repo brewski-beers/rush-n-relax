@@ -58,7 +58,6 @@ export default function Locations() {
                       {location.phone}
                     </button>
                   </div>
-                  <p className="description">{location.description}</p>
                   <span className="btn btn-secondary mt-3">
                     View Location →
                   </span>
