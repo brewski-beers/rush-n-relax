@@ -390,12 +390,8 @@
 
 /* Desktop: Show radial menu, hide mobile drawer */
 @media (min-width: 768px) {
-  .nav-toggle {
-    display: none;
-  }
-
   .mobile-drawer {
-    display: none;
+    display: none !important;
   }
 
   .logo-text {
