@@ -49,14 +49,6 @@ export default function Contact() {
                   10:00 AM - 10:00 PM
                 </p>
               </div>
-
-              <div className="info-card glass">
-                <h3>General Inquiries</h3>
-                <p>Questions? Email us or check the footer for contact details.</p>
-                <a href="#footer" className="btn btn-secondary mt-2">
-                  View Contact Info
-                </a>
-              </div>
             </div>
           </div>
         </section>

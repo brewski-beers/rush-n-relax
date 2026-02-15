@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { LOCATIONS } from '../constants/locations';
+import AllLocationsMap from '../components/AllLocationsMap';
 
 export default function Locations() {
   useEffect(() => {
@@ -22,6 +23,14 @@ export default function Locations() {
             <p className="lead">
               Visit any of our premium locations. Open 7 days a week.
             </p>
+          </div>
+        </section>
+
+        <section id="locations-map" className="location-map-section">
+          <div className="container">
+            <h2>Find Us Across Tennessee</h2>
+            <p className="text-secondary">All Rush N Relax locations across East Tennessee</p>
+            <AllLocationsMap />
           </div>
         </section>
 

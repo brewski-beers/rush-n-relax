@@ -44,7 +44,7 @@ export const SOCIAL_METADATA: Record<SocialId, SocialLink> = {
   [SocialId.FACEBOOK_OAK_RIDGE]: {
     id: SocialId.FACEBOOK_OAK_RIDGE,
     name: 'Facebook',
-    url: 'https://www.facebook.com/search/top/?q=rush%20n%20relax%20oak%20ridge',
+    url: 'https://www.facebook.com/profile.php?id=61585846739777',
     icon: { src: facebookIcon, alt: 'Facebook' },
     ariaLabel: 'Visit Rush N Relax Oak Ridge on Facebook',
   },
@@ -54,19 +54,7 @@ export const SOCIAL_METADATA: Record<SocialId, SocialLink> = {
     url: 'https://www.facebook.com/profile.php?id=61585953144207',
     icon: { src: facebookIcon, alt: 'Facebook' },
     ariaLabel: 'Visit Rush N Relax Seymour on Facebook',
-  },
-  // [SocialId.INSTAGRAM]: {
-  //   name: 'Instagram',
-  //   url: 'https://instagram.com/rushnrelax',
-  //   icon: '📷',
-  //   ariaLabel: 'Visit on Instagram',
-  // },
-  // [SocialId.TIKTOK]: {
-  //   name: 'TikTok',
-  //   url: 'https://tiktok.com/@rushnrelax',
-  //   icon: '🎵',
-  //   ariaLabel: 'Visit on TikTok',
-  // },
+  }
 };
 
 // Helper to get social link metadata by ID

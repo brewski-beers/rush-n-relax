@@ -61,19 +61,6 @@ export const LOCATIONS: Location[] = [
     coordinates: { lat: 35.861584, lng: -83.770727 },
     socialLinkIds: [SocialId.FACEBOOK_SEYMOUR],
   },
-  {
-    id: 4,
-    slug: 'knoxville',
-    name: 'Knoxville',
-    address: '4001 Bruhin Road',
-    city: 'Knoxville',
-    state: 'TN',
-    zip: '37918',
-    phone: '+1 (865) 936-3069',
-    hours: 'Coming soon',
-    description: 'Exciting new location coming to Knoxville. Stay tuned for opening details and exclusive launch information.',
-    coordinates: { lat: 36.001233, lng: -83.955442 },
-  },
 ];
 
 export const getLocationBySlug = (slug: string): Location | undefined => {
