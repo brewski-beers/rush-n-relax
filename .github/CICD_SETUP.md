@@ -11,6 +11,7 @@ This project uses GitHub Actions to automate deployments to Firebase Hosting.
   - Runs linter
   - Runs unit tests
   - Builds the project
+  - Deploys Firestore rules, indexes, and Storage rules
   - Deploys to a Firebase preview channel
   - Posts preview URL as a comment on the PR
 - **Preview expires**: 7 days after deployment
@@ -23,6 +24,7 @@ This project uses GitHub Actions to automate deployments to Firebase Hosting.
   - Runs unit tests
   - Runs E2E tests (Playwright)
   - Builds the project
+  - Deploys Firestore rules, indexes, and Storage rules
   - Deploys to Firebase Hosting production (`live` channel)
 
 ## Required GitHub Secrets
@@ -65,6 +67,26 @@ VITE_GOOGLE_MAPS_API_KEY
 ---
 
 **Note**: Firebase client SDK configuration (API key, auth domain, project ID, etc.) is now **hardcoded in `src/firebase.ts`**. These values are public by design and are visible in all deployed JavaScript bundles. Security is enforced via Firebase Security Rules, not secrecy of these values. This eliminates the need to manage 8+ environment variables as GitHub secrets.
+
+## What Gets Deployed
+
+Both workflows deploy the complete Firebase configuration:
+
+### Firestore
+
+- **Rules** (`firestore.rules`): Database security rules
+- **Indexes** (`firestore.indexes.json`): Query optimization indexes
+
+### Storage
+
+- **Rules** (`storage.rules`): File storage security rules
+
+### Hosting
+
+- **Preview Channel** (PRs): Temporary preview URL, expires in 7 days
+- **Production** (main): Live site at your Firebase Hosting domain
+
+**Note**: Functions are NOT automatically deployed by these workflows. Deploy functions manually with `npm run deploy` or add a separate workflow if needed.
 
 ## Testing the Workflows
 
