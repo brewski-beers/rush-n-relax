@@ -29,6 +29,26 @@ jobs:
       - name: Run unit tests
         run: npm run test -- --run
 
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install chromium --with-deps
+
+      - name: Start Firebase emulators
+        run: |
+          npx firebase-tools emulators:start \
+            --only firestore,storage \
+            --project rush-n-relax &
+          echo "Waiting for emulators to start..."
+          npx wait-on http://localhost:8080 http://localhost:9199 --timeout 30000
+          echo "Emulators ready"
+
+      - name: Seed emulators with test data
+        run: node scripts/seed-emulators.cjs
+
+      - name: Run E2E tests (Chromium only)
+        run: npm run test:e2e -- --project=chromium
+        env:
+          VITE_USE_EMULATORS: 'true'
+
       - name: Build project
         run: npm run build
         env:
