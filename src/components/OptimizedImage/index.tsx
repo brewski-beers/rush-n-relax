@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface OptimizedImageProps {
   src: string;
@@ -8,7 +8,6 @@ interface OptimizedImageProps {
   height?: number;
   className?: string;
   lazy?: boolean;
-  responsive?: boolean;
   srcSet?: string;
   sizes?: string;
 }
@@ -25,7 +24,6 @@ export function OptimizedImage({
   height,
   className = '',
   lazy = true,
-  responsive = true,
   srcSet,
   sizes,
 }: OptimizedImageProps) {

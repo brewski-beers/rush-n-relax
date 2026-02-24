@@ -29,7 +29,9 @@ export interface SocialLink {
 }
 
 // Type guard to check if icon is an SVG object
-export const isSocialIconObject = (icon: string | SocialIconObject): icon is SocialIconObject => {
+export const isSocialIconObject = (
+  icon: string | SocialIconObject
+): icon is SocialIconObject => {
   return typeof icon === 'object' && icon !== null && 'src' in icon;
 };
 
@@ -54,7 +56,7 @@ export const SOCIAL_METADATA: Record<SocialId, SocialLink> = {
     url: 'https://www.facebook.com/profile.php?id=61585953144207',
     icon: { src: facebookIcon, alt: 'Facebook' },
     ariaLabel: 'Visit Rush N Relax Seymour on Facebook',
-  }
+  },
 };
 
 // Helper to get social link metadata by ID

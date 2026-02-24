@@ -53,12 +53,18 @@ export default function LocationDetail() {
     setMeta('meta[property="og:title"]', seo.title);
     setMeta('meta[property="og:description"]', seo.description);
     setMeta('meta[property="og:url"]', seo.url);
-    setMeta('meta[property="og:image"]', 'https://www.rushnrelax.com/og-image.png');
+    setMeta(
+      'meta[property="og:image"]',
+      'https://www.rushnrelax.com/og-image.png'
+    );
     setMeta('meta[property="og:image:width"]', '1200');
     setMeta('meta[property="og:image:height"]', '630');
 
     // Twitter Meta Tags
-    setMeta('meta[name="twitter:image"]', 'https://www.rushnrelax.com/twitter-image.png');
+    setMeta(
+      'meta[name="twitter:image"]',
+      'https://www.rushnrelax.com/twitter-image.png'
+    );
 
     // Canonical URL
     let canonical = document.querySelector('link[rel="canonical"]');
@@ -70,8 +76,10 @@ export default function LocationDetail() {
     canonical.setAttribute('href', seo.url);
 
     // Remove old location-specific schemas
-    const oldSchemas = document.querySelectorAll('script[data-location-schema]');
-    oldSchemas.forEach((script) => script.remove());
+    const oldSchemas = document.querySelectorAll(
+      'script[data-location-schema]'
+    );
+    oldSchemas.forEach(script => script.remove());
 
     // LocalBusiness JSON-LD Schema
     const schema = {
@@ -90,7 +98,15 @@ export default function LocationDetail() {
       telephone: location.phone,
       openingHoursSpecification: {
         '@type': 'OpeningHoursSpecification',
-        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+        dayOfWeek: [
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+          'Sunday',
+        ],
         opens: '10:00',
         closes: '22:00',
       },
@@ -138,7 +154,10 @@ export default function LocationDetail() {
 
     const breadcrumbEl = document.createElement('script');
     breadcrumbEl.setAttribute('type', 'application/ld+json');
-    breadcrumbEl.setAttribute('data-location-schema', `breadcrumb-${location.id}`);
+    breadcrumbEl.setAttribute(
+      'data-location-schema',
+      `breadcrumb-${location.id}`
+    );
     breadcrumbEl.textContent = JSON.stringify(breadcrumbSchema);
     document.head.appendChild(breadcrumbEl);
 
@@ -147,7 +166,7 @@ export default function LocationDetail() {
       const toRemove = document.querySelectorAll(
         `script[data-location-schema="${location.id}"], script[data-location-schema="breadcrumb-${location.id}"]`
       );
-      toRemove.forEach((el) => el.remove());
+      toRemove.forEach(el => el.remove());
     };
   }, [location]);
 
@@ -156,135 +175,119 @@ export default function LocationDetail() {
   return (
     <main className="location-detail-page">
       <section className="back-to-locations">
-          <div className="container">
-            <Link to="/locations" className="link-button">
-              ← Back to All Locations
-            </Link>
-          </div>
-        </section>
+        <div className="container">
+          <Link to="/locations" className="link-button">
+            ← Back to All Locations
+          </Link>
+        </div>
+      </section>
 
       <section className="location-hero">
-          <div className="container">
-            <h1>{location.name}</h1>
-            <p className="lead">{location.description}</p>
-          </div>
-        </section>
+        <div className="container">
+          <h1>{location.name}</h1>
+          <p className="lead">{location.description}</p>
+        </div>
+      </section>
 
-        <section className="location-info-section">
-          <div className="container">
-            <div className="location-detail-grid">
-              <Card variant="info" as="div">
-                <h2>Address</h2>
-                <address>
-                  <p>{location.address}</p>
-                  <p>
-                    {location.city}, {location.state} {location.zip}
-                  </p>
-                </address>
-              </Card>
+      <section className="location-info-section">
+        <div className="container">
+          <div className="location-detail-grid">
+            <Card variant="info" as="div">
+              <h2>Address</h2>
+              <address>
+                <p>{location.address}</p>
+                <p>
+                  {location.city}, {location.state} {location.zip}
+                </p>
+              </address>
+            </Card>
 
-              <Card variant="info" as="div">
-                <h2>Hours</h2>
-                <p>{location.hours}</p>
-                <p className="text-secondary">Open 7 days a week</p>
-              </Card>
+            <Card variant="info" as="div">
+              <h2>Hours</h2>
+              <p>{location.hours}</p>
+              <p className="text-secondary">Open 7 days a week</p>
+            </Card>
 
-              <Card variant="info" as="div">
-                <h2>Call Us</h2>
-                <a href={`tel:${location.phone.replace(/\D/g, '')}`} className="phone-link">
-                  {location.phone}
-                </a>
-                <p className="text-secondary">Available during business hours</p>
-              </Card>
-
-              {location.socialLinkIds && location.socialLinkIds.length > 0 && (
-                <Card variant="info" as="div">
-                  <h2>Follow Us</h2>
-                  <div className="social-links-grid">
-                    {location.socialLinkIds.map((socialId) => {
-                      const social = getSocialLink(socialId);
-                      return (
-                        <a
-                          key={socialId}
-                          href={social.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="social-link-item"
-                          aria-label={social.ariaLabel}
-                          title={social.name}
-                        >
-                          <span className="social-icon">
-                            {isSocialIconObject(social.icon) ? (
-                              <img src={social.icon.src} alt={social.icon.alt} className="social-icon-img" />
-                            ) : (
-                              social.icon
-                            )}
-                          </span>
-                          <span className="social-name">{social.name}</span>
-                        </a>
-                      );
-                    })}
-                  </div>
-                </Card>
-              )}
-
-              {location.coordinates && (
-                <Card variant="info" as="div">
-                  <h2>Location</h2>
-                  <p>
-                    <strong>{location.city}, {location.state}</strong>
-                  </p>
-                  <p className="text-secondary">
-                    East Tennessee
-                  </p>
-                </Card>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {location.coordinates && (
-          <section className="location-map-section">
-            <div className="container">
-              <h2>Find Us on the Map</h2>
-              <div className="map-container">
-                <iframe
-                  title={`${location.name} Location Map`}
-                  width="100%"
-                  height="450"
-                  style={{ border: 0, borderRadius: '0.75rem' }}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(
-                    `${location.address}, ${location.city}, ${location.state} ${location.zip}`
-                  )}`}
-                />
-              </div>
-              <div className="map-actions">
-                <a
-                  href={`https://www.google.com/maps/search/${encodeURIComponent(
-                    location.address
-                  )},+${encodeURIComponent(location.city)},+${location.state}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-secondary"
-                >
-                  Get Directions
-                </a>
-              </div>
-            </div>
-          </section>
-        )}
-
-        <section className="location-cta">
-          <div className="container">
-            <h2>Stop By Anytime</h2>
-            <p>Open seven days a week — walk in and let our staff take it from there.</p>
-            <div className="cta-buttons">
-              <a href={`tel:${location.phone.replace(/\D/g, '')}`} className="btn btn-primary">
-                Call Now
+            <Card variant="info" as="div">
+              <h2>Call Us</h2>
+              <a
+                href={`tel:${location.phone.replace(/\D/g, '')}`}
+                className="phone-link"
+              >
+                {location.phone}
               </a>
+              <p className="text-secondary">Available during business hours</p>
+            </Card>
+
+            {location.socialLinkIds && location.socialLinkIds.length > 0 && (
+              <Card variant="info" as="div">
+                <h2>Follow Us</h2>
+                <div className="social-links-grid">
+                  {location.socialLinkIds.map(socialId => {
+                    const social = getSocialLink(socialId);
+                    return (
+                      <a
+                        key={socialId}
+                        href={social.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="social-link-item"
+                        aria-label={social.ariaLabel}
+                        title={social.name}
+                      >
+                        <span className="social-icon">
+                          {isSocialIconObject(social.icon) ? (
+                            <img
+                              src={social.icon.src}
+                              alt={social.icon.alt}
+                              className="social-icon-img"
+                            />
+                          ) : (
+                            social.icon
+                          )}
+                        </span>
+                        <span className="social-name">{social.name}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
+            {location.coordinates && (
+              <Card variant="info" as="div">
+                <h2>Location</h2>
+                <p>
+                  <strong>
+                    {location.city}, {location.state}
+                  </strong>
+                </p>
+                <p className="text-secondary">East Tennessee</p>
+              </Card>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {location.coordinates && (
+        <section className="location-map-section">
+          <div className="container">
+            <h2>Find Us on the Map</h2>
+            <div className="map-container">
+              <iframe
+                title={`${location.name} Location Map`}
+                width="100%"
+                height="450"
+                style={{ border: 0, borderRadius: '0.75rem' }}
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(
+                  `${location.address}, ${location.city}, ${location.state} ${location.zip}`
+                )}`}
+              />
+            </div>
+            <div className="map-actions">
               <a
                 href={`https://www.google.com/maps/search/${encodeURIComponent(
                   location.address
@@ -298,7 +301,35 @@ export default function LocationDetail() {
             </div>
           </div>
         </section>
+      )}
 
-      </main>
-    );
-  }
+      <section className="location-cta">
+        <div className="container">
+          <h2>Stop By Anytime</h2>
+          <p>
+            Open seven days a week — walk in and let our staff take it from
+            there.
+          </p>
+          <div className="cta-buttons">
+            <a
+              href={`tel:${location.phone.replace(/\D/g, '')}`}
+              className="btn btn-primary"
+            >
+              Call Now
+            </a>
+            <a
+              href={`https://www.google.com/maps/search/${encodeURIComponent(
+                location.address
+              )},+${encodeURIComponent(location.city)},+${location.state}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-secondary"
+            >
+              Get Directions
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}

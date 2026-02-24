@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import './Card.css';
 
 interface CardProps {
@@ -9,23 +9,23 @@ interface CardProps {
   as?: 'div' | 'article' | 'a';
   to?: string;
   href?: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   style?: React.CSSProperties;
 }
 
 /**
  * Standardized Rush N Relax Card Component
- * 
+ *
  * Uses a unified design system with consistent spacing, sizing, and behavior.
  * Variants provide semantic meaning while maintaining visual consistency.
- * 
+ *
  * Variants:
  * - 'product': Full product card with image, content (Products page)
  * - 'product-small': Compact product card (Related products)
  * - 'location': Location info card (Locations page)
  * - 'info': Information card for hours, contact, etc
  * - 'value': Value proposition card (About page)
- * 
+ *
  * Props:
  * - to: React Router path (internal navigation)
  * - href: HTML anchor href (external links)
@@ -48,11 +48,7 @@ export function Card({
   // Render as React Router Link if 'to' is provided
   if (to) {
     return (
-      <RouterLink
-        to={to}
-        className={combinedClass}
-        style={style}
-      >
+      <RouterLink to={to} className={combinedClass} style={style}>
         {children}
       </RouterLink>
     );
@@ -61,12 +57,7 @@ export function Card({
   // Render as HTML anchor if 'href' is provided
   if (href) {
     return (
-      <a
-        href={href}
-        onClick={onClick}
-        className={combinedClass}
-        style={style}
-      >
+      <a href={href} onClick={onClick} className={combinedClass} style={style}>
         {children}
       </a>
     );

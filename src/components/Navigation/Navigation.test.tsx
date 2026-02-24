@@ -40,17 +40,25 @@ describe('Navigation Component', () => {
 
   it('renders navigation header', () => {
     render(<NavigationWithRouter />);
-    
+
     const header = screen.getByRole('banner') || screen.getByRole('navigation');
     expect(header).toBeInTheDocument();
   });
 
   it('renders main navigation links', () => {
     render(<NavigationWithRouter />);
-    
-    expect(screen.getByText(/home/i) || screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
-    expect(screen.getByText(/products/i) || screen.getByRole('link', { name: /products/i })).toBeInTheDocument();
-    expect(screen.getByText(/locations/i) || screen.getByRole('link', { name: /locations/i })).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/home/i) || screen.getByRole('link', { name: /home/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/products/i) ||
+        screen.getByRole('link', { name: /products/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/locations/i) ||
+        screen.getByRole('link', { name: /locations/i })
+    ).toBeInTheDocument();
   });
 
   it('does not render tech credit in mobile menu', () => {
@@ -63,47 +71,49 @@ describe('Navigation Component', () => {
     render(<NavigationWithRouter />);
 
     expect(screen.getByText(/21\+ only/i)).toBeInTheDocument();
-    expect(screen.getByText(/must be 21\+ years of age to visit\./i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/must be 21\+ years of age to visit\./i)
+    ).toBeInTheDocument();
   });
 
   it('home link navigates to root path', () => {
     render(<NavigationWithRouter />);
-    
+
     const homeLink = screen.getByRole('link', { name: /home/i });
     expect(homeLink).toHaveAttribute('href', '/');
   });
 
   it('products link navigates to products path', () => {
     render(<NavigationWithRouter />);
-    
+
     const productsLink = screen.getByRole('link', { name: /products/i });
     expect(productsLink).toHaveAttribute('href', '/products');
   });
 
   it('locations link navigates to locations path', () => {
     render(<NavigationWithRouter />);
-    
+
     const locationsLink = screen.getByRole('link', { name: /locations/i });
     expect(locationsLink).toHaveAttribute('href', '/locations');
   });
 
   it('about link navigates to about path', () => {
     render(<NavigationWithRouter />);
-    
+
     const aboutLink = screen.getByRole('link', { name: /about/i });
     expect(aboutLink).toHaveAttribute('href', '/about');
   });
 
   it('contact link navigates to contact path', () => {
     render(<NavigationWithRouter />);
-    
+
     const contactLink = screen.getByRole('link', { name: /contact/i });
     expect(contactLink).toHaveAttribute('href', '/contact');
   });
 
   it('renders logo or logo placeholder', () => {
     render(<NavigationWithRouter />);
-    
+
     // Logo text should exist (RUSH N RELAX in .logo-text in header)
     const logoTexts = screen.getAllByText(/RUSH N RELAX/i);
     expect(logoTexts.length).toBeGreaterThan(0);
@@ -111,13 +121,15 @@ describe('Navigation Component', () => {
 
   it('mobile menu toggles visibility', () => {
     render(<NavigationWithRouter />);
-    
-    const menuButton = screen.queryByRole('button', { name: /menu|toggle|hamburger/i });
+
+    const menuButton = screen.queryByRole('button', {
+      name: /menu|toggle|hamburger/i,
+    });
     if (menuButton) {
       expect(menuButton).toBeInTheDocument();
-      
+
       fireEvent.click(menuButton);
-      
+
       // Menu should become visible or drawer should open
       const mobileMenu = screen.queryByRole('navigation', { hidden: false });
       expect(mobileMenu).toBeTruthy();
@@ -125,8 +137,8 @@ describe('Navigation Component', () => {
   });
 
   it('marks current page link with aria-current', () => {
-    const { rerender } = render(<NavigationWithRouter />);
-    
+    render(<NavigationWithRouter />);
+
     // On home page, home link should have aria-current
     const homeLink = screen.getByRole('link', { name: /home/i });
     expect(homeLink).toHaveAttribute('aria-current');
@@ -134,28 +146,27 @@ describe('Navigation Component', () => {
 
   it('has proper semantic structure', () => {
     render(<NavigationWithRouter />);
-    
+
     const nav = screen.getByRole('navigation') || screen.getByRole('banner');
     expect(nav).toBeInTheDocument();
-    
+
     const links = screen.getAllByRole('link');
     expect(links.length).toBeGreaterThan(2);
   });
 
   it('renders responsive with proper mobile considerations', () => {
     render(<NavigationWithRouter />);
-    
+
     // Check for mobile menu toggle or responsive layout
-    const menuToggle = screen.queryByRole('button');
     const navLinks = screen.getAllByRole('link');
-    
+
     // Should have navigation in some form
     expect(navLinks.length).toBeGreaterThan(0);
   });
 
   it('links have proper accessibility attributes', () => {
     render(<NavigationWithRouter />);
-    
+
     const links = screen.getAllByRole('link');
     links.forEach(link => {
       expect(link).toHaveAttribute('href');

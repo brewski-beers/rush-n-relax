@@ -12,7 +12,6 @@ import { preVerifyAge } from './fixtures';
 const pages = ['/', '/about', '/locations', '/contact'];
 
 test.describe('Website Health Checks - Production Readiness', () => {
-
   // ─── Basic Page Load ───────────────────────────────────────────────
   test.describe('Basic Page Load', () => {
     test('home page loads with status code 200', async ({ page }) => {
@@ -31,11 +30,15 @@ test.describe('Website Health Checks - Production Readiness', () => {
 
     test('no console errors on page load', async ({ page }) => {
       const errors: string[] = [];
-      page.on('console', (msg) => {
+      page.on('console', msg => {
         if (msg.type() === 'error') {
           // Ignore Firebase/network errors in test environment
           const text = msg.text();
-          if (!text.includes('Firebase') && !text.includes('firestore') && !text.includes('ERR_CONNECTION')) {
+          if (
+            !text.includes('Firebase') &&
+            !text.includes('firestore') &&
+            !text.includes('ERR_CONNECTION')
+          ) {
             errors.push(text);
           }
         }
@@ -112,7 +115,7 @@ test.describe('Website Health Checks - Production Readiness', () => {
         page.locator('meta[property="og:title"]').count(),
         page.locator('meta[property="og:description"]').count(),
         page.locator('meta[property="og:url"]').count(),
-      ]).then((counts) => counts.reduce((a, b) => a + b, 0));
+      ]).then(counts => counts.reduce((a, b) => a + b, 0));
       expect(ogCount).toBeGreaterThanOrEqual(1);
     });
 
@@ -120,7 +123,7 @@ test.describe('Website Health Checks - Production Readiness', () => {
       await preVerifyAge(page);
       await page.goto('/');
       const canonical = page.locator('link[rel="canonical"]');
-      if (await canonical.count() > 0) {
+      if ((await canonical.count()) > 0) {
         await expect(canonical).toHaveAttribute('href', /.+/);
       }
     });
@@ -166,8 +169,8 @@ test.describe('Website Health Checks - Production Readiness', () => {
       await page.goto('/contact');
 
       // Mock Firestore so we never hit the network
-      await page.route('**/firestore.googleapis.com/**', (route) =>
-        route.fulfill({ status: 200, body: '{}' }),
+      await page.route('**/firestore.googleapis.com/**', route =>
+        route.fulfill({ status: 200, body: '{}' })
       );
 
       await page.locator('button[type="submit"]').click();
@@ -245,7 +248,9 @@ test.describe('Website Health Checks - Production Readiness', () => {
       await preVerifyAge(page);
       await page.goto('/');
       await page.keyboard.press('Tab');
-      const focusedElement = await page.evaluate(() => document.activeElement?.tagName);
+      const focusedElement = await page.evaluate(
+        () => document.activeElement?.tagName
+      );
       expect(['A', 'BUTTON']).toContain(focusedElement);
     });
 
@@ -254,7 +259,7 @@ test.describe('Website Health Checks - Production Readiness', () => {
       await page.goto('/');
       const link = page.locator('a').first();
       await link.focus();
-      const hasFocus = await link.evaluate((el) => {
+      const hasFocus = await link.evaluate(el => {
         const style = window.getComputedStyle(el);
         return style.outline !== 'none';
       });

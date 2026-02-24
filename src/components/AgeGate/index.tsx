@@ -1,8 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import './AgeGate.css';
 
 export function AgeGate() {
-  const [isVerified, setIsVerified] = useState<boolean | null>(null);
+  const [isVerified, setIsVerified] = useState<boolean | null>(() => {
+    const verified = localStorage.getItem('ageVerified');
+    return verified === 'true' ? true : verified === 'false' ? false : null;
+  });
   const [userMonth, setUserMonth] = useState('');
   const [userDay, setUserDay] = useState('');
   const [userYear, setUserYear] = useState('');
@@ -10,16 +13,6 @@ export function AgeGate() {
   const monthRef = useRef<HTMLInputElement>(null);
   const dayRef = useRef<HTMLInputElement>(null);
   const yearRef = useRef<HTMLInputElement>(null);
-
-  // Check localStorage on mount
-  useEffect(() => {
-    const verified = localStorage.getItem('ageVerified');
-    if (verified === 'true') {
-      setIsVerified(true);
-    } else {
-      setIsVerified(false);
-    }
-  }, []);
 
   const handleVerify = () => {
     setError('');
@@ -34,7 +27,14 @@ export function AgeGate() {
     const year = parseInt(userYear, 10);
 
     // Validate date ranges
-    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > new Date().getFullYear()) {
+    if (
+      month < 1 ||
+      month > 12 ||
+      day < 1 ||
+      day > 31 ||
+      year < 1900 ||
+      year > new Date().getFullYear()
+    ) {
       setError('Please enter a valid birth date');
       return;
     }
@@ -44,7 +44,10 @@ export function AgeGate() {
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
 
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
       age--;
     }
 
@@ -73,7 +76,7 @@ export function AgeGate() {
     // Cap to 2 digits max
     const capped = value.slice(0, 2);
     setUserDay(capped);
-    // Auto-focus to year when field is full (2 digits) for UX 
+    // Auto-focus to year when field is full (2 digits) for UX
     if (capped.length === 2) {
       setTimeout(() => yearRef.current?.focus(), 50);
     }
@@ -91,11 +94,7 @@ export function AgeGate() {
     }
   };
 
-  if (isVerified === null) {
-    return null; // Loading state
-  }
-
-  if (isVerified) {
+  if (isVerified === true) {
     return null; // Age verified, render nothing
   }
 
@@ -107,7 +106,13 @@ export function AgeGate() {
           <p>You must be 21 or older to enter</p>
         </div>
 
-        <form className="age-gate-form" onSubmit={(e) => { e.preventDefault(); handleVerify(); }}>
+        <form
+          className="age-gate-form"
+          onSubmit={e => {
+            e.preventDefault();
+            handleVerify();
+          }}
+        >
           <div className="date-inputs">
             <div className="date-input-group">
               <label htmlFor="month">Month</label>
@@ -119,7 +124,7 @@ export function AgeGate() {
                 inputMode="numeric"
                 maxLength={2}
                 value={userMonth}
-                onChange={(e) => handleMonthChange(e.target.value)}
+                onChange={e => handleMonthChange(e.target.value)}
                 onKeyPress={handleKeyPress}
               />
             </div>
@@ -133,7 +138,7 @@ export function AgeGate() {
                 inputMode="numeric"
                 maxLength={2}
                 value={userDay}
-                onChange={(e) => handleDayChange(e.target.value)}
+                onChange={e => handleDayChange(e.target.value)}
                 onKeyPress={handleKeyPress}
               />
             </div>
@@ -147,7 +152,7 @@ export function AgeGate() {
                 inputMode="numeric"
                 maxLength={4}
                 value={userYear}
-                onChange={(e) => handleYearChange(e.target.value)}
+                onChange={e => handleYearChange(e.target.value)}
                 onKeyPress={handleKeyPress}
               />
             </div>
@@ -165,7 +170,8 @@ export function AgeGate() {
         </form>
 
         <p className="age-gate-disclaimer">
-          By entering, you certify that you are of legal age to purchase cannabis in your jurisdiction.
+          By entering, you certify that you are of legal age to purchase
+          cannabis in your jurisdiction.
         </p>
       </div>
     </div>

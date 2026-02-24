@@ -27,7 +27,9 @@ test.describe('Homepage', () => {
   });
 
   test('should display location preview cards', async ({ page }) => {
-    const locationCards = page.locator('.locations-preview .rnr-card--location');
+    const locationCards = page.locator(
+      '.locations-preview .rnr-card--location'
+    );
     const count = await locationCards.count();
     expect(count).toBeGreaterThan(0);
   });
@@ -71,7 +73,9 @@ test.describe('Product Detail Page', () => {
     await expect(page.locator('.product-content')).toBeVisible();
   });
 
-  test('should show explore more section with other products', async ({ page }) => {
+  test('should show explore more section with other products', async ({
+    page,
+  }) => {
     await preVerifyAge(page);
     await page.goto('/products/flower');
     await page.waitForSelector('.related-products', { timeout: 8000 });
@@ -81,7 +85,9 @@ test.describe('Product Detail Page', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('should navigate between products via explore more', async ({ page }) => {
+  test('should navigate between products via explore more', async ({
+    page,
+  }) => {
     await preVerifyAge(page);
     await page.goto('/products/flower');
     await page.waitForSelector('.related-products', { timeout: 8000 });

@@ -16,11 +16,13 @@ describe('Contact page', () => {
       </MemoryRouter>
     );
 
-    const activeLocations = LOCATIONS.filter((location) => location.hours !== 'Coming soon');
+    const activeLocations = LOCATIONS.filter(
+      location => location.hours !== 'Coming soon'
+    );
     const facebookLinks = screen.getAllByRole('link', { name: /facebook/i });
 
     expect(facebookLinks).toHaveLength(activeLocations.length);
-    facebookLinks.forEach((link) => {
+    facebookLinks.forEach(link => {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     });
@@ -33,6 +35,8 @@ describe('Contact page', () => {
       </MemoryRouter>
     );
 
-    expect(screen.queryByText(/important:\s*must be 21\+/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/important:\s*must be 21\+/i)
+    ).not.toBeInTheDocument();
   });
 });

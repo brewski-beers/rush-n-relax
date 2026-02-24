@@ -8,14 +8,30 @@ interface ResolvedUrls {
   mobile: string | null;
 }
 
-export function AmbientOverlay() {
-  const directUrl = import.meta.env.VITE_AMBIENT_VIDEO_URL as string | undefined;
-  const posterUrl = import.meta.env.VITE_AMBIENT_VIDEO_POSTER as string | undefined;
-  const storagePath = import.meta.env.VITE_AMBIENT_STORAGE_PATH as string | undefined;
-  const mobileStoragePath = import.meta.env.VITE_AMBIENT_MOBILE_PATH as string | undefined;
-  const customBucket = import.meta.env.VITE_AMBIENT_STORAGE_BUCKET as string | undefined;
-  const envEnabled = String(import.meta.env.VITE_AMBIENT_ENABLED ?? 'true').toLowerCase() !== 'false';
+// Default Firebase Storage paths for ambient videos
+const DEFAULT_AMBIENT_PATHS = {
+  desktop: 'ambient/smoke-4k.mp4',
+  mobile: 'ambient/smoke-1080p.mp4',
+} as const;
 
+export function AmbientOverlay() {
+  const directUrl = import.meta.env.VITE_AMBIENT_VIDEO_URL as
+    | string
+    | undefined;
+  const posterUrl = import.meta.env.VITE_AMBIENT_VIDEO_POSTER as
+    | string
+    | undefined;
+  const storagePath =
+    (import.meta.env.VITE_AMBIENT_STORAGE_PATH as string | undefined) ||
+    DEFAULT_AMBIENT_PATHS.desktop;
+  const mobileStoragePath =
+    (import.meta.env.VITE_AMBIENT_MOBILE_PATH as string | undefined) ||
+    DEFAULT_AMBIENT_PATHS.mobile;
+  const customBucket = import.meta.env.VITE_AMBIENT_STORAGE_BUCKET as
+    | string
+    | undefined;
+
+  // User preference from localStorage (defaults to enabled)
   const [resolvedUrls, setResolvedUrls] = useState<ResolvedUrls>({
     desktop: null,
     mobile: null,
@@ -23,9 +39,9 @@ export function AmbientOverlay() {
   const [enabled, setEnabled] = useState<boolean>(() => {
     try {
       const ls = localStorage.getItem('ambientEnabled');
-      return ls === null ? envEnabled : ls === 'true';
+      return ls === null ? true : ls === 'true';
     } catch {
-      return envEnabled;
+      return true;
     }
   });
 
@@ -41,13 +57,17 @@ export function AmbientOverlay() {
         // Resolve desktop (4K) video
         if (storagePath) {
           try {
-            const storage = customBucket ? getStorage(undefined, `gs://${customBucket}`) : getStorage$();
+            const storage = customBucket
+              ? getStorage(undefined, `gs://${customBucket}`)
+              : getStorage$();
             const videoRef = ref(storage, storagePath);
             const url = await getDownloadURL(videoRef);
             if (!cancelled) urls.desktop = url;
           } catch (err) {
-            // eslint-disable-next-line no-console
-            console.warn('AmbientOverlay: failed to resolve desktop video URL', err);
+            console.warn(
+              'AmbientOverlay: failed to resolve desktop video URL',
+              err
+            );
             if (directUrl) urls.desktop = directUrl;
           }
         } else if (directUrl) {
@@ -57,13 +77,17 @@ export function AmbientOverlay() {
         // Resolve mobile (1080p) video
         if (mobileStoragePath) {
           try {
-            const storage = customBucket ? getStorage(undefined, `gs://${customBucket}`) : getStorage$();
+            const storage = customBucket
+              ? getStorage(undefined, `gs://${customBucket}`)
+              : getStorage$();
             const videoRef = ref(storage, mobileStoragePath);
             const url = await getDownloadURL(videoRef);
             if (!cancelled) urls.mobile = url;
           } catch (err) {
-            // eslint-disable-next-line no-console
-            console.warn('AmbientOverlay: failed to resolve mobile video URL', err);
+            console.warn(
+              'AmbientOverlay: failed to resolve mobile video URL',
+              err
+            );
             // Fall back to desktop if mobile fails
             urls.mobile = urls.desktop;
           }
@@ -74,13 +98,14 @@ export function AmbientOverlay() {
 
         if (!cancelled) setResolvedUrls(urls);
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error('AmbientOverlay: critical error resolving URLs', err);
       }
     }
 
     resolveUrls();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [directUrl, storagePath, mobileStoragePath, customBucket]);
 
   // Listen for preference changes dispatched by UI (custom event) or storage updates
@@ -88,25 +113,36 @@ export function AmbientOverlay() {
     const updateFromStorage = () => {
       try {
         const ls = localStorage.getItem('ambientEnabled');
-        setEnabled(ls === null ? envEnabled : ls === 'true');
+        setEnabled(ls === null ? true : ls === 'true');
       } catch {
-        setEnabled(envEnabled);
+        setEnabled(true);
       }
     };
     const customHandler = () => updateFromStorage();
     window.addEventListener('ambient:toggle', customHandler);
-    const storageHandler = (e: StorageEvent) => { if (e.key === 'ambientEnabled') updateFromStorage(); };
+    const storageHandler = (e: StorageEvent) => {
+      if (e.key === 'ambientEnabled') updateFromStorage();
+    };
     window.addEventListener('storage', storageHandler);
     return () => {
       window.removeEventListener('ambient:toggle', customHandler);
       window.removeEventListener('storage', storageHandler);
     };
-  }, [envEnabled]);
+  }, []);
 
   if (!enabled || (!resolvedUrls.desktop && !resolvedUrls.mobile)) return null;
 
   const portal = document.getElementById('ambient-portal');
   if (!portal) return null;
+
+  // Pick video URL in JS — <source media=""> is ignored by browsers inside <video>
+  const isMobile =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 768px)').matches;
+  const videoSrc =
+    (isMobile ? resolvedUrls.mobile : resolvedUrls.desktop) ??
+    resolvedUrls.desktop ??
+    resolvedUrls.mobile;
 
   return createPortal(
     <video
@@ -114,7 +150,7 @@ export function AmbientOverlay() {
       muted
       loop
       playsInline
-      preload="auto"
+      preload="metadata"
       crossOrigin="anonymous"
       disablePictureInPicture
       controls={false}
@@ -131,12 +167,7 @@ export function AmbientOverlay() {
         pointerEvents: 'none',
       }}
     >
-      {resolvedUrls.mobile && (
-        <source src={resolvedUrls.mobile} media="(max-width: 768px)" type="video/mp4" />
-      )}
-      {resolvedUrls.desktop && (
-        <source src={resolvedUrls.desktop} type="video/mp4" />
-      )}
+      {videoSrc && <source src={videoSrc} type="video/mp4" />}
     </video>,
     portal
   );
