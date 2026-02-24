@@ -639,7 +639,10 @@ address {
 
 /* Blur content when age gate is active */
 .content-wrapper.age-gate-blur {
-  display: none;
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
 }
 
 /* Location Detail Page */

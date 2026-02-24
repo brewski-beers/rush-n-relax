@@ -94,11 +94,7 @@ export function AgeGate() {
     }
   };
 
-  if (isVerified === null) {
-    return null; // Loading state
-  }
-
-  if (isVerified) {
+  if (isVerified === true) {
     return null; // Age verified, render nothing
   }
 

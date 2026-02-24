@@ -177,7 +177,8 @@ function DesktopModal() {
 function RootLayoutContent() {
   const [isAgeVerified, setIsAgeVerified] = useState<boolean | null>(() => {
     const verified = localStorage.getItem('ageVerified');
-    return verified === 'true';
+    // Return null for unknown state (no localStorage entry), not false
+    return verified === null ? null : verified === 'true';
   });
   const location = useLocation();
 
