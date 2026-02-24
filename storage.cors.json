@@ -1,14 +1,6 @@
 [
   {
-    "origin": [
-      "https://www.rushnrelax.com",
-      "https://rushnrelax.com",
-      "https://rush-n-relax.web.app",
-      "https://rush-n-relax.firebaseapp.com",
-      "https://*.rush-n-relax--*.web.app",
-      "http://localhost:5173",
-      "http://localhost:4173"
-    ],
+    "origin": ["*"],
     "method": ["GET", "HEAD"],
     "maxAgeSeconds": 3600,
     "responseHeader": [
