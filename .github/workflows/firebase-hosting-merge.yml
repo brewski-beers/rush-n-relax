@@ -28,6 +28,15 @@ jobs:
       - name: Run unit tests
         run: npm run test -- --run
 
+      - name: Cache Firebase emulator binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}
+
+      - name: Write Firebase service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}' > $HOME/gcloud-key.json
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
@@ -39,6 +48,8 @@ jobs:
           echo "Waiting for emulators to start..."
           npx wait-on http://localhost:8080 http://localhost:9199 --timeout 30000
           echo "Emulators ready"
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ env.HOME }}/gcloud-key.json
 
       - name: Seed emulators with test data
         run: node scripts/seed-emulators.cjs
@@ -55,7 +66,6 @@ jobs:
 
       - name: Deploy Firestore Rules, Indexes & Storage Rules
         run: |
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}' > $HOME/gcloud-key.json
           GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
             npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage --project rush-n-relax --non-interactive
           rm $HOME/gcloud-key.json
