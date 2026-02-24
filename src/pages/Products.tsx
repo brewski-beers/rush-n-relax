@@ -30,7 +30,7 @@ export default function Products() {
             <CardGrid columns="auto" gap="lg">
               {PRODUCTS.map((product) => (
                 <Card key={product.id} variant="product" to={`/products/${product.slug}`}>
-                  <ProductImage slug={product.slug} alt={product.name} className="product-card-img" />
+                  <ProductImage slug={product.slug} alt={product.name} />
                   <div className="product-card-content">
                     <div className="product-category">{product.category.toUpperCase()}</div>
                     <h2>{product.name}</h2>

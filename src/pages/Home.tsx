@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/Card';
+import { CardGrid } from '../components/CardGrid';
 import { LOCATIONS } from '../constants/locations';
 import { PRODUCTS } from '../constants/products';
 import { ProductImage } from '../components/ProductImage';
@@ -66,18 +67,19 @@ export default function Home() {
               Hand-selected products across five categories — each held to
               the same uncompromising standard.
             </p>
-            <div className="locations-grid">
+            <CardGrid columns="auto" gap="lg">
               {PRODUCTS.slice(0, 3).map((product) => (
                 <Card key={product.id} variant="product" to={`/products/${product.slug}`}>
-                  <ProductImage slug={product.slug} alt={product.name} className="product-card-img" />
-                  <h3>{product.name}</h3>
-                  <p>{product.description}</p>
-                  <span className="btn btn-secondary mt-3" style={{ display: 'inline-block' }}>
-                    Learn More →
-                  </span>
+                  <ProductImage slug={product.slug} alt={product.name} />
+                  <div className="product-card-content">
+                    <div className="product-category">{product.category.toUpperCase()}</div>
+                    <h2>{product.name}</h2>
+                    <p className="product-description">{product.description}</p>
+                    <div className="product-cta">Learn More →</div>
+                  </div>
                 </Card>
               ))}
-            </div>
+            </CardGrid>
             <div style={{ textAlign: 'center', marginTop: '2rem' }}>
               <Link to="/products" className="link-arrow">
                 View All Products →

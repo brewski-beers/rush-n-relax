@@ -44,11 +44,12 @@ export function ProductImage({ slug, alt, className = '' }: ProductImageProps) {
       decoding="async"
       onLoad={() => setLoaded(true)}
       onError={() => setFailed(true)}
+      style={{ maxHeight: '200px', maxWidth: '160px' }}
     />
   );
 
   return (
-    <div className={`product-card-img ${className}`}>
+    <div className="product-card-img">
       {content}
     </div>
   );

@@ -33,6 +33,10 @@
   backdrop-filter: blur(8px);
   background-color: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .rnr-card--product:hover {
@@ -74,6 +78,8 @@
   backdrop-filter: blur(8px);
   background-color: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
 .rnr-card--product-small:hover {
