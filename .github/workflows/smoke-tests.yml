@@ -1,0 +1,42 @@
+# Smoke tests against production — runs 3x daily
+# Uses PLAYWRIGHT_BASE_URL so no local server is started.
+# Tests are read-only (no form submissions) — hits real Firebase but only reads.
+name: Smoke Tests (Production)
+
+on:
+  schedule:
+    - cron: '0 8,14,20 * * *' # 08:00, 14:00, 20:00 UTC daily
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (Chromium only for smoke)
+        run: npx playwright install chromium --with-deps
+
+      - name: Run smoke tests against production
+        run: npm run test:e2e:smoke:prod
+        env:
+          CI: 'true'
+          PLAYWRIGHT_BASE_URL: https://www.rushnrelax.com
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-failures
+          path: test-results/
+          retention-days: 7

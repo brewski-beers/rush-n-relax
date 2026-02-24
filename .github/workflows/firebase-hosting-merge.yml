@@ -31,8 +31,23 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
+      - name: Start Firebase emulators
+        run: |
+          npx firebase-tools emulators:start \
+            --only firestore,storage,functions \
+            --project rush-n-relax &
+          # Wait for Firestore emulator to be ready
+          echo "Waiting for emulators to start..."
+          npx wait-on http://localhost:8080 http://localhost:9199 --timeout 30000
+          echo "Emulators ready"
+
+      - name: Seed emulators with test data
+        run: node scripts/seed-emulators.cjs
+
       - name: Run E2E tests
         run: npm run test:e2e
+        env:
+          VITE_USE_EMULATORS: 'true'
 
       - name: Build project
         run: npm run build

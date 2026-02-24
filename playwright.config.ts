@@ -11,6 +11,11 @@ const isCI = !!process.env.CI;
 const isSmokeMode = testMode === 'smoke';
 const isCoreMode = testMode === 'core';
 
+// When set, Playwright targets an already-running server (preview channel or
+// production URL) instead of spinning up a local dev server.
+// Used by the smoke cron workflow: PLAYWRIGHT_BASE_URL=https://www.rushnrelax.com
+const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL;
+
 // Local: Chromium + Mobile (realistic but fast). CI: selective or all.
 const projects = isCI
   ? isSmokeMode
@@ -41,17 +46,23 @@ export default defineConfig({
   reporter: isCI ? 'list' : 'html',
 
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: externalBaseUrl || 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
 
   projects,
 
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: true,
-    timeout: 30000,
-  },
+  // Only start a local dev server when not targeting an external URL.
+  // Smoke cron sets PLAYWRIGHT_BASE_URL so no server is needed.
+  ...(externalBaseUrl
+    ? {}
+    : {
+        webServer: {
+          command: 'npm run dev',
+          url: 'http://localhost:3000',
+          reuseExistingServer: true,
+          timeout: 30000,
+        },
+      }),
 });
