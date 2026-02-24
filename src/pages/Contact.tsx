@@ -2,15 +2,16 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ContactForm } from '../components/ContactForm';
 import { LOCATIONS } from '../constants/locations';
+import { getSocialLink, isSocialIconObject } from '../constants/social';
 
 export default function Contact() {
   useEffect(() => {
-    document.title = 'Contact Us - Rush N Relax';
+    document.title = 'Contact Us — Rush N Relax Cannabis Dispensary';
     const meta = document.querySelector('meta[name="description"]');
     if (meta) {
       meta.setAttribute(
         'content',
-        'Contact Rush N Relax with any questions. We are here to help or reach out to any of our locations directly.'
+        'Get in touch with Rush N Relax. Send us a message, call any of our three East Tennessee dispensary locations, or email our team directly.'
       );
     }
   }, []);
@@ -23,8 +24,8 @@ export default function Contact() {
           <div className="container">
             <h1>Get in Touch</h1>
             <p className="lead">
-              Have questions? We'd love to hear from you. Send us a message and
-              we'll respond as soon as possible.
+              Whether it's a product question, a partnership inquiry, or just
+              saying hello — we'd love to hear from you.
             </p>
           </div>
         </section>
@@ -43,10 +44,18 @@ export default function Contact() {
             <div className="info-grid">
               <div className="info-card glass">
                 <h3>Hours</h3>
-                <p>We're open 7 days a week</p>
+                <p>All locations — 7 days a week</p>
                 <p className="hours-text">
-                  Monday - Sunday<br />
-                  10:00 AM - 10:00 PM
+                  Monday – Sunday<br />
+                  10:00 AM – 10:00 PM
+                </p>
+              </div>
+              <div className="info-card glass">
+                <h3>Email</h3>
+                <p>Reach our team directly</p>
+                <p className="hours-text">
+                  <a href="mailto:rush@rushnrelax.com">rush@rushnrelax.com</a><br />
+                  <a href="mailto:capps@rushnrelax.com">capps@rushnrelax.com</a>
                 </p>
               </div>
             </div>
@@ -55,45 +64,61 @@ export default function Contact() {
 
         <section id="location-contact" className="location-contact">
           <div className="container">
-            <h2>Contact Our Locations</h2>
-            <p className="section-lead">Reach out directly to any of our locations</p>
+            <h2>Call a Location Directly</h2>
+            <p className="section-lead">All three locations are open 10 AM – 10 PM, seven days a week. Give us a ring during business hours.</p>
             <div className="locations-grid">
-              {activeLocations.map((location) => (
-                <div key={location.id} className="location-card glass">
-                  <h3>{location.name}</h3>
-                  <p className="location-address">
-                    {location.address}<br />
-                    {location.city}, {location.state} {location.zip}
-                  </p>
-                  <div className="location-contact-info">
-                    <p>
-                      <strong>Phone:</strong><br />
-                      <a href={`tel:${location.phone}`}>{location.phone}</a>
+              {activeLocations.map((location) => {
+                const facebookLink = location.socialLinkIds
+                  ?.map(getSocialLink)
+                  .find((social) => social.name === 'Facebook');
+
+                return (
+                  <div key={location.id} className="location-card glass">
+                    <h3>{location.name}</h3>
+                    <p className="location-address">
+                      {location.address}<br />
+                      {location.city}, {location.state} {location.zip}
                     </p>
-                    <p>
-                      <strong>Hours:</strong><br />
-                      {location.hours}
-                    </p>
+                    <div className="location-contact-info">
+                      <p>
+                        <strong>Phone:</strong><br />
+                        <a href={`tel:${location.phone}`}>{location.phone}</a>
+                      </p>
+                      {facebookLink && (
+                        <p>
+                          <strong>Facebook:</strong><br />
+                          <a
+                            href={facebookLink.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="location-facebook-link"
+                            aria-label={facebookLink.ariaLabel}
+                          >
+                            {isSocialIconObject(facebookLink.icon) && (
+                              <img
+                                src={facebookLink.icon.src}
+                                alt={facebookLink.icon.alt}
+                                className="social-icon-img"
+                              />
+                            )}
+                            Facebook
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                    <Link
+                      to={`/locations/${location.slug}`}
+                      className="btn btn-secondary mt-2"
+                    >
+                      View Details
+                    </Link>
                   </div>
-                  <Link 
-                    to={`/locations/${location.slug}`}
-                    className="btn btn-secondary mt-2"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
 
-        <section id="must-be-21" className="must-be-21">
-          <p>
-            <strong>Important:</strong> Must be 21+ years of age. This website
-            contains cannabis information. Consult with a healthcare provider
-            before use.
-          </p>
-        </section>
     </main>
   );
 }

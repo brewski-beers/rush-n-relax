@@ -71,10 +71,86 @@ npm run build
 
 ### Testing
 
-\\\ash
-npm test
-npm run test:ui  # UI test runner
-\\\
+Rush n Relax uses a two-layer test strategy: fast **unit tests** via Vitest and
+real-browser **E2E tests** via Playwright.
+
+#### Unit Tests (Vitest)
+
+```bash
+npm test              # Run all unit tests
+npm run test:ui       # Interactive Vitest UI
+npm run test:coverage # Generate coverage report
+```
+
+Unit tests live alongside source files (`*.test.ts` / `*.test.tsx`) and cover
+pure logic — route matching, branding constants, component rendering, age-gate
+validation.
+
+#### E2E Tests (Playwright)
+
+E2E tests are split into three tiers controlled by the `TEST_MODE` env var.
+This keeps local feedback loops fast while CI validates everything.
+
+| Tier | Command | What it runs | When to use |
+|------|---------|-------------|-------------|
+| **Smoke** | `npm run test:e2e:smoke` | Age gate only (Chromium) | Every save / pre-commit |
+| **Core** | `npm run test:e2e:core` | Age gate + journeys + app (Chromium + Mobile) | Before pushing a branch |
+| **Full** | `npm run test:e2e:full` | All specs, all browsers | CI / release gate |
+
+```bash
+# Quick check — runs in < 15s
+npm run test:e2e:smoke
+
+# Broader validation — runs in ~30s
+npm run test:e2e:core
+
+# Exhaustive — runs in CI
+npm run test:e2e:full
+```
+
+#### E2E Architecture & Conventions
+
+All E2E specs follow a standardized pattern:
+
+1. **Shared fixtures** — Import helpers from `e2e/fixtures.ts`:
+   - `verifyAge(page)` — UI-based age verification (fills form, submits, waits
+     for overlay to dismiss). Use when testing the gate-to-app transition.
+   - `preVerifyAge(page)` — Injects `localStorage.setItem('ageVerified', 'true')`
+     via `addInitScript`. Fastest path — **use this by default** when age-gate
+     verification is not the thing under test.
+
+2. **No `networkidle`** — The app loads with zero startup network calls
+   (products, locations, and categories are static constants). Wait for a
+   visible DOM element instead:
+   ```ts
+   // BAD  — hangs for 30+ seconds
+   await page.waitForLoadState('networkidle');
+
+   // GOOD — resolves in <500ms
+   await page.locator('main').waitFor({ state: 'visible', timeout: 5000 });
+   ```
+
+3. **Tight timeouts** — Static pages render in under 2 seconds. Never exceed
+   `8000ms` for a selector wait; prefer `5000ms`.
+
+4. **No redundant coverage** — Each spec owns a clear domain:
+   | Spec file | Domain |
+   |-----------|--------|
+   | `age-gate.spec.ts` | Age-gate UX: valid/invalid dates, persistence, error states |
+   | `user-journey.spec.ts` | Post-verification navigation, page transitions, layout |
+   | `app.spec.ts` | Product browsing, category navigation, a11y, performance |
+   | `health-checks.spec.ts` | Page loads, SEO, responsive, contact form, web vitals |
+
+5. **Mock external calls** — The only network dependency is the contact form's
+   Firestore write (`addDoc`). Mock it with `page.route()`:
+   ```ts
+   await page.route('**/firestore.googleapis.com/**', (route) =>
+     route.fulfill({ status: 200, body: '{}' }),
+   );
+   ```
+
+6. **Browser matrix** — Local dev runs Chromium + Mobile Chrome (2 browsers).
+   Full CI adds Firefox, Safari, and tablet viewports.
 
 ### Deployment
 

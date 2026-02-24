@@ -1,13 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
-import { SOCIAL_LINKS, TECH_CREDIT, isSocialIconObject } from '../../constants/social';
+import { useEffect, useState } from 'react';
 import { useNavigation } from '../../contexts/NavigationContext';
+import {
+  BrandAssetFormat,
+  BrandSurface,
+  resolvePreferredLogoUrlForSurface,
+} from '../../constants/branding';
+import { isRouteActive } from '../../utils/routeMatching';
 import cannabisLeaf from '../../assets/icons/cannabis-leaf.svg';
 import './Navigation.css';
 
 export function Navigation() {
   const { isMenuOpen, toggleMenu } = useNavigation();
   const location = useLocation();
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
@@ -19,12 +25,45 @@ export function Navigation() {
     }
   }, [isMenuOpen]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadLogo = async () => {
+      const url = await resolvePreferredLogoUrlForSurface(
+        BrandSurface.HEADER_DESKTOP,
+        BrandAssetFormat.PNG,
+      );
+      if (isMounted) {
+        setLogoSrc(url);
+      }
+    };
+
+    loadLogo();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <header className="header">
       <div className="header-content">
         <Link to="/" className="logo">
-          <span className="logo-text">RUSH N RELAX</span>
+          {logoSrc ? (
+            <img
+              src={logoSrc}
+              alt="Rush N Relax"
+              className="logo-image"
+              onError={() => setLogoSrc(null)}
+            />
+          ) : (
+            <span className="logo-text">RUSH N RELAX</span>
+          )}
         </Link>
+
+        <p className="header-legal" aria-label="Age requirement">
+          21+ only
+        </p>
 
         <button
           className={`nav-toggle ${isMenuOpen ? 'active' : ''}`}
@@ -55,9 +94,7 @@ export function Navigation() {
                   to={link.path}
                   onClick={() => toggleMenu()}
                   className="nav-link"
-                  aria-current={
-                    location.pathname === link.path ? 'page' : undefined
-                  }
+                  aria-current={isRouteActive(location.pathname, link.path) ? 'page' : undefined}
                 >
                   {link.label}
                 </Link>
@@ -67,54 +104,6 @@ export function Navigation() {
 
           {/* Mobile Menu Hub - Only visible on mobile */}
           <div className="mobile-menu-hub">
-            {/* Branding Section */}
-            <div className="hub-branding">
-              <h3>RUSH N RELAX</h3>
-              <p>Premium cannabis experience</p>
-            </div>
-
-            {/* Contact Section */}
-            <div className="hub-contact">
-              <h4>Contact</h4>
-              <a href="mailto:rush@rushnrelax.com">rush@rushnrelax.com</a>
-              <a href="mailto:capps@rushnrelax.com">capps@rushnrelax.com</a>
-            </div>
-
-            {/* Social Links */}
-            {SOCIAL_LINKS.length > 0 && (
-              <div className="hub-social">
-                <h4>Follow Us</h4>
-                <div className="hub-social-icons">
-                  {SOCIAL_LINKS.map((social) => {
-                    return (
-                      <a
-                        key={social.id}
-                        href={social.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={social.ariaLabel}
-                        className="hub-social-icon"
-                        title={social.name}
-                      >
-                        {isSocialIconObject(social.icon) ? (
-                          <img src={social.icon.src} alt={social.icon.alt} className="hub-social-icon-img" />
-                        ) : (
-                          social.icon
-                        )}
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Tech Credit */}
-            <div className="hub-credit">
-              <a href={TECH_CREDIT.url} target="_blank" rel="noopener noreferrer">
-                Tech by Brewski
-              </a>
-            </div>
-
             {/* Legal */}
             <div className="hub-legal">
               <small>Must be 21+ years of age to visit.</small>

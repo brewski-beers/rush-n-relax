@@ -24,7 +24,7 @@ export const LOADING_MESSAGES = {
 export const COMPANY = {
   NAME: 'Rush N Relax',
   DESCRIPTION:
-    'Upscale cannabis dispensary and speakeasy-style lounge offering premium flower, edibles, concentrates, vapes, and more.',
+    'East Tennessee\u2019s upscale cannabis dispensary — premium flower, concentrates, edibles, vapes, THCa-infused drinks, and a one-of-a-kind speakeasy-style lounge in Oak Ridge.',
   CONTACT: {
     email1: 'rush@rushnrelax.com',
     email2: 'capps@rushnrelax.com',

@@ -9,7 +9,6 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
 }
 
 .content-wrapper {
@@ -615,6 +614,17 @@ address {
   color: #e8d4a2;
 }
 
+.location-facebook-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.location-facebook-link .social-icon-img {
+  width: 1rem;
+  height: 1rem;
+}
+
 /* Blur content when age gate is active */
 .content-wrapper.age-gate-blur {
   display: none;
@@ -842,22 +852,6 @@ address {
 .hours-text {
   margin-top: 0.5rem;
   font-size: 0.95rem;
-}
-
-/* Age requirement notice */
-.must-be-21 {
-  padding: 1.5rem;
-  background-color: rgba(255, 107, 107, 0.05);
-  border: 1px solid rgba(255, 107, 107, 0.2);
-  border-radius: 0.25rem;
-  text-align: center;
-  color: #b0b0b0;
-  font-size: 0.875rem;
-  margin: 2rem 0;
-}
-
-.must-be-21 strong {
-  color: #ff6b6b;
 }
 
 /* Hero CTAs */

@@ -1,15 +1,44 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright E2E Test Configuration
+ * Test suite modes:
+ * SMOKE: age-gate only (fastest, ~2-3min)
+ * CORE: age-gate + user-journey + app (medium, ~8-10min)
+ * FULL: all spec files, all browsers (default, ~15-20min+)
  */
+const testMode = process.env.TEST_MODE || 'full';
+const isCI = !!process.env.CI;
+const isSmokeMode = testMode === 'smoke';
+const isCoreMode = testMode === 'core';
+
+// Local: Chromium + Mobile (realistic but fast). CI: selective or all.
+const projects = isCI
+  ? isSmokeMode
+    ? [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }]
+    : isCoreMode
+      ? [
+          { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+          { name: 'Mobile Chrome', use: { ...devices['Pixel 5'] } },
+        ]
+      : [
+          { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+          { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+          { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+          { name: 'Mobile Chrome', use: { ...devices['Pixel 5'] } },
+          { name: 'Mobile Safari', use: { ...devices['iPhone 12'] } },
+        ]
+  : [
+      { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+      { name: 'Mobile Chrome', use: { ...devices['Pixel 5'] } },
+    ];
+
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  fullyParallel: !isCI && !isSmokeMode,
+  forbidOnly: isCI,
+  retries: isCI ? 1 : 0,
+  workers: isCI ? 1 : undefined,
+  reporter: isCI ? 'list' : 'html',
   
   use: {
     baseURL: 'http://localhost:3000',
@@ -17,32 +46,12 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
 
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
-  ],
+  projects,
 
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !isCI,
+    timeout: 30000,
   },
 });

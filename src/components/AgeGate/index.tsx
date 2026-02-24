@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './AgeGate.css';
 
 export function AgeGate() {
@@ -7,6 +7,9 @@ export function AgeGate() {
   const [userDay, setUserDay] = useState('');
   const [userYear, setUserYear] = useState('');
   const [error, setError] = useState('');
+  const monthRef = useRef<HTMLInputElement>(null);
+  const dayRef = useRef<HTMLInputElement>(null);
+  const yearRef = useRef<HTMLInputElement>(null);
 
   // Check localStorage on mount
   useEffect(() => {
@@ -56,6 +59,32 @@ export function AgeGate() {
     window.dispatchEvent(new CustomEvent('ageVerified'));
   };
 
+  const handleMonthChange = (value: string) => {
+    if (value.length === 2 && parseInt(value, 10) <= 12) {
+      setUserMonth(value);
+      dayRef.current?.focus();
+    } else if (value.length < 2) {
+      setUserMonth(value);
+    }
+  };
+
+  const handleDayChange = (value: string) => {
+    if (value.length === 2 && parseInt(value, 10) <= 31) {
+      setUserDay(value);
+      yearRef.current?.focus();
+    } else if (value.length < 2) {
+      setUserDay(value);
+    }
+  };
+
+  const handleYearChange = (value: string) => {
+    if (value.length === 4) {
+      setUserYear(value);
+    } else if (value.length < 4) {
+      setUserYear(value);
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleVerify();
@@ -83,39 +112,48 @@ export function AgeGate() {
             <div className="date-input-group">
               <label htmlFor="month">Month</label>
               <input
+                ref={monthRef}
                 id="month"
                 type="number"
                 min="1"
                 max="12"
                 placeholder="MM"
+                inputMode="numeric"
+                maxLength={2}
                 value={userMonth}
-                onChange={(e) => setUserMonth(e.target.value)}
+                onChange={(e) => handleMonthChange(e.target.value)}
                 onKeyPress={handleKeyPress}
               />
             </div>
             <div className="date-input-group">
               <label htmlFor="day">Day</label>
               <input
+                ref={dayRef}
                 id="day"
                 type="number"
                 min="1"
                 max="31"
                 placeholder="DD"
+                inputMode="numeric"
+                maxLength={2}
                 value={userDay}
-                onChange={(e) => setUserDay(e.target.value)}
+                onChange={(e) => handleDayChange(e.target.value)}
                 onKeyPress={handleKeyPress}
               />
             </div>
             <div className="date-input-group">
               <label htmlFor="year">Year</label>
               <input
+                ref={yearRef}
                 id="year"
                 type="number"
                 min="1900"
                 max={new Date().getFullYear()}
                 placeholder="YYYY"
+                inputMode="numeric"
+                maxLength={4}
                 value={userYear}
-                onChange={(e) => setUserYear(e.target.value)}
+                onChange={(e) => handleYearChange(e.target.value)}
                 onKeyPress={handleKeyPress}
               />
             </div>

@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { CardGrid } from '../components/CardGrid';
 import { getProductBySlug, getProductSEO, PRODUCTS } from '../constants/products';
+import { ProductImage } from '../components/ProductImage';
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -102,15 +103,24 @@ export default function ProductDetail() {
 
   if (!product) return null;
 
-  // Get related products
-  const relatedProducts = PRODUCTS.filter(
-    (p) => p.category === product.category && p.id !== product.id
+  // Get other product categories to cross-promote
+  const otherProducts = PRODUCTS.filter(
+    (p) => p.id !== product.id
   ).slice(0, 3);
 
   return (
     <main className="product-detail-page">
+      <section className="back-to-products">
+          <div className="container">
+            <Link to="/products" className="link-button">
+              ← Back to All Products
+            </Link>
+          </div>
+        </section>
+
       <section className="product-hero">
           <div className="container">
+            <ProductImage slug={product.slug} alt={product.name} className="product-hero-img" />
             <h1>{product.name}</h1>
             <p className="lead">{product.description}</p>
           </div>
@@ -128,20 +138,21 @@ export default function ProductDetail() {
           </div>
         </section>
 
-        {relatedProducts.length > 0 && (
+        {otherProducts.length > 0 && (
           <section className="related-products">
             <div className="container">
-              <h2>More {product.category.toUpperCase()}</h2>
+              <h2>Explore More</h2>
               <CardGrid columns="3" gap="lg">
-                {relatedProducts.map((related) => (
-                  <a
+                {otherProducts.map((related) => (
+                  <Link
                     key={related.id}
-                    href={`/products/${related.slug}`}
+                    to={`/products/${related.slug}`}
                     className="product-card-small"
                   >
+                    <div className="product-category">{related.category.toUpperCase()}</div>
                     <h3>{related.name}</h3>
                     <p>{related.description}</p>
-                  </a>
+                  </Link>
                 ))}
               </CardGrid>
             </div>
@@ -152,19 +163,12 @@ export default function ProductDetail() {
           <div className="container">
             <h2>Visit Us to Experience This Product</h2>
             <p>Find our locations and explore our full collection in person.</p>
-            <a href="/locations" className="btn btn-primary">
+            <Link to="/locations" className="btn btn-primary">
               Find a Location
-            </a>
+            </Link>
           </div>
         </section>
 
-        <section className="back-to-products">
-          <div className="container">
-            <a href="/products" className="link-button">
-              ← Back to All Products
-            </a>
-          </div>
-        </section>
       </main>
     );
   }

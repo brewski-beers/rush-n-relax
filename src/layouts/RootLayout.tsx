@@ -4,8 +4,8 @@ import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { AmbientOverlay } from '../components/AmbientOverlay';
 import { AgeGate } from '../components/AgeGate';
 import { Navigation } from '../components/Navigation';
-import { Footer } from '../components/Footer';
 import { NavigationProvider, useNavigation } from '../contexts/NavigationContext';
+import { isRouteActive } from '../utils/routeMatching';
 
 // Lazy-loaded pages for code splitting
 const Home = lazy(() => import('../pages/Home'));
@@ -135,7 +135,7 @@ function DesktopModal() {
               to={link.path}
               onClick={() => setIsMenuOpen(false)}
               className="modal-link"
-              aria-current={location.pathname === link.path ? 'page' : undefined}
+              aria-current={isRouteActive(location.pathname, link.path) ? 'page' : undefined}
             >
               {link.label}
             </Link>
@@ -233,12 +233,11 @@ function RootLayoutContent() {
       <div className="root-layout">
         <AmbientOverlay />
         <AgeGate />
-        <Navigation />
-        <DesktopModal />
+        {isAgeVerified !== false && <Navigation />}
+        {isAgeVerified !== false && <DesktopModal />}
         <div className={`content-wrapper ${isAgeVerified === false ? 'age-gate-blur' : ''}`}>
           {routes}
         </div>
-        <Footer />
       </div>
     </ErrorBoundary>
   );

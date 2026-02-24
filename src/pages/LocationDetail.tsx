@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getLocationBySlug, getLocationSEO } from '../constants/locations';
 import { getSocialLink, isSocialIconObject } from '../constants/social';
 
@@ -154,6 +154,14 @@ export default function LocationDetail() {
 
   return (
     <main className="location-detail-page">
+      <section className="back-to-locations">
+          <div className="container">
+            <Link to="/locations" className="link-button">
+              ← Back to All Locations
+            </Link>
+          </div>
+        </section>
+
       <section className="location-hero">
           <div className="container">
             <h1>{location.name}</h1>
@@ -226,7 +234,7 @@ export default function LocationDetail() {
                     <strong>{location.city}, {location.state}</strong>
                   </p>
                   <p className="text-secondary">
-                    Coordinates: {location.coordinates.lat}, {location.coordinates.lng}
+                    East Tennessee
                   </p>
                 </div>
               )}
@@ -270,26 +278,26 @@ export default function LocationDetail() {
 
         <section className="location-cta">
           <div className="container">
-            <h2>Visit Us Today</h2>
-            <p>Experience premium cannabis in our upscale lounge atmosphere.</p>
+            <h2>Stop By Anytime</h2>
+            <p>Open seven days a week — walk in and let our staff take it from there.</p>
             <div className="cta-buttons">
               <a href={`tel:${location.phone.replace(/\D/g, '')}`} className="btn btn-primary">
                 Call Now
               </a>
-              <a href="/contact" className="btn btn-secondary">
-                Schedule Visit
+              <a
+                href={`https://www.google.com/maps/search/${encodeURIComponent(
+                  location.address
+                )},+${encodeURIComponent(location.city)},+${location.state}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary"
+              >
+                Get Directions
               </a>
             </div>
           </div>
         </section>
 
-        <section className="back-to-locations">
-          <div className="container">
-            <a href="/locations" className="link-button">
-              ← Back to All Locations
-            </a>
-          </div>
-        </section>
       </main>
     );
   }

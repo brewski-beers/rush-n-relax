@@ -62,8 +62,3 @@ export const getSocialLink = (id: SocialId): SocialLink => SOCIAL_METADATA[id];
 
 // Array export for components that display all social links (Navigation, Footer, etc.)
 export const SOCIAL_LINKS: SocialLink[] = Object.values(SOCIAL_METADATA);
-
-export const TECH_CREDIT = {
-  name: 'Tech by Brewski',
-  url: 'https://www.techbybrewski.com',
-};
