@@ -60,29 +60,29 @@ export function AgeGate() {
   };
 
   const handleMonthChange = (value: string) => {
-    if (value.length === 2 && parseInt(value, 10) <= 12) {
-      setUserMonth(value);
-      dayRef.current?.focus();
-    } else if (value.length < 2) {
-      setUserMonth(value);
+    // Cap to 2 digits max
+    const capped = value.slice(0, 2);
+    setUserMonth(capped);
+    // Auto-focus to day when field is full (2 digits) for UX
+    if (capped.length === 2) {
+      setTimeout(() => dayRef.current?.focus(), 50);
     }
   };
 
   const handleDayChange = (value: string) => {
-    if (value.length === 2 && parseInt(value, 10) <= 31) {
-      setUserDay(value);
-      yearRef.current?.focus();
-    } else if (value.length < 2) {
-      setUserDay(value);
+    // Cap to 2 digits max
+    const capped = value.slice(0, 2);
+    setUserDay(capped);
+    // Auto-focus to year when field is full (2 digits) for UX 
+    if (capped.length === 2) {
+      setTimeout(() => yearRef.current?.focus(), 50);
     }
   };
 
   const handleYearChange = (value: string) => {
-    if (value.length === 4) {
-      setUserYear(value);
-    } else if (value.length < 4) {
-      setUserYear(value);
-    }
+    // Only allow 4 digits max
+    const capped = value.slice(0, 4);
+    setUserYear(capped);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -115,8 +115,6 @@ export function AgeGate() {
                 ref={monthRef}
                 id="month"
                 type="number"
-                min="1"
-                max="12"
                 placeholder="MM"
                 inputMode="numeric"
                 maxLength={2}
@@ -131,8 +129,6 @@ export function AgeGate() {
                 ref={dayRef}
                 id="day"
                 type="number"
-                min="1"
-                max="31"
                 placeholder="DD"
                 inputMode="numeric"
                 maxLength={2}
@@ -147,8 +143,6 @@ export function AgeGate() {
                 ref={yearRef}
                 id="year"
                 type="number"
-                min="1900"
-                max={new Date().getFullYear()}
                 placeholder="YYYY"
                 inputMode="numeric"
                 maxLength={4}

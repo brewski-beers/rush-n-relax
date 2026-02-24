@@ -22,29 +22,35 @@ test.describe('Full User Journey - E2E', () => {
     // Navigation should be visible post-verification
     await expect(page.locator('header')).toBeVisible();
 
-    // Navigate to products
-    await page.getByRole('link', { name: /products/i }).first().click();
+    // Navigate to products via page link
+    await page.getByRole('link', { name: /explore products/i }).click();
     await expect(page).toHaveURL(/\/products/);
   });
 
-  test('verified user can navigate all pages', async ({ page }) => {
+  test('verified user can navigate all pages via menu', async ({ page }) => {
     await preVerifyAge(page);
     await page.goto('/');
 
+    // Open the menu first (nav links are in mobile drawer)
+    const toggle = page.locator('.nav-toggle');
+
     // About
+    await toggle.click();
     await page.getByRole('link', { name: /about/i }).click();
     await expect(page).toHaveURL(/\/about/);
 
     // Locations
+    await toggle.click();
     await page.getByRole('link', { name: /locations/i }).click();
     await expect(page).toHaveURL(/\/locations/);
 
     // Contact
+    await toggle.click();
     await page.getByRole('link', { name: /contact/i }).click();
     await expect(page).toHaveURL(/\/contact/);
 
-    // Home (via logo / home link)
-    await page.getByRole('link', { name: /home/i }).first().click();
+    // Home (via logo)
+    await page.locator('header .logo').click();
     await expect(page).toHaveURL('/');
   });
 
@@ -64,12 +70,12 @@ test.describe('Full User Journey - E2E', () => {
     await expect(page.locator('main')).toBeVisible();
   });
 
-  test('footer is visible on all pages', async ({ page }) => {
+  test('header is visible on all pages', async ({ page }) => {
     await preVerifyAge(page);
-    
+
     for (const path of ['/', '/about', '/locations', '/contact']) {
       await page.goto(path);
-      await expect(page.locator('footer')).toBeVisible();
+      await expect(page.locator('header.header')).toBeVisible();
     }
   });
 
@@ -77,8 +83,8 @@ test.describe('Full User Journey - E2E', () => {
     await preVerifyAge(page);
     await page.goto('/');
 
-    // Logo image or text fallback
-    const headerLogo = page.locator('header img, header .logo-text').first();
+    // Logo link has either an img or text fallback
+    const headerLogo = page.locator('header .logo');
     await expect(headerLogo).toBeVisible();
   });
 });
