@@ -48,6 +48,8 @@ VITE_FIREBASE_PROJECT_ID
 VITE_FIREBASE_STORAGE_BUCKET
 VITE_FIREBASE_MESSAGING_SENDER_ID
 VITE_FIREBASE_APP_ID
+VITE_FIREBASE_MEASUREMENT_ID
+VITE_FIREBASE_FUNCTIONS_REGION
 ```
 **How to get these:**
 1. Go to [Firebase Console](https://console.firebase.google.com/)
@@ -63,6 +65,8 @@ VITE_FIREBASE_APP_ID
 - `VITE_FIREBASE_STORAGE_BUCKET`: `rush-n-relax.firebasestorage.app`
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`: `556383052079`
 - `VITE_FIREBASE_APP_ID`: `1:556383052079:web:6780513e5d7d79140f01da`
+- `VITE_FIREBASE_MEASUREMENT_ID`: `G-MRCWGZC1F1`
+- `VITE_FIREBASE_FUNCTIONS_REGION`: `us-central1`
 
 #### Google Maps API (Required)
 ```
@@ -77,6 +81,19 @@ VITE_GOOGLE_MAPS_API_KEY
 4. Ensure these APIs are enabled:
    - Maps Embed API
    - Maps JavaScript API
+
+#### Ambient Video Settings (Required)
+```
+VITE_AMBIENT_ENABLED
+VITE_AMBIENT_STORAGE_PATH
+VITE_AMBIENT_MOBILE_PATH
+```
+**Current values**:
+- `VITE_AMBIENT_ENABLED`: `true`
+- `VITE_AMBIENT_STORAGE_PATH`: `ambient/smoke-4k.mp4`
+- `VITE_AMBIENT_MOBILE_PATH`: `ambient/smoke-1080p.mp4`
+
+These control the ambient background video feature on your site.
 
 ## Testing the Workflows
 
