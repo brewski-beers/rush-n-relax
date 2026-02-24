@@ -9,7 +9,8 @@ runs:
       with:
         node-version: '20'
         cache: 'npm'
+        cache-dependency-path: package-lock.json
 
     - name: Install dependencies
       shell: bash
-      run: npm ci
+      run: npm ci --prefer-offline --no-audit

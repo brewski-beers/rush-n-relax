@@ -4,12 +4,11 @@
 'use strict';
 
 const http = require('http');
-const fs = require('fs');
-const path = require('path');
 
 const FIRESTORE_BASE = 'http://localhost:8080';
 const STORAGE_BASE = 'http://localhost:9199';
 const PROJECT = 'rush-n-relax';
+const EMULATOR_ADMIN_AUTH_HEADER = { Authorization: 'Bearer owner' };
 
 function request(options, body) {
   return new Promise((resolve, reject) => {
@@ -84,7 +83,11 @@ async function seedStorageStub() {
       port: uploadUrl.port,
       path: uploadUrl.pathname + uploadUrl.search,
       method: 'POST',
-      headers: { 'Content-Type': 'video/mp4', 'Content-Length': stub.length },
+      headers: {
+        ...EMULATOR_ADMIN_AUTH_HEADER,
+        'Content-Type': 'video/mp4',
+        'Content-Length': stub.length,
+      },
     },
     stub
   );
@@ -97,7 +100,11 @@ async function seedStorageStub() {
       port: uploadUrlMobile.port,
       path: uploadUrlMobile.pathname + uploadUrlMobile.search,
       method: 'POST',
-      headers: { 'Content-Type': 'video/mp4', 'Content-Length': stub.length },
+      headers: {
+        ...EMULATOR_ADMIN_AUTH_HEADER,
+        'Content-Type': 'video/mp4',
+        'Content-Length': stub.length,
+      },
     },
     stub
   );
