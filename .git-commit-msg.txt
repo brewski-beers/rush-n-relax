@@ -1,0 +1,17 @@
+feat: Firebase emulators in CI + smoke cron + webkit keyboard fix
+
+CI E2E: start Firestore/Storage/Functions emulators before Playwright,
+seed with stub MP4 + Firestore state (scripts/seed-emulators.cjs),
+VITE_USE_EMULATORS=true routes SDK to localhost - zero billable reads.
+
+Smoke cron: .github/workflows/smoke-tests.yml runs 3x daily against
+production URL, TEST_MODE=smoke, Chromium only, no local server.
+
+playwright.config.ts: PLAYWRIGHT_BASE_URL overrides baseURL and
+suppresses webServer block when targeting an external URL.
+
+Webkit fix: test.fixme() on webkit in keyboard nav tests - Safari Tab
+focus requires macOS Full Keyboard Access system setting, not app code.
+
+New: scripts/seed-emulators.cjs, .github/workflows/smoke-tests.yml
+Updated: package.json (wait-on dep, test:e2e:smoke:prod script)

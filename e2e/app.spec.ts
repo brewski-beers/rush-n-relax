@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type BrowserName } from '@playwright/test';
 import { preVerifyAge } from './fixtures';
 
 /**
@@ -116,7 +116,14 @@ test.describe('Accessibility', () => {
     }
   });
 
-  test('should support keyboard navigation', async ({ page }) => {
+  test('should support keyboard navigation', async ({ page, browserName }) => {
+    // WebKit (Safari) does not Move focus to buttons/links via Tab without
+    // macOS "Full Keyboard Access" system setting — browser limitation, not app bug.
+    test.fixme(
+      (browserName as BrowserName) === 'webkit',
+      'Safari requires Full Keyboard Access system preference for Tab to focus interactive elements'
+    );
+
     await preVerifyAge(page);
     await page.goto('/');
     await page.waitForSelector('a, button', { timeout: 8000 });

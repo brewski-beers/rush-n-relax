@@ -31,7 +31,7 @@ export function initializeApp() {
     functions = getFunctions(app, 'us-central1');
     analytics = getAnalytics(app);
 
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV || import.meta.env.VITE_USE_EMULATORS === 'true') {
       connectFirestoreEmulator(db, 'localhost', 8080);
       connectStorageEmulator(storage, 'localhost', 9199);
       connectFunctionsEmulator(functions, 'localhost', 5001);

@@ -19,6 +19,7 @@
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "TEST_MODE=smoke playwright test e2e/age-gate.spec.ts --reporter=line",
+    "test:e2e:smoke:prod": "TEST_MODE=smoke PLAYWRIGHT_BASE_URL=https://www.rushnrelax.com playwright test e2e/age-gate.spec.ts e2e/health-checks.spec.ts --reporter=line",
     "test:e2e:core": "TEST_MODE=core playwright test e2e/age-gate.spec.ts e2e/user-journey.spec.ts e2e/app.spec.ts --reporter=line",
     "test:e2e:full": "TEST_MODE=full playwright test --reporter=list",
     "test:e2e:ui": "playwright test --ui",
@@ -77,6 +78,7 @@
     "typescript-eslint": "^8.56.1",
     "vite": "^5.0.11",
     "vite-plugin-pwa": "^0.17.4",
-    "vitest": "^1.1.0"
+    "vitest": "^1.1.0",
+    "wait-on": "^8.0.5"
   }
 }
