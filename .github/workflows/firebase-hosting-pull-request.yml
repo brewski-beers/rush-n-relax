@@ -34,16 +34,6 @@ jobs:
         env:
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
 
-      - name: Create service account file
-        run: |
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}' > $HOME/service-account.json
-
-      - name: Deploy Firestore Rules & Indexes
-        run: |
-          npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage:rules --project rush-n-relax --non-interactive
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: /home/runner/service-account.json
-
       - name: Deploy to Firebase Preview Channel
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
