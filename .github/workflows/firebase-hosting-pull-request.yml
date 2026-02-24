@@ -26,16 +26,15 @@ jobs:
       - name: Unit tests
         run: npm run test -- --run
 
-      - name: Start Firebase emulators
-        uses: ./.github/actions/start-emulators
-
       - name: Setup Playwright (Chromium)
         uses: ./.github/actions/setup-playwright
         with:
           browsers: chromium
 
       - name: E2E tests
-        run: npm run test:e2e -- --project=chromium
+        run: >-
+          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,storage
+          "node scripts/seed-emulators.cjs && npm run test:e2e -- --project=chromium"
         env:
           VITE_USE_EMULATORS: 'true'
           CI: 'true'

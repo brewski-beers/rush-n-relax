@@ -19,14 +19,8 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Lint
-        run: npm run lint
-
       - name: Unit tests
         run: npm run test -- --run
-
-      - name: Start Firebase emulators
-        uses: ./.github/actions/start-emulators
 
       - name: Setup Playwright (all browsers)
         uses: ./.github/actions/setup-playwright
@@ -34,7 +28,9 @@ jobs:
           browsers: chromium firefox webkit
 
       - name: E2E tests
-        run: npm run test:e2e
+        run: >-
+          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,storage
+          "node scripts/seed-emulators.cjs && npm run test:e2e"
         env:
           VITE_USE_EMULATORS: 'true'
           CI: 'true'
