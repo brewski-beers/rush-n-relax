@@ -1,13 +1,20 @@
-/* Age Gate Overlay */
-.age-gate-overlay {
+/* Age Gate Screen — full-viewport blocker, sits above ambient portal */
+.age-gate-screen {
   position: fixed;
   inset: 0;
-  background: transparent;
-  z-index: 1000;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Age Gate Overlay — transparent so ambient smoke shows through */
+.age-gate-overlay {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  width: 100%;
 }
 
 .age-gate-content {

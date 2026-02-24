@@ -22,16 +22,29 @@ test.describe('Age Gate Modal UX', () => {
     const ageGateOverlay = page.locator('.age-gate-overlay');
     await expect(ageGateOverlay).toBeVisible();
 
-    // Navigation should NOT be visible during age gate (may be hidden by CSS)
-    // We just verify the modal content is present and takes focus
+    // Navigation must not be in the DOM at all — not just hidden
+    const header = page.locator('.header');
+    await expect(header).not.toBeAttached();
+
+    // Age gate content card is present
     const ageGateContent = page.locator('.age-gate-content');
     await expect(ageGateContent).toBeVisible();
 
-    // Modal should be the prominent interactive element
-    const overlay = page.locator('.age-gate-overlay');
-    const box = await overlay.boundingBox();
+    // age-gate-screen is the full-viewport blocker
+    const screen = page.locator('.age-gate-screen');
+    const box = await screen.boundingBox();
     expect(box).toBeTruthy();
-    expect(box?.width).toBeGreaterThan(200);
+    const viewportSize = page.viewportSize();
+    expect(box!.width).toBe(viewportSize!.width);
+    expect(box!.height).toBe(viewportSize!.height);
+  });
+
+  test('ambient overlay portal is present during age gate', async ({
+    page,
+  }) => {
+    // AmbientOverlay renders into #ambient-portal — must exist even before verification
+    const portal = page.locator('#ambient-portal');
+    await expect(portal).toBeAttached();
   });
 
   test('input fields are visible and not cutoff', async ({ page }) => {

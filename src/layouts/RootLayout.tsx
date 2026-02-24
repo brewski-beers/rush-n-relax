@@ -259,15 +259,20 @@ function RootLayoutContent() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="root-layout">
+        {/* AmbientOverlay renders via portal — persists across both states */}
         <AmbientOverlay />
-        <AgeGate />
-        {isAgeVerified !== false && <Navigation />}
-        {isAgeVerified !== false && <DesktopModal />}
-        <div
-          className={`content-wrapper ${isAgeVerified === false ? 'age-gate-blur' : ''}`}
-        >
-          {routes}
-        </div>
+
+        {!isAgeVerified ? (
+          <div className="age-gate-screen">
+            <AgeGate />
+          </div>
+        ) : (
+          <>
+            <Navigation />
+            <DesktopModal />
+            <div className="content-wrapper">{routes}</div>
+          </>
+        )}
       </div>
     </ErrorBoundary>
   );
