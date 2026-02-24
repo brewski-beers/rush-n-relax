@@ -1,5 +1,7 @@
 # Production deployment on merge to main
-name: Deploy to Firebase Hosting Production
+# - `verify` runs full cross-browser E2E suite against emulators
+# - `deploy` only runs after verify passes
+name: Main — Verify & Deploy
 
 on:
   push:
@@ -7,67 +9,54 @@ on:
       - main
 
 jobs:
-  build_and_deploy:
+  verify:
+    name: verify
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Setup
+        uses: ./.github/actions/setup
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run linter
+      - name: Lint
         run: npm run lint
 
-      - name: Run unit tests
+      - name: Unit tests
         run: npm run test -- --run
 
-      - name: Cache Firebase emulator binaries
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/firebase/emulators
-          key: firebase-emulators-${{ runner.os }}
-
-      - name: Write Firebase service account
-        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}' > $HOME/gcloud-key.json
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-
       - name: Start Firebase emulators
-        run: |
-          npx firebase-tools emulators:start \
-            --only firestore,storage \
-            --project rush-n-relax &
-          echo "Waiting for emulators to start..."
-          npx wait-on http://localhost:8080 http://localhost:9199 --timeout 30000
-          echo "Emulators ready"
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ env.HOME }}/gcloud-key.json
+        uses: ./.github/actions/start-emulators
 
-      - name: Seed emulators with test data
-        run: node scripts/seed-emulators.cjs
+      - name: Setup Playwright (all browsers)
+        uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium firefox webkit
 
-      - name: Run E2E tests
+      - name: E2E tests
         run: npm run test:e2e
         env:
           VITE_USE_EMULATORS: 'true'
+          CI: 'true'
 
-      - name: Build project
+  deploy:
+    name: deploy
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Build
         run: npm run build
         env:
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
 
-      - name: Deploy Firestore Rules, Indexes & Storage Rules
+      - name: Deploy Firestore rules, indexes & Storage rules
         run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}' > $HOME/gcloud-key.json
           GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
-            npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage --project rush-n-relax --non-interactive
+            npx firebase-tools deploy \
+            --only firestore:rules,firestore:indexes,storage \
+            --project rush-n-relax \
+            --non-interactive
           rm $HOME/gcloud-key.json
 
       - name: Deploy to Firebase Hosting Production

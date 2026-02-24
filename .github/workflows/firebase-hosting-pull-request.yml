@@ -1,5 +1,7 @@
-# Preview deployment for Pull Requests
-name: Deploy to Firebase Hosting Preview Channel
+# Pull Request CI
+# - `verify` job is the required status check for branch protection
+# - `preview` deploy only runs after verify passes
+name: PR — Verify & Preview
 
 on:
   pull_request:
@@ -8,59 +10,42 @@ on:
       - main
 
 jobs:
-  build_and_preview:
+  verify:
+    name: verify
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Setup
+        uses: ./.github/actions/setup
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run linter
+      - name: Lint
         run: npm run lint
 
-      - name: Run unit tests
+      - name: Unit tests
         run: npm run test -- --run
 
-      - name: Cache Firebase emulator binaries
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/firebase/emulators
-          key: firebase-emulators-${{ runner.os }}
-
-      - name: Write Firebase service account
-        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}' > $HOME/gcloud-key.json
-
-      - name: Install Playwright browsers (Chromium only)
-        run: npx playwright install chromium --with-deps
-
       - name: Start Firebase emulators
-        run: |
-          npx firebase-tools emulators:start \
-            --only firestore,storage \
-            --project rush-n-relax &
-          echo "Waiting for emulators to start..."
-          npx wait-on http://localhost:8080 http://localhost:9199 --timeout 30000
-          echo "Emulators ready"
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ env.HOME }}/gcloud-key.json
+        uses: ./.github/actions/start-emulators
 
-      - name: Seed emulators with test data
-        run: node scripts/seed-emulators.cjs
+      - name: Setup Playwright (Chromium)
+        uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
 
-      - name: Run E2E tests (Chromium only)
+      - name: E2E tests
         run: npm run test:e2e -- --project=chromium
         env:
           VITE_USE_EMULATORS: 'true'
+          CI: 'true'
 
-      - name: Build project
+  preview:
+    name: preview
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Build
         run: npm run build
         env:
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}

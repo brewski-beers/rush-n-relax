@@ -1,0 +1,25 @@
+name: 'Start Firebase Emulators'
+description: 'Cache emulator binaries, start Firestore and Storage emulators, wait for readiness, and seed test data'
+
+runs:
+  using: composite
+  steps:
+    - name: Cache Firebase emulator binaries
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/firebase/emulators
+        key: firebase-emulators-${{ runner.os }}
+
+    - name: Start emulators
+      shell: bash
+      run: |
+        npx firebase-tools emulators:start \
+          --only firestore,storage \
+          --project rush-n-relax &
+        echo "Waiting for emulators..."
+        npx wait-on tcp:localhost:8080 tcp:localhost:9199 --timeout 60000
+        echo "Emulators ready"
+
+    - name: Seed emulators with test data
+      shell: bash
+      run: node scripts/seed-emulators.cjs
