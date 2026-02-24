@@ -1,10 +1,13 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Card } from '../components/Card';
 import { ContactForm } from '../components/ContactForm';
 import { LOCATIONS } from '../constants/locations';
 import { getSocialLink, isSocialIconObject } from '../constants/social';
 
 export default function Contact() {
+  const navigate = useNavigate();
+
   useEffect(() => {
     document.title = 'Contact Us — Rush N Relax Cannabis Dispensary';
     const meta = document.querySelector('meta[name="description"]');
@@ -71,9 +74,23 @@ export default function Contact() {
                 const facebookLink = location.socialLinkIds
                   ?.map(getSocialLink)
                   .find((social) => social.name === 'Facebook');
+                
+                const handleCardClick = (e: React.MouseEvent) => {
+                  // Only navigate if clicking on the card itself, not nested interactive elements
+                  if ((e.target as HTMLElement).closest('a, button')) {
+                    return;
+                  }
+                  navigate(`/locations/${location.slug}`);
+                };
 
                 return (
-                  <div key={location.id} className="location-card glass">
+                  <Card 
+                    key={location.id} 
+                    variant="location" 
+                    as="div"
+                    style={{ cursor: 'pointer' }}
+                    onClick={handleCardClick}
+                  >
                     <h3>{location.name}</h3>
                     <p className="location-address">
                       {location.address}<br />
@@ -106,13 +123,10 @@ export default function Contact() {
                         </p>
                       )}
                     </div>
-                    <Link
-                      to={`/locations/${location.slug}`}
-                      className="btn btn-secondary mt-2"
-                    >
+                    <span className="btn btn-secondary mt-2" style={{ display: 'inline-block' }}>
                       View Details
-                    </Link>
-                  </div>
+                    </span>
+                  </Card>
                 );
               })}
             </div>

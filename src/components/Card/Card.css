@@ -1,0 +1,225 @@
+/* ============================================================
+   RUSH N RELAX UNIFIED CARD COMPONENT
+   
+   Single source of truth for all card styling across the app.
+   All card variants inherit from base styles and override as needed.
+   ============================================================ */
+
+/* ─────────────────────────────────────────────────────────
+   BASE CARD STYLES
+   ───────────────────────────────────────────────────────── */
+
+.rnr-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.rnr-card:hover {
+  transform: translateY(-2px);
+}
+
+/* ─────────────────────────────────────────────────────────
+   PRODUCT CARD VARIANT
+   ───────────────────────────────────────────────────────── */
+
+.rnr-card--product {
+  padding: 1.5rem;
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rnr-card--product:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(213, 179, 106, 0.3);
+}
+
+.rnr-card--product h2,
+.rnr-card--product h3 {
+  font-size: 1.5rem;
+  margin: 0.5rem 0 0.75rem 0;
+  color: #e8e8e8;
+  line-height: 1.3;
+}
+
+.rnr-card--product p {
+  color: #b0b0b0;
+  margin: 0;
+  line-height: 1.5;
+  flex-grow: 1;
+  font-size: 0.95rem;
+}
+
+.rnr-card--product .product-category {
+  font-size: 0.75rem;
+  color: #d5b36a;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+}
+
+/* ─────────────────────────────────────────────────────────
+   PRODUCT SMALL VARIANT (Related Products)
+   ───────────────────────────────────────────────────────── */
+
+.rnr-card--product-small {
+  padding: 1.5rem;
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rnr-card--product-small:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(213, 179, 106, 0.3);
+}
+
+.rnr-card--product-small h3 {
+  font-size: 1.25rem;
+  margin: 0.5rem 0 0.5rem 0;
+  color: #e8e8e8;
+}
+
+.rnr-card--product-small p {
+  color: #b0b0b0;
+  margin: 0;
+  line-height: 1.5;
+  flex-grow: 1;
+  font-size: 0.9rem;
+}
+
+/* ─────────────────────────────────────────────────────────
+   LOCATION CARD VARIANT
+   ───────────────────────────────────────────────────────── */
+
+.rnr-card--location {
+  padding: 1.5rem;
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rnr-card--location:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(213, 179, 106, 0.3);
+}
+
+.rnr-card--location h3 {
+  font-size: 1.25rem;
+  margin: 0.5rem 0 0.75rem 0;
+  color: #e8e8e8;
+}
+
+.rnr-card--location p {
+  color: #b0b0b0;
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.rnr-card--location p:last-of-type {
+  margin-bottom: 1rem;
+}
+
+/* ─────────────────────────────────────────────────────────
+   INFO CARD VARIANT (Hours, Contact)
+   ───────────────────────────────────────────────────────── */
+
+.rnr-card--info {
+  padding: 2rem;
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rnr-card--info:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(213, 179, 106, 0.3);
+}
+
+.rnr-card--info h2 {
+  font-size: 1.25rem;
+  margin: 0 0 1rem 0;
+  color: #d5b36a;
+  font-weight: 700;
+}
+
+.rnr-card--info p {
+  color: #b0b0b0;
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.rnr-card--info address {
+  font-style: normal;
+}
+
+.rnr-card--info address p {
+  margin: 0.25rem 0;
+}
+
+/* ─────────────────────────────────────────────────────────
+   VALUE CARD VARIANT (About Page)
+   ───────────────────────────────────────────────────────── */
+
+.rnr-card--value {
+  padding: 1.5rem;
+  text-align: center;
+  backdrop-filter: blur(8px);
+  background-color: rgba(213, 179, 106, 0.08);
+  border: 1px solid rgba(213, 179, 106, 0.2);
+  border-radius: 0.5rem;
+}
+
+.rnr-card--value:hover {
+  background-color: rgba(213, 179, 106, 0.12);
+  border-color: rgba(213, 179, 106, 0.4);
+}
+
+.rnr-card--value h3 {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem 0;
+  color: #d5b36a;
+}
+
+.rnr-card--value p {
+  color: #b0b0b0;
+  margin: 0;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+/* ─────────────────────────────────────────────────────────
+   RESPONSIVE ADJUSTMENTS
+   ───────────────────────────────────────────────────────── */
+
+@media (min-width: 768px) {
+  .rnr-card--product,
+  .rnr-card--product-small,
+  .rnr-card--location {
+    padding: 2rem;
+  }
+
+  .rnr-card--info {
+    padding: 2.5rem;
+  }
+
+  .rnr-card--product h2,
+  .rnr-card--product h3 {
+    font-size: 1.75rem;
+  }
+
+  .rnr-card--product-small h3 {
+    font-size: 1.5rem;
+  }
+
+  .rnr-card--location h3 {
+    font-size: 1.5rem;
+  }
+}

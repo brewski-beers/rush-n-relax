@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Card } from '../components/Card';
 
 export default function About() {
   useEffect(() => {
@@ -56,15 +57,15 @@ export default function About() {
           <div className="container">
             <h2>What We Stand For</h2>
             <div className="values-grid">
-              <div className="value-card">
+              <Card variant="value" as="div">
                 <h3>Quality Without Compromise</h3>
                 <p>
                   We taste, test, and vet every product before it reaches the
                   shelf. If it doesn't meet our standard, it doesn't make
                   the cut — regardless of margin or trend.
                 </p>
-              </div>
-              <div className="value-card">
+              </Card>
+              <Card variant="value" as="div">
                 <h3>Respect for the Plant & the Person</h3>
                 <p>
                   Cannabis means different things to different people. We
@@ -72,15 +73,15 @@ export default function About() {
                   seasoned enthusiast — with honest guidance and zero
                   judgment.
                 </p>
-              </div>
-              <div className="value-card">
+              </Card>
+              <Card variant="value" as="div">
                 <h3>Experience Over Everything</h3>
                 <p>
                   The lounge, the conversation, the product recommendation
                   that lands perfectly — we obsess over the details that
                   turn a transaction into a moment worth remembering.
                 </p>
-              </div>
+              </Card>
             </div>
           </div>
         </section>

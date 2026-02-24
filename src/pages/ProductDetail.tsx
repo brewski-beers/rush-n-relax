@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Card } from '../components/Card';
 import { CardGrid } from '../components/CardGrid';
 import { getProductBySlug, getProductSEO, PRODUCTS } from '../constants/products';
 import { ProductImage } from '../components/ProductImage';
@@ -144,15 +145,15 @@ export default function ProductDetail() {
               <h2>Explore More</h2>
               <CardGrid columns="3" gap="lg">
                 {otherProducts.map((related) => (
-                  <Link
+                  <Card
                     key={related.id}
+                    variant="product-small"
                     to={`/products/${related.slug}`}
-                    className="product-card-small"
                   >
                     <div className="product-category">{related.category.toUpperCase()}</div>
                     <h3>{related.name}</h3>
                     <p>{related.description}</p>
-                  </Link>
+                  </Card>
                 ))}
               </CardGrid>
             </div>

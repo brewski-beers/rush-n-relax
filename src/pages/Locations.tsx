@@ -1,10 +1,13 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { Card } from '../components/Card';
 import { LOCATIONS } from '../constants/locations';
 import { getSocialLink, isSocialIconObject } from '../constants/social';
 import AllLocationsMap from '../components/AllLocationsMap';
 
 export default function Locations() {
+  const navigate = useNavigate();
+
   useEffect(() => {
     document.title = 'Dispensary Locations — Oak Ridge, Maryville & Seymour | Rush N Relax';
     const meta = document.querySelector('meta[name="description"]');
@@ -44,9 +47,23 @@ export default function Locations() {
                 const facebookLink = location.socialLinkIds
                   ?.map(getSocialLink)
                   .find((social) => social.name === 'Facebook');
+                
+                const handleCardClick = (e: React.MouseEvent) => {
+                  // Only navigate if clicking on the card itself, not nested interactive elements
+                  if ((e.target as HTMLElement).closest('a, button')) {
+                    return;
+                  }
+                  navigate(`/locations/${location.slug}`);
+                };
 
                 return (
-                  <article key={location.id} className="location-card glass">
+                  <Card 
+                    key={location.id} 
+                    variant="location" 
+                    as="div" 
+                    style={{ cursor: 'pointer' }}
+                    onClick={handleCardClick}
+                  >
                     <h3>{location.name}</h3>
                     <address>
                       <p className="address-line">{location.address}</p>
@@ -85,14 +102,10 @@ export default function Locations() {
                         </a>
                       )}
                     </div>
-                    <Link
-                      to={`/locations/${location.slug}`}
-                      className="btn btn-secondary mt-3"
-                      style={{ display: 'inline-block' }}
-                    >
+                    <span className="btn btn-secondary mt-3" style={{ display: 'inline-block' }}>
                       View Location →
-                    </Link>
-                  </article>
+                    </span>
+                  </Card>
                 );
               })}
             </div>

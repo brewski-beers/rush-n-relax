@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Card } from '../components/Card';
 import { LOCATIONS } from '../constants/locations';
 import { PRODUCTS } from '../constants/products';
 import { ProductImage } from '../components/ProductImage';
@@ -67,19 +68,14 @@ export default function Home() {
             </p>
             <div className="locations-grid">
               {PRODUCTS.slice(0, 3).map((product) => (
-                <Link
-                  key={product.id}
-                  to={`/products/${product.slug}`}
-                  className="location-card glass product-card-home"
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
+                <Card key={product.id} variant="product" to={`/products/${product.slug}`}>
                   <ProductImage slug={product.slug} alt={product.name} className="product-card-img" />
                   <h3>{product.name}</h3>
                   <p>{product.description}</p>
                   <span className="btn btn-secondary mt-3" style={{ display: 'inline-block' }}>
                     Learn More →
                   </span>
-                </Link>
+                </Card>
               ))}
             </div>
             <div style={{ textAlign: 'center', marginTop: '2rem' }}>
@@ -99,19 +95,14 @@ export default function Home() {
             </p>
             <div className="locations-grid">
               {LOCATIONS.map((loc) => (
-                <Link
-                  key={loc.id}
-                  to={`/locations/${loc.slug}`}
-                  className="location-card glass"
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
+                <Card key={loc.id} variant="location" to={`/locations/${loc.slug}`}>
                   <h3>{loc.name}</h3>
                   <p className="address-line">{loc.address}</p>
                   <p className="address-line">{loc.city}, {loc.state} {loc.zip}</p>
                   <span className="btn btn-secondary mt-3" style={{ display: 'inline-block' }}>
                     View Location →
                   </span>
-                </Link>
+                </Card>
               ))}
             </div>
           </div>

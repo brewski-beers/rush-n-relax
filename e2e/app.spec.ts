@@ -21,13 +21,13 @@ test.describe('Homepage', () => {
   });
 
   test('should display product preview cards', async ({ page }) => {
-    const productCards = page.locator('.products-preview .location-card');
+    const productCards = page.locator('.products-preview .rnr-card--product');
     const count = await productCards.count();
     expect(count).toBeGreaterThan(0);
   });
 
   test('should display location preview cards', async ({ page }) => {
-    const locationCards = page.locator('.locations-preview .location-card');
+    const locationCards = page.locator('.locations-preview .rnr-card--location');
     const count = await locationCards.count();
     expect(count).toBeGreaterThan(0);
   });
@@ -42,18 +42,18 @@ test.describe('Products Page', () => {
   test('should display all product cards', async ({ page }) => {
     await preVerifyAge(page);
     await page.goto('/products');
-    await page.waitForSelector('.product-card', { timeout: 8000 });
+    await page.waitForSelector('.rnr-card--product', { timeout: 8000 });
 
-    const productCount = await page.locator('.product-card').count();
+    const productCount = await page.locator('.rnr-card--product').count();
     expect(productCount).toBeGreaterThanOrEqual(5);
   });
 
   test('should navigate to product detail on click', async ({ page }) => {
     await preVerifyAge(page);
     await page.goto('/products');
-    await page.waitForSelector('.product-card', { timeout: 8000 });
+    await page.waitForSelector('.rnr-card--product', { timeout: 8000 });
 
-    await page.locator('.product-card').first().click();
+    await page.locator('.rnr-card--product').first().click();
     await expect(page).toHaveURL(/\/products\/.+/);
     await page.waitForSelector('h1', { timeout: 8000 });
     await expect(page.locator('h1')).toBeVisible();
@@ -76,7 +76,7 @@ test.describe('Product Detail Page', () => {
     await page.goto('/products/flower');
     await page.waitForSelector('.related-products', { timeout: 8000 });
 
-    const relatedCards = page.locator('.product-card-small');
+    const relatedCards = page.locator('.rnr-card--product-small');
     const count = await relatedCards.count();
     expect(count).toBeGreaterThan(0);
   });
@@ -86,7 +86,7 @@ test.describe('Product Detail Page', () => {
     await page.goto('/products/flower');
     await page.waitForSelector('.related-products', { timeout: 8000 });
 
-    await page.locator('.product-card-small').first().click();
+    await page.locator('.rnr-card--product-small').first().click();
     await expect(page).not.toHaveURL(/\/products\/flower$/);
     await expect(page.locator('h1')).toBeVisible();
   });

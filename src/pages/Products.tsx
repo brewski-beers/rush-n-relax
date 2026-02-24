@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Card } from '../components/Card';
 import { CardGrid } from '../components/CardGrid';
 import { PRODUCTS } from '../constants/products';
 import { ProductImage } from '../components/ProductImage';
@@ -28,11 +29,7 @@ export default function Products() {
           <div className="container">
             <CardGrid columns="auto" gap="lg">
               {PRODUCTS.map((product) => (
-                <Link
-                  key={product.id}
-                  to={`/products/${product.slug}`}
-                  className="product-card"
-                >
+                <Card key={product.id} variant="product" to={`/products/${product.slug}`}>
                   <ProductImage slug={product.slug} alt={product.name} className="product-card-img" />
                   <div className="product-card-content">
                     <div className="product-category">{product.category.toUpperCase()}</div>
@@ -40,7 +37,7 @@ export default function Products() {
                     <p className="product-description">{product.description}</p>
                     <div className="product-cta">View Details →</div>
                   </div>
-                </Link>
+                </Card>
               ))}
             </CardGrid>
           </div>

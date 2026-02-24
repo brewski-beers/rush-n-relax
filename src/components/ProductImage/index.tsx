@@ -28,26 +28,28 @@ export function ProductImage({ slug, alt, className = '' }: ProductImageProps) {
     return () => { cancelled = true; };
   }, [slug]);
 
-  if (failed || (!src && !loaded)) {
-    return (
-      <div
-        className={`product-image-placeholder ${className}`}
-        aria-hidden="true"
-      >
-        <span className="product-image-icon">🌿</span>
-      </div>
-    );
-  }
-
-  return (
+  const content = failed || (!src && !loaded) ? (
+    <div
+      className="product-image-placeholder"
+      aria-hidden="true"
+    >
+      <span className="product-image-icon">🌿</span>
+    </div>
+  ) : (
     <img
       src={src!}
       alt={alt}
-      className={`product-image ${className} ${loaded ? 'product-image-loaded' : ''}`}
-      loading="lazy"
+      className={`product-image ${loaded ? 'product-image-loaded' : ''}`}
+      loading="eager"
       decoding="async"
       onLoad={() => setLoaded(true)}
       onError={() => setFailed(true)}
     />
+  );
+
+  return (
+    <div className={`product-card-img ${className}`}>
+      {content}
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Card } from '../components/Card';
 import { getLocationBySlug, getLocationSEO } from '../constants/locations';
 import { getSocialLink, isSocialIconObject } from '../constants/social';
 
@@ -172,7 +173,7 @@ export default function LocationDetail() {
         <section className="location-info-section">
           <div className="container">
             <div className="location-detail-grid">
-              <div className="info-card glass">
+              <Card variant="info" as="div">
                 <h2>Address</h2>
                 <address>
                   <p>{location.address}</p>
@@ -180,24 +181,24 @@ export default function LocationDetail() {
                     {location.city}, {location.state} {location.zip}
                   </p>
                 </address>
-              </div>
+              </Card>
 
-              <div className="info-card glass">
+              <Card variant="info" as="div">
                 <h2>Hours</h2>
                 <p>{location.hours}</p>
                 <p className="text-secondary">Open 7 days a week</p>
-              </div>
+              </Card>
 
-              <div className="info-card glass">
+              <Card variant="info" as="div">
                 <h2>Call Us</h2>
                 <a href={`tel:${location.phone.replace(/\D/g, '')}`} className="phone-link">
                   {location.phone}
                 </a>
                 <p className="text-secondary">Available during business hours</p>
-              </div>
+              </Card>
 
               {location.socialLinkIds && location.socialLinkIds.length > 0 && (
-                <div className="info-card glass">
+                <Card variant="info" as="div">
                   <h2>Follow Us</h2>
                   <div className="social-links-grid">
                     {location.socialLinkIds.map((socialId) => {
@@ -224,11 +225,11 @@ export default function LocationDetail() {
                       );
                     })}
                   </div>
-                </div>
+                </Card>
               )}
 
               {location.coordinates && (
-                <div className="info-card glass">
+                <Card variant="info" as="div">
                   <h2>Location</h2>
                   <p>
                     <strong>{location.city}, {location.state}</strong>
@@ -236,7 +237,7 @@ export default function LocationDetail() {
                   <p className="text-secondary">
                     East Tennessee
                   </p>
-                </div>
+                </Card>
               )}
             </div>
           </div>
