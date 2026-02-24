@@ -10,15 +10,13 @@ runs:
         path: ~/.cache/firebase/emulators
         key: firebase-emulators-${{ runner.os }}
 
-    - name: Start emulators
+    - name: Start Firebase emulators
       shell: bash
-      run: |
-        npx firebase-tools emulators:start \
-          --only firestore,storage \
-          --project rush-n-relax &
-        echo "Waiting for emulators..."
-        npx wait-on tcp:localhost:8080 tcp:localhost:9199 --timeout 60000
-        echo "Emulators ready"
+      run: npx firebase-tools emulators:start --project=demo-test --only=firestore,storage &
+      
+    - name: Wait for emulators
+      shell: bash
+      run: npx wait-on http://localhost:8080 http://localhost:9199 --timeout 30000
 
     - name: Seed emulators with test data
       shell: bash
