@@ -43,7 +43,7 @@ jobs:
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}' > $HOME/gcloud-key.json
           GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
-            npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage:rules --project rush-n-relax --non-interactive
+            npx firebase-tools deploy --only firestore:rules,firestore:indexes,storage --project rush-n-relax --non-interactive
           rm $HOME/gcloud-key.json
 
       - name: Deploy to Firebase Hosting Production
