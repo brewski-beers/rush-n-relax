@@ -4,7 +4,8 @@ import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { AmbientOverlay } from '../components/AmbientOverlay';
 import { AgeGate } from '../components/AgeGate';
 import { Navigation } from '../components/Navigation';
-import { NavigationProvider, useNavigation } from '../contexts/NavigationContext';
+import { NavigationProvider } from '../contexts/NavigationContext';
+import { useNavigation } from '../contexts/useNavigation';
 import { isRouteActive } from '../utils/routeMatching';
 
 // Lazy-loaded pages for code splitting
@@ -21,7 +22,14 @@ const ProductDetail = lazy(() => import('../pages/ProductDetail'));
  */
 function PageFallback() {
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       <p>Loading...</p>
     </div>
   );
@@ -29,7 +37,10 @@ function PageFallback() {
 
 function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   return (
-    <div className="error-container" style={{ padding: '40px', textAlign: 'center' }}>
+    <div
+      className="error-container"
+      style={{ padding: '40px', textAlign: 'center' }}
+    >
       <h1>Something went wrong</h1>
       <p>{(error as Error)?.message || 'An unknown error occurred'}</p>
       <button onClick={resetErrorBoundary}>Try again</button>
@@ -78,11 +89,13 @@ function DesktopModal() {
         const focusableElements = modalRef.current?.querySelectorAll(
           'a, button, [tabindex]:not([tabindex="-1"])'
         );
-        
+
         if (!focusableElements || focusableElements.length === 0) return;
 
         const firstElement = focusableElements[0] as HTMLElement;
-        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+        const lastElement = focusableElements[
+          focusableElements.length - 1
+        ] as HTMLElement;
         const activeElement = document.activeElement;
 
         // Shift+Tab on first element -> focus last
@@ -101,7 +114,7 @@ function DesktopModal() {
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    
+
     // Focus first link when modal opens
     const firstLink = modalRef.current?.querySelector('a') as HTMLElement;
     if (firstLink) {
@@ -118,7 +131,18 @@ function DesktopModal() {
 
   return (
     <>
-      <div className="modal-backdrop" onClick={handleBackdropClick} />
+      <div
+        className="modal-backdrop"
+        onClick={handleBackdropClick}
+        onKeyDown={e => {
+          if (e.key === 'Escape') {
+            setIsMenuOpen(false);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close menu"
+      />
       <div
         ref={modalRef}
         id="nav-menu"
@@ -127,15 +151,19 @@ function DesktopModal() {
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        <h2 id="modal-title" className="sr-only">Navigation Menu</h2>
+        <h2 id="modal-title" className="sr-only">
+          Navigation Menu
+        </h2>
         <nav className="modal-menu-items" aria-label="Main navigation">
-          {navLinks.map((link) => (
+          {navLinks.map(link => (
             <Link
               key={link.path}
               to={link.path}
               onClick={() => setIsMenuOpen(false)}
               className="modal-link"
-              aria-current={isRouteActive(location.pathname, link.path) ? 'page' : undefined}
+              aria-current={
+                isRouteActive(location.pathname, link.path) ? 'page' : undefined
+              }
             >
               {link.label}
             </Link>
@@ -147,15 +175,14 @@ function DesktopModal() {
 }
 
 function RootLayoutContent() {
-  const [isAgeVerified, setIsAgeVerified] = useState<boolean | null>(null);
+  const [isAgeVerified, setIsAgeVerified] = useState<boolean | null>(() => {
+    const verified = localStorage.getItem('ageVerified');
+    return verified === 'true';
+  });
   const location = useLocation();
 
-  // Check localStorage on mount
+  // Listen for age verification event
   useEffect(() => {
-    const verified = localStorage.getItem('ageVerified');
-    setIsAgeVerified(verified === 'true');
-
-    // Listen for age verification event
     const handleAgeVerified = () => {
       setIsAgeVerified(true);
     };
@@ -235,7 +262,9 @@ function RootLayoutContent() {
         <AgeGate />
         {isAgeVerified !== false && <Navigation />}
         {isAgeVerified !== false && <DesktopModal />}
-        <div className={`content-wrapper ${isAgeVerified === false ? 'age-gate-blur' : ''}`}>
+        <div
+          className={`content-wrapper ${isAgeVerified === false ? 'age-gate-blur' : ''}`}
+        >
           {routes}
         </div>
       </div>

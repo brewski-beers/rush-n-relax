@@ -4,18 +4,17 @@ import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 
-// Support both Vite runtime (import.meta.env) and Node/seed scripts (process.env)
-const env = typeof import.meta !== 'undefined' && (import.meta as any)?.env
-  ? (import.meta as any).env
-  : process.env;
-
+// Firebase configuration - these values are public by design
+// They identify the project and are visible in all deployed JavaScript bundles
+// Security is enforced via Firebase Security Rules, not secrecy of these values
 export const firebaseConfig = {
-  apiKey: env?.VITE_FIREBASE_API_KEY,
-  authDomain: env?.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: env?.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: env?.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: env?.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: env?.VITE_FIREBASE_APP_ID,
+  apiKey: 'AIzaSyB0qrTVmQ8gRvmx-4oJ_dQHP6RA2kZ3FJk',
+  authDomain: 'rush-n-relax.firebaseapp.com',
+  projectId: 'rush-n-relax',
+  storageBucket: 'rush-n-relax.firebasestorage.app',
+  messagingSenderId: '556383052079',
+  appId: '1:556383052079:web:6780513e5d7d79140f01da',
+  measurementId: 'G-MRCWGZC1F1',
 };
 
 let app: ReturnType<typeof initFirebase> | null = null;
@@ -29,7 +28,7 @@ export function initializeApp() {
     app = initFirebase(firebaseConfig);
     db = getFirestore(app);
     storage = getStorage(app);
-    functions = getFunctions(app);
+    functions = getFunctions(app, 'us-central1');
     analytics = getAnalytics(app);
 
     if (import.meta.env.DEV) {
@@ -43,22 +42,32 @@ export function initializeApp() {
 
 // Lazy getters that ensure the instance is initialized
 export function getFirestore$() {
-  if (!db) throw new Error('Firestore not initialized. Call initializeApp() first.');
+  if (!db)
+    throw new Error('Firestore not initialized. Call initializeApp() first.');
   return db;
 }
 
 export function getStorage$() {
-  if (!storage) throw new Error('Firebase Storage not initialized. Call initializeApp() first.');
+  if (!storage)
+    throw new Error(
+      'Firebase Storage not initialized. Call initializeApp() first.'
+    );
   return storage;
 }
 
 export function getFunctions$() {
-  if (!functions) throw new Error('Firebase Functions not initialized. Call initializeApp() first.');
+  if (!functions)
+    throw new Error(
+      'Firebase Functions not initialized. Call initializeApp() first.'
+    );
   return functions;
 }
 
 export function getAnalytics$() {
-  if (!analytics) throw new Error('Firebase Analytics not initialized. Call initializeApp() first.');
+  if (!analytics)
+    throw new Error(
+      'Firebase Analytics not initialized. Call initializeApp() first.'
+    );
   return analytics;
 }
 
@@ -67,7 +76,10 @@ export function getAnalytics$() {
  * @param eventName - Name of the event (e.g., 'page_view', 'form_submit')
  * @param eventData - Optional event data
  */
-export function trackEvent(eventName: string, eventData?: Record<string, any>) {
+export function trackEvent(
+  eventName: string,
+  eventData?: Record<string, unknown>
+) {
   if (analytics) {
     logEvent(analytics, eventName, eventData);
   }

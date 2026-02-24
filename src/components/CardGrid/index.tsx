@@ -7,7 +7,12 @@ interface CardGridProps {
   className?: string;
 }
 
-export function CardGrid({ children, columns = 'auto', gap = 'md', className = '' }: CardGridProps) {
+export function CardGrid({
+  children,
+  columns = 'auto',
+  gap = 'md',
+  className = '',
+}: CardGridProps) {
   const gapMap = {
     sm: '0.75rem',
     md: '1rem',
@@ -22,9 +27,10 @@ export function CardGrid({ children, columns = 'auto', gap = 'md', className = '
   };
 
   const colValue = columnMap[columns];
-  const gridTemplateColumns = columns === 'auto' 
-    ? 'repeat(auto-fit, minmax(300px, 1fr))'
-    : `repeat(${colValue}, 1fr)`;
+  const gridTemplateColumns =
+    columns === 'auto'
+      ? 'repeat(auto-fit, minmax(300px, 1fr))'
+      : `repeat(${colValue}, 1fr)`;
 
   return (
     <div

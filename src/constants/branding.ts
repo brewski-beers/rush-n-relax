@@ -44,12 +44,15 @@ export interface BrandUsageRule {
 
 export const getBrandLogoStoragePath = (
   logo: BrandLogoVariant,
-  format: BrandAssetFormat,
+  format: BrandAssetFormat
 ): string => {
   return `branding/${logo}.${format}`;
 };
 
-const getLocalLogoPath = (logo: BrandLogoVariant, format: BrandAssetFormat): string => {
+const getLocalLogoPath = (
+  logo: BrandLogoVariant,
+  format: BrandAssetFormat
+): string => {
   if (format === BrandAssetFormat.SVG) {
     return BRAND_LOGO_FILES[logo].svg;
   }
@@ -58,7 +61,7 @@ const getLocalLogoPath = (logo: BrandLogoVariant, format: BrandAssetFormat): str
 
 export const resolveBrandLogoUrl = async (
   logo: BrandLogoVariant,
-  format: BrandAssetFormat = BrandAssetFormat.PNG,
+  format: BrandAssetFormat = BrandAssetFormat.PNG
 ): Promise<string> => {
   try {
     initializeApp();
@@ -72,13 +75,16 @@ export const resolveBrandLogoUrl = async (
 
 export const resolvePreferredLogoUrlForSurface = async (
   surface: BrandSurface,
-  format: BrandAssetFormat = BrandAssetFormat.PNG,
+  format: BrandAssetFormat = BrandAssetFormat.PNG
 ): Promise<string> => {
   const preferred = getPreferredLogoForSurface(surface);
   return resolveBrandLogoUrl(preferred, format);
 };
 
-export const BRAND_LOGO_FILES: Record<BrandLogoVariant, { svg: string; png: string }> = {
+export const BRAND_LOGO_FILES: Record<
+  BrandLogoVariant,
+  { svg: string; png: string }
+> = {
   [BrandLogoVariant.PRIMARY]: {
     svg: '/assets/branding/logo-primary.svg',
     png: '/assets/branding/logo-primary.png',
@@ -170,13 +176,15 @@ export const BRAND_RESTRICTIONS = {
   minContrastRatioAgainstBackground: 3,
 } as const;
 
-export const getPreferredLogoForSurface = (surface: BrandSurface): BrandLogoVariant => {
+export const getPreferredLogoForSurface = (
+  surface: BrandSurface
+): BrandLogoVariant => {
   return BRAND_USAGE_RULES[surface].preferredLogo;
 };
 
 export const isLogoAllowedForSurface = (
   surface: BrandSurface,
-  logo: BrandLogoVariant,
+  logo: BrandLogoVariant
 ): boolean => {
   return BRAND_USAGE_RULES[surface].allowedLogos.includes(logo);
 };

@@ -233,7 +233,7 @@
   pointer-events: auto;
 }
 
-.modal-content[role="dialog"] {
+.modal-content[role='dialog'] {
   /* Ensure dialog role styling is applied */
   outline: none;
 }
@@ -309,4 +309,3 @@
     padding: 0 2rem;
   }
 }
-

@@ -2,7 +2,11 @@ import { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { CardGrid } from '../components/CardGrid';
-import { getProductBySlug, getProductSEO, PRODUCTS } from '../constants/products';
+import {
+  getProductBySlug,
+  getProductSEO,
+  PRODUCTS,
+} from '../constants/products';
 import { ProductImage } from '../components/ProductImage';
 
 export default function ProductDetail() {
@@ -44,10 +48,15 @@ export default function ProductDetail() {
     ogImage.setAttribute('content', 'https://www.rushnrelax.com/og-image.png');
 
     // Breadcrumb Schema
-    const existingSchemas = document.querySelectorAll('script[type="application/ld+json"]');
-    existingSchemas.forEach((script) => {
+    const existingSchemas = document.querySelectorAll(
+      'script[type="application/ld+json"]'
+    );
+    existingSchemas.forEach(script => {
       const content = script.textContent;
-      if (content && (content.includes('BreadcrumbList') || content.includes('Product'))) {
+      if (
+        content &&
+        (content.includes('BreadcrumbList') || content.includes('Product'))
+      ) {
         script.remove();
       }
     });
@@ -105,71 +114,76 @@ export default function ProductDetail() {
   if (!product) return null;
 
   // Get other product categories to cross-promote
-  const otherProducts = PRODUCTS.filter(
-    (p) => p.id !== product.id
-  ).slice(0, 3);
+  const otherProducts = PRODUCTS.filter(p => p.id !== product.id).slice(0, 3);
 
   return (
     <main className="product-detail-page">
       <section className="back-to-products">
-          <div className="container">
-            <Link to="/products" className="link-button">
-              ← Back to All Products
-            </Link>
-          </div>
-        </section>
+        <div className="container">
+          <Link to="/products" className="link-button">
+            ← Back to All Products
+          </Link>
+        </div>
+      </section>
 
       <section className="product-hero">
-          <div className="container">
-            <ProductImage slug={product.slug} alt={product.name} className="product-hero-img" />
-            <h1>{product.name}</h1>
-            <p className="lead">{product.description}</p>
-          </div>
-        </section>
+        <div className="container">
+          <ProductImage
+            slug={product.slug}
+            alt={product.name}
+            className="product-hero-img"
+          />
+          <h1>{product.name}</h1>
+          <p className="lead">{product.description}</p>
+        </div>
+      </section>
 
-        <section className="product-info-section">
-          <div className="container">
-            <div className="product-detail">
-              <div className="product-category-badge">{product.category.toUpperCase()}</div>
-              <div className="product-content">
-                <h2>Product Details</h2>
-                <p>{product.details}</p>
-              </div>
+      <section className="product-info-section">
+        <div className="container">
+          <div className="product-detail">
+            <div className="product-category-badge">
+              {product.category.toUpperCase()}
+            </div>
+            <div className="product-content">
+              <h2>Product Details</h2>
+              <p>{product.details}</p>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {otherProducts.length > 0 && (
-          <section className="related-products">
-            <div className="container">
-              <h2>Explore More</h2>
-              <CardGrid columns="3" gap="lg">
-                {otherProducts.map((related) => (
-                  <Card
-                    key={related.id}
-                    variant="product-small"
-                    to={`/products/${related.slug}`}
-                  >
-                    <div className="product-category">{related.category.toUpperCase()}</div>
-                    <h3>{related.name}</h3>
-                    <p>{related.description}</p>
-                  </Card>
-                ))}
-              </CardGrid>
-            </div>
-          </section>
-        )}
-
-        <section className="product-cta">
+      {otherProducts.length > 0 && (
+        <section className="related-products">
           <div className="container">
-            <h2>Visit Us to Experience This Product</h2>
-            <p>Find our locations and explore our full collection in person.</p>
-            <Link to="/locations" className="btn btn-primary">
-              Find a Location
-            </Link>
+            <h2>Explore More</h2>
+            <CardGrid columns="3" gap="lg">
+              {otherProducts.map(related => (
+                <Card
+                  key={related.id}
+                  variant="product-small"
+                  to={`/products/${related.slug}`}
+                >
+                  <div className="product-category">
+                    {related.category.toUpperCase()}
+                  </div>
+                  <h3>{related.name}</h3>
+                  <p>{related.description}</p>
+                </Card>
+              ))}
+            </CardGrid>
           </div>
         </section>
+      )}
 
-      </main>
-    );
-  }
+      <section className="product-cta">
+        <div className="container">
+          <h2>Visit Us to Experience This Product</h2>
+          <p>Find our locations and explore our full collection in person.</p>
+          <Link to="/locations" className="btn btn-primary">
+            Find a Location
+          </Link>
+        </div>
+      </section>
+    </main>
+  );
+}

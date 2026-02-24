@@ -90,7 +90,7 @@
   margin: 0;
 }
 
-.date-input-group input[type="number"] {
+.date-input-group input[type='number'] {
   -moz-appearance: textfield;
 }
 

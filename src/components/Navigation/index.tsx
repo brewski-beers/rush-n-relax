@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { useNavigation } from '../../contexts/NavigationContext';
+import { useNavigation } from '../../contexts/useNavigation';
 import {
   BrandAssetFormat,
   BrandSurface,
@@ -31,7 +31,7 @@ export function Navigation() {
     const loadLogo = async () => {
       const url = await resolvePreferredLogoUrlForSurface(
         BrandSurface.HEADER_DESKTOP,
-        BrandAssetFormat.PNG,
+        BrandAssetFormat.PNG
       );
       if (isMounted) {
         setLogoSrc(url);
@@ -88,13 +88,17 @@ export function Navigation() {
               { label: 'Locations', path: '/locations' },
               { label: 'Products', path: '/products' },
               { label: 'Contact', path: '/contact' },
-            ].map((link) => (
+            ].map(link => (
               <li key={link.path}>
                 <Link
                   to={link.path}
                   onClick={() => toggleMenu()}
                   className="nav-link"
-                  aria-current={isRouteActive(location.pathname, link.path) ? 'page' : undefined}
+                  aria-current={
+                    isRouteActive(location.pathname, link.path)
+                      ? 'page'
+                      : undefined
+                  }
                 >
                   {link.label}
                 </Link>

@@ -19,7 +19,7 @@ describe('Locations page', () => {
     const facebookLinks = screen.getAllByRole('link', { name: /facebook/i });
     expect(facebookLinks).toHaveLength(LOCATIONS.length);
 
-    facebookLinks.forEach((link) => {
+    facebookLinks.forEach(link => {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
       expect(link).toHaveAttribute('href');

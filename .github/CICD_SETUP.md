@@ -5,6 +5,7 @@ This project uses GitHub Actions to automate deployments to Firebase Hosting.
 ## Workflows
 
 ### 1. **Pull Request Preview** (`.github/workflows/firebase-hosting-pull-request.yml`)
+
 - **Trigger**: When a PR is opened, synchronized, or reopened against `main`
 - **Actions**:
   - Runs linter
@@ -15,6 +16,7 @@ This project uses GitHub Actions to automate deployments to Firebase Hosting.
 - **Preview expires**: 7 days after deployment
 
 ### 2. **Production Deployment** (`.github/workflows/firebase-hosting-merge.yml`)
+
 - **Trigger**: When code is merged to `main`
 - **Actions**:
   - Runs linter
@@ -29,52 +31,30 @@ You must configure the following secrets in your GitHub repository:
 
 ### Navigate to: `Settings → Secrets and variables → Actions → New repository secret`
 
-#### Firebase Service Account (Required)
+#### Firebase Service Account (Required for Deployment)
+
 ```
 FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX
 ```
+
 **How to get this:**
+
 1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Select your project (`rush-n-relax`)
 3. Go to **Project Settings** → **Service Accounts**
 4. Click **Generate New Private Key**
 5. Copy the entire JSON content and paste it as the secret value
 
-#### Firebase Client SDK Configuration (Required)
-```
-VITE_FIREBASE_API_KEY
-VITE_FIREBASE_AUTH_DOMAIN
-VITE_FIREBASE_PROJECT_ID
-VITE_FIREBASE_STORAGE_BUCKET
-VITE_FIREBASE_MESSAGING_SENDER_ID
-VITE_FIREBASE_APP_ID
-VITE_FIREBASE_MEASUREMENT_ID
-VITE_FIREBASE_FUNCTIONS_REGION
-```
-**How to get these:**
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Select your project
-3. Go to **Project Settings** → **General** → **Your apps**
-4. Find your web app config object
-5. Add each value as a separate GitHub secret
+#### Google Maps API (Required for Location Pages)
 
-**Current values** (from `.env` - these are safe to use in GitHub secrets as they're public client-side config):
-- `VITE_FIREBASE_API_KEY`: `AIzaSyB0qrTVmQ8gRvmx-4oJ_dQHP6RA2kZ3FJk`
-- `VITE_FIREBASE_AUTH_DOMAIN`: `rush-n-relax.firebaseapp.com`
-- `VITE_FIREBASE_PROJECT_ID`: `rush-n-relax`
-- `VITE_FIREBASE_STORAGE_BUCKET`: `rush-n-relax.firebasestorage.app`
-- `VITE_FIREBASE_MESSAGING_SENDER_ID`: `556383052079`
-- `VITE_FIREBASE_APP_ID`: `1:556383052079:web:6780513e5d7d79140f01da`
-- `VITE_FIREBASE_MEASUREMENT_ID`: `G-MRCWGZC1F1`
-- `VITE_FIREBASE_FUNCTIONS_REGION`: `us-central1`
-
-#### Google Maps API (Required)
 ```
 VITE_GOOGLE_MAPS_API_KEY
 ```
+
 **Current value**: `AIzaSyAcUo58FHBrCWyWiqDh_mzauM17ptqX7xM`
 
 **How to get this:**
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Navigate to **APIs & Services** → **Credentials**
 3. Create or use existing API key
@@ -82,22 +62,14 @@ VITE_GOOGLE_MAPS_API_KEY
    - Maps Embed API
    - Maps JavaScript API
 
-#### Ambient Video Settings (Required)
-```
-VITE_AMBIENT_ENABLED
-VITE_AMBIENT_STORAGE_PATH
-VITE_AMBIENT_MOBILE_PATH
-```
-**Current values**:
-- `VITE_AMBIENT_ENABLED`: `true`
-- `VITE_AMBIENT_STORAGE_PATH`: `ambient/smoke-4k.mp4`
-- `VITE_AMBIENT_MOBILE_PATH`: `ambient/smoke-1080p.mp4`
+---
 
-These control the ambient background video feature on your site.
+**Note**: Firebase client SDK configuration (API key, auth domain, project ID, etc.) is now **hardcoded in `src/firebase.ts`**. These values are public by design and are visible in all deployed JavaScript bundles. Security is enforced via Firebase Security Rules, not secrecy of these values. This eliminates the need to manage 8+ environment variables as GitHub secrets.
 
 ## Testing the Workflows
 
 ### Test PR Preview:
+
 1. Create a new branch: `git checkout -b test/preview-deploy`
 2. Make a small change (e.g., update README)
 3. Push branch: `git push origin test/preview-deploy`
@@ -106,6 +78,7 @@ These control the ambient background video feature on your site.
 6. Check the PR for the preview URL comment
 
 ### Test Production Deploy:
+
 1. Merge a PR to `main`
 2. The production workflow will trigger automatically
 3. Check the **Actions** tab on GitHub to monitor progress
@@ -123,20 +96,24 @@ Add these to your README to show build status:
 ## Troubleshooting
 
 ### "Resource not accessible by integration" error
+
 - Ensure the `GITHUB_TOKEN` has proper permissions
 - Go to **Settings → Actions → General → Workflow permissions**
 - Select **Read and write permissions**
 
 ### "Firebase Service Account" authentication fails
+
 - Verify the JSON service account key is complete and valid
 - Ensure there are no extra spaces or newlines in the secret
 - Re-download the service account key from Firebase Console
 
 ### Build fails with environment variable errors
+
 - Double-check all `VITE_*` secrets are configured in GitHub
 - Ensure secret names match exactly (case-sensitive)
 
 ### E2E tests fail in production workflow
+
 - Playwright browsers are installed automatically in the workflow
 - Check if tests pass locally: `npm run test:e2e`
 - Review test logs in the GitHub Actions output
@@ -144,6 +121,7 @@ Add these to your README to show build status:
 ## Local Firebase Preview Testing
 
 To test preview channels locally:
+
 ```bash
 # Install Firebase CLI globally
 npm install -g firebase-tools

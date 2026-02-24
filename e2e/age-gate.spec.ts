@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.describe('Age Gate Modal UX', () => {
   test.beforeEach(async ({ page }) => {
@@ -10,10 +10,14 @@ test.describe('Age Gate Modal UX', () => {
     // Reload to trigger age gate since we just cleared the flag
     await page.reload();
     // Wait for modal to be interactive, not entire page load
-    await page.locator('.age-gate-overlay').waitFor({ state: 'visible', timeout: 5000 });
+    await page
+      .locator('.age-gate-overlay')
+      .waitFor({ state: 'visible', timeout: 5000 });
   });
 
-  test('displays modal in isolation without nav or footer', async ({ page }) => {
+  test('displays modal in isolation without nav or footer', async ({
+    page,
+  }) => {
     // Age gate overlay should be visible
     const ageGateOverlay = page.locator('.age-gate-overlay');
     await expect(ageGateOverlay).toBeVisible();
@@ -82,7 +86,7 @@ test.describe('Age Gate Modal UX', () => {
     const monthValue = await monthInput.inputValue();
     const dayValue = await dayInput.inputValue();
     const yearValue = await yearInput.inputValue();
-    
+
     expect(monthValue).toBe('05');
     expect(dayValue).toBe('15');
     expect(yearValue).toBe('1995');
@@ -142,7 +146,9 @@ test.describe('Age Gate Modal UX', () => {
     await enterButton.click();
 
     // Error message should appear
-    await expect(errorMessage).toContainText('You must be 21 or older to enter');
+    await expect(errorMessage).toContainText(
+      'You must be 21 or older to enter'
+    );
   });
 
   test('successfully verifies age 21+', async ({ page }) => {
@@ -179,7 +185,9 @@ test.describe('Age Gate Modal UX', () => {
     await enterButton.click();
 
     // Error message should appear
-    await expect(errorMessage).toContainText('Please enter your complete birth date');
+    await expect(errorMessage).toContainText(
+      'Please enter your complete birth date'
+    );
   });
 
   test('validates date ranges', async ({ page }) => {
@@ -198,14 +206,16 @@ test.describe('Age Gate Modal UX', () => {
     await yearInput.type('0', { delay: 50 });
     await yearInput.type('0', { delay: 50 });
     await yearInput.type('0', { delay: 50 });
-    
+
     await enterButton.click();
     await expect(errorMessage).toBeVisible({ timeout: 3000 });
     await expect(errorMessage).toContainText('Please enter a valid birth date');
 
     // Reload page to reset form for next test case (simpler than trying to clear React state)
     await page.reload();
-    await page.locator('.age-gate-overlay').waitFor({ state: 'visible', timeout: 5000 });
+    await page
+      .locator('.age-gate-overlay')
+      .waitFor({ state: 'visible', timeout: 5000 });
 
     // Invalid day (32)
     await monthInput.type('0', { delay: 50 });
@@ -216,15 +226,17 @@ test.describe('Age Gate Modal UX', () => {
     await yearInput.type('0', { delay: 50 });
     await yearInput.type('0', { delay: 50 });
     await yearInput.type('0', { delay: 50 });
-    
+
     await enterButton.click();
     await expect(errorMessage).toBeVisible({ timeout: 3000 });
     await expect(errorMessage).toContainText('Please enter a valid birth date');
 
     // Reload page again for the third test case
     await page.reload();
-    await page.locator('.age-gate-overlay').waitFor({ state: 'visible', timeout: 5000 });
-    
+    await page
+      .locator('.age-gate-overlay')
+      .waitFor({ state: 'visible', timeout: 5000 });
+
     // Invalid year (1800)
     await monthInput.type('0', { delay: 50 });
     await monthInput.type('5', { delay: 50 });
@@ -234,7 +246,7 @@ test.describe('Age Gate Modal UX', () => {
     await yearInput.type('8', { delay: 50 });
     await yearInput.type('0', { delay: 50 });
     await yearInput.type('0', { delay: 50 });
-    
+
     await enterButton.click();
     await expect(errorMessage).toBeVisible({ timeout: 3000 });
     await expect(errorMessage).toContainText('Please enter a valid birth date');
@@ -255,7 +267,9 @@ test.describe('Age Gate Modal UX', () => {
     await enterButton.click();
 
     // Check localStorage
-    const ageVerified = await page.evaluate(() => localStorage.getItem('ageVerified'));
+    const ageVerified = await page.evaluate(() =>
+      localStorage.getItem('ageVerified')
+    );
     expect(ageVerified).toBe('true');
 
     // Reload page - age gate should not appear
@@ -288,6 +302,8 @@ test.describe('Age Gate Modal UX', () => {
 
   test('displays disclaimer text', async ({ page }) => {
     const disclaimer = page.locator('.age-gate-disclaimer');
-    await expect(disclaimer).toContainText('By entering, you certify that you are of legal age to purchase cannabis');
+    await expect(disclaimer).toContainText(
+      'By entering, you certify that you are of legal age to purchase cannabis'
+    );
   });
 });

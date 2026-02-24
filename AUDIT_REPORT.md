@@ -19,12 +19,14 @@
 ## 🚨 CRITICAL ISSUES (Must Fix)
 
 ### 1. **CardGrid Component - CSS Property Extraction Bug**
+
 **Location**: [src/components/CardGrid/index.tsx](src/components/CardGrid/index.tsx#L24-L26)  
 **Severity**: 🔴 HIGH - **Breaks grid layout on responsive designs**
 
 **Issue**:
+
 ```tsx
-const gridTemplate = columns === 'auto' 
+const gridTemplate = columns === 'auto'
   ? `grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))`
   : `grid-template-columns: repeat(${colValue}, 1fr)`;
 
@@ -39,8 +41,9 @@ return (
 **Problem**: The bracket notation `[gridTemplate]: true` creates a JavaScript property named literally "grid-template-columns: repeat(...)" instead of setting the CSS `gridTemplateColumns` property. This breaks the grid layout entirely.
 
 **Fix**:
+
 ```tsx
-const gridTemplate = columns === 'auto' 
+const gridTemplate = columns === 'auto'
   ? 'repeat(auto-fit, minmax(300px, 1fr))'
   : `repeat(${colValue}, 1fr)`;
 
@@ -60,35 +63,40 @@ return (
 ---
 
 ### 2. **Navigation.tsx - Stale Pathname Detection**
+
 **Location**: [src/components/Navigation/index.tsx](src/components/Navigation/index.tsx#L47)  
 **Severity**: 🔴 HIGH - **Active link highlighting broken**
 
 **Issue**:
+
 ```tsx
 aria-current={
   window.location.pathname === link.path ? 'page' : undefined
 }
 ```
 
-**Problem**: 
+**Problem**:
+
 - Uses `window.location.pathname` instead of React Router's `useLocation()` hook
 - Only checks on initial mount; doesn't update when route changes via React Router
 - Each nav link check runs on every render against the raw pathname
 - React Router's `useLocation()` is already available via `useLocation()` hook - should use it
 
 **Current Code**:
+
 ```tsx
 // ❌ WRONG - uses window.location directly
 export function Navigation() {
   const { isMenuOpen, toggleMenu } = useNavigation();
   // ... doesn't import useLocation
-  
+
   aria-current={
     window.location.pathname === link.path ? 'page' : undefined
   }
 ```
 
 **Best Practice Fix**:
+
 ```tsx
 // ✅ CORRECT - use React Router hook
 import { useLocation } from 'react-router-dom';
@@ -96,7 +104,7 @@ import { useLocation } from 'react-router-dom';
 export function Navigation() {
   const { isMenuOpen, toggleMenu } = useNavigation();
   const location = useLocation();
-  
+
   aria-current={
     location.pathname === link.path ? 'page' : undefined
   }
@@ -107,10 +115,12 @@ export function Navigation() {
 ---
 
 ### 3. **LocationDetail.tsx - Memory Leak + Unbounded DOM Mutations**
+
 **Location**: [src/pages/LocationDetail.tsx](src/pages/LocationDetail.tsx#L50-L150)  
 **Severity**: 🔴 CRITICAL - **Memory leak on every page visit**
 
 **Issue**:
+
 ```tsx
 // Repeated meta tag creation without cleanup
 useEffect(() => {
@@ -118,7 +128,7 @@ useEffect(() => {
   if (!ogDesc) {
     ogDesc = document.createElement('meta');
     ogDesc.setAttribute('property', 'og:description');
-    document.head.appendChild(ogDesc);  // ❌ No cleanup
+    document.head.appendChild(ogDesc); // ❌ No cleanup
   }
   ogDesc.setAttribute('content', seo.description);
 
@@ -127,11 +137,12 @@ useEffect(() => {
   const schemaEl = document.createElement('script');
   schemaEl.setAttribute('type', 'application/ld+json');
   schemaEl.textContent = JSON.stringify(schema);
-  document.head.appendChild(schemaEl);  // ❌ Never removed
+  document.head.appendChild(schemaEl); // ❌ Never removed
 }, []);
 ```
 
 **Problems**:
+
 1. No cleanup function - every page visit adds new script tags to `<head>`
 2. Old LocalBusiness schemas are queried but may not be fully removed
 3. No return statement to remove listeners/elements on unmount
@@ -139,6 +150,7 @@ useEffect(() => {
 5. `useEffect` has empty dependency array - never re-runs to clean up
 
 **Timeline**:
+
 - Visit LocationDetail page → 1 script added to head
 - Navigate away → script stays in head
 - Visit another location → 2 scripts in head
@@ -146,20 +158,24 @@ useEffect(() => {
 - Visit 100 pages → 100 orphaned scripts + massive memory bloat
 
 **Fix**:
+
 ```tsx
 useEffect(() => {
   const seo = getLocationSEO(location);
-  
+
   // Single SEO update (Helmet or React-Helmet-Async would be ideal)
   document.title = seo.title;
-  
+
   // Reuse existing meta tags instead of creating new ones
   const updateOrCreateMeta = (selector: string, content: string) => {
     let el = document.querySelector(selector);
     if (!el) {
       el = document.createElement('meta');
       if (selector.includes('[property=')) {
-        el.setAttribute('property', selector.match(/property="([^"]+)"/)?.[1] || '');
+        el.setAttribute(
+          'property',
+          selector.match(/property="([^"]+)"/)?.[1] || ''
+        );
       } else {
         el.setAttribute('name', selector.match(/name="([^"]+)"/)?.[1] || '');
       }
@@ -177,7 +193,9 @@ useEffect(() => {
   );
   existingSchemas.forEach(el => el.remove());
 
-  const schema = { /* ... */ };
+  const schema = {
+    /* ... */
+  };
   const schemaEl = document.createElement('script');
   schemaEl.setAttribute('type', 'application/ld+json');
   schemaEl.setAttribute('data-location', location.location || ''); // Mark as managed
@@ -203,10 +221,12 @@ useEffect(() => {
 ## ♿ ACCESSIBILITY ISSUES
 
 ### 1. **Modal Menu - No Keyboard Navigation/Focus Trap**
+
 **Location**: [src/layouts/RootLayout.tsx](src/layouts/RootLayout.tsx#L44-L75)  
 **Severity**: 🟡 MEDIUM - **Keyboard-only users cannot close modal**
 
 **Issues**:
+
 - ❌ No `Escape` key handler to close modal
 - ❌ No focus trap when modal is open
 - ❌ Focus can escape to background elements
@@ -214,14 +234,15 @@ useEffect(() => {
 - ❌ No `aria-modal="true"`
 
 **Missing ARIA**:
+
 ```tsx
 // Current (incomplete)
 <nav id="nav-menu" className="modal-content" aria-label="Main navigation">
 
 // Should be
-<div 
-  id="nav-menu" 
-  className="modal-content" 
+<div
+  id="nav-menu"
+  className="modal-content"
   role="dialog"
   aria-modal="true"
   aria-labelledby="modal-title"
@@ -232,6 +253,7 @@ useEffect(() => {
 ```
 
 **Required Fixes**:
+
 1. Add Escape key listener to close modal
 2. Implement focus trap (focus cycling within modal)
 3. Return focus to trigger button when closed
@@ -242,34 +264,42 @@ useEffect(() => {
 ---
 
 ### 2. **Age Gate Modal - Poor Error Announcement**
+
 **Location**: [src/components/AgeGate/index.tsx](src/components/AgeGate/index.tsx#L134)  
 **Severity**: 🟡 MEDIUM - **Screen reader users don't hear validation errors**
 
 **Issue**:
+
 ```tsx
-{error && <p className="age-gate-error">{error}</p>}
+{
+  error && <p className="age-gate-error">{error}</p>;
+}
 ```
 
 **Problem**:
+
 - Error message has no `role="alert"` for dynamic announcement
 - Screen readers won't announce new errors without explicit role
 - No `aria-describedby` linking inputs to errors
 
 **Fix**:
+
 ```tsx
-{error && (
-  <p className="age-gate-error" role="alert" aria-live="polite">
-    {error}
-  </p>
-)}
+{
+  error && (
+    <p className="age-gate-error" role="alert" aria-live="polite">
+      {error}
+    </p>
+  );
+}
 
 // Link inputs to error
 <input
   id="month"
   type="number"
   // ...
-  aria-describedby={error ? "age-error" : undefined}
-/>
+  aria-describedby={error ? 'age-error' : undefined}
+/>;
 ```
 
 **WCAG Violation**: 4.1.3 Status Messages (Level AA)
@@ -277,17 +307,20 @@ useEffect(() => {
 ---
 
 ### 3. **Navigation Links - Using `window.location.pathname` Instead of React Router Link Active State**
+
 **Location**: Already covered in Critical Issues #2
 
 ---
 
 ### 4. **Mobile Drawer Menu - No Scroll Lock**
+
 **Location**: [src/components/Navigation/Navigation.css](src/components/Navigation/Navigation.css#L110-L140)  
 **Severity**: 🟡 MEDIUM - **VoiceOver/NVDA users can scroll body behind modal**
 
 **Issue**: When mobile drawer is open, background scrolling isn't prevented. Screen readers allow navigation to hidden background elements.
 
 **Fix**:
+
 ```tsx
 // In Navigation component
 useEffect(() => {
@@ -307,9 +340,11 @@ useEffect(() => {
 ## 🔧 OPTIMIZATION OPPORTUNITIES
 
 ### 1. **RootLayout - Multiple Event Listeners on Window**
+
 **Location**: [src/layouts/RootLayout.tsx](src/layouts/RootLayout.tsx#L86-L110)
 
 **Current Code**:
+
 ```tsx
 useEffect(() => {
   const verified = localStorage.getItem('ageVerified');
@@ -326,12 +361,14 @@ useEffect(() => {
 
 **Issue**: Custom event name `ageVerified` is arbitrary string. Multiple listeners can accumulate if component re-renders.
 
-**Better Approach**: 
+**Better Approach**:
+
 - Use a single context-based event system
 - Or use `useCallback` to prevent duplicate listeners
 - Or use a pub/sub library
 
 **Optimization**:
+
 ```tsx
 useEffect(() => {
   const verified = localStorage.getItem('ageVerified');
@@ -352,19 +389,26 @@ useEffect(() => {
 ---
 
 ### 2. **LocationDetail.tsx - Redundant Schema Cleanup Query**
+
 **Location**: [src/pages/LocationDetail.tsx](src/pages/LocationDetail.tsx#L95-L100)
 
 ```tsx
-const existingSchemas = document.querySelectorAll('script[type="application/ld+json"]');
-existingSchemas.forEach((script) => {
+const existingSchemas = document.querySelectorAll(
+  'script[type="application/ld+json"]'
+);
+existingSchemas.forEach(script => {
   const content = script.textContent;
-  if (content && (content.includes('LocalBusiness') || content.includes('BreadcrumbList'))) {
+  if (
+    content &&
+    (content.includes('LocalBusiness') || content.includes('BreadcrumbList'))
+  ) {
     script.remove();
   }
 });
 ```
 
 **Issue**: Text content check via `.includes()` is fragile:
+
 - Brittle if schema format changes
 - No protection against injected content
 - Inefficient string searching
@@ -374,9 +418,11 @@ existingSchemas.forEach((script) => {
 ---
 
 ### 3. **AmbientOverlay - useCallback for Event Handlers**
+
 **Location**: [src/components/AmbientOverlay/index.tsx](src/components/AmbientOverlay/index.tsx#L106-L120)
 
 **Current Code**:
+
 ```tsx
 useEffect(() => {
   const updateFromStorage = () => {
@@ -396,6 +442,7 @@ useEffect(() => {
 **Issue**: `customHandler` is inline function recreated every effect run. While cleanup exists, using `useCallback` would be cleaner.
 
 **Optimization**:
+
 ```tsx
 const handleAmbientToggle = useCallback(() => {
   try {
@@ -408,10 +455,10 @@ const handleAmbientToggle = useCallback(() => {
 
 useEffect(() => {
   window.addEventListener('ambient:toggle', handleAmbientToggle);
-  window.addEventListener('storage', (e) => {
+  window.addEventListener('storage', e => {
     if (e.key === 'ambientEnabled') handleAmbientToggle();
   });
-  
+
   return () => {
     window.removeEventListener('ambient:toggle', handleAmbientToggle);
   };
@@ -421,9 +468,11 @@ useEffect(() => {
 ---
 
 ### 4. **Page Components - Repeated Meta Tag Updates**
+
 **Location**: All page components (Products, Locations, Contact, etc.)
 
 **Current Pattern**:
+
 ```tsx
 useEffect(() => {
   document.title = 'Page Title';
@@ -435,6 +484,7 @@ useEffect(() => {
 **Issue**: Manual DOM manipulation instead of helmet/meta handler
 
 **Recommendation**: Integrate `react-helmet-async`:
+
 ```tsx
 import { Helmet } from 'react-helmet-async';
 
@@ -445,16 +495,15 @@ export default function Products() {
         <title>Premium Cannabis Products | Rush N Relax</title>
         <meta name="description" content="Browse our premium products..." />
       </Helmet>
-      
-      <main>
-        {/* content */}
-      </main>
+
+      <main>{/* content */}</main>
     </>
   );
 }
 ```
 
 **Benefits**:
+
 - Centralized meta management
 - SSR-safe (when/if migrating to server rendering)
 - No DOM queries needed
@@ -463,13 +512,14 @@ export default function Products() {
 ---
 
 ### 5. **Navigation.css - Excessive `!important` Flags (11 total)**
+
 **Location**: [src/components/Navigation/Navigation.css](src/components/Navigation/Navigation.css#L303-L365)
 
 **Issue**: `!important` flags indicate CSS specificity problems:
 
 ```css
 .modal-backdrop {
-  position: fixed !important;  /* ❌ Why override? */
+  position: fixed !important; /* ❌ Why override? */
   top: 60px !important;
   left: 0 !important;
   right: 0 !important;
@@ -481,11 +531,13 @@ export default function Products() {
 **Root Cause**: Likely fighting with other CSS rules in critical.css, containers.css, etc.
 
 **Refactor**:
+
 1. Move `.modal-backdrop` to its own scoped file or component-scoped module
 2. Use CSS Modules to eliminate cascade conflicts
 3. If using global CSS, ensure specificity hierarchy: `element class > class > element`
 
 **Example with CSS Modules**:
+
 ```tsx
 // Navigation.module.css
 .modalBackdrop {
@@ -502,6 +554,7 @@ export default function Products() {
 ### Positive Findings
 
 ✅ **Good Semantic Usage**:
+
 - `<header>` for navigation
 - `<footer>` for footer
 - `<nav>` for navigation regions
@@ -510,11 +563,13 @@ export default function Products() {
 - Proper heading hierarchy (h1 → h2 → h3)
 
 ✅ **Proper ARIA Labels**:
+
 - `aria-label` on navigation regions
 - `aria-expanded` on toggle button
 - `aria-controls` linking button to menu
 
 ✅ **Minimal Nesting**:
+
 - Layout structure is reasonable
 - No deeply nested fragments
 - RootLayout properly extracts concerns
@@ -522,6 +577,7 @@ export default function Products() {
 ### Needed Improvements
 
 ⚠️ **Modal Structure**: Modal should be a `<dialog>` element or styled accordingly:
+
 ```tsx
 // Current
 <nav id="nav-menu" class="modal-content" aria-label="Main navigation">
@@ -537,25 +593,30 @@ export default function Products() {
 ## 📊 CODE QUALITY METRICS
 
 ### TypeScript Configuration ✅ **EXCELLENT**
+
 - ✅ `strict: true` - catches most errors
 - ✅ Proper path aliases configured
 - ✅ Good module resolution
 - ✅ Source maps enabled for debugging
 
 ### ESLint Configuration ✅ **EXCELLENT**
+
 - ✅ jsx-a11y rules enabled and strict
 - ✅ React Hooks rules enforced
 - ✅ Good catch for unused vars with `argsIgnorePattern`
 - ✅ No console logs in production
 
 ### Babel/Build Configuration ✅ **GOOD**
+
 - ✅ Proper code splitting (react-vendor, firebase-vendor)
 - ✅ Minification enabled
 - ✅ Drop dead code enabled
 - ✅ Source maps for production debugging
 
 ### Missing Checker
+
 ⚠️ No automated type checking in CI/CD pipeline mentioned. Consider:
+
 - Pre-commit hooks with `husky` + `lint-staged`
 - GitHub Actions CI for `npm run build` verification
 - Lighthouse/Playwright tests in CI
@@ -565,23 +626,26 @@ export default function Products() {
 ## 🧪 TESTING & QUALITY
 
 **Current State**: 2 test files found
+
 - `src/contexts/AuthContext.test.tsx`
 - `e2e/app.spec.ts`
 
 **Recommendations**:
+
 1. Add unit tests for critical hooks (useNavigation, useLocation)
 2. Integration tests for modal/drawer interactions
 3. Accessibility tests (axe-core)
 4. E2E tests for age gate → main app flow
 
 **Suggested Tools**:
+
 ```json
 {
   "devDependencies": {
     "@testing-library/react": "^14.0.0",
     "@testing-library/jest-dom": "^6.1.5",
     "@axe-core/react": "^4.8.0",
-    "vitest": "^1.0.0"  // Already in vite.config.ts
+    "vitest": "^1.0.0" // Already in vite.config.ts
   }
 }
 ```
@@ -593,12 +657,16 @@ export default function Products() {
 **Mobile-First Approach**: ✅ Good - CSS starts with mobile defaults
 
 **Breakpoints**:
+
 ```css
-@media (max-width: 767px) { } /* Mobile/Tablet */
-@media (min-width: 768px) { } /* Desktop */
+@media (max-width: 767px) {
+} /* Mobile/Tablet */
+@media (min-width: 768px) {
+} /* Desktop */
 ```
 
 **Issue**: Only 2 breakpoints. Modern mobile range:
+
 - 320px (old phones)
 - 640px (modern phones)
 - 768px (tablets)
@@ -612,12 +680,14 @@ export default function Products() {
 ## 🔒 SECURITY CONSIDERATIONS
 
 ✅ **Good Practices**:
+
 - `rel="noopener noreferrer"` on external links
 - Content Security Policy mentioned (Firebase integration)
 - TypeScript strict mode catches many type coercion issues
 - No eval() or dangerous DOM APIs
 
 ⚠️ **Areas to Review**:
+
 1. **localStorage Usage**: Storing `ageVerified` is fine, but ensure GDPR compliance
 2. **Schema Injection**: `JSON.stringify(schema)` is safe, but be cautious with user-generated content
 3. **API Keys**: `VITE_*` env vars are exposed to client - verify Firebase rules are strict

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   BrandLogoVariant,
   BrandSurface,
@@ -71,14 +71,17 @@ describe('Branding Constants', () => {
 
   describe('getBrandLogoStoragePath', () => {
     it('builds PRIMARY png path correctly', () => {
-      expect(getBrandLogoStoragePath(BrandLogoVariant.PRIMARY, BrandAssetFormat.PNG)).toBe(
-        'branding/logo-primary.png',
-      );
+      expect(
+        getBrandLogoStoragePath(BrandLogoVariant.PRIMARY, BrandAssetFormat.PNG)
+      ).toBe('branding/logo-primary.png');
     });
 
     it('builds ACCENT_BLUE_BG svg path correctly', () => {
       expect(
-        getBrandLogoStoragePath(BrandLogoVariant.ACCENT_BLUE_BG, BrandAssetFormat.SVG),
+        getBrandLogoStoragePath(
+          BrandLogoVariant.ACCENT_BLUE_BG,
+          BrandAssetFormat.SVG
+        )
       ).toBe('branding/logo-accent-blue-bg.svg');
     });
   });
@@ -87,7 +90,7 @@ describe('Branding Constants', () => {
     it('PRIMARY variant used for main surfaces', () => {
       const headerRules = BRAND_USAGE_RULES[BrandSurface.HEADER_DESKTOP];
       const footerRules = BRAND_USAGE_RULES[BrandSurface.FOOTER];
-      
+
       expect(headerRules.allowedLogos[0]).toBe(BrandLogoVariant.PRIMARY);
       expect(footerRules.allowedLogos[0]).toBe(BrandLogoVariant.PRIMARY);
     });
@@ -101,7 +104,7 @@ describe('Branding Constants', () => {
     it('header and footer have defined height constraints', () => {
       const headerRules = BRAND_USAGE_RULES[BrandSurface.HEADER_DESKTOP];
       const footerRules = BRAND_USAGE_RULES[BrandSurface.FOOTER];
-      
+
       expect(headerRules.height.exactPx).toBeGreaterThan(0);
       expect(footerRules.height.exactPx).toBeGreaterThan(0);
     });

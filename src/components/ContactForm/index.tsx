@@ -55,13 +55,13 @@ export function ContactForm() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value,
     }));
     // Clear error for this field when user starts typing
     if (errors[name as keyof FormData]) {
-      setErrors((prev) => ({
+      setErrors(prev => ({
         ...prev,
         [name]: '',
       }));
@@ -212,10 +212,7 @@ export function ContactForm() {
       </div>
 
       <div className="form-group">
-        <label
-          htmlFor="message"
-          className={errors.message ? 'required' : ''}
-        >
+        <label htmlFor="message" className={errors.message ? 'required' : ''}>
           Message
         </label>
         <textarea

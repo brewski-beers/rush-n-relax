@@ -13,7 +13,9 @@ import './styles/accessibility.css';
 const root = document.getElementById('root');
 
 if (!root) {
-  throw new Error('Root element not found in DOM. Check index.html for <div id="root"></div>');
+  throw new Error(
+    'Root element not found in DOM. Check index.html for <div id="root"></div>'
+  );
 }
 
 ReactDOM.createRoot(root).render(
