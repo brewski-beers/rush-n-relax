@@ -135,13 +135,22 @@ export function AmbientOverlay() {
   const portal = document.getElementById('ambient-portal');
   if (!portal) return null;
 
+  // Pick video URL in JS — <source media=""> is ignored by browsers inside <video>
+  const isMobile =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 768px)').matches;
+  const videoSrc =
+    (isMobile ? resolvedUrls.mobile : resolvedUrls.desktop) ??
+    resolvedUrls.desktop ??
+    resolvedUrls.mobile;
+
   return createPortal(
     <video
       autoPlay
       muted
       loop
       playsInline
-      preload="auto"
+      preload="metadata"
       crossOrigin="anonymous"
       disablePictureInPicture
       controls={false}
@@ -158,16 +167,7 @@ export function AmbientOverlay() {
         pointerEvents: 'none',
       }}
     >
-      {resolvedUrls.mobile && (
-        <source
-          src={resolvedUrls.mobile}
-          media="(max-width: 768px)"
-          type="video/mp4"
-        />
-      )}
-      {resolvedUrls.desktop && (
-        <source src={resolvedUrls.desktop} type="video/mp4" />
-      )}
+      {videoSrc && <source src={videoSrc} type="video/mp4" />}
     </video>,
     portal
   );

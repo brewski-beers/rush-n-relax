@@ -1,4 +1,3 @@
-/* eslint-disable */
 // Run with: node scripts/set-storage-cors.cjs
 'use strict';
 
