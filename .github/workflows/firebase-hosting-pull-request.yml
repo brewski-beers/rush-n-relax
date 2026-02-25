@@ -1,5 +1,7 @@
-# Preview deployment for Pull Requests
-name: Deploy to Firebase Hosting Preview Channel
+# Pull Request CI
+# - `verify` job is the required status check for branch protection
+# - `preview` deploy only runs after verify passes
+name: PR — Verify & Preview
 
 on:
   pull_request:
@@ -8,28 +10,47 @@ on:
       - main
 
 jobs:
-  build_and_preview:
+  verify:
+    name: verify
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+      - name: Setup
+        uses: ./.github/actions/setup
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run linter
+      - name: Lint
         run: npm run lint
 
-      - name: Run unit tests
+      - name: Unit tests
         run: npm run test -- --run
 
-      - name: Build project
+      - name: Setup Playwright (Chromium)
+        uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
+
+      - name: E2E tests
+        run: >-
+          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,storage
+          "node scripts/seed-emulators.cjs && npm run test:e2e -- --project=chromium"
+        env:
+          VITE_USE_EMULATORS: 'true'
+          CI: 'true'
+
+  preview:
+    name: preview
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Build
         run: npm run build
         env:
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}

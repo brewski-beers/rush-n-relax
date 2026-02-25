@@ -159,12 +159,16 @@
   align-items: center;
   justify-content: flex-start;
   padding: 1rem;
-  color: #e8e8e8;
+  color: #d5b36a;
   text-decoration: none;
   font-weight: 500;
   font-size: 1rem;
   min-height: 48px;
   transition: all 0.2s ease;
+}
+
+.nav-link:visited {
+  color: #d5b36a;
 }
 
 .nav-link:hover {
@@ -250,7 +254,7 @@
 .modal-link {
   width: 100%;
   padding: 1rem;
-  color: #e8e8e8;
+  color: #d5b36a;
   text-decoration: none;
   font-weight: 600;
   font-size: 1.1rem;
@@ -258,6 +262,10 @@
   border-radius: 0.5rem;
   transition: all 0.3s ease;
   display: block;
+}
+
+.modal-link:visited {
+  color: #d5b36a;
 }
 
 .modal-link:hover {

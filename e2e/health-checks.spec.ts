@@ -1,4 +1,4 @@
-import { test, expect, type BrowserName } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { preVerifyAge } from './fixtures';
 
 /**
@@ -30,6 +30,23 @@ test.describe('Website Health Checks - Production Readiness', () => {
 
     test('no console errors on page load', async ({ page }) => {
       const errors: string[] = [];
+      const failedRequests: string[] = [];
+      const notFoundResponses: string[] = [];
+
+      page.on('requestfailed', request => {
+        failedRequests.push(
+          `${request.method()} ${request.url()} :: ${request.failure()?.errorText ?? 'unknown error'}`
+        );
+      });
+
+      page.on('response', response => {
+        if (response.status() === 404) {
+          notFoundResponses.push(
+            `${response.request().method()} ${response.url()}`
+          );
+        }
+      });
+
       page.on('console', msg => {
         if (msg.type() === 'error') {
           // Ignore Firebase/network errors in test environment
@@ -47,7 +64,21 @@ test.describe('Website Health Checks - Production Readiness', () => {
       await page.goto('/');
       // Wait for page to settle
       await page.waitForSelector('main', { timeout: 5000 });
-      expect(errors).toHaveLength(0);
+      expect(
+        errors,
+        [
+          'Unexpected console errors during startup.',
+          errors.length ? `Console:\n${errors.join('\n')}` : '',
+          notFoundResponses.length
+            ? `404 responses:\n${notFoundResponses.join('\n')}`
+            : '',
+          failedRequests.length
+            ? `Request failures:\n${failedRequests.join('\n')}`
+            : '',
+        ]
+          .filter(Boolean)
+          .join('\n\n')
+      ).toHaveLength(0);
     });
   });
 
@@ -247,9 +278,10 @@ test.describe('Website Health Checks - Production Readiness', () => {
     test('keyboard navigation works', async ({ page, browserName }) => {
       // WebKit (Safari) does not move focus to buttons/links via Tab without
       // macOS "Full Keyboard Access" system setting — browser limitation, not app bug.
-      test.fixme(
-        (browserName as BrowserName) === 'webkit',
-        'Safari requires Full Keyboard Access system preference for Tab to focus interactive elements'
+      const isCi = !!process.env.CI;
+      test.skip(
+        isCi && browserName === 'webkit',
+        'Safari requires Full Keyboard Access to move focus with Tab in CI'
       );
 
       await preVerifyAge(page);

@@ -16,7 +16,7 @@ export interface Product {
  * Firebase Storage path convention: products/{slug}.{ext}
  * Supports jpg, png, and webp — resolver tries each in order.
  */
-const PRODUCT_IMAGE_EXTENSIONS = ['jpg', 'png', 'webp'] as const;
+const PRODUCT_IMAGE_EXTENSIONS = ['png', 'jpg', 'webp'] as const;
 
 export const getProductImageStoragePath = (
   slug: string,
@@ -25,7 +25,7 @@ export const getProductImageStoragePath = (
 
 /**
  * Resolve a product image URL from Firebase Storage.
- * Tries jpg → png → webp, returns the first that resolves.
+ * Tries png → jpg → webp, returns the first that resolves.
  * Falls back to null if unavailable so the UI can show a placeholder.
  */
 export const resolveProductImageUrl = async (
