@@ -86,12 +86,12 @@ export const BRAND_LOGO_FILES: Record<
   { svg: string; png: string }
 > = {
   [BrandLogoVariant.PRIMARY]: {
-    svg: '/assets/branding/logo-primary.svg',
-    png: '/assets/branding/logo-primary.png',
+    svg: '/icons/logo-primary.png',
+    png: '/icons/logo-primary.png',
   },
   [BrandLogoVariant.ACCENT_BLUE_BG]: {
-    svg: '/assets/branding/logo-accent-blue-bg.svg',
-    png: '/assets/branding/logo-accent-blue-bg.png',
+    svg: '/icons/logo-primary.png',
+    png: '/icons/logo-primary.png',
   },
 };
 

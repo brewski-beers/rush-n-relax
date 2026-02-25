@@ -4,11 +4,16 @@
 'use strict';
 
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 
 const FIRESTORE_BASE = 'http://localhost:8080';
 const STORAGE_BASE = 'http://localhost:9199';
 const PROJECT = 'rush-n-relax';
+const STORAGE_BUCKET = 'rush-n-relax.firebasestorage.app';
 const EMULATOR_ADMIN_AUTH_HEADER = { Authorization: 'Bearer owner' };
+
+const PRODUCT_SLUGS = ['flower', 'concentrates', 'drinks', 'edibles', 'vapes'];
 
 function request(options, body) {
   return new Promise((resolve, reject) => {
@@ -58,57 +63,62 @@ async function seedFirestoreDoc(collection, docId, fields) {
 }
 
 async function seedStorageStub() {
-  // Upload a minimal valid MP4 stub (ftyp + mdat boxes) so getDownloadURL resolves.
-  // 32-byte minimal ftyp box — browsers won't play it but the URL resolves correctly.
-  const stub = Buffer.from(
-    '0000002066747970' + // ftyp box size + type
-    '6d703432' +         // mp42
-    '00000000' +         // minor version
-    '6d703432' +         // compatible brand
-    '69736f6d' +         // isom
-    '00000008' +         // mdat box size
-    '6d646174',          // mdat type
+  // Minimal valid MP4 stub (ftyp + mdat boxes). URL resolves; playback is not required for tests.
+  const mp4Stub = Buffer.from(
+    '0000002066747970' +
+      '6d703432' +
+      '00000000' +
+      '6d703432' +
+      '69736f6d' +
+      '00000008' +
+      '6d646174',
     'hex'
   );
 
-  const bucketName = `${PROJECT}.appspot.com`;
-  // Storage emulator REST upload endpoint
-  const uploadPath = `/v0/b/${bucketName}/o?name=ambient%2Fsmoke-4k.mp4&uploadType=media`;
-  const uploadPathMobile = `/v0/b/${bucketName}/o?name=ambient%2Fsmoke-1080p.mp4&uploadType=media`;
-
-  const uploadUrl = new URL(uploadPath, STORAGE_BASE);
-  await request(
-    {
-      hostname: uploadUrl.hostname,
-      port: uploadUrl.port,
-      path: uploadUrl.pathname + uploadUrl.search,
-      method: 'POST',
-      headers: {
-        ...EMULATOR_ADMIN_AUTH_HEADER,
-        'Content-Type': 'video/mp4',
-        'Content-Length': stub.length,
-      },
-    },
-    stub
+  // Valid 1x1 transparent PNG for product/logo placeholders.
+  const pngStub = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO5R8f0AAAAASUVORK5CYII=',
+    'base64'
   );
-  console.log('✓ Storage seeded: ambient/smoke-4k.mp4');
 
-  const uploadUrlMobile = new URL(uploadPathMobile, STORAGE_BASE);
-  await request(
-    {
-      hostname: uploadUrlMobile.hostname,
-      port: uploadUrlMobile.port,
-      path: uploadUrlMobile.pathname + uploadUrlMobile.search,
-      method: 'POST',
-      headers: {
-        ...EMULATOR_ADMIN_AUTH_HEADER,
-        'Content-Type': 'video/mp4',
-        'Content-Length': stub.length,
+  const uploadObject = async (objectPath, contentType, bytes) => {
+    const uploadPath = `/v0/b/${STORAGE_BUCKET}/o?name=${encodeURIComponent(objectPath)}&uploadType=media`;
+    const uploadUrl = new URL(uploadPath, STORAGE_BASE);
+    await request(
+      {
+        hostname: uploadUrl.hostname,
+        port: uploadUrl.port,
+        path: uploadUrl.pathname + uploadUrl.search,
+        method: 'POST',
+        headers: {
+          ...EMULATOR_ADMIN_AUTH_HEADER,
+          'Content-Type': contentType,
+          'Content-Length': bytes.length,
+        },
       },
-    },
-    stub
-  );
-  console.log('✓ Storage seeded: ambient/smoke-1080p.mp4');
+      bytes
+    );
+    console.log(`✓ Storage seeded: ${objectPath}`);
+  };
+
+  // Ambient video assets loaded on startup.
+  await uploadObject('ambient/smoke-4k.mp4', 'video/mp4', mp4Stub);
+  await uploadObject('ambient/smoke-1080p.mp4', 'video/mp4', mp4Stub);
+
+  // Header logo (startup fetch) from Firebase Storage.
+  const primaryLogoPath = path.join(__dirname, '..', 'public', 'icons', 'logo-primary.png');
+  const primaryLogoBytes = fs.existsSync(primaryLogoPath)
+    ? fs.readFileSync(primaryLogoPath)
+    : pngStub;
+  await uploadObject('branding/logo-primary.png', 'image/png', primaryLogoBytes);
+
+  // Secondary branding variant uses a deterministic placeholder in CI.
+  await uploadObject('branding/logo-accent-blue-bg.png', 'image/png', pngStub);
+
+  // Product cards on home load first 3 slugs; seed all known product slugs for consistency.
+  for (const slug of PRODUCT_SLUGS) {
+    await uploadObject(`products/${slug}.png`, 'image/png', pngStub);
+  }
 }
 
 async function run() {
@@ -116,8 +126,7 @@ async function run() {
   await clearFirestore();
 
   // Seed any Firestore docs your app reads on load here.
-  // Currently the app reads no Firestore docs on page load (products/locations
-  // are static constants), so only Storage needs seeding.
+  // App startup reads static constants for data, but resolves media from Storage.
 
   await seedStorageStub();
   console.log('\nEmulator seed complete ✓');

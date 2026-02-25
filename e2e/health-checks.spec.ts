@@ -30,6 +30,23 @@ test.describe('Website Health Checks - Production Readiness', () => {
 
     test('no console errors on page load', async ({ page }) => {
       const errors: string[] = [];
+      const failedRequests: string[] = [];
+      const notFoundResponses: string[] = [];
+
+      page.on('requestfailed', request => {
+        failedRequests.push(
+          `${request.method()} ${request.url()} :: ${request.failure()?.errorText ?? 'unknown error'}`
+        );
+      });
+
+      page.on('response', response => {
+        if (response.status() === 404) {
+          notFoundResponses.push(
+            `${response.request().method()} ${response.url()}`
+          );
+        }
+      });
+
       page.on('console', msg => {
         if (msg.type() === 'error') {
           // Ignore Firebase/network errors in test environment
@@ -47,7 +64,21 @@ test.describe('Website Health Checks - Production Readiness', () => {
       await page.goto('/');
       // Wait for page to settle
       await page.waitForSelector('main', { timeout: 5000 });
-      expect(errors).toHaveLength(0);
+      expect(
+        errors,
+        [
+          'Unexpected console errors during startup.',
+          errors.length ? `Console:\n${errors.join('\n')}` : '',
+          notFoundResponses.length
+            ? `404 responses:\n${notFoundResponses.join('\n')}`
+            : '',
+          failedRequests.length
+            ? `Request failures:\n${failedRequests.join('\n')}`
+            : '',
+        ]
+          .filter(Boolean)
+          .join('\n\n')
+      ).toHaveLength(0);
     });
   });
 
