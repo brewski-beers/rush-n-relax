@@ -11,7 +11,7 @@ on:
 
 concurrency:
   group: main-verify-deploy-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   verify:
@@ -36,7 +36,7 @@ jobs:
       - name: E2E tests
         run: >-
           npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,storage
-          "node scripts/seed-emulators.cjs && npm run test:e2e:core"
+          "node scripts/seed-emulators.cjs && npm run test:e2e:core -- --project=chromium"
         env:
           VITE_USE_EMULATORS: 'true'
           CI: 'true'
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX || secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
+      FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -64,21 +64,21 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
+      - name: Validate deploy credentials
+        run: |
+          if [ -z "$FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "Missing deploy credentials. Set FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
+            exit 1
+          fi
+
       - name: Build
         run: npm run build
         env:
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
 
-      - name: Validate deploy credentials
-        run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX" ]; then
-            echo "Missing deploy credentials. Set FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX or FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
-            exit 1
-          fi
-
       - name: Write deploy credentials
         run: |
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX" > $HOME/gcloud-key.json
+          printf '%s' "$FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON" > $HOME/gcloud-key.json
 
       - name: Deploy Firestore rules and indexes
         run: |
@@ -111,7 +111,7 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX || secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}'
           channelId: live
           projectId: rush-n-relax
         env:
