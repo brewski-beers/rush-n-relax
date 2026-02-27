@@ -9,10 +9,15 @@ on:
     branches:
       - main
 
+concurrency:
+  group: pr-verify-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     name: verify
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,15 +39,25 @@ jobs:
       - name: E2E tests
         run: >-
           npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,storage
-          "node scripts/seed-emulators.cjs && npm run test:e2e -- --project=chromium"
+          "node scripts/seed-emulators.cjs && npm run test:e2e:core -- --project=chromium"
         env:
           VITE_USE_EMULATORS: 'true'
           CI: 'true'
+
+      - name: Upload verify failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-verify-failures
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 3
 
   preview:
     name: preview
     needs: verify
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

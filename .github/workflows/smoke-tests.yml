@@ -1,16 +1,21 @@
-# Smoke tests against production — runs 3x daily
+# Smoke tests against production — runs daily
 # No emulators or local server — hits the live site via PLAYWRIGHT_BASE_URL.
 name: Smoke Tests (Production)
 
 on:
   schedule:
-    - cron: '0 8,14,20 * * *' # 08:00, 14:00, 20:00 UTC daily
+    - cron: '0 14 * * *' # 14:00 UTC daily
   workflow_dispatch:
+
+concurrency:
+  group: prod-smoke-tests
+  cancel-in-progress: true
 
 jobs:
   smoke:
     name: smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,10 +29,10 @@ jobs:
           browsers: chromium
 
       - name: Run smoke tests against production
-        run: npm run test:e2e:smoke:prod
+        run: npm run test:e2e:smoke
         env:
           CI: 'true'
-          PLAYWRIGHT_BASE_URL: https://www.rushnrelax.com
+          PLAYWRIGHT_BASE_URL: https://rush-n-relax.web.app
 
       - name: Upload failure artifacts
         if: failure()
@@ -35,4 +40,5 @@ jobs:
         with:
           name: smoke-test-failures
           path: test-results/
-          retention-days: 7
+          if-no-files-found: ignore
+          retention-days: 3

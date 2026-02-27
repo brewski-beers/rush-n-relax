@@ -45,7 +45,10 @@ export default function ProductDetail() {
       ogImage.setAttribute('property', 'og:image');
       document.head.appendChild(ogImage);
     }
-    ogImage.setAttribute('content', 'https://www.rushnrelax.com/og-image.png');
+    ogImage.setAttribute(
+      'content',
+      'https://rush-n-relax.web.app/og-image.png'
+    );
 
     // Breadcrumb Schema
     const existingSchemas = document.querySelectorAll(
@@ -69,13 +72,13 @@ export default function ProductDetail() {
           '@type': 'ListItem',
           position: 1,
           name: 'Home',
-          item: 'https://www.rushnrelax.com',
+          item: 'https://rush-n-relax.web.app',
         },
         {
           '@type': 'ListItem',
           position: 2,
           name: 'Products',
-          item: 'https://www.rushnrelax.com/products',
+          item: 'https://rush-n-relax.web.app/products',
         },
         {
           '@type': 'ListItem',
@@ -97,7 +100,7 @@ export default function ProductDetail() {
       '@type': 'Product',
       name: product.name,
       description: product.details,
-      image: 'https://www.rushnrelax.com/og-image.png',
+      image: 'https://rush-n-relax.web.app/og-image.png',
       brand: {
         '@type': 'Brand',
         name: 'Rush N Relax',
