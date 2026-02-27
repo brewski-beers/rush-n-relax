@@ -10,7 +10,7 @@
     "build": "tsc && vite build",
     "build:functions": "cd functions && npm run build",
     "preview": "vite preview",
-    "deploy": "npm run build && firebase deploy",
+    "deploy": "npm run build && firebase deploy --except functions",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,css,json,md}\"",

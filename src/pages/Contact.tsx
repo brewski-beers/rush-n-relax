@@ -41,32 +41,6 @@ export default function Contact() {
         </div>
       </section>
 
-      <section id="contact-info" className="contact-info">
-        <div className="container">
-          <h2>Other Ways to Reach Us</h2>
-          <div className="info-grid">
-            <div className="info-card glass">
-              <h3>Hours</h3>
-              <p>All locations — 7 days a week</p>
-              <p className="hours-text">
-                Monday – Sunday
-                <br />
-                10:00 AM – 10:00 PM
-              </p>
-            </div>
-            <div className="info-card glass">
-              <h3>Email</h3>
-              <p>Reach our team directly</p>
-              <p className="hours-text">
-                <a href="mailto:rush@rushnrelax.com">rush@rushnrelax.com</a>
-                <br />
-                <a href="mailto:capps@rushnrelax.com">capps@rushnrelax.com</a>
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section id="location-contact" className="location-contact">
         <div className="container">
           <h2>Call a Location Directly</h2>

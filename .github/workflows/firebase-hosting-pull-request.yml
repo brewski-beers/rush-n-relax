@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      FIREBASE_PREVIEW_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX || secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
+      FIREBASE_PREVIEW_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -70,7 +70,7 @@ jobs:
       - name: Validate preview credentials
         run: |
           if [ -z "$FIREBASE_PREVIEW_SERVICE_ACCOUNT_JSON" ]; then
-            echo "Missing preview credentials. Set FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX or FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
+            echo "Missing preview credentials. Set FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
             exit 1
           fi
 
@@ -83,7 +83,7 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX || secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}'
           projectId: rush-n-relax
           expires: 7d
         env:
