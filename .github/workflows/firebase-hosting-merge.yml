@@ -82,11 +82,18 @@ jobs:
 
       - name: Deploy Firestore rules and indexes
         run: |
-          GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
+          set -o pipefail
+          FIRESTORE_DEPLOY_LOG=$(mktemp)
+          if ! GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
             npx firebase-tools deploy \
             --only firestore:rules,firestore:indexes \
             --project rush-n-relax \
-            --non-interactive
+            --non-interactive 2>&1 | tee "$FIRESTORE_DEPLOY_LOG"; then
+            if grep -qi "403\|does not have permission\|firebaserules" "$FIRESTORE_DEPLOY_LOG"; then
+              echo "::error::Deploy service account is missing firebaserules permissions. Grant roles/firebase.rulesAdmin to FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
+            fi
+            exit 1
+          fi
 
       - name: Deploy Storage rules
         run: |
