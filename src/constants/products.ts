@@ -124,6 +124,6 @@ export function getProductSEO(product: Product) {
     title: `${product.name} | Rush N Relax Premium Cannabis`,
     description: product.description,
     keywords: `${product.name}, ${product.category}, cannabis, dispensary, Tennessee`,
-    url: `https://www.rushnrelax.com/products/${product.slug}`,
+    url: `https://rush-n-relax.web.app/products/${product.slug}`,
   };
 }

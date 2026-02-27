@@ -75,7 +75,7 @@ export const getLocationSEO = (location: Location) => {
     title: `${location.name} - Rush N Relax Premium Cannabis`,
     description: `${location.description} Located at ${location.address}, ${location.city}, ${location.state}. Call ${location.phone} for more information.`,
     keywords: `cannabis, dispensary, ${location.city}, ${location.state}, premium cannabis`,
-    url: `https://www.rushnrelax.com/locations/${location.slug}`,
+    url: `https://rush-n-relax.web.app/locations/${location.slug}`,
     type: 'LocalBusiness',
   };
 };

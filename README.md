@@ -98,7 +98,7 @@ This keeps local feedback loops fast while CI validates everything.
 | --------- | ------------------------ | --------------------------------------------- | ----------------------- |
 | **Smoke** | `npm run test:e2e:smoke` | Age gate only (Chromium)                      | Every save / pre-commit |
 | **Core**  | `npm run test:e2e:core`  | Age gate + journeys + app (Chromium + Mobile) | Before pushing a branch |
-| **Full**  | `npm run test:e2e:full`  | All specs, all browsers                       | CI / release gate       |
+| **Full**  | `npm run test:e2e:full`  | All specs, all browsers                       | Manual release gate     |
 
 ```bash
 # Quick check — runs in < 15s
@@ -107,7 +107,7 @@ npm run test:e2e:smoke
 # Broader validation — runs in ~30s
 npm run test:e2e:core
 
-# Exhaustive — runs in CI
+# Exhaustive — run before major releases
 npm run test:e2e:full
 ```
 

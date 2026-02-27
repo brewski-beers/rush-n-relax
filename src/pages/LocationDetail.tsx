@@ -55,7 +55,7 @@ export default function LocationDetail() {
     setMeta('meta[property="og:url"]', seo.url);
     setMeta(
       'meta[property="og:image"]',
-      'https://www.rushnrelax.com/og-image.png'
+      'https://rush-n-relax.web.app/og-image.png'
     );
     setMeta('meta[property="og:image:width"]', '1200');
     setMeta('meta[property="og:image:height"]', '630');
@@ -63,7 +63,7 @@ export default function LocationDetail() {
     // Twitter Meta Tags
     setMeta(
       'meta[name="twitter:image"]',
-      'https://www.rushnrelax.com/twitter-image.png'
+      'https://rush-n-relax.web.app/twitter-image.png'
     );
 
     // Canonical URL
@@ -135,13 +135,13 @@ export default function LocationDetail() {
           '@type': 'ListItem',
           position: 1,
           name: 'Home',
-          item: 'https://www.rushnrelax.com',
+          item: 'https://rush-n-relax.web.app',
         },
         {
           '@type': 'ListItem',
           position: 2,
           name: 'Locations',
-          item: 'https://www.rushnrelax.com/locations',
+          item: 'https://rush-n-relax.web.app/locations',
         },
         {
           '@type': 'ListItem',

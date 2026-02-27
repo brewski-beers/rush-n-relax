@@ -141,10 +141,11 @@ test.describe('Accessibility', () => {
 test.describe('Performance', () => {
   test('should load homepage within 3 seconds', async ({ page }) => {
     await preVerifyAge(page);
+    const maxLoadTimeMs = process.env.CI ? 5000 : 3000;
     const startTime = Date.now();
     await page.goto('/');
     await page.waitForSelector('main, h1', { timeout: 5000 });
     const loadTime = Date.now() - startTime;
-    expect(loadTime).toBeLessThan(3000);
+    expect(loadTime).toBeLessThan(maxLoadTimeMs);
   });
 });

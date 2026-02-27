@@ -10,7 +10,7 @@ Disallow: /dist
 Disallow: /functions
 
 # Specify sitemap
-Sitemap: https://www.rushnrelax.com/sitemap.xml
+Sitemap: https://rush-n-relax.web.app/sitemap.xml
 
 # Crawl delay (ms) to be respectful
 Crawl-delay: 1
