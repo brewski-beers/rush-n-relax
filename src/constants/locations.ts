@@ -57,7 +57,7 @@ export const LOCATIONS: Location[] = [
     city: 'Seymour',
     state: 'TN',
     zip: '37865',
-    phone: '+1 (865) 415-4225',
+    phone: '+1 (865) 936-2040',
     hours: 'Mon-Sun: 10am - 10pm',
     description:
       'Nestled along Maryville Highway between Knoxville and the Smokies, our Seymour location offers a relaxed, welcoming atmosphere with the same premium selection you expect from Rush N Relax. Swing by on your way through Sevier County — we make it easy to find exactly what you need.',
