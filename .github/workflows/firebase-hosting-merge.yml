@@ -28,6 +28,9 @@ jobs:
       - name: Unit tests
         run: npm run test -- --run
 
+      - name: Functions unit tests
+        run: cd functions && npm ci && npm test
+
       - name: Setup Playwright (Chromium)
         uses: ./.github/actions/setup-playwright
         with:
@@ -76,6 +79,9 @@ jobs:
         env:
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
 
+      - name: Build Cloud Functions
+        run: cd functions && npm ci && npm run build
+
       - name: Write deploy credentials
         run: |
           printf '%s' "$FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON" > $HOME/gcloud-key.json
@@ -106,6 +112,21 @@ jobs:
             --non-interactive 2>&1 | tee "$STORAGE_DEPLOY_LOG"; then
             if grep -q "firebasestorage.defaultBucket.get" "$STORAGE_DEPLOY_LOG"; then
               echo "::error::Deploy service account is missing firebasestorage.defaultBucket.get. Grant roles/storage.admin (or custom role including this permission) to FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
+            fi
+            exit 1
+          fi
+
+      - name: Deploy Cloud Functions
+        run: |
+          set -o pipefail
+          FUNCTIONS_DEPLOY_LOG=$(mktemp)
+          if ! GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
+            npx firebase-tools deploy \
+            --only functions \
+            --project rush-n-relax \
+            --non-interactive 2>&1 | tee "$FUNCTIONS_DEPLOY_LOG"; then
+            if grep -qi "403\|does not have permission\|cloudfunctions" "$FUNCTIONS_DEPLOY_LOG"; then
+              echo "::error::Deploy service account is missing Cloud Functions permissions. Grant roles/cloudfunctions.admin to FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
             fi
             exit 1
           fi

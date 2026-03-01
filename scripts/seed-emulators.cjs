@@ -121,12 +121,61 @@ async function seedStorageStub() {
   }
 }
 
+async function seedLocationReviews() {
+  const makeReview = (author_name, text, relative_time_description, time) => ({
+    mapValue: {
+      fields: {
+        author_name: { stringValue: author_name },
+        rating: { integerValue: '5' },
+        text: { stringValue: text },
+        relative_time_description: { stringValue: relative_time_description },
+        profile_photo_url: { stringValue: '' },
+        time: { integerValue: String(time) },
+      },
+    },
+  });
+
+  const makeReviewsArray = reviews => ({
+    arrayValue: { values: reviews.map(r => makeReview(...r)) },
+  });
+
+  const oakRidgePlaceId = 'ChIJG2IBn08zXIgROk6xAd9qyY0';
+  await seedFirestoreDoc('location-reviews', oakRidgePlaceId, {
+    placeId: { stringValue: oakRidgePlaceId },
+    rating: { doubleValue: 4.8 },
+    totalRatings: { integerValue: '312' },
+    reviews: makeReviewsArray([
+      ['Jane D.',     'Incredible selection and knowledgeable staff. Best dispensary in Oak Ridge!', '2 days ago',   1700900000],
+      ['Marcus H.',   'My go-to spot. Always clean, always friendly. Highly recommend!',             '1 week ago',   1700400000],
+      ['Patricia L.', 'Top notch products and amazing service every single time.',                   '2 weeks ago',  1699800000],
+      ['Ryan K.',     'Staff really knows their stuff. Made great recommendations for my needs.',    '3 weeks ago',  1699200000],
+      ['Sandra W.',   'Love this place. Great atmosphere and unbeatable prices.',                    '1 month ago',  1698600000],
+    ]),
+    cachedAt: { integerValue: String(Date.now()) },
+  });
+
+  const seymourPlaceId = 'ChIJb1IipsQbXIgREaNxkmmAaHg';
+  await seedFirestoreDoc('location-reviews', seymourPlaceId, {
+    placeId: { stringValue: seymourPlaceId },
+    rating: { doubleValue: 4.7 },
+    totalRatings: { integerValue: '198' },
+    reviews: makeReviewsArray([
+      ['Mark T.',   'Friendly staff, great selection. Worth the drive every time!',              '3 days ago',   1700800000],
+      ['Angela R.', 'Best experience I\'ve had at any dispensary. Super knowledgeable team.',   '5 days ago',   1700700000],
+      ['Derek S.',  'Always stocked with quality products. My favorite location.',              '1 week ago',   1700300000],
+      ['Karen M.',  'So professional and welcoming. Five stars every visit.',                   '2 weeks ago',  1699700000],
+      ['Tony B.',   'Great deals and even better service. Highly recommended!',                 '3 weeks ago',  1699100000],
+    ]),
+    cachedAt: { integerValue: String(Date.now()) },
+  });
+}
+
 async function run() {
   console.log('Seeding Firebase emulators...');
   await clearFirestore();
 
-  // Seed any Firestore docs your app reads on load here.
-  // App startup reads static constants for data, but resolves media from Storage.
+  // Seed location-reviews so the client can read reviews without the scheduled function running.
+  await seedLocationReviews();
 
   await seedStorageStub();
   console.log('\nEmulator seed complete ✓');

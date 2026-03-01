@@ -8,7 +8,14 @@ service cloud.firestore {
       allow create: if true;
       allow update, delete: if false;
     }
-    
+
+    // Location reviews: written daily by scheduled Cloud Function (Admin SDK bypasses rules)
+    // Clients read directly; writes remain server-only
+    match /location-reviews/{placeId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

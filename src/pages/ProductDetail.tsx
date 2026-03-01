@@ -8,6 +8,7 @@ import {
   PRODUCTS,
 } from '../constants/products';
 import { ProductImage } from '../components/ProductImage';
+import { SITE_URL } from '../constants/site';
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -45,10 +46,7 @@ export default function ProductDetail() {
       ogImage.setAttribute('property', 'og:image');
       document.head.appendChild(ogImage);
     }
-    ogImage.setAttribute(
-      'content',
-      'https://rush-n-relax.web.app/og-image.png'
-    );
+    ogImage.setAttribute('content', `${SITE_URL}/og-image.png`);
 
     // Breadcrumb Schema
     const existingSchemas = document.querySelectorAll(
@@ -72,13 +70,13 @@ export default function ProductDetail() {
           '@type': 'ListItem',
           position: 1,
           name: 'Home',
-          item: 'https://rush-n-relax.web.app',
+          item: SITE_URL,
         },
         {
           '@type': 'ListItem',
           position: 2,
           name: 'Products',
-          item: 'https://rush-n-relax.web.app/products',
+          item: `${SITE_URL}/products`,
         },
         {
           '@type': 'ListItem',
@@ -100,7 +98,7 @@ export default function ProductDetail() {
       '@type': 'Product',
       name: product.name,
       description: product.details,
-      image: 'https://rush-n-relax.web.app/og-image.png',
+      image: `${SITE_URL}/og-image.png`,
       brand: {
         '@type': 'Brand',
         name: 'Rush N Relax',

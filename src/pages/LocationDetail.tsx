@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card } from '../components/Card';
+import { ReviewsSection } from '../components/ReviewsSection';
 import { getLocationBySlug, getLocationSEO } from '../constants/locations';
+import { SITE_URL } from '../constants/site';
 import { getSocialLink, isSocialIconObject } from '../constants/social';
+import { useLocationReviews } from '../hooks/useLocationReviews';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -18,9 +21,17 @@ export default function LocationDetail() {
     }
   }, [location, navigate]);
 
+  const {
+    rating,
+    totalRatings,
+    reviews,
+    status: reviewsStatus,
+  } = useLocationReviews(location?.placeId);
+
   // Update SEO meta tags and JSON-LD schemas (with proper cleanup)
   useEffect(() => {
     if (!location) return;
+    if (reviewsStatus === 'loading') return;
 
     const seo = getLocationSEO(location);
     document.title = seo.title;
@@ -53,18 +64,12 @@ export default function LocationDetail() {
     setMeta('meta[property="og:title"]', seo.title);
     setMeta('meta[property="og:description"]', seo.description);
     setMeta('meta[property="og:url"]', seo.url);
-    setMeta(
-      'meta[property="og:image"]',
-      'https://rush-n-relax.web.app/og-image.png'
-    );
+    setMeta('meta[property="og:image"]', `${SITE_URL}/og-image.png`);
     setMeta('meta[property="og:image:width"]', '1200');
     setMeta('meta[property="og:image:height"]', '630');
 
     // Twitter Meta Tags
-    setMeta(
-      'meta[name="twitter:image"]',
-      'https://rush-n-relax.web.app/twitter-image.png'
-    );
+    setMeta('meta[name="twitter:image"]', `${SITE_URL}/twitter-image.png`);
 
     // Canonical URL
     let canonical = document.querySelector('link[rel="canonical"]');
@@ -118,6 +123,16 @@ export default function LocationDetail() {
           longitude: location.coordinates.lng,
         },
       }),
+      ...(rating !== null &&
+        totalRatings !== null && {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: rating.toFixed(1),
+            reviewCount: totalRatings,
+            bestRating: '5',
+            worstRating: '1',
+          },
+        }),
     };
 
     const schemaEl = document.createElement('script');
@@ -135,13 +150,13 @@ export default function LocationDetail() {
           '@type': 'ListItem',
           position: 1,
           name: 'Home',
-          item: 'https://rush-n-relax.web.app',
+          item: SITE_URL,
         },
         {
           '@type': 'ListItem',
           position: 2,
           name: 'Locations',
-          item: 'https://rush-n-relax.web.app/locations',
+          item: `${SITE_URL}/locations`,
         },
         {
           '@type': 'ListItem',
@@ -168,7 +183,7 @@ export default function LocationDetail() {
       );
       toRemove.forEach(el => el.remove());
     };
-  }, [location]);
+  }, [location, rating, totalRatings, reviewsStatus]);
 
   if (!location) return null;
 
@@ -283,7 +298,11 @@ export default function LocationDetail() {
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
                 src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(
-                  `${location.address}, ${location.city}, ${location.state} ${location.zip}`
+                  location.placeId
+                    ? `place_id:${location.placeId}`
+                    : location.coordinates
+                      ? `${location.coordinates.lat},${location.coordinates.lng}`
+                      : `${location.address}, ${location.city}, ${location.state} ${location.zip}`
                 )}`}
               />
             </div>
@@ -302,6 +321,14 @@ export default function LocationDetail() {
           </div>
         </section>
       )}
+
+      <ReviewsSection
+        rating={rating}
+        totalRatings={totalRatings}
+        reviews={reviews}
+        status={reviewsStatus}
+        locationName={location.name}
+      />
 
       <section className="location-cta">
         <div className="container">
