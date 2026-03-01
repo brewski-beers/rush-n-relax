@@ -208,17 +208,27 @@ export default function LocationDetail() {
         <div className="container">
           <div className="location-detail-grid">
             <Card variant="info" as="div">
-              <h2>Address</h2>
+              <h2>Visit Us</h2>
               <address>
                 <p>{location.address}</p>
                 <p>
                   {location.city}, {location.state} {location.zip}
                 </p>
               </address>
-            </Card>
-
-            <Card variant="info" as="div">
-              <h2>Hours</h2>
+              {location.coordinates && (
+                <a
+                  href={`https://www.google.com/maps/search/${encodeURIComponent(
+                    location.address
+                  )},+${encodeURIComponent(location.city)},+${location.state}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="info-directions-link"
+                >
+                  Get Directions →
+                </a>
+              )}
+              <div className="info-divider" />
+              <p className="info-label">Hours</p>
               <p>{location.hours}</p>
               <p className="text-secondary">Open 7 days a week</p>
             </Card>
@@ -227,67 +237,57 @@ export default function LocationDetail() {
               <h2>Call Us</h2>
               <a
                 href={`tel:${location.phone.replace(/\D/g, '')}`}
-                className="phone-link"
+                className="phone-link phone-link--large"
               >
                 {location.phone}
               </a>
               <p className="text-secondary">Available during business hours</p>
+              {location.socialLinkIds && location.socialLinkIds.length > 0 && (
+                <>
+                  <div className="info-divider" />
+                  <p className="info-label">Follow Us</p>
+                  <div className="social-links-grid">
+                    {location.socialLinkIds.map(socialId => {
+                      const social = getSocialLink(socialId);
+                      return (
+                        <a
+                          key={socialId}
+                          href={social.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-link-item"
+                          aria-label={social.ariaLabel}
+                          title={social.name}
+                        >
+                          <span className="social-icon">
+                            {isSocialIconObject(social.icon) ? (
+                              <img
+                                src={social.icon.src}
+                                alt={social.icon.alt}
+                                className="social-icon-img"
+                              />
+                            ) : (
+                              social.icon
+                            )}
+                          </span>
+                          <span className="social-name">{social.name}</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </Card>
-
-            {location.socialLinkIds && location.socialLinkIds.length > 0 && (
-              <Card variant="info" as="div">
-                <h2>Follow Us</h2>
-                <div className="social-links-grid">
-                  {location.socialLinkIds.map(socialId => {
-                    const social = getSocialLink(socialId);
-                    return (
-                      <a
-                        key={socialId}
-                        href={social.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="social-link-item"
-                        aria-label={social.ariaLabel}
-                        title={social.name}
-                      >
-                        <span className="social-icon">
-                          {isSocialIconObject(social.icon) ? (
-                            <img
-                              src={social.icon.src}
-                              alt={social.icon.alt}
-                              className="social-icon-img"
-                            />
-                          ) : (
-                            social.icon
-                          )}
-                        </span>
-                        <span className="social-name">{social.name}</span>
-                      </a>
-                    );
-                  })}
-                </div>
-              </Card>
-            )}
-
-            {location.coordinates && (
-              <Card variant="info" as="div">
-                <h2>Location</h2>
-                <p>
-                  <strong>
-                    {location.city}, {location.state}
-                  </strong>
-                </p>
-                <p className="text-secondary">East Tennessee</p>
-              </Card>
-            )}
           </div>
         </div>
       </section>
 
       {location.coordinates && (
-        <section className="location-map-section">
+        <section
+          className="location-map-section"
+          aria-label="Store location map"
+        >
           <div className="container">
-            <h2>Find Us on the Map</h2>
             <div className="map-container">
               <iframe
                 title={`${location.name} Location Map`}
@@ -306,18 +306,6 @@ export default function LocationDetail() {
                 )}`}
               />
             </div>
-            <div className="map-actions">
-              <a
-                href={`https://www.google.com/maps/search/${encodeURIComponent(
-                  location.address
-                )},+${encodeURIComponent(location.city)},+${location.state}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-secondary"
-              >
-                Get Directions
-              </a>
-            </div>
           </div>
         </section>
       )}
@@ -329,34 +317,6 @@ export default function LocationDetail() {
         status={reviewsStatus}
         locationName={location.name}
       />
-
-      <section className="location-cta">
-        <div className="container">
-          <h2>Stop By Anytime</h2>
-          <p>
-            Open seven days a week — walk in and let our staff take it from
-            there.
-          </p>
-          <div className="cta-buttons">
-            <a
-              href={`tel:${location.phone.replace(/\D/g, '')}`}
-              className="btn btn-primary"
-            >
-              Call Now
-            </a>
-            <a
-              href={`https://www.google.com/maps/search/${encodeURIComponent(
-                location.address
-              )},+${encodeURIComponent(location.city)},+${location.state}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-secondary"
-            >
-              Get Directions
-            </a>
-          </div>
-        </div>
-      </section>
     </main>
   );
 }

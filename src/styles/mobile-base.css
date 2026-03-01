@@ -7,6 +7,7 @@
 .root-layout {
   position: relative;
   width: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -21,20 +22,16 @@
   overflow-x: hidden;
 }
 
-/* Main content area */
 main {
   flex: 1;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
-  padding-top: 1.5rem;
+  padding-top: 1rem;
 }
 
-/* Sections */
 section {
   width: 100%;
-  overflow-x: hidden;
-  padding-top: 1rem;
 }
 
 /* Header and Navigation */
@@ -80,39 +77,6 @@ footer {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   text-align: center;
   font-size: 0.875rem;
-}
-
-/* Typography - Mobile First */
-h1 {
-  font-size: 1.875rem; /* 30px */
-  margin-bottom: 1rem;
-}
-
-h2 {
-  font-size: 1.5rem; /* 24px */
-  margin-bottom: 1rem;
-}
-
-h3 {
-  font-size: 1.25rem; /* 20px */
-  margin-bottom: 0.875rem;
-}
-
-h4,
-h5,
-h6 {
-  font-size: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-p {
-  font-size: 1rem;
-  line-height: 1.6;
-}
-
-small {
-  font-size: 0.875rem;
-  line-height: 1.5;
 }
 
 /* Forms */
@@ -597,44 +561,56 @@ address {
   overflow-wrap: break-word;
 }
 
-.location-contact-info {
-  margin: 0.75rem 0;
+.location-phone-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
-.location-contact-info p {
-  color: #c0c0c0;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
+.location-phone-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.location-contact-info strong {
+.location-phone-item:last-child {
+  border-bottom: none;
+}
+
+.location-phone-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: #d5b36a;
-  display: block;
-  margin-bottom: 0.15rem;
-  font-size: 0.85rem;
 }
 
-.location-contact-info a {
-  color: #d5b36a;
+.location-phone-link {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #e8e8e8;
   text-decoration: none;
-  font-weight: 600;
   transition: color 0.2s ease;
-  word-break: break-word;
 }
 
-.location-contact-info a:hover {
-  color: #e8d4a2;
+.location-phone-link:hover {
+  color: #d5b36a;
 }
 
-.location-facebook-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+.location-phone-detail {
+  font-size: 0.8125rem;
+  color: #808080;
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-.location-facebook-link .social-icon-img {
-  width: 1rem;
-  height: 1rem;
+.location-phone-detail:hover {
+  color: #b0b0b0;
 }
 
 /* Location Detail Page */
@@ -698,25 +674,6 @@ address {
   font-size: 0.9rem;
 }
 
-.location-cta {
-  padding: 1.5rem 0.75rem;
-  text-align: center;
-  margin: 1rem 0.5rem;
-  background-color: rgba(213, 179, 106, 0.08);
-  border-radius: 0.5rem;
-  border: 1px solid rgba(213, 179, 106, 0.2);
-}
-
-.location-cta h2 {
-  color: #e8e8e8;
-  margin-bottom: 0.5rem;
-}
-
-.location-cta p {
-  color: #b0b0b0;
-  margin-bottom: 1.5rem;
-}
-
 .cta-buttons {
   display: flex;
   flex-direction: column;
@@ -754,13 +711,6 @@ address {
   margin-bottom: 2rem;
 }
 
-.location-map-section h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
-  color: #e8e8e8;
-  text-align: center;
-}
-
 .map-container {
   border-radius: 0.75rem;
   overflow: hidden;
@@ -775,13 +725,8 @@ address {
   height: 350px;
 }
 
-.map-actions {
-  text-align: center;
-}
-
 /* CTA sections */
 .locations-preview,
-.contact-cta,
 .locations-cta,
 .about-cta,
 .story {
@@ -790,75 +735,14 @@ address {
 }
 
 .locations-preview h2,
-.contact-cta h2,
 .locations-cta h2,
 .about-cta h2 {
   margin-bottom: 1rem;
 }
 
-.contact-methods {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.contact-method {
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  background-color: rgba(16, 24, 21, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.25rem;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.contact-method:hover {
-  background-color: rgba(213, 179, 106, 0.1);
-  border-color: #d5b36a;
-}
-
-.contact-method strong {
-  color: #d5b36a;
-  margin-bottom: 0.25rem;
-}
-
-.contact-method span {
-  color: #b0b0b0;
-  font-size: 0.9rem;
-}
-
 /* Form wrapper */
 .form-wrapper {
   margin: 2rem 0;
-}
-
-/* Contact info */
-.contact-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.contact-list li {
-  list-style: none;
-}
-
-.contact-list a {
-  color: #b0b0b0;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.contact-list a:hover {
-  color: #d5b36a;
-}
-
-.hours-text {
-  margin-top: 0.5rem;
-  font-size: 0.95rem;
 }
 
 /* Hero CTAs */
@@ -893,12 +777,6 @@ address {
   color: #b0b0b0;
   line-height: 1.8;
   margin-bottom: 2rem;
-}
-
-.role {
-  font-size: 0.9rem;
-  color: #909090;
-  margin-bottom: 0.5rem;
 }
 
 /* Social Links Grid */
@@ -950,4 +828,45 @@ address {
   height: 1.5rem;
   display: block;
   transition: all 0.2s ease;
+}
+
+/* ─── Info card internals ────────────────────────────────── */
+
+.info-divider {
+  border: none;
+  border-top: 1px solid rgba(213, 179, 106, 0.18);
+  margin: 1.25rem 0;
+}
+
+.info-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d5b36a;
+  margin: 0 0 0.5rem 0;
+}
+
+.info-directions-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #d5b36a;
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.info-directions-link:hover {
+  color: #e8d4a2;
+  transform: translateX(3px);
+}
+
+.phone-link--large {
+  font-size: 1.625rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0.25rem 0;
 }

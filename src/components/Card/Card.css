@@ -24,6 +24,17 @@
   transform: translateY(-2px);
 }
 
+a.rnr-card,
+a.rnr-card:hover,
+a.rnr-card:focus-visible {
+  text-decoration: none;
+}
+
+.rnr-card:focus-visible {
+  outline: 2px solid #d5b36a;
+  outline-offset: 2px;
+}
+
 /* ─────────────────────────────────────────────────────────
    PRODUCT CARD VARIANT
    ───────────────────────────────────────────────────────── */

@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { CardGrid } from '../components/CardGrid';
 import { PRODUCTS } from '../constants/products';
@@ -47,24 +46,11 @@ export default function Products() {
                   </div>
                   <h2>{product.name}</h2>
                   <p className="product-description">{product.description}</p>
-                  <div className="product-cta">View Details →</div>
+                  <div className="product-card-cta">View Details →</div>
                 </div>
               </Card>
             ))}
           </CardGrid>
-        </div>
-      </section>
-
-      <section className="products-cta">
-        <div className="container">
-          <h2>See It All in Person</h2>
-          <p>
-            Photos can only do so much. Stop by any Rush N Relax location to
-            browse, ask questions, and find exactly what fits your experience.
-          </p>
-          <Link to="/locations" className="btn btn-primary">
-            Find a Location
-          </Link>
         </div>
       </section>
     </main>

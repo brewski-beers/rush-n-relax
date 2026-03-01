@@ -26,14 +26,31 @@ export default function About() {
         </div>
       </section>
 
+      <section id="experience" className="experience-section">
+        <div className="container">
+          <h2>The Speakeasy Lounge</h2>
+          <p>
+            Our Oak Ridge flagship is more than a dispensary — it&apos;s a
+            destination. The speakeasy-style lounge offers a refined space to
+            slow down, explore new products, and enjoy the moment in good
+            company. Dim lighting, curated ambiance, and a staff that knows
+            every strain on the shelf. It&apos;s the experience that put Rush N
+            Relax on the map.
+          </p>
+          <Link to="/locations/oak-ridge" className="link-arrow">
+            Visit the Oak Ridge Lounge →
+          </Link>
+        </div>
+      </section>
+
       <section id="mission" className="mission">
         <div className="container">
           <h2>Why We Exist</h2>
           <p>
-            Rush N Relax was founded on a simple observation: most cannabis
-            retail feels transactional. You walk in, grab a product, and leave.
-            We thought the experience deserved more. More care in what we stock,
-            more knowledge behind the counter, and more atmosphere when you step
+            RnR was founded on a simple observation: most cannabis retail feels
+            transactional. You walk in, grab a product, and leave. We thought
+            the experience deserved more. More care in what we stock, more
+            knowledge behind the counter, and more atmosphere when you step
             through the door.
           </p>
           <p>
@@ -46,7 +63,8 @@ export default function About() {
           <p>
             Every product on our shelves — flower, concentrates, edibles, vapes,
             and THCa-infused drinks — is hand-selected, lab-tested, and held to
-            a standard we'd stake our name on. Because we do.
+            a standard we'd stake our name on. At RnR, that standard is
+            non-negotiable.
           </p>
         </div>
       </section>
@@ -87,39 +105,15 @@ export default function About() {
         <div className="container">
           <h2>Leadership</h2>
           <p className="text-secondary" style={{ marginBottom: '2rem' }}>
-            Rush N Relax is co-founded by John Rush and Michael Capps — East
-            Tennessee natives who saw an opportunity to raise the bar for
-            cannabis retail in their own community.
+            RnR is co-founded by John Rush and Michael Capps — East Tennessee
+            natives who saw an opportunity to raise the bar for cannabis retail
+            in their own community.
           </p>
-          <div className="team-grid">
-            <div className="team-member">
-              <h3>John Rush</h3>
-              <p className="role">Co-Founder</p>
-              <a href="mailto:rush@rushnrelax.com">rush@rushnrelax.com</a>
-            </div>
-            <div className="team-member">
-              <h3>Michael Capps</h3>
-              <p className="role">Co-Founder</p>
-              <a href="mailto:capps@rushnrelax.com">capps@rushnrelax.com</a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="experience" className="experience-section">
-        <div className="container">
-          <h2>The Speakeasy Lounge</h2>
           <p>
-            Our Oak Ridge flagship is more than a dispensary — it's a
-            destination. The speakeasy-style lounge offers a refined space to
-            slow down, explore new products, and enjoy the moment in good
-            company. Dim lighting, curated ambiance, and a staff that knows
-            every strain on the shelf. It's the experience that put Rush N Relax
-            on the map.
+            Reach the founders directly:{' '}
+            <a href="mailto:rush@rushnrelax.com">rush@rushnrelax.com</a> ·{' '}
+            <a href="mailto:capps@rushnrelax.com">capps@rushnrelax.com</a>
           </p>
-          <Link to="/locations/oak-ridge" className="link-arrow">
-            Visit the Oak Ridge Lounge →
-          </Link>
         </div>
       </section>
 

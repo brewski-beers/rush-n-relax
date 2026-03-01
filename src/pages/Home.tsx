@@ -124,19 +124,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <section id="contact-cta" className="contact-cta">
-        <div className="container">
-          <h2>Questions? We're Here.</h2>
-          <p>
-            Whether you're curious about a product, need directions, or just
-            want to know what's new — reach out anytime.
-          </p>
-          <Link to="/contact" className="btn">
-            Contact Us
-          </Link>
-        </div>
-      </section>
     </main>
   );
 }

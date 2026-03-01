@@ -146,7 +146,6 @@ export default function ProductDetail() {
               {product.category.toUpperCase()}
             </div>
             <div className="product-content">
-              <h2>Product Details</h2>
               <p>{product.details}</p>
             </div>
           </div>
@@ -179,7 +178,9 @@ export default function ProductDetail() {
       <section className="product-cta">
         <div className="container">
           <h2>Visit Us to Experience This Product</h2>
-          <p>Find our locations and explore our full collection in person.</p>
+          <p>
+            Find our locations and explore the full RnR collection in person.
+          </p>
           <Link to="/locations" className="btn btn-primary">
             Find a Location
           </Link>

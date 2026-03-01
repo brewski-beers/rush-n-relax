@@ -1,28 +1,23 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Locations from './Locations';
 import { LOCATIONS } from '../constants/locations';
 
-vi.mock('../components/AllLocationsMap', () => ({
-  default: () => <div data-testid="all-locations-map" />,
-}));
-
 describe('Locations page', () => {
-  it('renders one Facebook link per location card', () => {
+  it('renders one phone link per location card', () => {
     render(
       <MemoryRouter>
         <Locations />
       </MemoryRouter>
     );
 
-    const facebookLinks = screen.getAllByRole('link', { name: /facebook/i });
-    expect(facebookLinks).toHaveLength(LOCATIONS.length);
+    const phoneLinks = screen.getAllByRole('link', { name: /^\+1/ });
+    expect(phoneLinks).toHaveLength(LOCATIONS.length);
 
-    facebookLinks.forEach(link => {
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    phoneLinks.forEach(link => {
       expect(link).toHaveAttribute('href');
+      expect(link.getAttribute('href')).toMatch(/^tel:/);
     });
   });
 
