@@ -204,116 +204,6 @@ export default function LocationDetail() {
         </div>
       </section>
 
-      <section className="location-info-section asymmetry-section-anchor">
-        <div className="container">
-          <div className="location-detail-grid">
-            <Card variant="info" as="div" className="rnr-card--stable">
-              <h2>Visit Us</h2>
-              <address>
-                <p>{location.address}</p>
-                <p>
-                  {location.city}, {location.state} {location.zip}
-                </p>
-              </address>
-              {location.coordinates && (
-                <a
-                  href={`https://www.google.com/maps/search/${encodeURIComponent(
-                    location.address
-                  )},+${encodeURIComponent(location.city)},+${location.state}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="info-directions-link"
-                >
-                  Get Directions →
-                </a>
-              )}
-              <div className="info-divider" />
-              <p className="info-label">Hours</p>
-              <p>{location.hours}</p>
-              <p className="text-secondary">Open 7 days a week</p>
-            </Card>
-
-            <Card
-              variant="info"
-              as="div"
-              className="rnr-card--anchor asymmetry-motion-anchor"
-            >
-              <h2>Call Us</h2>
-              <a
-                href={`tel:${location.phone.replace(/\D/g, '')}`}
-                className="phone-link phone-link--large"
-              >
-                {location.phone}
-              </a>
-              <p className="text-secondary">Available during business hours</p>
-              {location.socialLinkIds && location.socialLinkIds.length > 0 && (
-                <>
-                  <div className="info-divider" />
-                  <p className="info-label">Follow Us</p>
-                  <div className="social-links-grid">
-                    {location.socialLinkIds.map(socialId => {
-                      const social = getSocialLink(socialId);
-                      return (
-                        <a
-                          key={socialId}
-                          href={social.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="social-link-item"
-                          aria-label={social.ariaLabel}
-                          title={social.name}
-                        >
-                          <span className="social-icon">
-                            {isSocialIconObject(social.icon) ? (
-                              <img
-                                src={social.icon.src}
-                                alt={social.icon.alt}
-                                className="social-icon-img"
-                              />
-                            ) : (
-                              social.icon
-                            )}
-                          </span>
-                          <span className="social-name">{social.name}</span>
-                        </a>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {location.coordinates && (
-        <section
-          className="location-map-section asymmetry-section-stable"
-          aria-label="Store location map"
-        >
-          <div className="container">
-            <div className="map-container">
-              <iframe
-                title={`${location.name} Location Map`}
-                width="100%"
-                height="450"
-                style={{ border: 0, borderRadius: '0.75rem' }}
-                loading="lazy"
-                allowFullScreen
-                referrerPolicy="no-referrer-when-downgrade"
-                src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(
-                  location.placeId
-                    ? `place_id:${location.placeId}`
-                    : location.coordinates
-                      ? `${location.coordinates.lat},${location.coordinates.lng}`
-                      : `${location.address}, ${location.city}, ${location.state} ${location.zip}`
-                )}`}
-              />
-            </div>
-          </div>
-        </section>
-      )}
-
       <ReviewsSection
         rating={rating}
         totalRatings={totalRatings}
@@ -321,6 +211,124 @@ export default function LocationDetail() {
         status={reviewsStatus}
         locationName={location.name}
       />
+
+      <section className="location-info-section asymmetry-section-anchor">
+        <div className="location-detail-grid">
+          <Card variant="info" as="div" className="rnr-card--stable">
+            <h2>Visit Us</h2>
+            <address>
+              <p>{location.address}</p>
+              <p>
+                {location.city}, {location.state} {location.zip}
+              </p>
+            </address>
+            {location.coordinates && (
+              <a
+                href={`https://www.google.com/maps/search/${encodeURIComponent(
+                  location.address
+                )},+${encodeURIComponent(location.city)},+${location.state}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="info-directions-link"
+              >
+                Get Directions →
+              </a>
+            )}
+            <div className="info-divider" />
+            <p className="info-label">Hours</p>
+            <p>{location.hours}</p>
+            <p className="text-secondary">Open 7 days a week</p>
+          </Card>
+
+          <Card
+            variant="info"
+            as="div"
+            className="rnr-card--anchor asymmetry-motion-anchor"
+          >
+            <h2>Call Us</h2>
+            <a
+              href={`tel:${location.phone.replace(/\D/g, '')}`}
+              className="phone-link phone-link--large"
+            >
+              {location.phone}
+            </a>
+            <p className="text-secondary">Available during business hours</p>
+            {location.socialLinkIds && location.socialLinkIds.length > 0 && (
+              <>
+                <div className="info-divider" />
+                <p className="info-label">Follow Us</p>
+                <div className="social-links-grid">
+                  {location.socialLinkIds.map(socialId => {
+                    const social = getSocialLink(socialId);
+                    return (
+                      <a
+                        key={socialId}
+                        href={social.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="social-link-item"
+                        aria-label={social.ariaLabel}
+                        title={social.name}
+                      >
+                        <span className="social-icon">
+                          {isSocialIconObject(social.icon) ? (
+                            <img
+                              src={social.icon.src}
+                              alt={social.icon.alt}
+                              className="social-icon-img"
+                            />
+                          ) : (
+                            social.icon
+                          )}
+                        </span>
+                        <span className="social-name">{social.name}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </Card>
+
+          {location.coordinates && (
+            <Card
+              variant="info"
+              as="div"
+              className="rnr-card--stable location-map-card"
+            >
+              <h2>Map</h2>
+              <div className="map-container">
+                <iframe
+                  title={`${location.name} Location Map`}
+                  width="100%"
+                  height="300"
+                  style={{ border: 0, borderRadius: '0.75rem' }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(
+                    location.placeId
+                      ? `place_id:${location.placeId}`
+                      : location.coordinates
+                        ? `${location.coordinates.lat},${location.coordinates.lng}`
+                        : `${location.address}, ${location.city}, ${location.state} ${location.zip}`
+                  )}`}
+                />
+              </div>
+              <a
+                href={`https://www.google.com/maps/search/${encodeURIComponent(
+                  location.address
+                )},+${encodeURIComponent(location.city)},+${location.state}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="info-directions-link"
+              >
+                Open in Google Maps →
+              </a>
+            </Card>
+          )}
+        </div>
+      </section>
     </main>
   );
 }

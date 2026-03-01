@@ -38,11 +38,13 @@ export function ReviewsSection({
 
   return (
     <section
-      className="location-reviews-section"
+      className="location-reviews-section asymmetry-section-stable"
       aria-labelledby="reviews-heading"
     >
       <div className="container">
-        <h2 id="reviews-heading">What Customers Are Saying</h2>
+        <h2 id="reviews-heading" className="asymmetry-headline-anchor">
+          What Customers Are Saying
+        </h2>
 
         {status === 'loading' && (
           <div className="reviews-loading" aria-live="polite" aria-busy="true">
@@ -53,7 +55,7 @@ export function ReviewsSection({
 
         {status === 'success' && rating !== null && (
           <>
-            <div className="reviews-summary">
+            <div className="reviews-summary asymmetry-anchor">
               <span className="reviews-rating-number">{rating.toFixed(1)}</span>
               <StarRating rating={rating} />
               {totalRatings !== null && (
@@ -68,7 +70,7 @@ export function ReviewsSection({
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="reviews-google-link"
+                className="reviews-google-link asymmetry-motion-anchor"
                 aria-label={`Read all reviews for ${locationName} on Google`}
               >
                 Read all reviews on Google →
@@ -82,6 +84,11 @@ export function ReviewsSection({
                     key={`${review.author_name}-${i}`}
                     variant="info"
                     as="article"
+                    className={
+                      i % 3 === 1
+                        ? 'rnr-card--anchor asymmetry-motion-anchor'
+                        : 'rnr-card--stable'
+                    }
                   >
                     <div className="review-header">
                       <span className="review-author">

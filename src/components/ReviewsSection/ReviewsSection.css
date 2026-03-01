@@ -10,7 +10,6 @@
 
 .location-reviews-section h2 {
   font-size: 1.75rem;
-  color: #d5b36a;
   margin: 0 0 2rem 0;
 }
 
@@ -48,6 +47,19 @@
   align-items: center;
   gap: 0.5rem 1rem;
   margin-bottom: 2.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+}
+
+.reviews-summary.asymmetry-anchor {
+  background: linear-gradient(
+    90deg,
+    rgba(213, 179, 106, 0.14) 0%,
+    rgba(213, 179, 106, 0.06) 32%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  border: 1px solid rgba(213, 179, 106, 0.28);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
 }
 
 .reviews-rating-number {
@@ -64,7 +76,7 @@
 }
 
 .reviews-count {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: #808080;
 }
 
@@ -80,12 +92,41 @@
   color: #e8c87a;
 }
 
+.reviews-grid .rnr-card--info.rnr-card--stable {
+  background-color: rgba(255, 255, 255, 0.075);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.reviews-grid .rnr-card--info.rnr-card--anchor {
+  background: linear-gradient(
+    160deg,
+    rgba(213, 179, 106, 0.15) 0%,
+    rgba(213, 179, 106, 0.08) 42%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  border-color: rgba(213, 179, 106, 0.38);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+
+.reviews-grid .rnr-card--info.rnr-card--anchor .review-author,
+.reviews-grid .rnr-card--info.rnr-card--anchor .reviews-stars {
+  color: #e8c87a;
+}
+
 /* ─── Review Cards Grid ──────────────────────────────────── */
 
 .reviews-grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1rem;
   grid-template-columns: 1fr;
+  grid-auto-rows: 1fr;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.reviews-grid > .rnr-card {
+  height: 100%;
 }
 
 .review-header {
@@ -99,13 +140,13 @@
 .review-author {
   font-weight: 600;
   color: #e8e8e8;
-  font-size: 0.95rem;
+  font-size: 0.98rem;
 }
 
 .review-text {
-  font-size: 0.9rem;
-  line-height: 1.65;
-  color: #b0b0b0;
+  font-size: 0.94rem;
+  line-height: 1.7;
+  color: #bababa;
   margin: 0 0 0.5rem 0;
   /* Clamp long reviews */
   display: -webkit-box;
@@ -115,7 +156,7 @@
 }
 
 .review-time {
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   color: #606060;
   margin: 0;
 }
@@ -135,5 +176,9 @@
 
   .location-reviews-section h2 {
     font-size: 2rem;
+  }
+
+  .reviews-summary {
+    padding: 1.25rem 1.5rem;
   }
 }

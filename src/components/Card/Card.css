@@ -165,7 +165,7 @@ a.rnr-card:focus-visible {
    ───────────────────────────────────────────────────────── */
 
 .rnr-card--info {
-  padding: 2rem;
+  padding: 1.5rem;
   backdrop-filter: blur(8px);
   background-color: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -195,6 +195,27 @@ a.rnr-card:focus-visible {
 
 .rnr-card--info address p {
   margin: 0.25rem 0;
+}
+
+.rnr-card--info.rnr-card--stable {
+  background-color: rgba(255, 255, 255, 0.075);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.rnr-card--info.rnr-card--anchor {
+  background: linear-gradient(
+    160deg,
+    rgba(213, 179, 106, 0.16) 0%,
+    rgba(213, 179, 106, 0.08) 40%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  border-color: rgba(213, 179, 106, 0.4);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.rnr-card--info.rnr-card--anchor h2,
+.rnr-card--info.rnr-card--anchor .phone-link--large {
+  color: #e8c87a;
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -240,7 +261,7 @@ a.rnr-card:focus-visible {
   }
 
   .rnr-card--info {
-    padding: 2.5rem;
+    padding: 2rem;
   }
 
   .rnr-card--product h2,
@@ -254,5 +275,9 @@ a.rnr-card:focus-visible {
 
   .rnr-card--location h3 {
     font-size: 1.5rem;
+  }
+
+  .location-detail-grid .rnr-card--info {
+    padding: 1.25rem;
   }
 }
