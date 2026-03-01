@@ -8,7 +8,7 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 vi.mock('../firebase', () => ({
-  db: {},
+  getFirestore$: vi.fn(() => ({})),
 }));
 
 import { doc, getDoc } from 'firebase/firestore';

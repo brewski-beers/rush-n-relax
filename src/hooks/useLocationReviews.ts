@@ -1,6 +1,6 @@
 import { useReducer, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { getFirestore$ } from '../firebase';
 import type { GoogleReview } from '../types/reviews';
 
 type ReviewsStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -66,7 +66,7 @@ export function useLocationReviews(
     let cancelled = false;
     dispatch({ type: 'loading' });
 
-    getDoc(doc(db, 'location-reviews', placeId))
+    getDoc(doc(getFirestore$(), 'location-reviews', placeId))
       .then(snap => {
         if (cancelled) return;
         if (!snap.exists()) throw new Error('No reviews available');
