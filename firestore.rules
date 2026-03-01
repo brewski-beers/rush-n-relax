@@ -13,7 +13,7 @@ service cloud.firestore {
     // Clients read directly; writes remain server-only
     match /location-reviews/{placeId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if false;
     }
 
     // Default deny
