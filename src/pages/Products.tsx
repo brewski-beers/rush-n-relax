@@ -19,7 +19,7 @@ export default function Products() {
 
   return (
     <main className="products-page">
-      <section className="products-hero">
+      <section className="products-hero asymmetry-section-stable page-hero-shell">
         <div className="container">
           <h1>Our Products</h1>
           <p className="lead">
@@ -30,14 +30,19 @@ export default function Products() {
         </div>
       </section>
 
-      <section className="products-grid-section">
+      <section className="products-grid-section asymmetry-section-anchor">
         <div className="container">
           <CardGrid columns="auto" gap="lg">
-            {PRODUCTS.map(product => (
+            {PRODUCTS.map((product, index) => (
               <Card
                 key={product.id}
                 variant="product"
                 to={`/products/${product.slug}`}
+                className={
+                  index % 3 === 1
+                    ? 'rnr-card--anchor asymmetry-motion-anchor'
+                    : 'rnr-card--stable'
+                }
               >
                 <ProductImage slug={product.slug} alt={product.name} />
                 <div className="product-card-content">

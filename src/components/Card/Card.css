@@ -21,7 +21,7 @@
 }
 
 .rnr-card:hover {
-  transform: translateY(-2px);
+  transform: none;
 }
 
 a.rnr-card,
@@ -33,6 +33,22 @@ a.rnr-card:focus-visible {
 .rnr-card:focus-visible {
   outline: 2px solid #d5b36a;
   outline-offset: 2px;
+}
+
+.rnr-card--stable {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.rnr-card--anchor {
+  background-color: rgba(213, 179, 106, 0.1);
+  border-color: rgba(213, 179, 106, 0.35);
+}
+
+.rnr-card--anchor h2,
+.rnr-card--anchor h3,
+.rnr-card--anchor .product-category {
+  color: #d5b36a;
 }
 
 /* ─────────────────────────────────────────────────────────

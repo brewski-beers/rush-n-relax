@@ -19,7 +19,10 @@ export default function Contact() {
 
   return (
     <main className="contact-page">
-      <section id="contact-hero" className="contact-hero">
+      <section
+        id="contact-hero"
+        className="contact-hero asymmetry-section-stable page-hero-shell"
+      >
         <div className="container">
           <h1>Get in Touch</h1>
           <p className="lead">
@@ -29,7 +32,10 @@ export default function Contact() {
         </div>
       </section>
 
-      <section id="contact-form-section" className="contact-form-section">
+      <section
+        id="contact-form-section"
+        className="contact-form-section asymmetry-section-anchor"
+      >
         <div className="container">
           <div className="form-wrapper">
             <ContactForm />
@@ -37,15 +43,23 @@ export default function Contact() {
         </div>
       </section>
 
-      <section id="location-contact" className="location-contact">
+      <section
+        id="location-contact"
+        className="location-contact asymmetry-section-stable"
+      >
         <div className="container">
           <h2>Call a Location Directly</h2>
           <p className="section-lead">
             All locations are open 10 AM – 10 PM, seven days a week.
           </p>
           <ul className="location-phone-list">
-            {activeLocations.map(location => (
-              <li key={location.id} className="location-phone-item">
+            {activeLocations.map((location, index) => (
+              <li
+                key={location.id}
+                className={`location-phone-item ${
+                  index % 3 === 1 ? 'asymmetry-anchor' : 'asymmetry-stable'
+                }`}
+              >
                 <span className="location-phone-name">{location.name}</span>
                 <a
                   href={`tel:${location.phone}`}

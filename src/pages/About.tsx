@@ -16,7 +16,10 @@ export default function About() {
 
   return (
     <main className="about-page">
-      <section id="about-hero" className="about-hero">
+      <section
+        id="about-hero"
+        className="about-hero asymmetry-section-stable page-hero-shell"
+      >
         <div className="container">
           <h1>About Rush N Relax</h1>
           <p className="lead">
@@ -26,7 +29,10 @@ export default function About() {
         </div>
       </section>
 
-      <section id="experience" className="experience-section">
+      <section
+        id="experience"
+        className="experience-section asymmetry-section-stable"
+      >
         <div className="container">
           <h2>The Speakeasy Lounge</h2>
           <p>
@@ -43,7 +49,7 @@ export default function About() {
         </div>
       </section>
 
-      <section id="mission" className="mission">
+      <section id="mission" className="mission asymmetry-section-anchor">
         <div className="container">
           <h2>Why We Exist</h2>
           <p>
@@ -69,11 +75,11 @@ export default function About() {
         </div>
       </section>
 
-      <section id="values" className="values">
+      <section id="values" className="values asymmetry-section-stable">
         <div className="container">
-          <h2>What We Stand For</h2>
+          <h2 className="asymmetry-headline-anchor">What We Stand For</h2>
           <div className="values-grid">
-            <Card variant="value" as="div">
+            <Card variant="value" as="div" className="rnr-card--stable">
               <h3>Quality Without Compromise</h3>
               <p>
                 We taste, test, and vet every product before it reaches the
@@ -81,7 +87,11 @@ export default function About() {
                 — regardless of margin or trend.
               </p>
             </Card>
-            <Card variant="value" as="div">
+            <Card
+              variant="value"
+              as="div"
+              className="rnr-card--anchor asymmetry-motion-anchor"
+            >
               <h3>Respect for the Plant & the Person</h3>
               <p>
                 Cannabis means different things to different people. We meet
@@ -89,7 +99,7 @@ export default function About() {
                 enthusiast — with honest guidance and zero judgment.
               </p>
             </Card>
-            <Card variant="value" as="div">
+            <Card variant="value" as="div" className="rnr-card--stable">
               <h3>Experience Over Everything</h3>
               <p>
                 The lounge, the conversation, the product recommendation that
@@ -101,7 +111,7 @@ export default function About() {
         </div>
       </section>
 
-      <section id="team" className="team">
+      <section id="team" className="team asymmetry-section-stable">
         <div className="container">
           <h2>Leadership</h2>
           <p className="text-secondary" style={{ marginBottom: '2rem' }}>
@@ -117,14 +127,14 @@ export default function About() {
         </div>
       </section>
 
-      <section id="cta" className="about-cta">
+      <section id="cta" className="about-cta asymmetry-section-anchor">
         <div className="container">
           <h2>Come See for Yourself</h2>
           <p>
             Three locations across East Tennessee, open seven days a week. Walk
             in anytime — we'll take it from there.
           </p>
-          <Link to="/locations" className="btn">
+          <Link to="/locations" className="btn asymmetry-motion-anchor">
             Find a Location
           </Link>
         </div>

@@ -18,7 +18,10 @@ export default function Locations() {
 
   return (
     <main className="locations-page">
-      <section id="locations-hero" className="locations-hero">
+      <section
+        id="locations-hero"
+        className="locations-hero asymmetry-section-stable page-hero-shell"
+      >
         <div className="container">
           <h1>Our Locations</h1>
           <p className="lead">
@@ -29,11 +32,23 @@ export default function Locations() {
         </div>
       </section>
 
-      <section id="locations-list" className="locations-list">
+      <section
+        id="locations-list"
+        className="locations-list asymmetry-section-anchor"
+      >
         <div className="container">
           <div className="locations-grid">
-            {LOCATIONS.map(location => (
-              <Card key={location.id} variant="location" as="div">
+            {LOCATIONS.map((location, index) => (
+              <Card
+                key={location.id}
+                variant="location"
+                as="div"
+                className={
+                  index % 3 === 1
+                    ? 'rnr-card--anchor asymmetry-motion-anchor'
+                    : 'rnr-card--stable'
+                }
+              >
                 <h3>{location.name}</h3>
                 <address>
                   <p className="address-line">{location.address}</p>
@@ -61,14 +76,14 @@ export default function Locations() {
         </div>
       </section>
 
-      <section id="cta" className="locations-cta">
+      <section id="cta" className="locations-cta asymmetry-section-stable">
         <div className="container">
           <h2>Ready to Visit?</h2>
           <p>
             Walk in anytime — no appointment needed, no pressure, just good
             product and better conversation.
           </p>
-          <Link to="/contact" className="btn">
+          <Link to="/contact" className="btn asymmetry-motion-anchor">
             Get in Touch
           </Link>
         </div>

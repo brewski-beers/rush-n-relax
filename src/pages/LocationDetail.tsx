@@ -197,17 +197,17 @@ export default function LocationDetail() {
         </div>
       </section>
 
-      <section className="location-hero">
+      <section className="location-hero asymmetry-section-stable page-hero-shell">
         <div className="container">
           <h1>{location.name}</h1>
           <p className="lead">{location.description}</p>
         </div>
       </section>
 
-      <section className="location-info-section">
+      <section className="location-info-section asymmetry-section-anchor">
         <div className="container">
           <div className="location-detail-grid">
-            <Card variant="info" as="div">
+            <Card variant="info" as="div" className="rnr-card--stable">
               <h2>Visit Us</h2>
               <address>
                 <p>{location.address}</p>
@@ -233,7 +233,11 @@ export default function LocationDetail() {
               <p className="text-secondary">Open 7 days a week</p>
             </Card>
 
-            <Card variant="info" as="div">
+            <Card
+              variant="info"
+              as="div"
+              className="rnr-card--anchor asymmetry-motion-anchor"
+            >
               <h2>Call Us</h2>
               <a
                 href={`tel:${location.phone.replace(/\D/g, '')}`}
@@ -284,7 +288,7 @@ export default function LocationDetail() {
 
       {location.coordinates && (
         <section
-          className="location-map-section"
+          className="location-map-section asymmetry-section-stable"
           aria-label="Store location map"
         >
           <div className="container">

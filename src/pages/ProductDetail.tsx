@@ -127,7 +127,7 @@ export default function ProductDetail() {
         </div>
       </section>
 
-      <section className="product-hero">
+      <section className="product-hero asymmetry-section-stable page-hero-shell">
         <div className="container">
           <ProductImage
             slug={product.slug}
@@ -139,7 +139,7 @@ export default function ProductDetail() {
         </div>
       </section>
 
-      <section className="product-info-section">
+      <section className="product-info-section asymmetry-section-stable">
         <div className="container">
           <div className="product-detail">
             <div className="product-category-badge">
@@ -153,15 +153,20 @@ export default function ProductDetail() {
       </section>
 
       {otherProducts.length > 0 && (
-        <section className="related-products">
+        <section className="related-products asymmetry-section-anchor">
           <div className="container">
-            <h2>Explore More</h2>
+            <h2 className="asymmetry-headline-anchor">Explore More</h2>
             <CardGrid columns="3" gap="lg">
-              {otherProducts.map(related => (
+              {otherProducts.map((related, index) => (
                 <Card
                   key={related.id}
                   variant="product-small"
                   to={`/products/${related.slug}`}
+                  className={
+                    index === 1
+                      ? 'rnr-card--anchor asymmetry-motion-anchor'
+                      : 'rnr-card--stable'
+                  }
                 >
                   <div className="product-category">
                     {related.category.toUpperCase()}
@@ -175,13 +180,16 @@ export default function ProductDetail() {
         </section>
       )}
 
-      <section className="product-cta">
+      <section className="product-cta asymmetry-section-stable">
         <div className="container">
           <h2>Visit Us to Experience This Product</h2>
           <p>
             Find our locations and explore the full RnR collection in person.
           </p>
-          <Link to="/locations" className="btn btn-primary">
+          <Link
+            to="/locations"
+            className="btn btn-primary asymmetry-motion-anchor"
+          >
             Find a Location
           </Link>
         </div>
