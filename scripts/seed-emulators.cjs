@@ -55,7 +55,7 @@ async function seedFirestoreDoc(collection, docId, fields) {
       port: url.port,
       path: url.pathname,
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      headers: { ...EMULATOR_ADMIN_AUTH_HEADER, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
     },
     body
   );
