@@ -17,6 +17,7 @@
 }
 
 .header-content {
+  position: relative;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -120,17 +121,19 @@
 /* Mobile drawer menu */
 .mobile-drawer {
   display: none;
-  position: fixed;
+  position: absolute;
   top: 60px;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: calc(100dvh - 60px);
+  min-height: calc(100vh - 60px);
   background-color: rgba(15, 20, 25, 0.98);
   backdrop-filter: blur(10px);
-  z-index: 100;
+  z-index: 120;
   flex-direction: column;
   padding: 1rem;
   overflow-y: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .mobile-drawer.active {

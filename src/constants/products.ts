@@ -1,5 +1,6 @@
 import { getDownloadURL, ref } from 'firebase/storage';
 import { getStorage$, initializeApp } from '../firebase';
+import { SITE_URL } from './site';
 
 export interface Product {
   id: number;
@@ -124,6 +125,6 @@ export function getProductSEO(product: Product) {
     title: `${product.name} | Rush N Relax Premium Cannabis`,
     description: product.description,
     keywords: `${product.name}, ${product.category}, cannabis, dispensary, Tennessee`,
-    url: `https://rush-n-relax.web.app/products/${product.slug}`,
+    url: `${SITE_URL}/products/${product.slug}`,
   };
 }

@@ -11,6 +11,7 @@ runs:
   using: composite
   steps:
     - name: Cache Playwright browsers
+      id: playwright-cache
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
@@ -19,5 +20,11 @@ runs:
           playwright-${{ runner.os }}-${{ inputs.browsers }}-
 
     - name: Install Playwright browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
       shell: bash
       run: npx playwright install ${{ inputs.browsers }} --with-deps
+
+    - name: Install Playwright system dependencies
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: npx playwright install-deps ${{ inputs.browsers }}

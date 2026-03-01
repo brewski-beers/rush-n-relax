@@ -8,6 +8,7 @@ import {
   PRODUCTS,
 } from '../constants/products';
 import { ProductImage } from '../components/ProductImage';
+import { SITE_URL } from '../constants/site';
 
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -45,10 +46,7 @@ export default function ProductDetail() {
       ogImage.setAttribute('property', 'og:image');
       document.head.appendChild(ogImage);
     }
-    ogImage.setAttribute(
-      'content',
-      'https://rush-n-relax.web.app/og-image.png'
-    );
+    ogImage.setAttribute('content', `${SITE_URL}/og-image.png`);
 
     // Breadcrumb Schema
     const existingSchemas = document.querySelectorAll(
@@ -72,13 +70,13 @@ export default function ProductDetail() {
           '@type': 'ListItem',
           position: 1,
           name: 'Home',
-          item: 'https://rush-n-relax.web.app',
+          item: SITE_URL,
         },
         {
           '@type': 'ListItem',
           position: 2,
           name: 'Products',
-          item: 'https://rush-n-relax.web.app/products',
+          item: `${SITE_URL}/products`,
         },
         {
           '@type': 'ListItem',
@@ -100,7 +98,7 @@ export default function ProductDetail() {
       '@type': 'Product',
       name: product.name,
       description: product.details,
-      image: 'https://rush-n-relax.web.app/og-image.png',
+      image: `${SITE_URL}/og-image.png`,
       brand: {
         '@type': 'Brand',
         name: 'Rush N Relax',
@@ -129,7 +127,7 @@ export default function ProductDetail() {
         </div>
       </section>
 
-      <section className="product-hero">
+      <section className="product-hero asymmetry-section-stable page-hero-shell">
         <div className="container">
           <ProductImage
             slug={product.slug}
@@ -141,14 +139,13 @@ export default function ProductDetail() {
         </div>
       </section>
 
-      <section className="product-info-section">
+      <section className="product-info-section asymmetry-section-stable">
         <div className="container">
           <div className="product-detail">
             <div className="product-category-badge">
               {product.category.toUpperCase()}
             </div>
             <div className="product-content">
-              <h2>Product Details</h2>
               <p>{product.details}</p>
             </div>
           </div>
@@ -156,15 +153,20 @@ export default function ProductDetail() {
       </section>
 
       {otherProducts.length > 0 && (
-        <section className="related-products">
+        <section className="related-products asymmetry-section-anchor">
           <div className="container">
-            <h2>Explore More</h2>
+            <h2 className="asymmetry-headline-anchor">Explore More</h2>
             <CardGrid columns="3" gap="lg">
-              {otherProducts.map(related => (
+              {otherProducts.map((related, index) => (
                 <Card
                   key={related.id}
                   variant="product-small"
                   to={`/products/${related.slug}`}
+                  className={
+                    index === 1
+                      ? 'rnr-card--anchor asymmetry-motion-anchor'
+                      : 'rnr-card--stable'
+                  }
                 >
                   <div className="product-category">
                     {related.category.toUpperCase()}
@@ -178,11 +180,16 @@ export default function ProductDetail() {
         </section>
       )}
 
-      <section className="product-cta">
+      <section className="product-cta asymmetry-section-stable">
         <div className="container">
           <h2>Visit Us to Experience This Product</h2>
-          <p>Find our locations and explore our full collection in person.</p>
-          <Link to="/locations" className="btn btn-primary">
+          <p>
+            Find our locations and explore the full RnR collection in person.
+          </p>
+          <Link
+            to="/locations"
+            className="btn btn-primary asymmetry-motion-anchor"
+          >
             Find a Location
           </Link>
         </div>

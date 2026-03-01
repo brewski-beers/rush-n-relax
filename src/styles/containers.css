@@ -14,7 +14,12 @@
 
 main {
   width: 100%;
-  padding: 1rem;
+  padding: 1rem 0;
+}
+
+.content-wrapper {
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 section {
@@ -76,6 +81,11 @@ section {
 
 /* Small: 640px ====================================== */
 @media (min-width: 640px) {
+  .content-wrapper {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
   .container {
     padding: 0 1.5rem;
   }
@@ -103,13 +113,18 @@ section {
 
 /* Medium: 768px (tablets) ============================== */
 @media (min-width: 768px) {
+  .content-wrapper {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
   .container {
     max-width: 728px;
     padding: 0 2rem;
   }
 
   main {
-    padding: 1.5rem;
+    padding: 1.5rem 0;
   }
 
   section {
@@ -128,13 +143,18 @@ section {
 
 /* Large: 1024px (desktop) ============================== */
 @media (min-width: 1024px) {
+  .content-wrapper {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+
   .container {
     max-width: 1000px;
     padding: 0 2.5rem;
   }
 
   main {
-    padding: 2.5rem;
+    padding: 2.5rem 0;
   }
 
   section {
@@ -164,13 +184,18 @@ section {
 
 /* Extra Large: 1280px ================================= */
 @media (min-width: 1280px) {
+  .content-wrapper {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+
   .container {
     max-width: 1200px;
     padding: 0 3rem;
   }
 
   main {
-    padding: 3rem;
+    padding: 3rem 0;
   }
 
   section {

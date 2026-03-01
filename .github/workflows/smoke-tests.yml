@@ -32,7 +32,7 @@ jobs:
         run: npm run test:e2e:smoke
         env:
           CI: 'true'
-          PLAYWRIGHT_BASE_URL: https://rush-n-relax.web.app
+          PLAYWRIGHT_BASE_URL: https://rushnrelax.com
 
       - name: Upload failure artifacts
         if: failure()

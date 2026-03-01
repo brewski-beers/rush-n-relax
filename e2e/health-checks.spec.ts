@@ -249,6 +249,35 @@ test.describe('Website Health Checks - Production Readiness', () => {
       await expect(toggle).toBeVisible();
     });
 
+    test('mobile menu opens and navigates to about page', async ({ page }) => {
+      await preVerifyAge(page);
+      await page.setViewportSize({ width: 375, height: 667 });
+      await page.goto('/');
+
+      const toggle = page.locator('.nav-toggle');
+      await expect(toggle).toBeVisible();
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.locator('.mobile-drawer.active')).toBeVisible();
+
+      await expect(page.getByRole('link', { name: /^home$/i })).toBeVisible();
+      await expect(page.getByRole('link', { name: /^about$/i })).toBeVisible();
+      await expect(
+        page.getByRole('link', { name: /^locations$/i })
+      ).toBeVisible();
+      await expect(
+        page.getByRole('link', { name: /^products$/i })
+      ).toBeVisible();
+      await expect(
+        page.getByRole('link', { name: /^contact$/i })
+      ).toBeVisible();
+
+      await page.getByRole('link', { name: /about/i }).click();
+      await expect(page).toHaveURL(/\/about/);
+    });
+
     test('desktop layout renders at 1024px', async ({ page }) => {
       await preVerifyAge(page);
       await page.setViewportSize({ width: 1024, height: 768 });

@@ -16,7 +16,10 @@ export default function About() {
 
   return (
     <main className="about-page">
-      <section id="about-hero" className="about-hero">
+      <section
+        id="about-hero"
+        className="about-hero asymmetry-section-stable page-hero-shell"
+      >
         <div className="container">
           <h1>About Rush N Relax</h1>
           <p className="lead">
@@ -26,14 +29,34 @@ export default function About() {
         </div>
       </section>
 
-      <section id="mission" className="mission">
+      <section
+        id="experience"
+        className="experience-section asymmetry-section-stable"
+      >
+        <div className="container">
+          <h2>The Speakeasy Lounge</h2>
+          <p>
+            Our Oak Ridge flagship is more than a dispensary — it&apos;s a
+            destination. The speakeasy-style lounge offers a refined space to
+            slow down, explore new products, and enjoy the moment in good
+            company. Dim lighting, curated ambiance, and a staff that knows
+            every strain on the shelf. It&apos;s the experience that put Rush N
+            Relax on the map.
+          </p>
+          <Link to="/locations/oak-ridge" className="link-arrow">
+            Visit the Oak Ridge Lounge →
+          </Link>
+        </div>
+      </section>
+
+      <section id="mission" className="mission asymmetry-section-anchor">
         <div className="container">
           <h2>Why We Exist</h2>
           <p>
-            Rush N Relax was founded on a simple observation: most cannabis
-            retail feels transactional. You walk in, grab a product, and leave.
-            We thought the experience deserved more. More care in what we stock,
-            more knowledge behind the counter, and more atmosphere when you step
+            RnR was founded on a simple observation: most cannabis retail feels
+            transactional. You walk in, grab a product, and leave. We thought
+            the experience deserved more. More care in what we stock, more
+            knowledge behind the counter, and more atmosphere when you step
             through the door.
           </p>
           <p>
@@ -46,16 +69,17 @@ export default function About() {
           <p>
             Every product on our shelves — flower, concentrates, edibles, vapes,
             and THCa-infused drinks — is hand-selected, lab-tested, and held to
-            a standard we'd stake our name on. Because we do.
+            a standard we'd stake our name on. At RnR, that standard is
+            non-negotiable.
           </p>
         </div>
       </section>
 
-      <section id="values" className="values">
+      <section id="values" className="values asymmetry-section-stable">
         <div className="container">
-          <h2>What We Stand For</h2>
+          <h2 className="asymmetry-headline-anchor">What We Stand For</h2>
           <div className="values-grid">
-            <Card variant="value" as="div">
+            <Card variant="value" as="div" className="rnr-card--stable">
               <h3>Quality Without Compromise</h3>
               <p>
                 We taste, test, and vet every product before it reaches the
@@ -63,7 +87,11 @@ export default function About() {
                 — regardless of margin or trend.
               </p>
             </Card>
-            <Card variant="value" as="div">
+            <Card
+              variant="value"
+              as="div"
+              className="rnr-card--anchor asymmetry-motion-anchor"
+            >
               <h3>Respect for the Plant & the Person</h3>
               <p>
                 Cannabis means different things to different people. We meet
@@ -71,7 +99,7 @@ export default function About() {
                 enthusiast — with honest guidance and zero judgment.
               </p>
             </Card>
-            <Card variant="value" as="div">
+            <Card variant="value" as="div" className="rnr-card--stable">
               <h3>Experience Over Everything</h3>
               <p>
                 The lounge, the conversation, the product recommendation that
@@ -83,54 +111,30 @@ export default function About() {
         </div>
       </section>
 
-      <section id="team" className="team">
+      <section id="team" className="team asymmetry-section-stable">
         <div className="container">
           <h2>Leadership</h2>
           <p className="text-secondary" style={{ marginBottom: '2rem' }}>
-            Rush N Relax is co-founded by John Rush and Michael Capps — East
-            Tennessee natives who saw an opportunity to raise the bar for
-            cannabis retail in their own community.
+            RnR is co-founded by John Rush and Michael Capps — East Tennessee
+            natives who saw an opportunity to raise the bar for cannabis retail
+            in their own community.
           </p>
-          <div className="team-grid">
-            <div className="team-member">
-              <h3>John Rush</h3>
-              <p className="role">Co-Founder</p>
-              <a href="mailto:rush@rushnrelax.com">rush@rushnrelax.com</a>
-            </div>
-            <div className="team-member">
-              <h3>Michael Capps</h3>
-              <p className="role">Co-Founder</p>
-              <a href="mailto:capps@rushnrelax.com">capps@rushnrelax.com</a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="experience" className="experience-section">
-        <div className="container">
-          <h2>The Speakeasy Lounge</h2>
           <p>
-            Our Oak Ridge flagship is more than a dispensary — it's a
-            destination. The speakeasy-style lounge offers a refined space to
-            slow down, explore new products, and enjoy the moment in good
-            company. Dim lighting, curated ambiance, and a staff that knows
-            every strain on the shelf. It's the experience that put Rush N Relax
-            on the map.
+            Reach the founders directly:{' '}
+            <a href="mailto:rush@rushnrelax.com">rush@rushnrelax.com</a> ·{' '}
+            <a href="mailto:capps@rushnrelax.com">capps@rushnrelax.com</a>
           </p>
-          <Link to="/locations/oak-ridge" className="link-arrow">
-            Visit the Oak Ridge Lounge →
-          </Link>
         </div>
       </section>
 
-      <section id="cta" className="about-cta">
+      <section id="cta" className="about-cta asymmetry-section-anchor">
         <div className="container">
           <h2>Come See for Yourself</h2>
           <p>
             Three locations across East Tennessee, open seven days a week. Walk
             in anytime — we'll take it from there.
           </p>
-          <Link to="/locations" className="btn">
+          <Link to="/locations" className="btn asymmetry-motion-anchor">
             Find a Location
           </Link>
         </div>

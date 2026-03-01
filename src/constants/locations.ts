@@ -1,4 +1,5 @@
 import { SocialId } from './social';
+import { SITE_URL } from './site';
 
 export interface Location {
   id: number;
@@ -16,6 +17,7 @@ export interface Location {
     lng: number;
   };
   socialLinkIds?: SocialId[];
+  placeId?: string; // Google Maps Place ID — used to fetch live reviews and ratings
 }
 
 export const LOCATIONS: Location[] = [
@@ -33,6 +35,7 @@ export const LOCATIONS: Location[] = [
       'Home to our signature speakeasy-style lounge and full-service dispensary. Step inside for handpicked flower, concentrates, edibles, and vapes — complemented by a refined lounge where you can settle in, unwind, and enjoy the experience the way it was meant to be.',
     coordinates: { lat: 36.023978, lng: -84.24072 },
     socialLinkIds: [SocialId.FACEBOOK_OAK_RIDGE],
+    placeId: 'ChIJG2IBn08zXIgROk6xAd9qyY0',
   },
   {
     id: 2,
@@ -48,6 +51,7 @@ export const LOCATIONS: Location[] = [
       'Situated along Watkins Road in the heart of Blount County, our Maryville dispensary brings a refined retail experience to the foothills of the Smokies. Walk in for expertly curated flower, edibles, concentrates, and vapes — all held to the same exacting standard that defines Rush N Relax.',
     coordinates: { lat: 35.750658, lng: -83.992662 },
     socialLinkIds: [SocialId.FACEBOOK_MARYVILLE],
+    // placeId: '' — Google Business Profile listing needs to be set up first
   },
   {
     id: 3,
@@ -63,6 +67,7 @@ export const LOCATIONS: Location[] = [
       'Nestled along Maryville Highway between Knoxville and the Smokies, our Seymour location offers a relaxed, welcoming atmosphere with the same premium selection you expect from Rush N Relax. Swing by on your way through Sevier County — we make it easy to find exactly what you need.',
     coordinates: { lat: 35.861584, lng: -83.770727 },
     socialLinkIds: [SocialId.FACEBOOK_SEYMOUR],
+    placeId: 'ChIJb1IipsQbXIgREaNxkmmAaHg',
   },
 ];
 
@@ -75,7 +80,7 @@ export const getLocationSEO = (location: Location) => {
     title: `${location.name} - Rush N Relax Premium Cannabis`,
     description: `${location.description} Located at ${location.address}, ${location.city}, ${location.state}. Call ${location.phone} for more information.`,
     keywords: `cannabis, dispensary, ${location.city}, ${location.state}, premium cannabis`,
-    url: `https://rush-n-relax.web.app/locations/${location.slug}`,
+    url: `${SITE_URL}/locations/${location.slug}`,
     type: 'LocalBusiness',
   };
 };
