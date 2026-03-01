@@ -5,12 +5,12 @@
    ============================================================ */
 
 .location-reviews-section {
-  padding: 3rem 0;
+  padding: var(--space-2xl) 0;
 }
 
 .location-reviews-section h2 {
   font-size: 1.75rem;
-  margin: 0 0 2rem 0;
+  margin: 0 0 var(--space-lg) 0;
 }
 
 /* ─── Loading State ─────────────────────────────────────── */
@@ -18,16 +18,16 @@
 .reviews-loading {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  color: #808080;
+  gap: var(--space-xs);
+  color: var(--color-text-soft);
   font-size: 0.95rem;
 }
 
 .reviews-spinner {
   width: 1.25rem;
   height: 1.25rem;
-  border: 2px solid rgba(213, 179, 106, 0.2);
-  border-top-color: #d5b36a;
+  border: 2px solid var(--color-border-anchor-soft);
+  border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: reviews-spin 0.75s linear infinite;
   flex-shrink: 0;
@@ -45,9 +45,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1rem;
-  margin-bottom: 2.5rem;
-  padding: 1rem 1.25rem;
+  gap: var(--space-xs) var(--space-sm);
+  margin-bottom: var(--space-xl);
+  padding: var(--card-padding);
   border-radius: 0.75rem;
 }
 
@@ -58,43 +58,51 @@
     rgba(213, 179, 106, 0.06) 32%,
     rgba(255, 255, 255, 0.08) 100%
   );
-  border: 1px solid rgba(213, 179, 106, 0.28);
+  border: 1px solid var(--color-border-accent-medium);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
 }
 
 .reviews-rating-number {
   font-size: 2.75rem;
   font-weight: 700;
-  color: #e8e8e8;
+  color: var(--color-text);
   line-height: 1;
 }
 
 .reviews-stars {
   font-size: 1.375rem;
-  color: #d5b36a;
+  color: var(--color-accent);
   letter-spacing: 0.05em;
 }
 
 .reviews-count {
   font-size: 0.92rem;
-  color: #808080;
+  color: var(--color-text-soft);
 }
 
 .reviews-google-link {
   font-size: 0.875rem;
-  color: #d5b36a;
+  color: var(--color-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
-  transition: color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
 }
 
 .reviews-google-link:hover {
-  color: #e8c87a;
+  color: var(--color-accent-light);
+}
+
+.reviews-google-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
 
 .reviews-grid .rnr-card--info.rnr-card--stable {
-  background-color: rgba(255, 255, 255, 0.075);
-  border-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--color-surface-subtle);
+  border-color: var(--color-border);
 }
 
 .reviews-grid .rnr-card--info.rnr-card--anchor {
@@ -104,50 +112,62 @@
     rgba(213, 179, 106, 0.08) 42%,
     rgba(255, 255, 255, 0.08) 100%
   );
-  border-color: rgba(213, 179, 106, 0.38);
+  border-color: var(--color-border-accent);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
 }
 
 .reviews-grid .rnr-card--info.rnr-card--anchor .review-author,
 .reviews-grid .rnr-card--info.rnr-card--anchor .reviews-stars {
-  color: #e8c87a;
+  color: var(--color-accent-light);
 }
 
 /* ─── Review Cards Grid ──────────────────────────────────── */
 
 .reviews-grid {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-sm);
   grid-template-columns: 1fr;
   grid-auto-rows: 1fr;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--space-sm);
 }
 
 .reviews-grid > .rnr-card {
   height: 100%;
+  transition:
+    transform 0.24s ease,
+    border-color 0.24s ease,
+    box-shadow 0.24s ease;
+}
+
+.reviews-grid > .rnr-card:hover {
+  transform: translateY(calc(-1 * (var(--space-xs) / 2)));
+}
+
+.reviews-grid > .rnr-card:focus-visible {
+  border-color: var(--color-border-accent-medium);
 }
 
 .review-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
 }
 
 .review-author {
   font-weight: 600;
-  color: #e8e8e8;
+  color: var(--color-text);
   font-size: 0.98rem;
 }
 
 .review-text {
   font-size: 0.94rem;
   line-height: 1.7;
-  color: #bababa;
-  margin: 0 0 0.5rem 0;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-xs) 0;
   /* Clamp long reviews */
   display: -webkit-box;
   -webkit-line-clamp: 6;
@@ -157,7 +177,7 @@
 
 .review-time {
   font-size: 0.84rem;
-  color: #606060;
+  color: var(--color-text-faint);
   margin: 0;
 }
 
@@ -179,6 +199,6 @@
   }
 
   .reviews-summary {
-    padding: 1.25rem 1.5rem;
+    padding: var(--space-md) var(--space-md);
   }
 }

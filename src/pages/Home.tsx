@@ -66,7 +66,7 @@ export default function Home() {
       >
         <div className="container">
           <h2 className="asymmetry-headline-anchor">What We Carry</h2>
-          <p className="text-secondary">
+          <p className="section-lead">
             Hand-selected products across five categories — each held to the
             same uncompromising standard.
           </p>
@@ -76,11 +76,9 @@ export default function Home() {
                 key={product.id}
                 variant="product"
                 to={`/products/${product.slug}`}
-                className={
-                  index === 1
-                    ? 'rnr-card--anchor asymmetry-motion-anchor'
-                    : 'rnr-card--stable'
-                }
+                surface={index === 1 ? 'anchor' : 'stable'}
+                elevation={index === 1 ? 'soft' : 'none'}
+                motion={index === 1}
               >
                 <ProductImage slug={product.slug} alt={product.name} />
                 <div className="product-card-content">
@@ -94,7 +92,7 @@ export default function Home() {
               </Card>
             ))}
           </CardGrid>
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+          <div className="section-cta">
             <Link to="/products" className="link-arrow">
               View All Products →
             </Link>
@@ -108,7 +106,7 @@ export default function Home() {
       >
         <div className="container">
           <h2>Three Locations Across East Tennessee</h2>
-          <p className="text-secondary">
+          <p className="section-lead">
             Oak Ridge · Maryville · Seymour — open seven days a week, 10 AM to
             10 PM.
           </p>
@@ -118,21 +116,16 @@ export default function Home() {
                 key={loc.id}
                 variant="location"
                 to={`/locations/${loc.slug}`}
-                className={
-                  index === 1
-                    ? 'rnr-card--anchor asymmetry-motion-anchor'
-                    : 'rnr-card--stable'
-                }
+                surface={index === 1 ? 'anchor' : 'stable'}
+                elevation={index === 1 ? 'soft' : 'none'}
+                motion={index === 1}
               >
                 <h3>{loc.name}</h3>
                 <p className="address-line">{loc.address}</p>
                 <p className="address-line">
                   {loc.city}, {loc.state} {loc.zip}
                 </p>
-                <span
-                  className="btn btn-secondary mt-3"
-                  style={{ display: 'inline-block' }}
-                >
+                <span className="btn btn-secondary mt-3 inline-block">
                   View Location →
                 </span>
               </Card>

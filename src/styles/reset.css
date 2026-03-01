@@ -22,16 +22,8 @@ body {
     'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #fafafa;
-  color: #181c1f;
-}
-
-/* Dark theme for now */
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #0f1419;
-    color: #e8e8e8;
-  }
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 h1,
@@ -42,12 +34,12 @@ h5,
 h6 {
   font-weight: 600;
   line-height: 1.2;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-xs);
 }
 
 p {
   line-height: 1.6;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-sm);
 }
 
 a {
@@ -89,7 +81,7 @@ ol {
 
 /* Accessibility: Focus visible */
 *:focus-visible {
-  outline: 2px solid #d5b36a;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 

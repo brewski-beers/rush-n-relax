@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import globals from 'globals';
+import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
@@ -16,6 +17,7 @@ export default tseslint.config(
       globals: globals.browser,
     },
     plugins: {
+      react,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
       'jsx-a11y': jsxA11y,
@@ -25,6 +27,20 @@ export default tseslint.config(
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
+      ],
+
+      // Style enforcement: No inline styles — use CSS classes
+      'react/forbid-dom-props': [
+        'error',
+        {
+          forbid: [
+            {
+              propName: 'style',
+              message:
+                'Inline styles are forbidden. Use CSS classes from the asymmetry design system instead.',
+            },
+          ],
+        },
       ],
       
       // Accessibility rules

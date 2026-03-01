@@ -84,11 +84,9 @@ export function ReviewsSection({
                     key={`${review.author_name}-${i}`}
                     variant="info"
                     as="article"
-                    className={
-                      i % 3 === 1
-                        ? 'rnr-card--anchor asymmetry-motion-anchor'
-                        : 'rnr-card--stable'
-                    }
+                    surface={i % 3 === 1 ? 'anchor' : 'stable'}
+                    elevation={i % 3 === 1 ? 'soft' : 'none'}
+                    motion={i % 3 === 1}
                   >
                     <div className="review-header">
                       <span className="review-author">

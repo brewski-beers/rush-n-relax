@@ -214,7 +214,7 @@ export default function LocationDetail() {
 
       <section className="location-info-section asymmetry-section-anchor">
         <div className="location-detail-grid">
-          <Card variant="info" as="div" className="rnr-card--stable">
+          <Card variant="info" as="div" surface="stable">
             <h2>Visit Us</h2>
             <address>
               <p>{location.address}</p>
@@ -243,7 +243,9 @@ export default function LocationDetail() {
           <Card
             variant="info"
             as="div"
-            className="rnr-card--anchor asymmetry-motion-anchor"
+            surface="anchor"
+            elevation="soft"
+            motion
           >
             <h2>Call Us</h2>
             <a
@@ -294,7 +296,8 @@ export default function LocationDetail() {
             <Card
               variant="info"
               as="div"
-              className="rnr-card--stable location-map-card"
+              surface="stable"
+              className="location-map-card"
             >
               <h2>Map</h2>
               <div className="map-container">
@@ -302,7 +305,7 @@ export default function LocationDetail() {
                   title={`${location.name} Location Map`}
                   width="100%"
                   height="300"
-                  style={{ border: 0, borderRadius: '0.75rem' }}
+                  className="map-iframe"
                   loading="lazy"
                   allowFullScreen
                   referrerPolicy="no-referrer-when-downgrade"

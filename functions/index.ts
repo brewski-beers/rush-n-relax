@@ -45,7 +45,7 @@ export async function fetchAndStoreReviews(
   const url = new URL(PLACES_API_BASE);
   url.searchParams.set('place_id', placeId);
   url.searchParams.set('fields', 'rating,user_ratings_total,reviews');
-  url.searchParams.set('reviews_sort', 'most_relevant');
+  url.searchParams.set('reviews_sort', 'newest');
   url.searchParams.set('key', apiKey);
 
   const response = await fetch(url.toString(), {
@@ -77,7 +77,7 @@ export async function fetchAndStoreReviews(
 }
 
 export const refreshLocationReviews = onSchedule(
-  { schedule: 'every 24 hours', secrets: [GOOGLE_PLACES_API_KEY] },
+  { schedule: 'every 6 hours', secrets: [GOOGLE_PLACES_API_KEY] },
   async () => {
     const apiKey = GOOGLE_PLACES_API_KEY.value();
     if (!apiKey) {

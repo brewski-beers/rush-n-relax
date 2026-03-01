@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { preVerifyAge } from './fixtures';
+import {
+  STATIC_ROUTES,
+  ROUTE_SECTIONS,
+  LOCATION_ROUTES,
+  type RoutePath,
+} from '../src/constants/routes';
 
 /**
  * Health Checks — Production readiness validation.
@@ -7,9 +13,11 @@ import { preVerifyAge } from './fixtures';
  * Pattern: preVerifyAge() is injected once per test to bypass the age gate.
  * BaseURL comes from playwright.config.ts (localhost:3000) — no hardcoded URL.
  * Timeouts are kept tight (5–8s) since the app has zero startup network calls.
+ *
+ * Routes are sourced from src/constants/routes.ts — single source of truth.
  */
 
-const pages = ['/', '/about', '/locations', '/contact'];
+const pages = STATIC_ROUTES;
 
 test.describe('Website Health Checks - Production Readiness', () => {
   // ─── Basic Page Load ───────────────────────────────────────────────
@@ -348,5 +356,43 @@ test.describe('Website Health Checks - Production Readiness', () => {
       const h1Count = await page.locator('h1').count();
       expect(h1Count).toBeGreaterThanOrEqual(1);
     });
+  });
+
+  // ─── Page Structure (Auto-generated from routes.ts) ─────────────────
+  test.describe('Page Structure', () => {
+    for (const route of STATIC_ROUTES) {
+      const sections = ROUTE_SECTIONS[route as RoutePath];
+
+      test(`${route} has required sections: ${sections.join(', ')}`, async ({
+        page,
+      }) => {
+        await preVerifyAge(page);
+        await page.goto(route);
+        await page.waitForSelector('main', { timeout: 5000 });
+
+        for (const sectionId of sections) {
+          await expect(
+            page.locator(`#${sectionId}`),
+            `Section #${sectionId} missing on ${route}`
+          ).toBeVisible();
+        }
+      });
+    }
+  });
+
+  // ─── Location Pages (Auto-generated from locations.ts) ─────────────
+  test.describe('Location Pages', () => {
+    for (const location of LOCATION_ROUTES) {
+      test(`${location.path} loads and displays location name`, async ({
+        page,
+      }) => {
+        await preVerifyAge(page);
+        const response = await page.goto(location.path);
+        expect(response?.status()).toBe(200);
+        await expect(page.locator('h1')).toContainText(
+          new RegExp(location.label, 'i')
+        );
+      });
+    }
   });
 });

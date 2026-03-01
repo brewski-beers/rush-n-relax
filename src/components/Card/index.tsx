@@ -4,13 +4,15 @@ import './Card.css';
 
 interface CardProps {
   variant?: 'product' | 'product-small' | 'location' | 'info' | 'value';
+  surface?: 'stable' | 'anchor';
+  elevation?: 'none' | 'soft';
+  motion?: boolean;
   children: React.ReactNode;
   className?: string;
   as?: 'div' | 'article' | 'a';
   to?: string;
   href?: string;
   onClick?: (e: React.MouseEvent) => void;
-  style?: React.CSSProperties;
 }
 
 /**
@@ -33,22 +35,29 @@ interface CardProps {
  */
 export function Card({
   variant = 'product',
+  surface = 'stable',
+  elevation = 'none',
+  motion = false,
   children,
   className = '',
   as: Component = 'div',
   to,
   href,
   onClick,
-  style,
 }: CardProps) {
   const baseClass = 'rnr-card';
   const variantClass = `rnr-card--${variant}`;
-  const combinedClass = `${baseClass} ${variantClass} ${className}`.trim();
+  const surfaceClass = `rnr-card--surface-${surface}`;
+  const legacySurfaceClass = `rnr-card--${surface}`;
+  const elevationClass = `rnr-card--elevation-${elevation}`;
+  const motionClass = motion ? 'rnr-card--motion' : '';
+  const combinedClass =
+    `${baseClass} ${variantClass} ${surfaceClass} ${legacySurfaceClass} ${elevationClass} ${motionClass} ${className}`.trim();
 
   // Render as React Router Link if 'to' is provided
   if (to) {
     return (
-      <RouterLink to={to} className={combinedClass} style={style}>
+      <RouterLink to={to} className={combinedClass}>
         {children}
       </RouterLink>
     );
@@ -57,7 +66,7 @@ export function Card({
   // Render as HTML anchor if 'href' is provided
   if (href) {
     return (
-      <a href={href} onClick={onClick} className={combinedClass} style={style}>
+      <a href={href} onClick={onClick} className={combinedClass}>
         {children}
       </a>
     );
@@ -69,7 +78,6 @@ export function Card({
     {
       onClick,
       className: combinedClass,
-      style,
     },
     children
   );

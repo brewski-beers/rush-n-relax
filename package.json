@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "deploy": "npm run build && firebase deploy --except functions",
     "lint": "eslint .",
+    "lint:styles": "stylelint \"src/**/*.css\"",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,css,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,css,json,md}\"",
@@ -34,7 +35,11 @@
       "eslint --fix",
       "prettier --write"
     ],
-    "*.{css,json,md}": [
+    "*.css": [
+      "stylelint --allow-empty-input",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
       "prettier --write"
     ]
   },
@@ -65,6 +70,7 @@
     "eslint": "^9.39.3",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "firebase-admin": "^13.0.1",
@@ -74,6 +80,8 @@
     "jsdom": "^23.0.1",
     "lint-staged": "^16.2.7",
     "prettier": "^3.1.1",
+    "stylelint": "^17.4.0",
+    "stylelint-config-standard": "^40.0.0",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^5.0.11",

@@ -23,8 +23,8 @@ export default function About() {
         <div className="container">
           <h1>About Rush N Relax</h1>
           <p className="lead">
-            Two East Tennessee natives. Three dispensaries. One relentless
-            standard — every visit should feel as good as what you take home.
+            Three dispensaries. One relentless standard — every visit should
+            feel as good as what you take home.
           </p>
         </div>
       </section>
@@ -79,7 +79,7 @@ export default function About() {
         <div className="container">
           <h2 className="asymmetry-headline-anchor">What We Stand For</h2>
           <div className="values-grid">
-            <Card variant="value" as="div" className="rnr-card--stable">
+            <Card variant="value" as="div" surface="stable">
               <h3>Quality Without Compromise</h3>
               <p>
                 We taste, test, and vet every product before it reaches the
@@ -90,7 +90,9 @@ export default function About() {
             <Card
               variant="value"
               as="div"
-              className="rnr-card--anchor asymmetry-motion-anchor"
+              surface="anchor"
+              elevation="soft"
+              motion
             >
               <h3>Respect for the Plant & the Person</h3>
               <p>
@@ -99,7 +101,7 @@ export default function About() {
                 enthusiast — with honest guidance and zero judgment.
               </p>
             </Card>
-            <Card variant="value" as="div" className="rnr-card--stable">
+            <Card variant="value" as="div" surface="stable">
               <h3>Experience Over Everything</h3>
               <p>
                 The lounge, the conversation, the product recommendation that
@@ -113,16 +115,10 @@ export default function About() {
 
       <section id="team" className="team asymmetry-section-stable">
         <div className="container">
-          <h2>Leadership</h2>
-          <p className="text-secondary" style={{ marginBottom: '2rem' }}>
-            RnR is co-founded by John Rush and Michael Capps — East Tennessee
-            natives who saw an opportunity to raise the bar for cannabis retail
-            in their own community.
-          </p>
-          <p>
-            Reach the founders directly:{' '}
-            <a href="mailto:rush@rushnrelax.com">rush@rushnrelax.com</a> ·{' '}
-            <a href="mailto:capps@rushnrelax.com">capps@rushnrelax.com</a>
+          <h2>Meet the RnR Team</h2>
+          <p className="text-secondary">
+            The people behind the counter, the curators behind every product on
+            the shelf. Proper introductions coming soon.
           </p>
         </div>
       </section>

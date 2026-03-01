@@ -1,9 +1,10 @@
 import { ReactNode } from 'react';
+import './CardGrid.css';
 
 interface CardGridProps {
   children: ReactNode;
   columns?: 'auto' | '2' | '3' | '4';
-  gap?: 'sm' | 'md' | 'lg';
+  gap?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
@@ -13,35 +14,11 @@ export function CardGrid({
   gap = 'md',
   className = '',
 }: CardGridProps) {
-  const gapMap = {
-    sm: '0.75rem',
-    md: '1rem',
-    lg: '1.5rem',
-  };
-
-  const columnMap = {
-    auto: 'auto-fit',
-    '2': '2',
-    '3': '3',
-    '4': '4',
-  };
-
-  const colValue = columnMap[columns];
-  const gridTemplateColumns =
-    columns === 'auto'
-      ? 'repeat(auto-fit, minmax(300px, 1fr))'
-      : `repeat(${colValue}, 1fr)`;
+  const gapClass = `card-grid--gap-${gap}`;
+  const colsClass = `card-grid--cols-${columns}`;
 
   return (
-    <div
-      className={`card-grid ${className}`}
-      style={{
-        display: 'grid',
-        gridTemplateColumns,
-        gap: gapMap[gap],
-        width: '100%',
-      }}
-    >
+    <div className={`card-grid ${gapClass} ${colsClass} ${className}`.trim()}>
       {children}
     </div>
   );

@@ -162,11 +162,9 @@ export default function ProductDetail() {
                   key={related.id}
                   variant="product-small"
                   to={`/products/${related.slug}`}
-                  className={
-                    index === 1
-                      ? 'rnr-card--anchor asymmetry-motion-anchor'
-                      : 'rnr-card--stable'
-                  }
+                  surface={index === 1 ? 'anchor' : 'stable'}
+                  elevation={index === 1 ? 'soft' : 'none'}
+                  motion={index === 1}
                 >
                   <div className="product-category">
                     {related.category.toUpperCase()}

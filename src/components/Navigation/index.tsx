@@ -10,6 +10,14 @@ import { isRouteActive } from '../../utils/routeMatching';
 import cannabisLeaf from '../../assets/icons/cannabis-leaf.svg';
 import './Navigation.css';
 
+const NAV_LINKS = [
+  { label: 'Home', path: '/' },
+  { label: 'About', path: '/about' },
+  { label: 'Locations', path: '/locations' },
+  { label: 'Products', path: '/products' },
+  { label: 'Contact', path: '/contact' },
+] as const;
+
 export function Navigation() {
   const { isMenuOpen, toggleMenu } = useNavigation();
   const location = useLocation();
@@ -82,13 +90,7 @@ export function Navigation() {
         >
           {/* Navigation Links */}
           <ul className="nav-links">
-            {[
-              { label: 'Home', path: '/' },
-              { label: 'About', path: '/about' },
-              { label: 'Locations', path: '/locations' },
-              { label: 'Products', path: '/products' },
-              { label: 'Contact', path: '/contact' },
-            ].map(link => (
+            {NAV_LINKS.map(link => (
               <li key={link.path}>
                 <Link
                   to={link.path}

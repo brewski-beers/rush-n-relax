@@ -43,11 +43,9 @@ export default function Locations() {
                 key={location.id}
                 variant="location"
                 as="div"
-                className={
-                  index % 3 === 1
-                    ? 'rnr-card--anchor asymmetry-motion-anchor'
-                    : 'rnr-card--stable'
-                }
+                surface={index % 3 === 1 ? 'anchor' : 'stable'}
+                elevation={index % 3 === 1 ? 'soft' : 'none'}
+                motion={index % 3 === 1}
               >
                 <h3>{location.name}</h3>
                 <address>
@@ -65,8 +63,7 @@ export default function Locations() {
                 </a>
                 <Link
                   to={`/locations/${location.slug}`}
-                  className="btn btn-secondary mt-3"
-                  style={{ display: 'inline-block' }}
+                  className="btn btn-secondary mt-3 inline-block"
                 >
                   View Location →
                 </Link>
