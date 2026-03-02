@@ -1,0 +1,82 @@
+name: 'Resolve Manual Firebase Target'
+description: 'Build firebase deploy --only selector from additive manual workflow inputs'
+
+inputs:
+  deploy_all:
+    description: 'Deploy all configured targets'
+    required: true
+  deploy_hosting:
+    description: 'Include hosting'
+    required: true
+  deploy_functions:
+    description: 'Include functions'
+    required: true
+  deploy_firestore:
+    description: 'Include full firestore target'
+    required: true
+  deploy_firestore_rules:
+    description: 'Include firestore rules'
+    required: true
+  deploy_firestore_indexes:
+    description: 'Include firestore indexes'
+    required: true
+  deploy_storage_rules:
+    description: 'Include storage rules'
+    required: true
+
+outputs:
+  target_only:
+    description: 'Comma-separated value for firebase deploy --only; empty means full deploy'
+    value: ${{ steps.resolve.outputs.target_only }}
+  deploy_scope:
+    description: 'Human-readable deploy scope'
+    value: ${{ steps.resolve.outputs.deploy_scope }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve selector
+      id: resolve
+      shell: bash
+      run: |
+        if [ "${{ inputs.deploy_all }}" = "true" ]; then
+          TARGET_ONLY=""
+          DEPLOY_SCOPE="all-configured-targets"
+        else
+          SELECTORS=()
+
+          if [ "${{ inputs.deploy_hosting }}" = "true" ]; then
+            SELECTORS+=("hosting")
+          fi
+
+          if [ "${{ inputs.deploy_functions }}" = "true" ]; then
+            SELECTORS+=("functions")
+          fi
+
+          if [ "${{ inputs.deploy_firestore }}" = "true" ]; then
+            SELECTORS+=("firestore")
+          else
+            if [ "${{ inputs.deploy_firestore_rules }}" = "true" ]; then
+              SELECTORS+=("firestore:rules")
+            fi
+
+            if [ "${{ inputs.deploy_firestore_indexes }}" = "true" ]; then
+              SELECTORS+=("firestore:indexes")
+            fi
+          fi
+
+          if [ "${{ inputs.deploy_storage_rules }}" = "true" ]; then
+            SELECTORS+=("storage")
+          fi
+
+          if [ ${#SELECTORS[@]} -eq 0 ]; then
+            echo "No deploy selectors chosen. Select at least one target, or set deploy_all=true."
+            exit 1
+          fi
+
+          TARGET_ONLY=$(IFS=,; echo "${SELECTORS[*]}")
+          DEPLOY_SCOPE="$TARGET_ONLY"
+        fi
+
+        echo "target_only=$TARGET_ONLY" >> "$GITHUB_OUTPUT"
+        echo "deploy_scope=$DEPLOY_SCOPE" >> "$GITHUB_OUTPUT"

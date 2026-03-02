@@ -34,21 +34,15 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Validate cleanup credentials
-        run: |
-          if [ -z "$FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON" ]; then
-            echo "Missing cleanup credentials. Set FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
-            exit 1
-          fi
-
-      - name: Write cleanup credentials
-        run: |
-          printf '%s' "$FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON" > $HOME/gcloud-key.json
+      - name: Setup Firebase auth
+        id: auth
+        uses: ./.github/actions/firebase-auth-setup
+        with:
+          service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
 
       - name: Resolve stale preview channels
         id: stale
         run: |
-          GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
           npx firebase-tools hosting:channel:list \
             --project "$FIREBASE_PROJECT_ID" \
             --json | node -e "
@@ -109,7 +103,6 @@ jobs:
           while IFS= read -r channel_id; do
             if [ -n "$channel_id" ]; then
               echo "Deleting stale preview channel: $channel_id"
-              GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
               npx firebase-tools hosting:channel:delete "$channel_id" \
                 --project "$FIREBASE_PROJECT_ID" \
                 --force
@@ -127,4 +120,4 @@ jobs:
 
       - name: Cleanup credentials
         if: always()
-        run: rm -f $HOME/gcloud-key.json
+        run: rm -f "${{ steps.auth.outputs.credentials_path }}"

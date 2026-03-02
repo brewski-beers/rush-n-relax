@@ -1,0 +1,33 @@
+name: 'Firebase Auth Setup'
+description: 'Write Firebase service account JSON to a secure key file and export ADC env'
+
+inputs:
+  service-account-json:
+    description: 'Firebase service account JSON payload'
+    required: true
+
+outputs:
+  credentials_path:
+    description: 'Absolute path to generated credentials file'
+    value: ${{ steps.auth.outputs.credentials_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate credentials input
+      shell: bash
+      run: |
+        if [ -z "${{ inputs.service-account-json }}" ]; then
+          echo "Missing deploy credentials. Set FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
+          exit 1
+        fi
+
+    - name: Write credentials and export ADC
+      id: auth
+      shell: bash
+      run: |
+        CREDENTIALS_PATH="$HOME/gcloud-key.json"
+        printf '%s' "${{ inputs.service-account-json }}" > "$CREDENTIALS_PATH"
+        chmod 600 "$CREDENTIALS_PATH"
+        echo "GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS_PATH" >> "$GITHUB_ENV"
+        echo "credentials_path=$CREDENTIALS_PATH" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,47 @@
+name: 'Firebase Deploy'
+description: 'Run firebase deploy with optional --only selector and consistent logging'
+
+inputs:
+  project-id:
+    description: 'Firebase project id'
+    required: true
+  only:
+    description: 'Optional Firebase deploy selector(s) for --only; empty deploys all configured targets'
+    required: false
+    default: ''
+  log-file-name:
+    description: 'Log filename written under runner.temp'
+    required: true
+
+outputs:
+  log_file:
+    description: 'Absolute path to the deploy log file'
+    value: ${{ steps.deploy.outputs.log_file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy selected Firebase services
+      id: deploy
+      shell: bash
+      run: |
+        set -o pipefail
+        LOG_FILE="${RUNNER_TEMP}/${{ inputs.log-file-name }}"
+        echo "log_file=$LOG_FILE" >> "$GITHUB_OUTPUT"
+
+        if [ -n "${{ inputs.only }}" ]; then
+          if ! npx firebase-tools deploy \
+            --only "${{ inputs.only }}" \
+            --project "${{ inputs.project-id }}" \
+            --non-interactive 2>&1 | tee "$LOG_FILE"; then
+            echo "::error::Firebase deploy failed for --only=${{ inputs.only }}"
+            exit 1
+          fi
+        else
+          if ! npx firebase-tools deploy \
+            --project "${{ inputs.project-id }}" \
+            --non-interactive 2>&1 | tee "$LOG_FILE"; then
+            echo "::error::Firebase full deploy failed"
+            exit 1
+          fi
+        fi
