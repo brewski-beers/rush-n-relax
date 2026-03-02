@@ -172,6 +172,8 @@ npm run deploy
 - If smoke fails, CI does **not** promote to `live` and retains the preview channel for debugging.
 - Preview channel is deleted only after successful promotion to `live`.
 - A scheduled cleanup workflow removes stale retained PR preview channels older than the retention window (default: 3 days).
+- A manual workflow (`Manual Deploy — Firebase Service`) supports on-demand service deploys with a dropdown selector (`hosting`, `firestore`, `storage`, `functions`).
+- Manual flow includes a secondary deploy mode selector (`service` or `rules`); rules mode is valid for `firestore` and `storage`.
 
 ## Architecture Principles
 

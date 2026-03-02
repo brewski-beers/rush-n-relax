@@ -1,0 +1,128 @@
+# Manual Firebase deploy by service
+# - Additive selector allows combining multiple Firebase deploy targets
+name: Manual Deploy — Firebase Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_all:
+        description: 'Deploy all configured Firebase targets (ignores selectors below)'
+        required: true
+        default: false
+        type: boolean
+      deploy_hosting:
+        description: 'Deploy Hosting'
+        required: true
+        default: false
+        type: boolean
+      deploy_functions:
+        description: 'Deploy Cloud Functions'
+        required: true
+        default: false
+        type: boolean
+      deploy_firestore:
+        description: 'Deploy full Firestore target (rules + indexes)'
+        required: true
+        default: false
+        type: boolean
+      deploy_firestore_rules:
+        description: 'Deploy Firestore rules'
+        required: true
+        default: false
+        type: boolean
+      deploy_firestore_indexes:
+        description: 'Deploy Firestore indexes'
+        required: true
+        default: false
+        type: boolean
+      deploy_storage_rules:
+        description: 'Deploy Storage rules'
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: manual-deploy-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy-manual
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FIREBASE_PROJECT_ID: rush-n-relax
+      FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Resolve deploy selector
+        id: selector
+        uses: ./.github/actions/firebase-resolve-manual-target
+        with:
+          deploy_all: ${{ github.event.inputs.deploy_all }}
+          deploy_hosting: ${{ github.event.inputs.deploy_hosting }}
+          deploy_functions: ${{ github.event.inputs.deploy_functions }}
+          deploy_firestore: ${{ github.event.inputs.deploy_firestore }}
+          deploy_firestore_rules: ${{ github.event.inputs.deploy_firestore_rules }}
+          deploy_firestore_indexes: ${{ github.event.inputs.deploy_firestore_indexes }}
+          deploy_storage_rules: ${{ github.event.inputs.deploy_storage_rules }}
+
+      - name: Setup Firebase auth
+        id: auth
+        uses: ./.github/actions/firebase-auth-setup
+        with:
+          service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
+
+      - name: Firebase deploy
+        id: firebase_deploy
+        uses: ./.github/actions/firebase-deploy
+        with:
+          project-id: ${{ env.FIREBASE_PROJECT_ID }}
+          only: ${{ steps.selector.outputs.target_only }}
+          log-file-name: firebase-manual-deploy-${{ github.run_id }}.log
+
+      - name: Upload deploy failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-deploy-logs
+          path: ${{ steps.firebase_deploy.outputs.log_file }}
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Deploy summary
+        if: always()
+        env:
+          DEPLOY_ALL: ${{ github.event.inputs.deploy_all }}
+          DEPLOY_HOSTING: ${{ github.event.inputs.deploy_hosting }}
+          DEPLOY_FUNCTIONS: ${{ github.event.inputs.deploy_functions }}
+          DEPLOY_FIRESTORE: ${{ github.event.inputs.deploy_firestore }}
+          DEPLOY_FIRESTORE_RULES: ${{ github.event.inputs.deploy_firestore_rules }}
+          DEPLOY_FIRESTORE_INDEXES: ${{ github.event.inputs.deploy_firestore_indexes }}
+          DEPLOY_STORAGE_RULES: ${{ github.event.inputs.deploy_storage_rules }}
+        run: |
+          {
+            echo "## Manual Firebase deploy"
+            echo "- Deploy all: \`${DEPLOY_ALL}\`"
+            echo "- Hosting: \`${DEPLOY_HOSTING}\`"
+            echo "- Functions: \`${DEPLOY_FUNCTIONS}\`"
+            echo "- Firestore full: \`${DEPLOY_FIRESTORE}\`"
+            echo "- Firestore rules: \`${DEPLOY_FIRESTORE_RULES}\`"
+            echo "- Firestore indexes: \`${DEPLOY_FIRESTORE_INDEXES}\`"
+            echo "- Storage rules: \`${DEPLOY_STORAGE_RULES}\`"
+            echo "- Deploy scope: \`${{ steps.selector.outputs.deploy_scope }}\`"
+            if [ -n "${{ steps.selector.outputs.target_only }}" ]; then
+              echo "- Deploy selector: \`${{ steps.selector.outputs.target_only }}\`"
+            else
+              echo "- Deploy selector: \`(none, full deploy)\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cleanup deploy credentials
+        if: always()
+        run: rm -f "${{ steps.auth.outputs.credentials_path }}"

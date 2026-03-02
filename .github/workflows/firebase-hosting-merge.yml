@@ -8,21 +8,20 @@ on:
     types: [closed]
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'PR number to use for preview channel (manual runs only)'
-        required: false
-        type: string
 
 concurrency:
-  group: main-verify-deploy-${{ github.event.pull_request.number || github.ref }}
+  group: main-verify-deploy-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
+  changes:
+    if: github.event.pull_request.merged == true
+    uses: ./.github/workflows/release-changes-gate.yml
+
   verify:
     name: verify
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    needs: changes
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -70,8 +69,8 @@ jobs:
 
   deploy:
     name: deploy
-    needs: verify
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    needs: [changes, verify]
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -92,51 +91,56 @@ jobs:
         with:
           browsers: chromium
 
-      - name: Validate deploy credentials
-        run: |
-          if [ -z "$FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON" ]; then
-            echo "Missing deploy credentials. Set FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
-            exit 1
-          fi
+      - name: Setup Firebase auth
+        id: auth
+        uses: ./.github/actions/firebase-auth-setup
+        with:
+          service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
 
       - name: Resolve preview channel id
         id: channel
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            CHANNEL_ID="pr-${{ inputs.pr_number }}"
-          else
-            CHANNEL_ID="pr-${{ github.event.pull_request.number }}"
-          fi
-
-          if [ "$CHANNEL_ID" = "pr-" ]; then
-            echo "Missing PR number. Provide workflow_dispatch input 'pr_number'."
-            exit 1
-          fi
+          CHANNEL_ID="pr-${{ github.event.pull_request.number }}"
 
           echo "preview_channel_id=$CHANNEL_ID" >> "$GITHUB_OUTPUT"
 
       - name: Build Cloud Functions
         run: cd functions && npm ci && npm run build
 
-      - name: Write deploy credentials
-        run: |
-          printf '%s' "$FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON" > $HOME/gcloud-key.json
-          chmod 600 $HOME/gcloud-key.json
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json" >> "$GITHUB_ENV"
-
       - name: Deploy Firestore rules, indexes, and Storage rules
-        run: |
-          npx firebase-tools deploy \
-            --only firestore:rules,firestore:indexes,storage \
-            --project "$FIREBASE_PROJECT_ID" \
-            --non-interactive
+        id: deploy_rules_storage
+        uses: ./.github/actions/firebase-deploy
+        with:
+          project-id: ${{ env.FIREBASE_PROJECT_ID }}
+          only: firestore:rules,firestore:indexes,storage
+          log-file-name: firebase-deploy-rules-storage.log
 
       - name: Deploy Cloud Functions
+        id: deploy_functions
+        uses: ./.github/actions/firebase-deploy
+        with:
+          project-id: ${{ env.FIREBASE_PROJECT_ID }}
+          only: functions
+          log-file-name: firebase-deploy-functions.log
+
+      - name: Tail deploy logs on failure
+        if: failure()
         run: |
-          npx firebase-tools deploy \
-            --only functions \
-            --project "$FIREBASE_PROJECT_ID" \
-            --non-interactive
+          echo "--- Rules/Storage deploy log (tail) ---"
+          tail -n 120 "${{ runner.temp }}/firebase-deploy-rules-storage.log" || true
+          echo "--- Functions deploy log (tail) ---"
+          tail -n 120 "${{ runner.temp }}/firebase-deploy-functions.log" || true
+
+      - name: Upload deploy failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-deploy-logs
+          path: |
+            ${{ runner.temp }}/firebase-deploy-rules-storage.log
+            ${{ runner.temp }}/firebase-deploy-functions.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Resolve preview channel URL
         id: preview
@@ -219,4 +223,18 @@ jobs:
 
       - name: Cleanup deploy credentials
         if: always()
-        run: rm -f $HOME/gcloud-key.json
+        run: rm -f "${{ steps.auth.outputs.credentials_path }}"
+
+  no_changes:
+    name: no-changes
+    needs: changes
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip summary
+        run: |
+          {
+            echo "## Main release summary"
+            echo "- No release-relevant changes detected in merged PR."
+            echo "- Skipping verify and deploy jobs."
+          } >> "$GITHUB_STEP_SUMMARY"

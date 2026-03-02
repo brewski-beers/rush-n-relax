@@ -1,0 +1,44 @@
+# Shared release-relevant changes gate
+# - Reused by PR and merge workflows to avoid filter drift
+name: Release Changes Gate
+
+on:
+  workflow_call:
+    outputs:
+      should_run:
+        description: 'Whether release-relevant files changed'
+        value: ${{ jobs.changes.outputs.should_run }}
+
+jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.filter.outputs.release_relevant }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Detect release-relevant changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            release_relevant:
+              - 'src/**'
+              - 'functions/**'
+              - 'e2e/**'
+              - 'firebase.json'
+              - 'firestore.rules'
+              - 'firestore.indexes.json'
+              - 'storage.rules'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'functions/package.json'
+              - 'functions/package-lock.json'
+              - 'tsconfig.json'
+              - 'functions/tsconfig.json'
+              - 'vite.config.ts'
+              - '.github/actions/**'
+              - '.github/workflows/firebase-hosting-merge.yml'
+              - '.github/workflows/firebase-hosting-pull-request.yml'
