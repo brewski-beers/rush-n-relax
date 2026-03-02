@@ -4,23 +4,32 @@
 name: Main — Verify & Deploy
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to use for preview channel (manual runs only)'
+        required: false
+        type: string
 
 concurrency:
-  group: main-verify-deploy-${{ github.ref }}
+  group: main-verify-deploy-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
   verify:
     name: verify
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -62,16 +71,26 @@ jobs:
   deploy:
     name: deploy
     needs: verify
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
+      FIREBASE_PROJECT_ID: rush-n-relax
+      FIREBASE_HOSTING_SITE: rush-n-relax
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Setup
         uses: ./.github/actions/setup
+
+      - name: Setup Playwright (Chromium)
+        uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
 
       - name: Validate deploy credentials
         run: |
@@ -80,10 +99,21 @@ jobs:
             exit 1
           fi
 
-      - name: Build
-        run: npm run build
-        env:
-          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+      - name: Resolve preview channel id
+        id: channel
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            CHANNEL_ID="pr-${{ inputs.pr_number }}"
+          else
+            CHANNEL_ID="pr-${{ github.event.pull_request.number }}"
+          fi
+
+          if [ "$CHANNEL_ID" = "pr-" ]; then
+            echo "Missing PR number. Provide workflow_dispatch input 'pr_number'."
+            exit 1
+          fi
+
+          echo "preview_channel_id=$CHANNEL_ID" >> "$GITHUB_OUTPUT"
 
       - name: Build Cloud Functions
         run: cd functions && npm ci && npm run build
@@ -92,61 +122,104 @@ jobs:
         run: |
           printf '%s' "$FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON" > $HOME/gcloud-key.json
 
-      - name: Deploy Firestore rules and indexes
+      - name: Deploy Firestore rules, indexes, and Storage rules
         run: |
-          set -o pipefail
-          FIRESTORE_DEPLOY_LOG=$(mktemp)
-          if ! GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
-            npx firebase-tools deploy \
-            --only firestore:rules,firestore:indexes \
-            --project rush-n-relax \
-            --non-interactive 2>&1 | tee "$FIRESTORE_DEPLOY_LOG"; then
-            if grep -qi "403\|does not have permission\|firebaserules" "$FIRESTORE_DEPLOY_LOG"; then
-              echo "::error::Deploy service account is missing firebaserules permissions. Grant roles/firebase.rulesAdmin to FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
-            fi
-            exit 1
-          fi
-
-      - name: Deploy Storage rules
-        run: |
-          set -o pipefail
-          STORAGE_DEPLOY_LOG=$(mktemp)
-          if ! GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
-            npx firebase-tools deploy \
-            --only storage \
-            --project rush-n-relax \
-            --non-interactive 2>&1 | tee "$STORAGE_DEPLOY_LOG"; then
-            if grep -q "firebasestorage.defaultBucket.get" "$STORAGE_DEPLOY_LOG"; then
-              echo "::error::Deploy service account is missing firebasestorage.defaultBucket.get. Grant roles/storage.admin (or custom role including this permission) to FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
-            fi
-            exit 1
-          fi
+          GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
+          npx firebase-tools deploy \
+            --only firestore:rules,firestore:indexes,storage \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive
 
       - name: Deploy Cloud Functions
         run: |
-          set -o pipefail
-          FUNCTIONS_DEPLOY_LOG=$(mktemp)
-          if ! GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
-            npx firebase-tools deploy \
+          GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
+          npx firebase-tools deploy \
             --only functions \
-            --project rush-n-relax \
-            --non-interactive 2>&1 | tee "$FUNCTIONS_DEPLOY_LOG"; then
-            if grep -qi "403\|does not have permission\|cloudfunctions" "$FUNCTIONS_DEPLOY_LOG"; then
-              echo "::error::Deploy service account is missing Cloud Functions permissions. Grant roles/cloudfunctions.admin to FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX."
-            fi
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive
+
+      - name: Resolve preview channel URL
+        id: preview
+        env:
+          CHANNEL_ID: ${{ steps.channel.outputs.preview_channel_id }}
+        run: |
+          CHANNEL_URL=$(GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
+            npx firebase-tools hosting:channel:list \
+            --project "$FIREBASE_PROJECT_ID" \
+            --json | node -e "
+              const fs = require('fs');
+              const payload = JSON.parse(fs.readFileSync(0, 'utf8'));
+              const channelId = process.env.CHANNEL_ID;
+              const channels = payload?.result?.channels || payload?.channels || [];
+              const match = channels.find((channel) => {
+                const name = channel.name || '';
+                return channel.id === channelId || channel.channelId === channelId || name.endsWith('/channels/' + channelId);
+              });
+              if (!match || !match.url) {
+                process.exit(1);
+              }
+              process.stdout.write(match.url);
+            ")
+
+          if [ -z "$CHANNEL_URL" ]; then
+            echo "Preview channel URL not found for $CHANNEL_ID."
             exit 1
           fi
+
+          echo "preview_url=$CHANNEL_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Run smoke tests against preview channel
+        id: smoke
+        run: npm run test:e2e:smoke
+        env:
+          CI: 'true'
+          PLAYWRIGHT_BASE_URL: ${{ steps.preview.outputs.preview_url }}
+
+      - name: Upload smoke failure artifacts
+        if: failure() && steps.smoke.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-preview-smoke-failures
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Promote preview channel to live
+        id: promote
+        if: steps.smoke.outcome == 'success'
+        run: |
+          GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
+          npx firebase-tools hosting:clone \
+            "$FIREBASE_HOSTING_SITE:${{ steps.channel.outputs.preview_channel_id }}" \
+            "$FIREBASE_HOSTING_SITE:live" \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive
+
+      - name: Delete merged preview channel
+        if: steps.promote.outcome == 'success'
+        run: |
+          GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
+          npx firebase-tools hosting:channel:delete "${{ steps.channel.outputs.preview_channel_id }}" \
+            --project "$FIREBASE_PROJECT_ID" \
+            --force
+
+      - name: Retain preview channel for debugging
+        if: always() && (steps.smoke.outcome != 'success' || steps.promote.outcome != 'success')
+        run: |
+          echo "Smoke failed or promotion was skipped. Retaining preview channel: ${{ steps.channel.outputs.preview_channel_id }}"
+          echo "Preview URL: ${{ steps.preview.outputs.preview_url }}"
+
+      - name: Release summary
+        if: always()
+        run: |
+          {
+            echo "## Main release summary"
+            echo "- Preview channel: \\`${{ steps.channel.outputs.preview_channel_id }}\\`"
+            echo "- Preview URL: ${{ steps.preview.outputs.preview_url }}"
+            echo "- Smoke outcome: \\`${{ steps.smoke.outcome }}\\`"
+            echo "- Promote outcome: \\`${{ steps.promote.outcome }}\\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Cleanup deploy credentials
         if: always()
         run: rm -f $HOME/gcloud-key.json
-
-      - name: Deploy to Firebase Hosting Production
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}'
-          channelId: live
-          projectId: rush-n-relax
-        env:
-          FIREBASE_CLI_EXPERIMENTS: webframeworks

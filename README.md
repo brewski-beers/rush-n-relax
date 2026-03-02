@@ -163,6 +163,16 @@ All E2E specs follow a standardized pattern:
 npm run deploy
 \\\
 
+### CI Release Lifecycle
+
+- PRs to `main` run verify checks, then deploy Hosting preview to deterministic channel `pr-<number>`.
+- On merged PRs, release workflow runs verify + grouped service deploys (Firestore rules/indexes + Storage, then Functions).
+- The merged workflow reuses the existing PR preview URL for smoke tests using `PLAYWRIGHT_BASE_URL`.
+- If smoke passes, CI promotes that exact preview artifact to `live`.
+- If smoke fails, CI does **not** promote to `live` and retains the preview channel for debugging.
+- Preview channel is deleted only after successful promotion to `live`.
+- A scheduled cleanup workflow removes stale retained PR preview channels older than the retention window (default: 3 days).
+
 ## Architecture Principles
 
 ### SOLID
