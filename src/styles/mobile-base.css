@@ -276,13 +276,6 @@ button:focus-visible,
   border-width: 0;
 }
 
-.container {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0;
-}
-
 .text-center {
   text-align: center;
 }
@@ -366,14 +359,6 @@ button:focus-visible,
 .gap-4 {
   gap: var(--space-lg);
 }
-/* Page-specific styles */
-.container {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0;
-}
-
 /* Hero sections */
 .hero,
 .about-hero,
