@@ -198,6 +198,15 @@ npm run deploy
 - Touch-friendly interactions
 - Performance optimized for mobile networks
 
+### Controlled Asymmetry (Yin/Yang Flow)
+
+- Pattern: for major triads (cards/sections/CTAs), use **2 stable + 1 anchor**
+- Stability: neutral, predictable structure/spacing/typography for two elements
+- Anchor: one intentional contrast element to direct attention (weight, contrast, or motion)
+- Accent usage: keep accent color sparse (roughly 5-10% of visible UI)
+- Motion usage: default static; reserve motion for conversion-critical elements only
+- Intent: strategic imbalance to improve scan flow and action clarity, not decoration
+
 ### BDD/Value-Added Tests
 
 - Test behavior, not implementation

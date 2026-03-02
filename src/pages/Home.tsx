@@ -21,7 +21,7 @@ export default function Home() {
 
   return (
     <main className="home-page">
-      <section id="hero" className="hero">
+      <section id="hero" className="hero page-hero-shell">
         <div className="hero-content">
           <h1 className="hero-title">RUSH N RELAX</h1>
           <p className="hero-subtitle">
@@ -33,7 +33,7 @@ export default function Home() {
             all selected for quality you can see, smell, and feel.
           </p>
           <div className="hero-ctas">
-            <Link to="/locations" className="btn">
+            <Link to="/locations" className="btn asymmetry-motion-anchor">
               Find a Location
             </Link>
             <Link to="/products" className="btn btn-secondary">
@@ -43,7 +43,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="story" className="story">
+      <section id="story" className="story asymmetry-section-stable">
         <div className="container">
           <h2>The Rush N Relax Difference</h2>
           <p>
@@ -60,19 +60,25 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="products-preview" className="products-preview">
+      <section
+        id="products-preview"
+        className="products-preview asymmetry-section-anchor"
+      >
         <div className="container">
-          <h2>What We Carry</h2>
-          <p className="text-secondary">
+          <h2 className="asymmetry-headline-anchor">What We Carry</h2>
+          <p className="section-lead">
             Hand-selected products across five categories — each held to the
             same uncompromising standard.
           </p>
           <CardGrid columns="auto" gap="lg">
-            {PRODUCTS.slice(0, 3).map(product => (
+            {PRODUCTS.slice(0, 3).map((product, index) => (
               <Card
                 key={product.id}
                 variant="product"
                 to={`/products/${product.slug}`}
+                surface={index === 1 ? 'anchor' : 'stable'}
+                elevation={index === 1 ? 'soft' : 'none'}
+                motion={index === 1}
               >
                 <ProductImage slug={product.slug} alt={product.name} />
                 <div className="product-card-content">
@@ -86,7 +92,7 @@ export default function Home() {
               </Card>
             ))}
           </CardGrid>
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+          <div className="section-cta">
             <Link to="/products" className="link-arrow">
               View All Products →
             </Link>
@@ -94,47 +100,37 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="locations" className="locations-preview">
+      <section
+        id="locations"
+        className="locations-preview asymmetry-section-stable"
+      >
         <div className="container">
           <h2>Three Locations Across East Tennessee</h2>
-          <p className="text-secondary">
+          <p className="section-lead">
             Oak Ridge · Maryville · Seymour — open seven days a week, 10 AM to
             10 PM.
           </p>
           <div className="locations-grid">
-            {LOCATIONS.map(loc => (
+            {LOCATIONS.map((loc, index) => (
               <Card
                 key={loc.id}
                 variant="location"
                 to={`/locations/${loc.slug}`}
+                surface={index === 1 ? 'anchor' : 'stable'}
+                elevation={index === 1 ? 'soft' : 'none'}
+                motion={index === 1}
               >
                 <h3>{loc.name}</h3>
                 <p className="address-line">{loc.address}</p>
                 <p className="address-line">
                   {loc.city}, {loc.state} {loc.zip}
                 </p>
-                <span
-                  className="btn btn-secondary mt-3"
-                  style={{ display: 'inline-block' }}
-                >
+                <span className="btn btn-secondary mt-3 inline-block">
                   View Location →
                 </span>
               </Card>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section id="contact-cta" className="contact-cta">
-        <div className="container">
-          <h2>Questions? We're Here.</h2>
-          <p>
-            Whether you're curious about a product, need directions, or just
-            want to know what's new — reach out anytime.
-          </p>
-          <Link to="/contact" className="btn">
-            Contact Us
-          </Link>
         </div>
       </section>
     </main>

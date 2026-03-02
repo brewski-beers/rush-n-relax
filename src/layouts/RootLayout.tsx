@@ -22,14 +22,7 @@ const ProductDetail = lazy(() => import('../pages/ProductDetail'));
  */
 function PageFallback() {
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <div className="page-loading">
       <p>Loading...</p>
     </div>
   );
@@ -37,10 +30,7 @@ function PageFallback() {
 
 function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   return (
-    <div
-      className="error-container"
-      style={{ padding: '40px', textAlign: 'center' }}
-    >
+    <div className="error-container error-fallback">
       <h1>Something went wrong</h1>
       <p>{(error as Error)?.message || 'An unknown error occurred'}</p>
       <button onClick={resetErrorBoundary}>Try again</button>

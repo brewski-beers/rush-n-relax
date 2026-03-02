@@ -95,27 +95,27 @@
 
 /* Gap utilities */
 .gap-1 {
-  gap: 0.5rem;
+  gap: var(--space-xs);
 }
 
 .gap-2 {
-  gap: 1rem;
+  gap: var(--space-sm);
 }
 
 .gap-3 {
-  gap: 1.5rem;
+  gap: var(--space-md);
 }
 
 .gap-4 {
-  gap: 2rem;
+  gap: var(--space-lg);
 }
 
 .gap-5 {
-  gap: 2.5rem;
+  gap: var(--space-xl);
 }
 
 .gap-6 {
-  gap: 3rem;
+  gap: var(--space-2xl);
 }
 
 /* Padding utilities */
@@ -124,67 +124,67 @@
 }
 
 .p-1 {
-  padding: 0.5rem;
+  padding: var(--space-xs);
 }
 
 .p-2 {
-  padding: 1rem;
+  padding: var(--space-sm);
 }
 
 .p-3 {
-  padding: 1.5rem;
+  padding: var(--space-md);
 }
 
 .p-4 {
-  padding: 2rem;
+  padding: var(--space-lg);
 }
 
 .p-5 {
-  padding: 2.5rem;
+  padding: var(--space-xl);
 }
 
 .p-6 {
-  padding: 3rem;
+  padding: var(--space-2xl);
 }
 
 .px-1 {
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  padding-left: var(--space-xs);
+  padding-right: var(--space-xs);
 }
 
 .px-2 {
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-left: var(--space-sm);
+  padding-right: var(--space-sm);
 }
 
 .px-3 {
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
+  padding-left: var(--space-md);
+  padding-right: var(--space-md);
 }
 
 .px-4 {
-  padding-left: 2rem;
-  padding-right: 2rem;
+  padding-left: var(--space-lg);
+  padding-right: var(--space-lg);
 }
 
 .py-1 {
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+  padding-top: var(--space-xs);
+  padding-bottom: var(--space-xs);
 }
 
 .py-2 {
-  padding-top: 1rem;
-  padding-bottom: 1rem;
+  padding-top: var(--space-sm);
+  padding-bottom: var(--space-sm);
 }
 
 .py-3 {
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
+  padding-top: var(--space-md);
+  padding-bottom: var(--space-md);
 }
 
 .py-4 {
-  padding-top: 2rem;
-  padding-bottom: 2rem;
+  padding-top: var(--space-lg);
+  padding-bottom: var(--space-lg);
 }
 
 /* Margin utilities */
@@ -193,19 +193,19 @@
 }
 
 .m-1 {
-  margin: 0.5rem;
+  margin: var(--space-xs);
 }
 
 .m-2 {
-  margin: 1rem;
+  margin: var(--space-sm);
 }
 
 .m-3 {
-  margin: 1.5rem;
+  margin: var(--space-md);
 }
 
 .m-4 {
-  margin: 2rem;
+  margin: var(--space-lg);
 }
 
 .mx-auto {
@@ -219,43 +219,43 @@
 }
 
 .mt-1 {
-  margin-top: 0.5rem;
+  margin-top: var(--space-xs);
 }
 
 .mt-2 {
-  margin-top: 1rem;
+  margin-top: var(--space-sm);
 }
 
 .mt-3 {
-  margin-top: 1.5rem;
+  margin-top: var(--space-md);
 }
 
 .mt-4 {
-  margin-top: 2rem;
+  margin-top: var(--space-lg);
 }
 
 .mt-6 {
-  margin-top: 3rem;
+  margin-top: var(--space-2xl);
 }
 
 .mb-1 {
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-xs);
 }
 
 .mb-2 {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-sm);
 }
 
 .mb-3 {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-md);
 }
 
 .mb-4 {
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-lg);
 }
 
 .mb-6 {
-  margin-bottom: 3rem;
+  margin-bottom: var(--space-2xl);
 }
 
 .ml-auto {
@@ -415,4 +415,112 @@
 
 .z-50 {
   z-index: 50;
+}
+
+/* Controlled Asymmetry (Yin/Yang Flow)
+   Pattern: 2 stable elements + 1 intentional anchor */
+
+.asymmetry-stable {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.asymmetry-anchor {
+  background-color: var(--color-surface-anchor);
+  border: 1px solid var(--color-border-accent);
+}
+
+.asymmetry-section-stable {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 20, 25, 0.7) 0%,
+    rgba(15, 20, 25, 0.85) 100%
+  );
+  border-radius: 0.75rem;
+  overflow: hidden;
+  padding-top: var(--section-padding-top);
+  padding-bottom: var(--section-padding-bottom);
+}
+
+.asymmetry-section-anchor {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(15, 20, 25, 0.9) 100%
+  );
+  border-top: 1px solid var(--color-border-anchor-soft);
+  border-bottom: 1px solid var(--color-border-anchor-soft);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  padding-top: var(--section-padding-top);
+  padding-bottom: var(--section-padding-bottom);
+}
+
+.asymmetry-section-anchor > .container {
+  padding-left: var(--container-padding-x);
+  padding-right: var(--container-padding-x);
+}
+
+.asymmetry-headline-anchor {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.asymmetry-motion-anchor {
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.asymmetry-motion-anchor:hover {
+  transform: translateY(-2px);
+}
+
+.asymmetry-motion-anchor:active {
+  transform: translateY(-1px);
+}
+
+/* ─────────────────────────────────────────────────────────
+   LAYOUT UTILITIES
+   Page-level layout patterns
+   ───────────────────────────────────────────────────────── */
+
+/* Full-page loading state */
+.page-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Error fallback container */
+.error-fallback {
+  padding: var(--space-xl);
+  text-align: center;
+}
+
+/* Text alignment */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* Section CTA wrapper */
+.section-cta {
+  text-align: center;
+  margin-top: var(--space-lg);
+}
+
+/* Map iframe styling */
+.map-iframe {
+  border: 0;
+  border-radius: 0.75rem;
 }

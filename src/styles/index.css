@@ -9,6 +9,9 @@
 /* Reset and base styles */
 @import './reset.css';
 
+/* Container and breakpoint layout primitives */
+@import './containers.css';
+
 /* Mobile-first base styles (320px) */
 @import './mobile-base.css';
 

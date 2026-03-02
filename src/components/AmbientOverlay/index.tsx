@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getStorage$, initializeApp } from '@/firebase';
 import { getDownloadURL, ref, getStorage } from 'firebase/storage';
+import './AmbientOverlay.css';
 
 interface ResolvedUrls {
   desktop: string | null;
@@ -155,17 +156,7 @@ export function AmbientOverlay() {
       disablePictureInPicture
       controls={false}
       poster={posterUrl}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-        display: 'block',
-        zIndex: 0,
-        pointerEvents: 'none',
-      }}
+      className="ambient-video"
     >
       {videoSrc && <source src={videoSrc} type="video/mp4" />}
     </video>,

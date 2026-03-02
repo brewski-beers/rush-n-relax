@@ -9,16 +9,21 @@
 .container {
   width: 100%;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 var(--container-padding-x);
 }
 
 main {
   width: 100%;
-  padding: 1rem;
+  padding: var(--space-sm) 0;
+}
+
+.content-wrapper {
+  padding-left: var(--container-padding-x);
+  padding-right: var(--container-padding-x);
 }
 
 section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
 /* Utility: Full-width with controlled padding */
@@ -35,7 +40,7 @@ section {
 .grid-auto {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: var(--space-sm);
   width: 100%;
   min-width: 0;
 }
@@ -43,7 +48,7 @@ section {
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: var(--space-sm);
   width: 100%;
   min-width: 0;
 }
@@ -51,7 +56,7 @@ section {
 .grid-3 {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: var(--space-sm);
   width: 100%;
   min-width: 0;
 }
@@ -60,7 +65,7 @@ section {
 .flex-row {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-sm);
   width: 100%;
   min-width: 0;
 }
@@ -69,35 +74,31 @@ section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-sm);
   width: 100%;
   min-width: 0;
 }
 
 /* Small: 640px ====================================== */
 @media (min-width: 640px) {
-  .container {
-    padding: 0 1.5rem;
-  }
-
   section {
-    margin-bottom: 2rem;
+    margin-bottom: 0;
   }
 
   .grid-2 {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
+    gap: var(--space-md);
   }
 
   .flex-row {
     flex-direction: row;
-    gap: 1.5rem;
+    gap: var(--space-md);
   }
 
   .flex-row-center {
     flex-direction: row;
     justify-content: center;
-    gap: 1.5rem;
+    gap: var(--space-md);
   }
 }
 
@@ -105,24 +106,19 @@ section {
 @media (min-width: 768px) {
   .container {
     max-width: 728px;
-    padding: 0 2rem;
-  }
-
-  main {
-    padding: 1.5rem;
   }
 
   section {
-    margin-bottom: 2.5rem;
+    margin-bottom: 0;
   }
 
   .grid-auto {
-    gap: 1.5rem;
+    gap: var(--space-md);
   }
 
   .grid-3 {
     grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
+    gap: var(--space-lg);
   }
 }
 
@@ -130,35 +126,30 @@ section {
 @media (min-width: 1024px) {
   .container {
     max-width: 1000px;
-    padding: 0 2.5rem;
-  }
-
-  main {
-    padding: 2.5rem;
   }
 
   section {
-    margin-bottom: 3rem;
+    margin-bottom: 0;
   }
 
   .grid-2 {
     grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
+    gap: var(--space-lg);
   }
 
   .grid-3 {
     grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
+    gap: var(--space-lg);
   }
 
   .flex-row {
     flex-direction: row;
-    gap: 2rem;
+    gap: var(--space-lg);
   }
 
   .flex-row-center {
     flex-direction: row;
-    gap: 2rem;
+    gap: var(--space-lg);
   }
 }
 
@@ -166,31 +157,26 @@ section {
 @media (min-width: 1280px) {
   .container {
     max-width: 1200px;
-    padding: 0 3rem;
-  }
-
-  main {
-    padding: 3rem;
   }
 
   section {
-    margin-bottom: 3.5rem;
+    margin-bottom: 0;
   }
 
   .grid-auto {
-    gap: 2rem;
+    gap: var(--space-lg);
   }
 
   .grid-3 {
-    gap: 2.5rem;
+    gap: var(--space-xl);
   }
 
   .flex-row {
-    gap: 2.5rem;
+    gap: var(--space-xl);
   }
 
   .flex-row-center {
-    gap: 2.5rem;
+    gap: var(--space-xl);
   }
 }
 
@@ -199,7 +185,7 @@ section {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   display: flex;
-  gap: 1rem;
+  gap: var(--space-sm);
   scroll-behavior: smooth;
 }
 
@@ -208,7 +194,7 @@ section {
     overflow-x: visible;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+    gap: var(--space-md);
   }
 }
 

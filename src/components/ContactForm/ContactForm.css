@@ -4,28 +4,77 @@
  */
 
 .contact-form {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-md);
   max-width: 600px;
   margin: 0 auto;
-  padding: 1.5rem;
-  background-color: rgba(16, 24, 21, 0.5);
+  padding: var(--card-padding);
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.5rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.75rem;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+}
+
+.contact-form::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      76% 54% at 90% 0%,
+      rgba(213, 179, 106, 0.18) 0%,
+      rgba(213, 179, 106, 0) 68%
+    ),
+    radial-gradient(
+      52% 38% at 8% 94%,
+      rgba(213, 179, 106, 0.1) 0%,
+      rgba(213, 179, 106, 0) 76%
+    );
+  pointer-events: none;
+}
+
+.contact-form::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--space-sm);
+  right: var(--space-sm);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(213, 179, 106, 0) 0%,
+    rgba(213, 179, 106, 0.32) 24%,
+    rgba(213, 179, 106, 0.32) 76%,
+    rgba(213, 179, 106, 0) 100%
+  );
+  pointer-events: none;
 }
 
 .form-group {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-xs);
+}
+
+.form-group:focus-within {
+  outline: none;
 }
 
 .contact-form label {
   display: block;
-  font-weight: 500;
-  color: #e8e8e8;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text);
   font-size: 0.95rem;
 }
 
@@ -35,18 +84,18 @@
 
 .optional {
   font-weight: 400;
-  color: #909090;
+  color: var(--color-text-subtle);
   font-size: 0.85rem;
 }
 
 .contact-form input,
 .contact-form textarea {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: calc(var(--space-sm) - (var(--space-xs) / 2));
+  border: 1px solid var(--color-border-strong);
   border-radius: 0.25rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #e8e8e8;
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text);
   font-size: 1rem;
   font-family: inherit;
   transition: all 0.2s ease;
@@ -55,94 +104,110 @@
 
 .contact-form input::placeholder,
 .contact-form textarea::placeholder {
-  color: #808080;
+  color: var(--color-text-soft);
 }
 
 .contact-form input:focus,
 .contact-form textarea:focus {
   outline: none;
-  border-color: #d5b36a;
-  background-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 2px rgba(213, 179, 106, 0.1);
+  border-color: var(--color-accent);
+  background-color: var(--color-surface);
+  box-shadow: 0 0 0 2px var(--color-border-accent);
 }
 
 .contact-form input:disabled,
 .contact-form textarea:disabled {
-  background-color: rgba(255, 255, 255, 0.02);
-  color: #808080;
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text-soft);
   cursor: not-allowed;
 }
 
 .contact-form input.error,
 .contact-form textarea.error {
-  border-color: #ff6b6b;
-  background-color: rgba(255, 107, 107, 0.05);
+  border-color: var(--color-error);
+  background-color: var(--color-error-bg);
 }
 
 .contact-form input.error:focus,
 .contact-form textarea.error:focus {
-  box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.1);
+  box-shadow: 0 0 0 2px var(--color-error);
 }
 
 .contact-form textarea {
   resize: vertical;
-  min-height: 120px;
+  min-height: 132px;
 }
 
 /* Error message styles */
 .error-message {
   display: block;
   font-size: 0.825rem;
-  color: #ff6b6b;
-  margin-top: 0.25rem;
+  color: var(--color-error);
+  margin-top: calc(var(--space-xs) / 2);
 }
 
 /* Form status messages */
 .form-status {
-  padding: 1rem;
-  border-radius: 0.25rem;
+  position: relative;
+  z-index: 1;
+  padding: var(--space-sm);
+  border-radius: 0.5rem;
   font-size: 0.95rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-xs);
   border-left: 4px solid;
 }
 
 .form-status-success {
-  background-color: rgba(81, 207, 102, 0.1);
-  border-left-color: #51cf66;
-  color: #51cf66;
+  background-color: var(--color-success-bg);
+  border-left-color: var(--color-success);
+  color: var(--color-success);
 }
 
 .form-status-error {
-  background-color: rgba(255, 107, 107, 0.1);
-  border-left-color: #ff6b6b;
-  color: #ff6b6b;
+  background-color: var(--color-error-bg-strong);
+  border-left-color: var(--color-error);
+  color: var(--color-error);
 }
 
 .form-status-loading {
-  background-color: rgba(74, 144, 226, 0.1);
-  border-left-color: #4a90e2;
-  color: #4a90e2;
+  background-color: var(--color-info-bg);
+  border-left-color: var(--color-info);
+  color: var(--color-info);
 }
 
 /* Submit button */
 .form-submit {
-  padding: 0.75rem 1.5rem;
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  min-width: 220px;
+  padding: calc(var(--space-sm) - (var(--space-xs) / 2)) var(--space-md);
   min-height: 48px;
-  border: 2px solid #2f3b32;
-  border-radius: 0.25rem;
-  background-color: #2f3b32;
-  color: #fafafa;
+  border: 2px solid var(--color-ui);
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    rgba(47, 59, 50, 1) 0%,
+    rgba(67, 84, 70, 1) 100%
+  );
+  color: var(--color-on-ui);
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: 1rem;
+  margin-top: calc(var(--space-sm) - (var(--space-xs) / 2));
+  box-shadow:
+    0 0 0 1px rgba(213, 179, 106, 0.14),
+    0 8px 20px rgba(0, 0, 0, 0.26);
 }
 
 .form-submit:hover:not(:disabled) {
-  background-color: #d5b36a;
-  border-color: #d5b36a;
-  color: #181c1f;
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+  box-shadow:
+    0 0 0 1px rgba(213, 179, 106, 0.26),
+    0 10px 24px rgba(0, 0, 0, 0.32);
 }
 
 .form-submit:active:not(:disabled) {
@@ -150,7 +215,7 @@
 }
 
 .form-submit:focus-visible {
-  outline: 2px solid #d5b36a;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -162,13 +227,12 @@
 /* Tablet layout */
 @media (min-width: 768px) {
   .contact-form {
-    padding: 2rem;
-    gap: 1.75rem;
+    padding: var(--card-padding-lg);
+    gap: var(--space-lg);
   }
 
   .form-submit {
-    align-self: center;
-    min-width: 200px;
+    min-width: 240px;
   }
 }
 
@@ -181,7 +245,7 @@
 
   .contact-form input:focus,
   .contact-form textarea:focus {
-    box-shadow: 0 0 0 3px rgba(213, 179, 106, 0.3);
+    box-shadow: 0 0 0 3px var(--color-border-accent);
   }
 }
 

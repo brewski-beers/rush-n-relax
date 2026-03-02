@@ -2,7 +2,11 @@ import { initializeApp as initFirebase } from 'firebase/app';
 import { getAnalytics, logEvent } from 'firebase/analytics';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
-import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import {
+  getFunctions,
+  connectFunctionsEmulator,
+  httpsCallable,
+} from 'firebase/functions';
 
 // Firebase configuration - these values are public by design
 // They identify the project and are visible in all deployed JavaScript bundles
@@ -94,6 +98,19 @@ export function trackPageView(pageName: string) {
     page_title: pageName,
     page_location: window.location.href,
   });
+}
+
+/**
+ * Create a typed callable function wrapper.
+ * Ensures Firebase is initialized before calling.
+ */
+export function callFunction<TReq, TRes>(name: string) {
+  return async (data: TReq): Promise<TRes> => {
+    const fns = getFunctions$();
+    const callable = httpsCallable<TReq, TRes>(fns, name);
+    const result = await callable(data);
+    return result.data;
+  };
 }
 
 export { db };

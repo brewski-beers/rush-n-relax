@@ -13,7 +13,7 @@ const isCoreMode = testMode === 'core';
 
 // When set, Playwright targets an already-running server (preview channel or
 // production URL) instead of spinning up a local dev server.
-// Used by the smoke cron workflow: PLAYWRIGHT_BASE_URL=https://rush-n-relax.web.app
+// Used by the smoke cron workflow: PLAYWRIGHT_BASE_URL=https://rushnrelax.com
 const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL;
 
 // Local: Chromium + Mobile (realistic but fast). CI: selective or all.

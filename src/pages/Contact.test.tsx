@@ -9,7 +9,7 @@ vi.mock('../components/ContactForm', () => ({
 }));
 
 describe('Contact page', () => {
-  it('renders one Facebook link per active location', () => {
+  it('renders one phone link and one location link per active location', () => {
     render(
       <MemoryRouter>
         <Contact />
@@ -19,12 +19,19 @@ describe('Contact page', () => {
     const activeLocations = LOCATIONS.filter(
       location => location.hours !== 'Coming soon'
     );
-    const facebookLinks = screen.getAllByRole('link', { name: /facebook/i });
+    const phoneLinks = screen.getAllByRole('link', {
+      name: /^\+1\s*\(/i,
+    });
+    const locationLinks = screen.getAllByRole('link', {
+      name: /view location/i,
+    });
 
-    expect(facebookLinks).toHaveLength(activeLocations.length);
-    facebookLinks.forEach(link => {
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(phoneLinks).toHaveLength(activeLocations.length);
+    expect(locationLinks).toHaveLength(activeLocations.length);
+
+    phoneLinks.forEach(link => {
+      expect(link).toHaveAttribute('href');
+      expect(link.getAttribute('href')).toMatch(/^tel:/);
     });
   });
 

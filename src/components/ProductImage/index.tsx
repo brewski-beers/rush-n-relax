@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { resolveProductImageUrl } from '../../constants/products';
+import './ProductImage.css';
 
 interface ProductImageProps {
   slug: string;
@@ -12,7 +13,7 @@ interface ProductImageProps {
  * Shows a shimmer placeholder while loading, and a category-tinted
  * fallback if the image is unavailable.
  */
-export function ProductImage({ slug, alt }: ProductImageProps) {
+export function ProductImage({ slug, alt, className }: ProductImageProps) {
   const [src, setSrc] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -44,9 +45,12 @@ export function ProductImage({ slug, alt }: ProductImageProps) {
         decoding="async"
         onLoad={() => setLoaded(true)}
         onError={() => setFailed(true)}
-        style={{ maxHeight: '200px', maxWidth: '160px' }}
       />
     );
 
-  return <div className="product-card-img">{content}</div>;
+  return (
+    <div className={`product-card-img ${className ?? ''}`.trim()}>
+      {content}
+    </div>
+  );
 }

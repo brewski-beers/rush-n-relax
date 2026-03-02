@@ -23,6 +23,7 @@ export const LOADING_MESSAGES = {
  */
 export const COMPANY = {
   NAME: 'Rush N Relax',
+  NICKNAME: 'RnR',
   DESCRIPTION:
     'East Tennessee\u2019s upscale cannabis dispensary — premium flower, concentrates, edibles, vapes, THCa-infused drinks, and a one-of-a-kind speakeasy-style lounge in Oak Ridge.',
   CONTACT: {
