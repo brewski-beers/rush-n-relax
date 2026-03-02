@@ -121,10 +121,11 @@ jobs:
       - name: Write deploy credentials
         run: |
           printf '%s' "$FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON" > $HOME/gcloud-key.json
+          chmod 600 $HOME/gcloud-key.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json" >> "$GITHUB_ENV"
 
       - name: Deploy Firestore rules, indexes, and Storage rules
         run: |
-          GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
           npx firebase-tools deploy \
             --only firestore:rules,firestore:indexes,storage \
             --project "$FIREBASE_PROJECT_ID" \
@@ -132,7 +133,6 @@ jobs:
 
       - name: Deploy Cloud Functions
         run: |
-          GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
           npx firebase-tools deploy \
             --only functions \
             --project "$FIREBASE_PROJECT_ID" \
@@ -143,8 +143,7 @@ jobs:
         env:
           CHANNEL_ID: ${{ steps.channel.outputs.preview_channel_id }}
         run: |
-          CHANNEL_URL=$(GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
-            npx firebase-tools hosting:channel:list \
+          CHANNEL_URL=$(npx firebase-tools hosting:channel:list \
             --project "$FIREBASE_PROJECT_ID" \
             --json | node -e "
               const fs = require('fs');
@@ -188,7 +187,6 @@ jobs:
         id: promote
         if: steps.smoke.outcome == 'success'
         run: |
-          GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
           npx firebase-tools hosting:clone \
             "$FIREBASE_HOSTING_SITE:${{ steps.channel.outputs.preview_channel_id }}" \
             "$FIREBASE_HOSTING_SITE:live" \
@@ -198,7 +196,6 @@ jobs:
       - name: Delete merged preview channel
         if: steps.promote.outcome == 'success'
         run: |
-          GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud-key.json \
           npx firebase-tools hosting:channel:delete "${{ steps.channel.outputs.preview_channel_id }}" \
             --project "$FIREBASE_PROJECT_ID" \
             --force
