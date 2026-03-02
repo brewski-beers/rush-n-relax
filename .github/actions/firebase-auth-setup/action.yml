@@ -26,8 +26,34 @@ runs:
       id: auth
       shell: bash
       run: |
-        CREDENTIALS_PATH="$HOME/gcloud-key.json"
-        printf '%s' "${{ inputs.service-account-json }}" > "$CREDENTIALS_PATH"
+        CREDENTIALS_PATH="$RUNNER_TEMP/gcloud-key.json"
+        RAW_INPUT='${{ inputs.service-account-json }}'
+
+        # Try raw JSON first.
+        if printf '%s' "$RAW_INPUT" | node -e "
+          const fs = require('fs');
+          const raw = fs.readFileSync(0, 'utf8');
+          const obj = JSON.parse(raw);
+          if (!obj || obj.type !== 'service_account' || !obj.client_email || !obj.private_key) {
+            process.exit(2);
+          }
+        " >/dev/null 2>&1; then
+          printf '%s' "$RAW_INPUT" > "$CREDENTIALS_PATH"
+        # Then try base64-encoded JSON.
+        elif printf '%s' "$RAW_INPUT" | base64 --decode 2>/dev/null | node -e "
+          const fs = require('fs');
+          const raw = fs.readFileSync(0, 'utf8');
+          const obj = JSON.parse(raw);
+          if (!obj || obj.type !== 'service_account' || !obj.client_email || !obj.private_key) {
+            process.exit(2);
+          }
+        " >/dev/null 2>&1; then
+          printf '%s' "$RAW_INPUT" | base64 --decode > "$CREDENTIALS_PATH"
+        else
+          echo "::error::Invalid Firebase service account secret format. Expected raw JSON (or base64-encoded JSON) with type=service_account, client_email, and private_key."
+          exit 1
+        fi
+
         chmod 600 "$CREDENTIALS_PATH"
         echo "GOOGLE_APPLICATION_CREDENTIALS=$CREDENTIALS_PATH" >> "$GITHUB_ENV"
         echo "credentials_path=$CREDENTIALS_PATH" >> "$GITHUB_OUTPUT"

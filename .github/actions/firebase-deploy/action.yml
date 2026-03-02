@@ -34,6 +34,10 @@ runs:
         echo "log_file=$LOG_FILE" >> "$GITHUB_OUTPUT"
 
         if [ -n "${{ inputs.credentials-path }}" ]; then
+          if [ ! -f "${{ inputs.credentials-path }}" ]; then
+            echo "::error::Credentials file not found at ${{ inputs.credentials-path }}"
+            exit 1
+          fi
           export GOOGLE_APPLICATION_CREDENTIALS="${{ inputs.credentials-path }}"
         fi
 
