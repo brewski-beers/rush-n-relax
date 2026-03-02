@@ -83,6 +83,7 @@ jobs:
         uses: ./.github/actions/firebase-deploy
         with:
           project-id: ${{ env.FIREBASE_PROJECT_ID }}
+          credentials-path: ${{ steps.auth.outputs.credentials_path }}
           only: ${{ steps.selector.outputs.target_only }}
           log-file-name: firebase-manual-deploy-${{ github.run_id }}.log
 

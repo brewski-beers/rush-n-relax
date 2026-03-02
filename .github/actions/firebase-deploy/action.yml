@@ -5,6 +5,10 @@ inputs:
   project-id:
     description: 'Firebase project id'
     required: true
+  credentials-path:
+    description: 'Optional credentials file path for GOOGLE_APPLICATION_CREDENTIALS'
+    required: false
+    default: ''
   only:
     description: 'Optional Firebase deploy selector(s) for --only; empty deploys all configured targets'
     required: false
@@ -28,6 +32,10 @@ runs:
         set -o pipefail
         LOG_FILE="${RUNNER_TEMP}/${{ inputs.log-file-name }}"
         echo "log_file=$LOG_FILE" >> "$GITHUB_OUTPUT"
+
+        if [ -n "${{ inputs.credentials-path }}" ]; then
+          export GOOGLE_APPLICATION_CREDENTIALS="${{ inputs.credentials-path }}"
+        fi
 
         if [ -n "${{ inputs.only }}" ]; then
           if ! npx firebase-tools deploy \
