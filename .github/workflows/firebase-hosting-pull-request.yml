@@ -14,8 +14,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    uses: ./.github/workflows/release-changes-gate.yml
+
   verify:
     name: verify
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -26,26 +30,40 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Lint
+        if: needs.changes.outputs.should_run == 'true'
         run: npm run lint
 
       - name: Type check
+        if: needs.changes.outputs.should_run == 'true'
         run: npx tsc --noEmit
 
       - name: Unit tests
+        if: needs.changes.outputs.should_run == 'true'
         run: npm run test -- --run
 
       - name: Setup Playwright (Chromium)
+        if: needs.changes.outputs.should_run == 'true'
         uses: ./.github/actions/setup-playwright
         with:
           browsers: chromium
 
       - name: E2E tests
+        if: needs.changes.outputs.should_run == 'true'
         run: >-
           npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,storage
           "node scripts/seed-emulators.cjs && npm run test:e2e:core -- --project=chromium"
         env:
           VITE_USE_EMULATORS: 'true'
           CI: 'true'
+
+      - name: No-op summary
+        if: needs.changes.outputs.should_run != 'true'
+        run: |
+          {
+            echo "## PR verify summary"
+            echo "- No release-relevant changes detected."
+            echo "- Skipping heavy verify and preview deploy steps."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload verify failure artifacts
         if: failure()
@@ -58,7 +76,8 @@ jobs:
 
   preview:
     name: preview
-    needs: verify
+    needs: [changes, verify]
+    if: needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

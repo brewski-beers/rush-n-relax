@@ -14,9 +14,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  changes:
+    if: github.event.pull_request.merged == true
+    uses: ./.github/workflows/release-changes-gate.yml
+
   verify:
     name: verify
-    if: github.event.pull_request.merged == true
+    needs: changes
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -64,8 +69,8 @@ jobs:
 
   deploy:
     name: deploy
-    needs: verify
-    if: github.event.pull_request.merged == true
+    needs: [changes, verify]
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -219,3 +224,17 @@ jobs:
       - name: Cleanup deploy credentials
         if: always()
         run: rm -f "${{ steps.auth.outputs.credentials_path }}"
+
+  no_changes:
+    name: no-changes
+    needs: changes
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip summary
+        run: |
+          {
+            echo "## Main release summary"
+            echo "- No release-relevant changes detected in merged PR."
+            echo "- Skipping verify and deploy jobs."
+          } >> "$GITHUB_STEP_SUMMARY"
