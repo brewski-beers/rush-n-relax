@@ -112,6 +112,7 @@ jobs:
         uses: ./.github/actions/firebase-deploy
         with:
           project-id: ${{ env.FIREBASE_PROJECT_ID }}
+          credentials-path: ${{ steps.auth.outputs.credentials_path }}
           only: firestore:rules,firestore:indexes,storage
           log-file-name: firebase-deploy-rules-storage.log
 
@@ -120,6 +121,7 @@ jobs:
         uses: ./.github/actions/firebase-deploy
         with:
           project-id: ${{ env.FIREBASE_PROJECT_ID }}
+          credentials-path: ${{ steps.auth.outputs.credentials_path }}
           only: functions
           log-file-name: firebase-deploy-functions.log
 
@@ -146,6 +148,7 @@ jobs:
         id: preview
         env:
           CHANNEL_ID: ${{ steps.channel.outputs.preview_channel_id }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
         run: |
           CHANNEL_URL=$(npx firebase-tools hosting:channel:list \
             --project "$FIREBASE_PROJECT_ID" \
@@ -190,6 +193,8 @@ jobs:
       - name: Promote preview channel to live
         id: promote
         if: steps.smoke.outcome == 'success'
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
         run: |
           npx firebase-tools hosting:clone \
             "$FIREBASE_HOSTING_SITE:${{ steps.channel.outputs.preview_channel_id }}" \
@@ -199,6 +204,8 @@ jobs:
 
       - name: Delete merged preview channel
         if: steps.promote.outcome == 'success'
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
         run: |
           npx firebase-tools hosting:channel:delete "${{ steps.channel.outputs.preview_channel_id }}" \
             --project "$FIREBASE_PROJECT_ID" \

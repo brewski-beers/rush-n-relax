@@ -42,6 +42,8 @@ jobs:
 
       - name: Resolve stale preview channels
         id: stale
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
         run: |
           npx firebase-tools hosting:channel:list \
             --project "$FIREBASE_PROJECT_ID" \
@@ -99,6 +101,8 @@ jobs:
 
       - name: Delete stale preview channels
         if: steps.stale.outputs.stale_count != '0'
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
         run: |
           while IFS= read -r channel_id; do
             if [ -n "$channel_id" ]; then
