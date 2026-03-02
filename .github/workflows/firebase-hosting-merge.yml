@@ -18,9 +18,43 @@ jobs:
     if: github.event.pull_request.merged == true
     uses: ./.github/workflows/release-changes-gate.yml
 
+  auth_preflight:
+    name: auth-preflight
+    needs: changes
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FIREBASE_PROJECT_ID: rush-n-relax
+      FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Setup Firebase auth
+        id: auth
+        uses: ./.github/actions/firebase-auth-setup
+        with:
+          service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
+
+      - name: Validate Firebase auth and extensions access
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
+        run: |
+          npx firebase-tools ext:list \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive > /dev/null
+
+      - name: Cleanup preflight credentials
+        if: always()
+        run: rm -f "${{ steps.auth.outputs.credentials_path }}"
+
   verify:
     name: verify
-    needs: changes
+    needs: [changes, auth_preflight]
     if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -69,7 +103,7 @@ jobs:
 
   deploy:
     name: deploy
-    needs: [changes, verify]
+    needs: [changes, auth_preflight, verify]
     if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
