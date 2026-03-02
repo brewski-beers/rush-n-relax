@@ -42,18 +42,12 @@ runs:
         fi
 
         if [ -n "${{ inputs.only }}" ]; then
-          if ! npx firebase-tools deploy \
+          npx firebase-tools deploy \
             --only "${{ inputs.only }}" \
             --project "${{ inputs.project-id }}" \
-            --non-interactive 2>&1 | tee "$LOG_FILE"; then
-            echo "::error::Firebase deploy failed for --only=${{ inputs.only }}"
-            exit 1
-          fi
+            --non-interactive 2>&1 | tee "$LOG_FILE"
         else
-          if ! npx firebase-tools deploy \
+          npx firebase-tools deploy \
             --project "${{ inputs.project-id }}" \
-            --non-interactive 2>&1 | tee "$LOG_FILE"; then
-            echo "::error::Firebase full deploy failed"
-            exit 1
-          fi
+            --non-interactive 2>&1 | tee "$LOG_FILE"
         fi
