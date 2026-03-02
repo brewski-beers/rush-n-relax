@@ -78,6 +78,25 @@ jobs:
         with:
           service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
 
+      - name: Preflight Functions secret access
+        if: ${{ steps.selector.outputs.target_only == '' || contains(steps.selector.outputs.target_only, 'functions') }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
+        run: |
+          npx firebase-tools functions:secrets:access GOOGLE_PLACES_API_KEY \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive > /dev/null
+
+      - name: Build Hosting app
+        if: ${{ steps.selector.outputs.target_only == '' || contains(steps.selector.outputs.target_only, 'hosting') }}
+        run: npm run build
+        env:
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+
+      - name: Build Cloud Functions
+        if: ${{ steps.selector.outputs.target_only == '' || contains(steps.selector.outputs.target_only, 'functions') }}
+        run: cd functions && npm ci && npm run build
+
       - name: Firebase deploy
         id: firebase_deploy
         uses: ./.github/actions/firebase-deploy
