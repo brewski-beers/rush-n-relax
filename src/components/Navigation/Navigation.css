@@ -240,6 +240,13 @@
   outline-offset: -2px;
 }
 
+.nav-link--center,
+.nav-link--center:visited,
+.modal-link--center,
+.modal-link--center:visited {
+  color: var(--color-text) !important;
+}
+
 .nav-link[aria-current='page'] {
   color: var(--color-accent);
   background-color: var(--color-surface-anchor);

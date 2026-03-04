@@ -181,7 +181,7 @@ a.rnr-card:focus-visible {
 .rnr-card--location h3 {
   font-size: 1.25rem;
   margin: var(--space-xs) 0 var(--space-sm) 0;
-  color: var(--color-text);
+  color: var(--color-accent);
 }
 
 .rnr-card--location p {
@@ -229,6 +229,10 @@ a.rnr-card:focus-visible {
 
 .rnr-card--info address p {
   margin: calc(var(--space-xs) / 2) 0;
+}
+
+.rnr-card--info .text-secondary {
+  color: var(--color-accent);
 }
 
 .rnr-card--info.rnr-card--surface-stable,

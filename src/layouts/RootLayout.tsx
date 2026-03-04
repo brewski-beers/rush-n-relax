@@ -145,12 +145,12 @@ function DesktopModal() {
           Navigation Menu
         </h2>
         <nav className="modal-menu-items" aria-label="Main navigation">
-          {navLinks.map(link => (
+          {navLinks.map((link, index) => (
             <Link
               key={link.path}
               to={link.path}
               onClick={() => setIsMenuOpen(false)}
-              className="modal-link"
+              className={`modal-link${index === Math.floor(navLinks.length / 2) ? ' modal-link--center' : ''}`}
               aria-current={
                 isRouteActive(location.pathname, link.path) ? 'page' : undefined
               }

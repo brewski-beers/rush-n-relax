@@ -90,12 +90,12 @@ export function Navigation() {
         >
           {/* Navigation Links */}
           <ul className="nav-links">
-            {NAV_LINKS.map(link => (
+            {NAV_LINKS.map((link, index) => (
               <li key={link.path}>
                 <Link
                   to={link.path}
                   onClick={() => toggleMenu()}
-                  className="nav-link"
+                  className={`nav-link${index === Math.floor(NAV_LINKS.length / 2) ? ' nav-link--center' : ''}`}
                   aria-current={
                     isRouteActive(location.pathname, link.path)
                       ? 'page'
