@@ -168,6 +168,21 @@ async function seedLocationReviews() {
     ]),
     cachedAt: { integerValue: String(Date.now()) },
   });
+
+  const maryvillePlaceId = 'ChIJHZao5_GfXogR9G9vWnFH3IM';
+  await seedFirestoreDoc('location-reviews', maryvillePlaceId, {
+    placeId: { stringValue: maryvillePlaceId },
+    rating: { doubleValue: 4.9 },
+    totalRatings: { integerValue: '54' },
+    reviews: makeReviewsArray([
+      ['Laura M.',  'Absolutely love this location. Staff is friendly and very knowledgeable.',  '1 day ago',    1700950000],
+      ['Chris B.',  'Great atmosphere and top-shelf products. My new favorite spot.',            '4 days ago',   1700750000],
+      ['Tammy R.',  'Always a pleasure. Clean store, great selection, helpful team.',            '1 week ago',   1700350000],
+      ['James H.',  'Came in not knowing what I wanted and left perfectly taken care of.',       '2 weeks ago',  1699750000],
+      ['Nicole K.', 'Best dispensary in Blount County. Will absolutely be back.',               '3 weeks ago',  1699150000],
+    ]),
+    cachedAt: { integerValue: String(Date.now()) },
+  });
 }
 
 async function run() {
