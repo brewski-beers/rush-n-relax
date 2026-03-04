@@ -10,7 +10,9 @@ import { preVerifyAge } from './fixtures';
  * Seeded data:
  *   Oak Ridge  — rating 4.8, 312 reviews, 5 cards (Jane D., Marcus H., Patricia L., Ryan K., Sandra W.)
  *   Seymour    — rating 4.7, 198 reviews, 5 cards (Mark T., Angela R., Derek S., Karen M., Tony B.)
- *   Maryville  — no placeId → no reviews section rendered
+ *   Maryville  — rating 4.9, 54 reviews, 5 cards (Laura M., Chris B., Tammy R., James H., Nicole K.)
+ *
+ * No-placeId edge case is covered by ReviewsSection unit tests (stub location, not a named location).
  */
 
 test.describe('Reviews section on location detail pages', () => {
@@ -96,17 +98,30 @@ test.describe('Reviews section on location detail pages', () => {
     });
   });
 
-  test.describe('Maryville location (no placeId)', () => {
-    test('does not render the reviews section', async ({ page }) => {
+  test.describe('Maryville location', () => {
+    test('displays the correct aggregate rating', async ({ page }) => {
       await page.goto('/locations/maryville');
-      await expect(
-        page.locator('.location-reviews-section')
-      ).not.toBeAttached();
+      await expect(page.locator('.reviews-rating-number')).toHaveText('4.9');
     });
 
-    test('does not show a loading spinner', async ({ page }) => {
+    test('displays the correct review count', async ({ page }) => {
       await page.goto('/locations/maryville');
-      await expect(page.locator('.reviews-spinner')).not.toBeAttached();
+      await expect(page.locator('.reviews-count')).toContainText('54');
+    });
+
+    test('renders exactly 5 review cards', async ({ page }) => {
+      await page.goto('/locations/maryville');
+      await expect(page.locator('.reviews-grid .review-author')).toHaveCount(5);
+    });
+
+    test('renders all 5 author names in order', async ({ page }) => {
+      await page.goto('/locations/maryville');
+      const authors = page.locator('.reviews-grid .review-author');
+      await expect(authors.nth(0)).toHaveText('Laura M.');
+      await expect(authors.nth(1)).toHaveText('Chris B.');
+      await expect(authors.nth(2)).toHaveText('Tammy R.');
+      await expect(authors.nth(3)).toHaveText('James H.');
+      await expect(authors.nth(4)).toHaveText('Nicole K.');
     });
   });
 

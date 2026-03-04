@@ -23,6 +23,36 @@ const mockReviews: GoogleReview[] = [
 ];
 
 describe('ReviewsSection', () => {
+  describe('when location has no placeId', () => {
+    // Guard: if a location is added without a placeId, the hook returns idle
+    // and the reviews section must not render at all.
+    it('does not render the reviews section', () => {
+      const { container } = render(
+        <ReviewsSection
+          rating={null}
+          totalRatings={null}
+          reviews={[]}
+          status="idle"
+          locationName="Stub Location"
+        />
+      );
+      expect(container.querySelector('.location-reviews-section')).toBeNull();
+    });
+
+    it('does not render a loading spinner', () => {
+      const { container } = render(
+        <ReviewsSection
+          rating={null}
+          totalRatings={null}
+          reviews={[]}
+          status="idle"
+          locationName="Stub Location"
+        />
+      );
+      expect(container.querySelector('.reviews-spinner')).toBeNull();
+    });
+  });
+
   describe('when status is idle', () => {
     it('renders nothing', () => {
       const { container } = render(

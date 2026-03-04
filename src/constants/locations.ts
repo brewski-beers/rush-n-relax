@@ -51,7 +51,7 @@ export const LOCATIONS: Location[] = [
       'Situated along Watkins Road in the heart of Blount County, our Maryville dispensary brings a refined retail experience to the foothills of the Smokies. Walk in for expertly curated flower, edibles, concentrates, and vapes — all held to the same exacting standard that defines Rush N Relax.',
     coordinates: { lat: 35.750658, lng: -83.992662 },
     socialLinkIds: [SocialId.FACEBOOK_MARYVILLE],
-    // placeId: '' — Google Business Profile listing needs to be set up first
+    placeId: 'ChIJHZao5_GfXogR9G9vWnFH3IM',
   },
   {
     id: 3,
