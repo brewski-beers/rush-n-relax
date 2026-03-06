@@ -180,13 +180,15 @@ export default function Promo() {
           <h1 className="asymmetry-headline-anchor">{promo.name}</h1>
           <div className="promo-hero-media">
             {imageSrc ? (
-              <img
-                src={imageSrc}
-                alt={promo.name}
-                className="promo-hero-image"
-                loading="eager"
-                decoding="async"
-              />
+              <div className="promo-hero-image-wrap">
+                <img
+                  src={imageSrc}
+                  alt={promo.name}
+                  className="promo-hero-image"
+                  loading="eager"
+                  decoding="async"
+                />
+              </div>
             ) : (
               <div className="promo-hero-image-fallback" aria-hidden="true" />
             )}
