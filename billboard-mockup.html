@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rush N Relax — Billboard Mockups (Highway-Hardened)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #080810;
+      font-family: 'Inter', sans-serif;
+      color: #e8e8e8;
+      padding: 60px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 100px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #404040;
+      margin-bottom: 12px;
+    }
+
+    .section-note {
+      font-size: 12px;
+      color: #303030;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       BILLBOARD SHELL
+       Standard ratio: 14:5  (48ft × 14ft physical)
+    ────────────────────────────────────────────────────────── */
+    .bb-wrap { max-width: 1040px; margin: 0 auto; }
+
+    .bb {
+      width: 100%;
+      aspect-ratio: 14 / 5;
+      border-radius: 4px;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      position: relative;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       DESIGN 1 — VIOLET LASER  (matches mock palette)
+       Message: LASER BONG / GOOGLE IT / RUSH N RELAX
+       Word count: 6 — readable at ~500ft / 5 sec window
+    ────────────────────────────────────────────────────────── */
+    .d1 { background: #08090F; }
+
+    .d1-body {
+      display: grid;
+      grid-template-columns: 1fr 0.72fr;
+      align-items: center;
+      padding: 5% 6% 4% 7%;
+      gap: 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ambient glow — stays behind text, doesn't reduce contrast */
+    .d1-body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 90% at 82% 55%, rgba(91,42,255,0.28) 0%, transparent 68%),
+        radial-gradient(ellipse 28% 38% at 76% 52%, rgba(77,170,255,0.13) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .d1-copy {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* "LASER BONG" — dominant word, maximum size */
+    .d1-hero {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(52px, 11.5vw, 148px);
+      line-height: 0.88;
+      letter-spacing: 0.02em;
+      color: #FFFFFF;
+      /* hard white — no gradients, legibility over aesthetics */
+    }
+
+    /* "GOOGLE IT" — secondary, still very large */
+    .d1-action {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(28px, 5.8vw, 74px);
+      line-height: 1;
+      letter-spacing: 0.06em;
+      color: #FFFFFF;
+      opacity: 0.82;
+      margin-top: 0.08em;
+    }
+
+    /* "RUSH N RELAX" — brand anchor, smaller but tracked wide */
+    .d1-brand {
+      font-family: 'Inter', sans-serif;
+      font-weight: 900;
+      font-size: clamp(13px, 2.4vw, 30px);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #FFFFFF;
+      opacity: 0.55;
+      margin-top: 0.5em;
+    }
+
+    /* Device side */
+    .d1-device {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .d1-device-box {
+      width: 52%;
+      aspect-ratio: 1 / 1.5;
+      border-radius: 6px;
+      background: linear-gradient(160deg, #16162a 0%, #0a0a14 100%);
+      box-shadow:
+        0 0 80px rgba(91,42,255,0.55),
+        0 0 25px rgba(77,170,255,0.3),
+        inset 0 0 40px rgba(91,42,255,0.08);
+      position: relative;
+    }
+
+    .d1-device-box::after {
+      content: '';
+      position: absolute;
+      left: 50%; top: 52%;
+      transform: translate(-50%, -50%);
+      width: 22%; aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff 0%, #4DAAFF 38%, #5B2AFF 68%, transparent 100%);
+      box-shadow: 0 0 40px 14px rgba(91,42,255,0.65), 0 0 80px 24px rgba(77,170,255,0.25);
+    }
+
+    /* Location bar */
+    .d1-bar {
+      background: #0D0E1C;
+      border-top: 1px solid rgba(91,42,255,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 9px 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .d1-bar span {
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: clamp(10px, 1.7vw, 20px);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #FFFFFF;
+    }
+
+    .d1-bar-dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: rgba(91,42,255,0.8);
+      flex-shrink: 0;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       DESIGN 2 — RnR GOLD  (brand-aligned)
+       Same copy hierarchy — gold used ONLY on accent word,
+       never on all text (gradient text fails at distance)
+    ────────────────────────────────────────────────────────── */
+    .d2 { background: #0B0D10; }
+
+    .d2-body {
+      display: grid;
+      grid-template-columns: 1fr 0.72fr;
+      align-items: center;
+      padding: 5% 6% 4% 7%;
+      gap: 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .d2-body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 90% at 82% 55%, rgba(213,179,106,0.16) 0%, transparent 68%),
+        radial-gradient(ellipse 28% 38% at 76% 50%, rgba(232,200,122,0.09) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .d2-copy {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* "LASER" — white, max size */
+    .d2-hero-white {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(52px, 11.5vw, 148px);
+      line-height: 0.88;
+      letter-spacing: 0.02em;
+      color: #FFFFFF;
+      display: block;
+    }
+
+    /* "BONG" — gold accent on ONE word only — maximum impact at distance */
+    .d2-hero-gold {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(52px, 11.5vw, 148px);
+      line-height: 0.88;
+      letter-spacing: 0.02em;
+      color: #D5B36A;
+      display: block;
+    }
+
+    .d2-action {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(28px, 5.8vw, 74px);
+      line-height: 1;
+      letter-spacing: 0.06em;
+      color: #FFFFFF;
+      opacity: 0.82;
+      margin-top: 0.08em;
+    }
+
+    .d2-brand {
+      font-family: 'Inter', sans-serif;
+      font-weight: 900;
+      font-size: clamp(13px, 2.4vw, 30px);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #D5B36A;
+      opacity: 0.65;
+      margin-top: 0.5em;
+    }
+
+    .d2-device {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .d2-device-box {
+      width: 52%;
+      aspect-ratio: 1 / 1.5;
+      border-radius: 6px;
+      background: linear-gradient(160deg, #181208 0%, #0B0D10 100%);
+      box-shadow:
+        0 0 80px rgba(213,179,106,0.4),
+        0 0 25px rgba(232,200,122,0.22),
+        inset 0 0 40px rgba(213,179,106,0.06);
+      position: relative;
+    }
+
+    .d2-device-box::after {
+      content: '';
+      position: absolute;
+      left: 50%; top: 52%;
+      transform: translate(-50%, -50%);
+      width: 22%; aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff 0%, #FFD580 35%, #D5B36A 65%, transparent 100%);
+      box-shadow: 0 0 40px 14px rgba(213,179,106,0.55), 0 0 80px 24px rgba(213,179,106,0.2);
+    }
+
+    .d2-bar {
+      background: #090B0D;
+      border-top: 1px solid rgba(213,179,106,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 9px 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .d2-bar span {
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: clamp(10px, 1.7vw, 20px);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #FFFFFF;
+    }
+
+    .d2-bar-dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: rgba(213,179,106,0.75);
+      flex-shrink: 0;
+    }
+
+    /* ── Spec grid ─────────────────────────────────────────── */
+    .specs {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+    }
+
+    .spec-block h3 {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #404040;
+      border-bottom: 1px solid #181818;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+
+    .spec-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 13px;
+      border-bottom: 1px solid #111;
+    }
+
+    .spec-label { color: #505050; }
+    .spec-value { color: #e8e8e8; font-weight: 600; }
+
+    .sw { display: inline-flex; align-items: center; gap: 8px; }
+    .sw-dot {
+      width: 12px; height: 12px;
+      border-radius: 3px;
+      border: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+
+    /* ── Highway rules callout ─────────────────────────────── */
+    .rules {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+
+    .rule-card {
+      background: #0f1015;
+      border: 1px solid #1c1c24;
+      border-radius: 6px;
+      padding: 20px 18px;
+    }
+
+    .rule-card .rule-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: #D5B36A;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .rule-card .rule-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #e8e8e8;
+      margin-bottom: 8px;
+    }
+
+    .rule-card .rule-desc {
+      font-size: 12px;
+      color: #505050;
+      line-height: 1.55;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ HIGHWAY RULES ════════════════════════════════════════ -->
+  <div class="bb-wrap">
+    <div class="section-label">70 mph — Design Constraints Applied</div>
+    <div class="rules">
+      <div class="rule-card">
+        <div class="rule-num">≤7</div>
+        <div class="rule-title">Words Total</div>
+        <div class="rule-desc">Driver has ~5 sec. Every extra word costs a word that matters.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-num">1</div>
+        <div class="rule-title">Dominant Element</div>
+        <div class="rule-desc">One word or phrase at maximum size. Everything else is support.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-num">#FFF</div>
+        <div class="rule-title">Text = Pure White</div>
+        <div class="rule-desc">No gradients on critical copy. Contrast must survive glare, rain, and distance blur.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-num">1x</div>
+        <div class="rule-title">Accent Color Max</div>
+        <div class="rule-desc">Gold on one word only. Color draws the eye — use it once or it means nothing.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DESIGN 1 — VIOLET LASER ══════════════════════════════ -->
+  <div class="bb-wrap">
+    <div class="section-label">Design 1 — Violet Laser</div>
+    <div class="bb d1">
+      <div class="d1-body">
+        <div class="d1-copy">
+          <span class="d1-hero">Laser Bong</span>
+          <span class="d1-action">Google It.</span>
+          <span class="d1-brand">Try it at Rush N Relax</span>
+        </div>
+        <div class="d1-device">
+          <div class="d1-device-box"></div>
+        </div>
+      </div>
+      <div class="d1-bar">
+        <span>Oak Ridge</span>
+        <div class="d1-bar-dot"></div>
+        <span>Maryville</span>
+        <div class="d1-bar-dot"></div>
+        <span>Seymour</span>
+      </div>
+    </div>
+    <div class="section-note">Copy: 4 words + brand. "Google It." does the heavy lifting — no address needed.</div>
+  </div>
+
+  <!-- ══ DESIGN 2 — RnR GOLD ═══════════════════════════════════ -->
+  <div class="bb-wrap">
+    <div class="section-label">Design 2 — RnR Gold (Brand-Aligned)</div>
+    <div class="bb d2">
+      <div class="d2-body">
+        <div class="d2-copy">
+          <span class="d2-hero-white">Laser</span>
+          <span class="d2-hero-gold">Bong.</span>
+          <span class="d2-action">Google It.</span>
+          <span class="d2-brand">Try it at Rush N Relax</span>
+        </div>
+        <div class="d2-device">
+          <div class="d2-device-box"></div>
+        </div>
+      </div>
+      <div class="d2-bar">
+        <span>Oak Ridge</span>
+        <div class="d2-bar-dot"></div>
+        <span>Maryville</span>
+        <div class="d2-bar-dot"></div>
+        <span>Seymour</span>
+      </div>
+    </div>
+    <div class="section-note">Gold on "BONG." only — single word, maximum eye pull. White on everything else preserves contrast.</div>
+  </div>
+
+  <!-- ══ SPECS ════════════════════════════════════════════════ -->
+  <div class="specs">
+    <div class="spec-block">
+      <h3>Design 1 — Violet Laser</h3>
+      <div class="spec-row">
+        <span class="spec-label">Background</span>
+        <span class="spec-value sw"><span class="sw-dot" style="background:#08090F"></span>#08090F</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">All text</span>
+        <span class="spec-value sw"><span class="sw-dot" style="background:#FFFFFF"></span>#FFFFFF — pure white only</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Glow violet</span>
+        <span class="spec-value sw"><span class="sw-dot" style="background:#5B2AFF"></span>#5B2AFF</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Glow blue</span>
+        <span class="spec-value sw"><span class="sw-dot" style="background:#4DAAFF"></span>#4DAAFF</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Location bar</span>
+        <span class="spec-value sw"><span class="sw-dot" style="background:#0D0E1C"></span>#0D0E1C</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Display font</span>
+        <span class="spec-value">Bebas Neue</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Bar / brand font</span>
+        <span class="spec-value">Inter 900</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Word count</span>
+        <span class="spec-value">4 + brand</span>
+      </div>
+    </div>
+
+    <div class="spec-block">
+      <h3>Design 2 — RnR Gold</h3>
+      <div class="spec-row">
+        <span class="spec-label">Background</span>
+        <span class="spec-value sw"><span class="sw-dot" style="background:#0B0D10"></span>#0B0D10</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Primary text</span>
+        <span class="spec-value sw"><span class="sw-dot" style="background:#FFFFFF"></span>#FFFFFF — pure white</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Accent word only</span>
+        <span class="spec-value sw"><span class="sw-dot" style="background:#D5B36A"></span>#D5B36A — RnR gold</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Location bar</span>
+        <span class="spec-value sw"><span class="sw-dot" style="background:#090B0D"></span>#090B0D</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Display font</span>
+        <span class="spec-value">Bebas Neue</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Bar / brand font</span>
+        <span class="spec-value">Inter 900</span>
+      </div>
+      <div class="spec-row">
+        <span class="spec-label">Word count</span>
+        <span class="spec-value">4 + brand</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
