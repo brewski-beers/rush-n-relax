@@ -16,6 +16,7 @@ const FETCH_TIMEOUT_MS = 10_000;
 
 const ALLOWED_PLACE_IDS = new Set([
   'ChIJG2IBn08zXIgROk6xAd9qyY0', // Oak Ridge
+  'ChIJHZao5_GfXogR9G9vWnFH3IM', // Maryville
   'ChIJb1IipsQbXIgREaNxkmmAaHg', // Seymour
 ]);
 

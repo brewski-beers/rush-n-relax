@@ -41,6 +41,7 @@ export const PAGE_TO_ROUTE: Record<string, RoutePath | 'dynamic'> = {
   Products: '/products',
   ProductDetail: 'dynamic',
   Contact: '/contact',
+  Promo: 'dynamic',
 };
 
 /**

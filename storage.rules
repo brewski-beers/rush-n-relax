@@ -22,6 +22,12 @@ service firebase.storage {
       allow write: if request.auth != null && 
                       firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
+
+    // Public promo images - readable by everyone, writes require auth
+    match /promos/{allPaths=**} {
+      allow read;
+      allow write: if request.auth != null;
+    }
     
     // Everything else - authenticated users only
     match /{allPaths=**} {

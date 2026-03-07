@@ -16,6 +16,7 @@ const LocationDetail = lazy(() => import('../pages/LocationDetail'));
 const Contact = lazy(() => import('../pages/Contact'));
 const Products = lazy(() => import('../pages/Products'));
 const ProductDetail = lazy(() => import('../pages/ProductDetail'));
+const Promo = lazy(() => import('../pages/Promo'));
 
 /**
  * Page loading placeholder during code-split download
@@ -241,6 +242,14 @@ function RootLayoutContent() {
       element: (
         <Suspense fallback={<PageFallback />}>
           <ProductDetail />
+        </Suspense>
+      ),
+    },
+    {
+      path: '/promo/:slug',
+      element: (
+        <Suspense fallback={<PageFallback />}>
+          <Promo />
         </Suspense>
       ),
     },
