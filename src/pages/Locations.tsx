@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { LOCATIONS } from '../constants/locations';
+import { SITE_URL } from '../constants/site';
 
 export default function Locations() {
   useEffect(() => {
@@ -14,6 +15,8 @@ export default function Locations() {
         'Visit Rush N Relax at three East Tennessee dispensary locations — Oak Ridge (with speakeasy lounge), Maryville, and Seymour. Open 7 days a week, 10 AM – 10 PM.'
       );
     }
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute('href', `${SITE_URL}/locations`);
   }, []);
 
   return (

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/Card';
+import { SITE_URL } from '../constants/site';
 
 export default function About() {
   useEffect(() => {
@@ -12,6 +13,8 @@ export default function About() {
         'Meet the team behind Rush N Relax. Learn how two East Tennessee natives built a premium cannabis dispensary and speakeasy-style lounge across Oak Ridge, Maryville, and Seymour.'
       );
     }
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute('href', `${SITE_URL}/about`);
   }, []);
 
   return (

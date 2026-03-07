@@ -75,4 +75,61 @@ describe('getPromoSEO', () => {
     expect(seo.ogDescription).toBe(promo.description);
     expect(seo.ogImage).toContain(SITE_URL);
   });
+
+  it('derives keywords from promo name and tagline', () => {
+    const promo = getPromoBySlug('laser-bong')!;
+    const seo = getPromoSEO(promo);
+
+    expect(seo.keywords).toContain(promo.name);
+    expect(seo.keywords).toContain(promo.tagline);
+  });
+
+  it('includes location-based keywords when locationSlug is set', () => {
+    const promo = getPromoBySlug('laser-bong')!;
+    const seo = getPromoSEO(promo);
+
+    expect(seo.keywords).toContain(promo.locationSlug!);
+    expect(seo.keywords).toContain(`Rush N Relax ${promo.locationSlug}`);
+    expect(seo.keywords).toContain(`${promo.locationSlug} TN dispensary`);
+  });
+
+  it('omits location keywords when locationSlug is not set', () => {
+    const promo = getPromoBySlug('laser-bong')!;
+    const globalPromo = { ...promo, locationSlug: undefined };
+    const seo = getPromoSEO(globalPromo);
+
+    expect(seo.keywords).not.toContain('TN dispensary');
+    expect(seo.keywords).not.toContain('Rush N Relax seymour');
+  });
+
+  it('includes promo-specific keywords from the keywords field', () => {
+    const promo = getPromoBySlug('laser-bong')!;
+    const seo = getPromoSEO(promo);
+
+    for (const kw of promo.keywords ?? []) {
+      expect(seo.keywords).toContain(kw);
+    }
+  });
+
+  it('does not throw when keywords field is absent', () => {
+    const promo = getPromoBySlug('laser-bong')!;
+    const noKeywordsPromo = { ...promo, keywords: undefined };
+    expect(() => getPromoSEO(noKeywordsPromo)).not.toThrow();
+  });
+
+  it('never contains prohibited terms in keywords', () => {
+    const prohibited = [
+      'free weed',
+      'free cannabis',
+      'free marijuana',
+      'get high',
+      'get stoned',
+    ];
+    for (const promo of PROMOS) {
+      const seo = getPromoSEO(promo);
+      for (const term of prohibited) {
+        expect(seo.keywords.toLowerCase()).not.toContain(term);
+      }
+    }
+  });
 });

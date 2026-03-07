@@ -39,6 +39,18 @@ function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   );
 }
 
+function NotFound() {
+  return (
+    <main className="error-container">
+      <h1>Page Not Found</h1>
+      <p>The page you're looking for doesn't exist.</p>
+      <Link to="/" className="btn">
+        Back to Home
+      </Link>
+    </main>
+  );
+}
+
 /**
  * Desktop Modal Menu - Rendered at root level
  * Supports keyboard navigation (Escape to close, Tab to cycle focus)
@@ -252,6 +264,10 @@ function RootLayoutContent() {
           <Promo />
         </Suspense>
       ),
+    },
+    {
+      path: '*',
+      element: <NotFound />,
     },
   ]);
 

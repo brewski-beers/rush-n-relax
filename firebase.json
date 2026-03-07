@@ -2,6 +2,12 @@
   "hosting": {
     "public": "dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "trailingSlash": false,
+    "redirects": [
+      { "source": "/home", "destination": "/", "type": 301 },
+      { "source": "/reviews", "destination": "/", "type": 301 },
+      { "source": "/cart", "destination": "/", "type": 301 }
+    ],
     "rewrites": [
       {
         "source": "**",

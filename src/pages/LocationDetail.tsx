@@ -30,10 +30,9 @@ export default function LocationDetail() {
     status: reviewsStatus,
   } = useLocationReviews(location?.placeId);
 
-  // Update SEO meta tags and JSON-LD schemas (with proper cleanup)
+  // Update SEO meta tags and canonical immediately when location is known
   useEffect(() => {
     if (!location) return;
-    if (reviewsStatus === 'loading') return;
 
     const seo = getLocationSEO(location);
     // eslint-disable-next-line react-hooks/immutability
@@ -82,6 +81,14 @@ export default function LocationDetail() {
       document.head.appendChild(canonical);
     }
     canonical.setAttribute('href', seo.url);
+  }, [location]);
+
+  // Update JSON-LD schemas once reviews are resolved (aggregateRating depends on reviews data)
+  useEffect(() => {
+    if (!location) return;
+    if (reviewsStatus === 'loading') return;
+
+    const seo = getLocationSEO(location);
 
     // Remove old location-specific schemas
     const oldSchemas = document.querySelectorAll(

@@ -282,11 +282,11 @@ describe('refreshLocationReviews scheduled handler', () => {
 
     await scheduledHandlerRef.fn!();
 
-    // ALLOWED_PLACE_IDS has 2 entries (Oak Ridge + Seymour)
+    // LOCATIONS has 3 entries (Oak Ridge, Maryville, Seymour)
     expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(
-      2
+      3
     );
-    expect(mockSet).toHaveBeenCalledTimes(2);
+    expect(mockSet).toHaveBeenCalledTimes(3);
   });
 
   it('continues processing remaining locations when one fails', async () => {
@@ -306,8 +306,8 @@ describe('refreshLocationReviews scheduled handler', () => {
       'Failed to refresh reviews',
       expect.objectContaining({ err: expect.any(Error) })
     );
-    // Second location still processed successfully
-    expect(mockSet).toHaveBeenCalledTimes(1);
+    // Remaining 2 locations still processed successfully
+    expect(mockSet).toHaveBeenCalledTimes(2);
   });
 
   it('logs info for each successfully refreshed location', async () => {
@@ -318,10 +318,13 @@ describe('refreshLocationReviews scheduled handler', () => {
 
     await scheduledHandlerRef.fn!();
 
-    expect(mockLogger.info).toHaveBeenCalledTimes(2);
+    expect(mockLogger.info).toHaveBeenCalledTimes(3);
     expect(mockLogger.info).toHaveBeenCalledWith(
       'Reviews refreshed',
-      expect.objectContaining({ placeId: expect.any(String) })
+      expect.objectContaining({
+        placeId: expect.any(String),
+        name: expect.any(String),
+      })
     );
   });
 });

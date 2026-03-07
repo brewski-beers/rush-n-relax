@@ -3,6 +3,7 @@ import { defineSecret } from 'firebase-functions/params';
 import { logger } from 'firebase-functions/logger';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { LOCATIONS } from './locations.config';
 
 initializeApp();
 
@@ -13,12 +14,6 @@ const GOOGLE_PLACES_API_KEY = defineSecret('GOOGLE_PLACES_API_KEY');
 const PLACES_API_BASE =
   'https://maps.googleapis.com/maps/api/place/details/json';
 const FETCH_TIMEOUT_MS = 10_000;
-
-const ALLOWED_PLACE_IDS = new Set([
-  'ChIJG2IBn08zXIgROk6xAd9qyY0', // Oak Ridge
-  'ChIJHZao5_GfXogR9G9vWnFH3IM', // Maryville
-  'ChIJb1IipsQbXIgREaNxkmmAaHg', // Seymour
-]);
 
 interface GoogleReview {
   author_name: string;
@@ -73,8 +68,6 @@ export async function fetchAndStoreReviews(
       reviews: (json.result.reviews ?? []).slice(0, 5),
       cachedAt: Date.now(),
     });
-
-  logger.info('Reviews refreshed', { placeId });
 }
 
 export const refreshLocationReviews = onSchedule(
@@ -86,11 +79,19 @@ export const refreshLocationReviews = onSchedule(
       return;
     }
 
-    for (const placeId of ALLOWED_PLACE_IDS) {
+    for (const location of LOCATIONS) {
       try {
-        await fetchAndStoreReviews(placeId, apiKey);
+        await fetchAndStoreReviews(location.placeId, apiKey);
+        logger.info('Reviews refreshed', {
+          placeId: location.placeId,
+          name: location.name,
+        });
       } catch (err) {
-        logger.error('Failed to refresh reviews', { placeId, err });
+        logger.error('Failed to refresh reviews', {
+          placeId: location.placeId,
+          name: location.name,
+          err,
+        });
       }
     }
   }
