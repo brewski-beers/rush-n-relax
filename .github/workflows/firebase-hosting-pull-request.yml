@@ -73,7 +73,7 @@ jobs:
 
       - name: Unit tests
         if: needs.changes.outputs.should_run == 'true'
-        run: npm run test -- --run
+        run: npm run test
 
       - name: Setup Playwright (Chromium)
         if: needs.changes.outputs.should_run == 'true'
