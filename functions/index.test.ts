@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { LOCATIONS } from './locations.config';
 
 // ─── Hoisted mock state (available in vi.mock factories) ──────────────────
 
@@ -282,11 +283,10 @@ describe('refreshLocationReviews scheduled handler', () => {
 
     await scheduledHandlerRef.fn!();
 
-    // LOCATIONS has 3 entries (Oak Ridge, Maryville, Seymour)
     expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(
-      3
+      LOCATIONS.length
     );
-    expect(mockSet).toHaveBeenCalledTimes(3);
+    expect(mockSet).toHaveBeenCalledTimes(LOCATIONS.length);
   });
 
   it('continues processing remaining locations when one fails', async () => {
@@ -306,8 +306,8 @@ describe('refreshLocationReviews scheduled handler', () => {
       'Failed to refresh reviews',
       expect.objectContaining({ err: expect.any(Error) })
     );
-    // Remaining 2 locations still processed successfully
-    expect(mockSet).toHaveBeenCalledTimes(2);
+    // Remaining locations still processed successfully
+    expect(mockSet).toHaveBeenCalledTimes(LOCATIONS.length - 1);
   });
 
   it('logs info for each successfully refreshed location', async () => {
@@ -318,7 +318,7 @@ describe('refreshLocationReviews scheduled handler', () => {
 
     await scheduledHandlerRef.fn!();
 
-    expect(mockLogger.info).toHaveBeenCalledTimes(3);
+    expect(mockLogger.info).toHaveBeenCalledTimes(LOCATIONS.length);
     expect(mockLogger.info).toHaveBeenCalledWith(
       'Reviews refreshed',
       expect.objectContaining({
