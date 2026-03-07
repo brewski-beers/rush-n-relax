@@ -43,6 +43,10 @@ export function getPromoByPromoId(promoId: string): Promo | undefined {
   return PROMOS.find(p => p.promoId === promoId && p.active);
 }
 
+export function getPromosByLocationSlug(locationSlug: string): Promo[] {
+  return PROMOS.filter(p => p.locationSlug === locationSlug && p.active);
+}
+
 export function getPromoSEO(promo: Promo) {
   return {
     title: `${promo.name} | Rush N Relax`,

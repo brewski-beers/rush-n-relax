@@ -17,7 +17,7 @@ export interface Location {
     lng: number;
   };
   socialLinkIds?: SocialId[];
-  placeId?: string; // Google Maps Place ID — used to fetch live reviews and ratings
+  placeId: string; // Google Maps Place ID — used to fetch live reviews and ratings
 }
 
 export const LOCATIONS: Location[] = [

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { ReviewsSection } from '../components/ReviewsSection';
 import { getLocationBySlug, getLocationSEO } from '../constants/locations';
+import { getPromosByLocationSlug } from '../constants/promos';
 import { SITE_URL } from '../constants/site';
 import { getSocialLink, isSocialIconObject } from '../constants/social';
 import { useLocationReviews } from '../hooks/useLocationReviews';
@@ -13,6 +14,7 @@ export default function LocationDetail() {
   const { location: slug } = useParams<{ location: string }>();
   const navigate = useNavigate();
   const location = slug ? getLocationBySlug(slug) : null;
+  const locationPromos = location ? getPromosByLocationSlug(location.slug) : [];
 
   // Redirect if location not found
   useEffect(() => {
@@ -34,13 +36,14 @@ export default function LocationDetail() {
     if (reviewsStatus === 'loading') return;
 
     const seo = getLocationSEO(location);
+    // eslint-disable-next-line react-hooks/immutability
     document.title = seo.title;
 
     // Helper: Reuse or create meta tags by selector
     const setMeta = (selector: string, content: string) => {
-      let el = document.querySelector(selector);
-      if (!el) {
-        el = document.createElement('meta');
+      const existing = document.querySelector(selector);
+      const el = existing ?? document.createElement('meta');
+      if (!existing) {
         if (selector.includes('[property=')) {
           const prop = selector.match(/property="([^"]+)"/)?.[1];
           if (prop) el.setAttribute('property', prop);
@@ -212,6 +215,34 @@ export default function LocationDetail() {
         locationName={location.name}
       />
 
+      {locationPromos.length > 0 && (
+        <section className="location-promos-section asymmetry-section-stable">
+          <div className="container location-promos-inner">
+            {locationPromos.map(promo => (
+              <Card
+                key={promo.promoId}
+                variant="info"
+                as="div"
+                surface="anchor"
+                elevation="soft"
+                motion
+                className="location-promo-plug"
+              >
+                <p className="promo-kicker">In Store Now</p>
+                <h2>{promo.name}</h2>
+                <p className="lead">{promo.tagline}</p>
+                <Link
+                  to={`/promo/${promo.slug}`}
+                  className="btn location-promo-plug-cta"
+                >
+                  See Details →
+                </Link>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="location-info-section asymmetry-section-anchor">
         <div className="location-detail-grid">
           <Card variant="info" as="div" surface="stable">
@@ -309,13 +340,7 @@ export default function LocationDetail() {
                   loading="lazy"
                   allowFullScreen
                   referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(
-                    location.placeId
-                      ? `place_id:${location.placeId}`
-                      : location.coordinates
-                        ? `${location.coordinates.lat},${location.coordinates.lng}`
-                        : `${location.address}, ${location.city}, ${location.state} ${location.zip}`
-                  )}`}
+                  src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(`place_id:${location.placeId}`)}`}
                 />
               </div>
               <a

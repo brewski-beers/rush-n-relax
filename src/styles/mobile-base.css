@@ -486,7 +486,8 @@ button:focus-visible,
 .contact-page .contact-form-section,
 .contact-page .location-contact,
 .location-detail-page .location-info-section,
-.location-detail-page .location-reviews-section {
+.location-detail-page .location-reviews-section,
+.location-detail-page .location-promos-section {
   position: relative;
 }
 
@@ -500,7 +501,8 @@ button:focus-visible,
 .contact-page .contact-form-section::before,
 .contact-page .location-contact::before,
 .location-detail-page .location-info-section::before,
-.location-detail-page .location-reviews-section::before {
+.location-detail-page .location-reviews-section::before,
+.location-detail-page .location-promos-section::before {
   content: '';
   position: absolute;
   top: 0;
@@ -788,6 +790,32 @@ address {
 /* Location Detail Page */
 .location-detail-page {
   min-height: 100vh;
+}
+
+.location-promos-section {
+  padding: var(--space-sm) 0;
+}
+
+.location-promos-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.location-promo-plug {
+  padding: var(--space-sm);
+}
+
+.location-promo-plug h2 {
+  margin: calc(var(--space-xs) / 2) 0;
+}
+
+.location-promo-plug .lead {
+  margin-bottom: var(--space-sm);
+}
+
+.location-promo-plug-cta {
+  display: inline-block;
 }
 
 .location-info-section {
