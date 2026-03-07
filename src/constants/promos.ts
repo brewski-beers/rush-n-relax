@@ -14,6 +14,8 @@ export interface Promo {
   image?: string;
   /** Restricts the promo to a specific location slug (e.g. 'seymour') */
   locationSlug?: string;
+  /** Additional SEO keywords specific to this promo (co-located with the data, not buried in utils) */
+  keywords?: string[];
   active: boolean;
 }
 
@@ -31,6 +33,12 @@ export const PROMOS: Promo[] = [
     ctaPath: '/locations/seymour',
     image: 'promos/laser-bong.png',
     locationSlug: 'seymour',
+    keywords: [
+      'Hitoki Serquet',
+      'laser bong',
+      'laser powered bong',
+      '500 Maryville Hwy',
+    ],
     active: true,
   },
 ];
@@ -48,24 +56,25 @@ export function getPromosByLocationSlug(locationSlug: string): Promo[] {
 }
 
 export function getPromoSEO(promo: Promo) {
+  const keywords = [
+    promo.name,
+    promo.tagline,
+    'Rush N Relax',
+    'cannabis dispensary',
+    'Tennessee dispensary',
+    ...(promo.locationSlug
+      ? [
+          promo.locationSlug,
+          `Rush N Relax ${promo.locationSlug}`,
+          `${promo.locationSlug} TN dispensary`,
+        ]
+      : []),
+    ...(promo.keywords ?? []),
+  ];
   return {
     title: `${promo.name} | Rush N Relax`,
     description: promo.description,
-    keywords: [
-      promo.name,
-      'Rush N Relax',
-      'cannabis dispensary',
-      'Tennessee dispensary',
-      ...(promo.locationSlug
-        ? [promo.locationSlug, `Rush N Relax ${promo.locationSlug}`]
-        : []),
-      'Hitoki Serquet',
-      'laser bong',
-      'laser powered bong',
-      '500 Maryville Hwy',
-      'Seymour TN dispensary',
-      'free weed Seymour',
-    ].join(', '),
+    keywords: keywords.join(', '),
     url: `${SITE_URL}/promo/${promo.slug}`,
     canonical: `${SITE_URL}/promo/${promo.slug}`,
     ogTitle: `${promo.name} — ${promo.tagline}`,

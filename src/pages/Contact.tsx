@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ContactForm } from '../components/ContactForm';
 import { LOCATIONS } from '../constants/locations';
+import { SITE_URL } from '../constants/site';
 
 export default function Contact() {
   useEffect(() => {
@@ -13,6 +14,8 @@ export default function Contact() {
         'Get in touch with Rush N Relax. Send us a message, call any of our three East Tennessee dispensary locations, or email our team directly.'
       );
     }
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute('href', `${SITE_URL}/contact`);
   }, []);
 
   const activeLocations = LOCATIONS.filter(loc => loc.hours !== 'Coming soon');

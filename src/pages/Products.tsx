@@ -3,6 +3,7 @@ import { Card } from '../components/Card';
 import { CardGrid } from '../components/CardGrid';
 import { PRODUCTS } from '../constants/products';
 import { ProductImage } from '../components/ProductImage';
+import { SITE_URL } from '../constants/site';
 import '../styles/products.css';
 
 export default function Products() {
@@ -15,6 +16,8 @@ export default function Products() {
         'content',
         'Browse Rush N Relax\u2019s curated lineup of premium cannabis flower, concentrates, gourmet edibles, sleek vapes, and THCa-infused drinks. Available at all three East Tennessee locations.'
       );
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute('href', `${SITE_URL}/products`);
   }, []);
 
   return (
