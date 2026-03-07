@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getDownloadURL, ref } from 'firebase/storage';
 import { usePromo } from '../hooks/usePromo';
 import { getPromoSEO } from '../constants/promos';
+import { getLocationBySlug } from '../constants/locations';
 import { SITE_URL } from '../constants/site';
 import { getStorage$, initializeApp } from '../firebase';
 import { Card } from '../components/Card';
@@ -143,6 +144,9 @@ export default function Promo() {
     document.head.appendChild(breadcrumbEl);
 
     // SpecialAnnouncement schema
+    const promoLocation = promo.locationSlug
+      ? getLocationBySlug(promo.locationSlug)
+      : undefined;
     const announcementSchema = {
       '@context': 'https://schema.org',
       '@type': 'SpecialAnnouncement',
@@ -151,8 +155,30 @@ export default function Promo() {
       url: seo.canonical,
       announcementLocation: {
         '@type': 'LocalBusiness',
-        name: 'Rush N Relax',
-        url: SITE_URL,
+        name: promoLocation
+          ? `Rush N Relax ${promoLocation.name}`
+          : 'Rush N Relax',
+        url: promoLocation
+          ? `${SITE_URL}/locations/${promoLocation.slug}`
+          : SITE_URL,
+        ...(promoLocation && {
+          address: {
+            '@type': 'PostalAddress',
+            streetAddress: promoLocation.address,
+            addressLocality: promoLocation.city,
+            addressRegion: promoLocation.state,
+            postalCode: promoLocation.zip,
+            addressCountry: 'US',
+          },
+          telephone: promoLocation.phone,
+          ...(promoLocation.coordinates && {
+            geo: {
+              '@type': 'GeoCoordinates',
+              latitude: promoLocation.coordinates.lat,
+              longitude: promoLocation.coordinates.lng,
+            },
+          }),
+        }),
       },
     };
 
