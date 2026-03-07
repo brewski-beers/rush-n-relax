@@ -18,7 +18,7 @@ import { doc, getDoc } from 'firebase/firestore';
 const mockDoc = vi.mocked(doc);
 const mockGetDoc = vi.mocked(getDoc);
 
-const staticPromo = getPromoBySlug('trident')!;
+const staticPromo = getPromoBySlug('laser-bong')!;
 
 function makeSnap(exists: boolean, data?: object) {
   return { exists: () => exists, data: () => data } as ReturnType<
@@ -52,10 +52,10 @@ describe('usePromo', () => {
         new Promise(() => {}) as ReturnType<typeof getDoc>
       );
 
-      const { result } = renderHook(() => usePromo('trident'));
+      const { result } = renderHook(() => usePromo('laser-bong'));
 
       // Static fallback is available immediately — page can render without waiting
-      expect(result.current.promo?.slug).toBe('trident');
+      expect(result.current.promo?.slug).toBe('laser-bong');
       expect(result.current.status).toBe('loading');
     });
 
@@ -66,7 +66,7 @@ describe('usePromo', () => {
       };
       mockGetDoc.mockResolvedValue(makeSnap(true, firestorePromo));
 
-      const { result } = renderHook(() => usePromo('trident'));
+      const { result } = renderHook(() => usePromo('laser-bong'));
 
       await waitFor(() => expect(result.current.status).toBe('success'));
 
@@ -76,12 +76,12 @@ describe('usePromo', () => {
     it('falls back to static data when document does not exist', async () => {
       mockGetDoc.mockResolvedValue(makeSnap(false));
 
-      const { result } = renderHook(() => usePromo('trident'));
+      const { result } = renderHook(() => usePromo('laser-bong'));
 
       await waitFor(() => expect(result.current.status).toBe('error'));
 
       // Page still renders — static fallback is preserved
-      expect(result.current.promo?.slug).toBe('trident');
+      expect(result.current.promo?.slug).toBe('laser-bong');
     });
 
     it('falls back to static data when document is inactive', async () => {
@@ -89,21 +89,21 @@ describe('usePromo', () => {
         makeSnap(true, { ...staticPromo, active: false })
       );
 
-      const { result } = renderHook(() => usePromo('trident'));
+      const { result } = renderHook(() => usePromo('laser-bong'));
 
       await waitFor(() => expect(result.current.status).toBe('error'));
 
-      expect(result.current.promo?.slug).toBe('trident');
+      expect(result.current.promo?.slug).toBe('laser-bong');
     });
 
     it('falls back to static data when fetch throws', async () => {
       mockGetDoc.mockRejectedValue(new Error('Network error'));
 
-      const { result } = renderHook(() => usePromo('trident'));
+      const { result } = renderHook(() => usePromo('laser-bong'));
 
       await waitFor(() => expect(result.current.status).toBe('error'));
 
-      expect(result.current.promo?.slug).toBe('trident');
+      expect(result.current.promo?.slug).toBe('laser-bong');
     });
 
     it('returns null on error for an unknown slug (no static fallback)', async () => {
@@ -119,9 +119,9 @@ describe('usePromo', () => {
     it('reads from the promos collection with the correct slug as document ID', async () => {
       mockGetDoc.mockResolvedValue(makeSnap(true, staticPromo));
 
-      renderHook(() => usePromo('trident'));
+      renderHook(() => usePromo('laser-bong'));
 
-      expect(mockDoc).toHaveBeenCalledWith({}, 'promos', 'trident');
+      expect(mockDoc).toHaveBeenCalledWith({}, 'promos', 'laser-bong');
       await waitFor(() => expect(mockGetDoc).toHaveBeenCalled());
     });
 
@@ -133,7 +133,7 @@ describe('usePromo', () => {
         }) as ReturnType<typeof getDoc>
       );
 
-      const { result, unmount } = renderHook(() => usePromo('trident'));
+      const { result, unmount } = renderHook(() => usePromo('laser-bong'));
 
       expect(result.current.status).toBe('loading');
       unmount();

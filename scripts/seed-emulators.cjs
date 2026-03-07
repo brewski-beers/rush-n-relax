@@ -121,24 +121,24 @@ async function seedStorageStub() {
   }
 
   // Promo images — swap pngStub for real file when available.
-  const tridentPath = path.join(__dirname, 'assets', 'promos', 'trident.png');
-  const tridentBytes = fs.existsSync(tridentPath)
-    ? fs.readFileSync(tridentPath)
+  const laserBongPath = path.join(__dirname, 'assets', 'promos', 'laser-bong.png');
+  const laserBongBytes = fs.existsSync(laserBongPath)
+    ? fs.readFileSync(laserBongPath)
     : pngStub;
-  await uploadObject('promos/trident.png', 'image/png', tridentBytes);
+  await uploadObject('promos/laser-bong.png', 'image/png', laserBongBytes);
 }
 
 async function seedPromos() {
-  await seedFirestoreDoc('promos', 'trident', {
-    promoId:     { stringValue: 'hitoki-trident-2025' },
-    slug:        { stringValue: 'trident' },
+  await seedFirestoreDoc('promos', 'laser-bong', {
+    promoId:     { stringValue: 'hitoki-laser-bong-2025' },
+    slug:        { stringValue: 'laser-bong' },
     name:        { stringValue: 'Hitoki Trident' },
     tagline:     { stringValue: 'Fire Without Flame.' },
     description: { stringValue: 'The Hitoki Trident uses three precision laser beams to ignite your flower — no butane, no torch, just pure flavor. Come try it at Rush N Relax.' },
     details:     { stringValue: 'The Hitoki Trident replaces your lighter or torch with three high-powered laser beams that ignite flower directly — no butane, no residue, no compromised terpenes. Compatible with standard 14mm water pipes, rechargeable via USB-C, and built for daily use. The result is a noticeably cleaner, more flavorful hit every time. Available to try at any Rush N Relax location. Ask our staff for a walkthrough.' },
     cta:         { stringValue: 'Find a Location' },
     ctaPath:     { stringValue: '/locations' },
-    image:       { stringValue: 'promos/trident.png' },
+    image:       { stringValue: 'promos/laser-bong.png' },
     active:      { booleanValue: true },
   });
 }

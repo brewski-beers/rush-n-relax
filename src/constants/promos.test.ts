@@ -34,9 +34,9 @@ describe('PROMOS data', () => {
 
 describe('getPromoBySlug', () => {
   it('returns the matching active promo', () => {
-    const promo = getPromoBySlug('trident');
+    const promo = getPromoBySlug('laser-bong');
     expect(promo).toBeDefined();
-    expect(promo?.slug).toBe('trident');
+    expect(promo?.slug).toBe('laser-bong');
     expect(promo?.active).toBe(true);
   });
 
@@ -53,9 +53,9 @@ describe('getPromoBySlug', () => {
 
 describe('getPromoByPromoId', () => {
   it('returns the matching active promo by promoId', () => {
-    const promo = getPromoByPromoId('hitoki-trident-2025');
+    const promo = getPromoByPromoId('hitoki-laser-bong-2025');
     expect(promo).toBeDefined();
-    expect(promo?.promoId).toBe('hitoki-trident-2025');
+    expect(promo?.promoId).toBe('hitoki-laser-bong-2025');
   });
 
   it('returns undefined for an unknown promoId', () => {
@@ -65,7 +65,7 @@ describe('getPromoByPromoId', () => {
 
 describe('getPromoSEO', () => {
   it('generates correct title, canonical, and og fields', () => {
-    const promo = getPromoBySlug('trident')!;
+    const promo = getPromoBySlug('laser-bong')!;
     const seo = getPromoSEO(promo);
 
     expect(seo.title).toBe(`${promo.name} | Rush N Relax`);
@@ -77,7 +77,7 @@ describe('getPromoSEO', () => {
   });
 
   it('derives keywords from promo name and tagline', () => {
-    const promo = getPromoBySlug('trident')!;
+    const promo = getPromoBySlug('laser-bong')!;
     const seo = getPromoSEO(promo);
 
     expect(seo.keywords).toContain(promo.name);
@@ -85,7 +85,7 @@ describe('getPromoSEO', () => {
   });
 
   it('includes location-based keywords when locationSlug is set', () => {
-    const promo = getPromoBySlug('trident')!;
+    const promo = getPromoBySlug('laser-bong')!;
     const seo = getPromoSEO(promo);
 
     expect(seo.keywords).toContain(promo.locationSlug!);
@@ -94,7 +94,7 @@ describe('getPromoSEO', () => {
   });
 
   it('omits location keywords when locationSlug is not set', () => {
-    const promo = getPromoBySlug('trident')!;
+    const promo = getPromoBySlug('laser-bong')!;
     const globalPromo = { ...promo, locationSlug: undefined };
     const seo = getPromoSEO(globalPromo);
 
@@ -103,7 +103,7 @@ describe('getPromoSEO', () => {
   });
 
   it('includes promo-specific keywords from the keywords field', () => {
-    const promo = getPromoBySlug('trident')!;
+    const promo = getPromoBySlug('laser-bong')!;
     const seo = getPromoSEO(promo);
 
     for (const kw of promo.keywords ?? []) {
@@ -112,7 +112,7 @@ describe('getPromoSEO', () => {
   });
 
   it('does not throw when keywords field is absent', () => {
-    const promo = getPromoBySlug('trident')!;
+    const promo = getPromoBySlug('laser-bong')!;
     const noKeywordsPromo = { ...promo, keywords: undefined };
     expect(() => getPromoSEO(noKeywordsPromo)).not.toThrow();
   });

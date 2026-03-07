@@ -21,8 +21,8 @@ export interface Promo {
 
 export const PROMOS: Promo[] = [
   {
-    promoId: 'hitoki-trident-2025',
-    slug: 'trident',
+    promoId: 'hitoki-laser-bong-2025',
+    slug: 'laser-bong',
     name: 'Hitoki Trident',
     tagline: 'Fire Without Flame.',
     description:
@@ -31,10 +31,12 @@ export const PROMOS: Promo[] = [
       'The Hitoki Trident replaces your lighter or torch with three high-powered laser beams that ignite flower directly — no butane, no residue, no compromised terpenes. Compatible with standard 14mm water pipes, rechargeable via USB-C, and built for daily use. The result is a noticeably cleaner, more flavorful hit every time. Available to try at Rush N Relax Seymour — 500 Maryville Hwy, Suite 205. Ask our staff for a walkthrough.',
     cta: 'Visit Seymour',
     ctaPath: '/locations/seymour',
-    image: 'promos/trident.png',
+    image: 'promos/laser-bong.png',
     locationSlug: 'seymour',
     keywords: [
       'Hitoki Trident',
+      'laser bong',
+      'laser powered bong',
       'laser lighter',
       'laser ignition',
       'no butane',
