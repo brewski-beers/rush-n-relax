@@ -26,9 +26,9 @@ import { usePromo } from '../hooks/usePromo';
 const mockGetDownloadURL = vi.mocked(getDownloadURL);
 const mockUsePromo = vi.mocked(usePromo);
 
-const activePromo = PROMOS.find(p => p.slug === 'laser-bong')!;
+const activePromo = PROMOS.find(p => p.slug === 'trident')!;
 
-function renderPromo(slug = 'laser-bong') {
+function renderPromo(slug = 'trident') {
   return render(
     <MemoryRouter initialEntries={[`/promo/${slug}`]}>
       <Routes>
@@ -44,7 +44,7 @@ describe('Promo page', () => {
     vi.clearAllMocks();
     // Default: no image resolution needed
     mockGetDownloadURL.mockResolvedValue(
-      'https://cdn.example.com/promos/laser-bong.png'
+      'https://cdn.example.com/promos/trident.png'
     );
   });
 
@@ -107,7 +107,7 @@ describe('Promo page', () => {
       const img = await screen.findByRole('img', { name: activePromo.name });
       expect(img).toHaveAttribute(
         'src',
-        'https://cdn.example.com/promos/laser-bong.png'
+        'https://cdn.example.com/promos/trident.png'
       );
     });
 

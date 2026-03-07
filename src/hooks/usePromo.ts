@@ -5,11 +5,11 @@ import { getPromoBySlug, type Promo } from '../constants/promos';
 
 /**
  * Firestore collection: `promos`
- * Document ID: promo slug (e.g. "laser-bong")
+ * Document ID: promo slug (e.g. "trident")
  *
  * Expected document shape — must match the Promo interface:
  * {
- *   promoId:     string   (stable ID, e.g. "hitoki-laser-bong-2025")
+ *   promoId:     string   (stable ID, e.g. "hitoki-trident-2025")
  *   slug:        string
  *   name:        string
  *   tagline:     string

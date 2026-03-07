@@ -21,22 +21,23 @@ export interface Promo {
 
 export const PROMOS: Promo[] = [
   {
-    promoId: 'hitoki-laser-bong-2025',
-    slug: 'laser-bong',
-    name: 'Hitoki Laser Bong',
-    tagline: 'Laser Bong — Google It.',
+    promoId: 'hitoki-trident-2025',
+    slug: 'trident',
+    name: 'Hitoki Trident',
+    tagline: 'Fire Without Flame.',
     description:
-      "The Hitoki Serquet is the world's first laser-powered bong — combustion replaced by a precision laser for the cleanest, smoothest hit you've ever taken. Try it now at Rush N Relax Seymour, 500 Maryville Hwy.",
+      'The Hitoki Trident uses three precision laser beams to ignite your flower — no butane, no torch, just pure flavor. Try it now at Rush N Relax Seymour, 500 Maryville Hwy.',
     details:
-      'The Hitoki Serquet uses a high-powered laser instead of a flame, delivering a hit free of butane or torch residue. The result is pure, clean vapor straight from the flower — no combustion byproducts, no harshness, just the full terpene profile of whatever you load. Available to try at Rush N Relax Seymour — 500 Maryville Hwy, Suite 205. Ask our staff for a walkthrough.',
+      'The Hitoki Trident replaces your lighter or torch with three high-powered laser beams that ignite flower directly — no butane, no residue, no compromised terpenes. Compatible with standard 14mm water pipes, rechargeable via USB-C, and built for daily use. The result is a noticeably cleaner, more flavorful hit every time. Available to try at Rush N Relax Seymour — 500 Maryville Hwy, Suite 205. Ask our staff for a walkthrough.',
     cta: 'Visit Seymour',
     ctaPath: '/locations/seymour',
-    image: 'promos/laser-bong.png',
+    image: 'promos/trident.png',
     locationSlug: 'seymour',
     keywords: [
-      'Hitoki Serquet',
-      'laser bong',
-      'laser powered bong',
+      'Hitoki Trident',
+      'laser lighter',
+      'laser ignition',
+      'no butane',
       '500 Maryville Hwy',
     ],
     active: true,
