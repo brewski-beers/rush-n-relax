@@ -1,0 +1,55 @@
+{
+  "RnR Neo Dark — Flowchart": {
+    "scope": "markdown",
+    "prefix": "rnr-chart",
+    "description": "RnR Neo Dark themed Mermaid flowchart skeleton",
+    "body": [
+      "```mermaid",
+      "%%{init: {'theme': 'base', 'themeVariables': {'background': '#0b0f17', 'primaryColor': '#111827', 'primaryTextColor': '#e6edf3', 'primaryBorderColor': '#22d3ee', 'lineColor': '#94a3b8', 'secondaryColor': '#0f172a', 'tertiaryColor': '#111827', 'clusterBkg': '#0f172a', 'clusterBorder': '#22d3ee', 'fontFamily': 'Avenir Next, Avenir, Segoe UI, sans-serif'}}}%%",
+      "",
+      "flowchart ${1|LR,TD,TB|}",
+      "",
+      "    ${2:TITLE}[\"${3:Module Name}\"]:::title",
+      "",
+      "    $0",
+      "",
+      "    classDef title    fill:#020617,color:#e6edf3,stroke:#22d3ee,stroke-width:2px;",
+      "    classDef complete fill:#166534,color:#fff;",
+      "    classDef active   fill:#713f12,color:#fff;",
+      "    classDef pending  fill:#1e3a5f,color:#ccc;",
+      "    classDef warn     fill:#7f1d1d,color:#fff;",
+      "```"
+    ]
+  },
+  "RnR Neo Dark — Sequence Diagram": {
+    "scope": "markdown",
+    "prefix": "rnr-seq",
+    "description": "RnR Neo Dark themed Mermaid sequence diagram skeleton",
+    "body": [
+      "```mermaid",
+      "%%{init: {'theme': 'base', 'themeVariables': {'background': '#0b0f17', 'primaryColor': '#111827', 'primaryTextColor': '#e6edf3', 'primaryBorderColor': '#22d3ee', 'lineColor': '#94a3b8', 'secondaryColor': '#0f172a', 'tertiaryColor': '#111827', 'clusterBkg': '#0f172a', 'clusterBorder': '#22d3ee', 'fontFamily': 'Avenir Next, Avenir, Segoe UI, sans-serif'}}}%%",
+      "",
+      "sequenceDiagram",
+      "    participant ${1:A} as ${2:Actor A}",
+      "    participant ${3:B} as ${4:Actor B}",
+      "",
+      "    $0",
+      "```"
+    ]
+  },
+  "RnR Neo Dark — State Machine": {
+    "scope": "markdown",
+    "prefix": "rnr-state",
+    "description": "RnR Neo Dark themed Mermaid state diagram skeleton",
+    "body": [
+      "```mermaid",
+      "%%{init: {'theme': 'base', 'themeVariables': {'background': '#0b0f17', 'primaryColor': '#111827', 'primaryTextColor': '#e6edf3', 'primaryBorderColor': '#22d3ee', 'lineColor': '#94a3b8', 'secondaryColor': '#0f172a', 'tertiaryColor': '#111827', 'clusterBkg': '#0f172a', 'clusterBorder': '#22d3ee', 'fontFamily': 'Avenir Next, Avenir, Segoe UI, sans-serif'}}}%%",
+      "",
+      "stateDiagram-v2",
+      "    [*] --> ${1:InitialState}",
+      "",
+      "    $0",
+      "```"
+    ]
+  }
+}

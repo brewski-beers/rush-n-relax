@@ -16,8 +16,11 @@ build/
 .env.*.local
 firebase-config.json
 
-# IDE
-.vscode/
+# IDE — allow project-wide snippets and workspace settings, ignore personal config
+.vscode/*
+!.vscode/mermaid.code-snippets
+!.vscode/settings.json
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
