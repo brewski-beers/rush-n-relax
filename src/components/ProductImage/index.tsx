@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { resolveProductImageUrl } from '../../constants/products';
 import './ProductImage.css';

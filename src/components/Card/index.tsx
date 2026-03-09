@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import Link from 'next/link';
 import './Card.css';
 
 interface CardProps {
@@ -54,12 +54,11 @@ export function Card({
   const combinedClass =
     `${baseClass} ${variantClass} ${surfaceClass} ${legacySurfaceClass} ${elevationClass} ${motionClass} ${className}`.trim();
 
-  // Render as React Router Link if 'to' is provided
   if (to) {
     return (
-      <RouterLink to={to} className={combinedClass}>
+      <Link href={to} className={combinedClass}>
         {children}
-      </RouterLink>
+      </Link>
     );
   }
 

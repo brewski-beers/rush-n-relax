@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getStorage$, initializeApp } from '@/firebase';
@@ -16,21 +18,14 @@ const DEFAULT_AMBIENT_PATHS = {
 } as const;
 
 export function AmbientOverlay() {
-  const directUrl = import.meta.env.VITE_AMBIENT_VIDEO_URL as
-    | string
-    | undefined;
-  const posterUrl = import.meta.env.VITE_AMBIENT_VIDEO_POSTER as
-    | string
-    | undefined;
+  const directUrl = process.env.NEXT_PUBLIC_AMBIENT_VIDEO_URL;
+  const posterUrl = process.env.NEXT_PUBLIC_AMBIENT_VIDEO_POSTER;
   const storagePath =
-    (import.meta.env.VITE_AMBIENT_STORAGE_PATH as string | undefined) ||
+    process.env.NEXT_PUBLIC_AMBIENT_STORAGE_PATH ||
     DEFAULT_AMBIENT_PATHS.desktop;
   const mobileStoragePath =
-    (import.meta.env.VITE_AMBIENT_MOBILE_PATH as string | undefined) ||
-    DEFAULT_AMBIENT_PATHS.mobile;
-  const customBucket = import.meta.env.VITE_AMBIENT_STORAGE_BUCKET as
-    | string
-    | undefined;
+    process.env.NEXT_PUBLIC_AMBIENT_MOBILE_PATH || DEFAULT_AMBIENT_PATHS.mobile;
+  const customBucket = process.env.NEXT_PUBLIC_AMBIENT_STORAGE_BUCKET;
 
   // User preference from localStorage (defaults to enabled)
   const [resolvedUrls, setResolvedUrls] = useState<ResolvedUrls>({
@@ -38,6 +33,7 @@ export function AmbientOverlay() {
     mobile: null,
   });
   const [enabled, setEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
     try {
       const ls = localStorage.getItem('ambientEnabled');
       return ls === null ? true : ls === 'true';

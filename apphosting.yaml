@@ -1,0 +1,91 @@
+# Firebase App Hosting configuration
+# Replaces the GitHub Actions deploy pipeline.
+# Deploy on push to main — no custom workflow needed.
+# https://firebase.google.com/docs/app-hosting/configure
+
+runConfig:
+  # Next.js server process
+  command: node server.js
+  # Concurrent requests per instance
+  concurrency: 80
+  # Memory per instance
+  cpu: 1
+  memoryMiB: 512
+  # Min instances to keep warm (avoids cold starts)
+  minInstances: 0
+  maxInstances: 10
+
+buildConfig:
+  # Commands run during build — must all pass before deploy
+  commands:
+    - npm run test:unit:coverage
+    - npm run build
+
+# Environment variables exposed to the Next.js server at runtime.
+# Secret values are stored in Secret Manager, not here.
+# Client-side vars (NEXT_PUBLIC_*) are embedded at build time.
+env:
+  - variable: NODE_ENV
+    value: production
+
+  # Firebase project config (public — embedded in client bundle)
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    secret: FIREBASE_API_KEY
+
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    secret: FIREBASE_AUTH_DOMAIN
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    secret: FIREBASE_PROJECT_ID
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    secret: FIREBASE_STORAGE_BUCKET
+
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    secret: FIREBASE_MESSAGING_SENDER_ID
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    secret: FIREBASE_APP_ID
+
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    secret: FIREBASE_MEASUREMENT_ID
+
+  # Google Maps (public)
+  - variable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    secret: GOOGLE_MAPS_API_KEY
+
+  # Ambient video (public — optional)
+  - variable: NEXT_PUBLIC_AMBIENT_VIDEO_URL
+    secret: AMBIENT_VIDEO_URL
+    availability:
+      - BUILD
+      - RUNTIME
+    optional: true
+
+  - variable: NEXT_PUBLIC_AMBIENT_VIDEO_POSTER
+    secret: AMBIENT_VIDEO_POSTER
+    availability:
+      - BUILD
+      - RUNTIME
+    optional: true
+
+  - variable: NEXT_PUBLIC_AMBIENT_STORAGE_PATH
+    secret: AMBIENT_STORAGE_PATH
+    availability:
+      - BUILD
+      - RUNTIME
+    optional: true
+
+  - variable: NEXT_PUBLIC_AMBIENT_MOBILE_PATH
+    secret: AMBIENT_MOBILE_PATH
+    availability:
+      - BUILD
+      - RUNTIME
+    optional: true
+
+  - variable: NEXT_PUBLIC_AMBIENT_STORAGE_BUCKET
+    secret: AMBIENT_STORAGE_BUCKET
+    availability:
+      - BUILD
+      - RUNTIME
+    optional: true

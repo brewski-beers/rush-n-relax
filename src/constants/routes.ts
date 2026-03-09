@@ -26,22 +26,27 @@ export type SectionId = (typeof ROUTE_SECTIONS)[RoutePath][number];
 export const STATIC_ROUTES = Object.keys(ROUTE_SECTIONS) as RoutePath[];
 
 /**
- * Maps page component filenames to their route paths.
- * Used by drift detection to ensure all pages are routed.
+ * Maps App Router page.tsx paths (relative to src/app/(storefront)/) to routes.
+ * 'index' refers to the root page.tsx. Used by drift detection.
+ *
+ * When adding a new page:
+ * 1. Add the route and its section IDs to ROUTE_SECTIONS (if static)
+ * 2. Add the App Router key here
+ * 3. Drift detection tests will fail until both are done
  *
  * Values:
  * - RoutePath string: Static route
- * - 'dynamic': Parameterized route (e.g., /locations/:slug)
+ * - 'dynamic': Parameterized route (e.g., /locations/[slug])
  */
 export const PAGE_TO_ROUTE: Record<string, RoutePath | 'dynamic'> = {
-  Home: '/',
-  About: '/about',
-  Locations: '/locations',
-  LocationDetail: 'dynamic',
-  Products: '/products',
-  ProductDetail: 'dynamic',
-  Contact: '/contact',
-  Promo: 'dynamic',
+  index: '/',
+  about: '/about',
+  locations: '/locations',
+  'locations/[slug]': 'dynamic',
+  products: '/products',
+  'products/[slug]': 'dynamic',
+  contact: '/contact',
+  'promo/[slug]': 'dynamic',
 };
 
 /**

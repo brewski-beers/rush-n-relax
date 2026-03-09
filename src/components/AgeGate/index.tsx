@@ -1,8 +1,11 @@
+'use client';
+
 import { useState, useRef } from 'react';
 import './AgeGate.css';
 
 export function AgeGate() {
   const [isVerified, setIsVerified] = useState<boolean | null>(() => {
+    if (typeof window === 'undefined') return null;
     const verified = localStorage.getItem('ageVerified');
     return verified === 'true' ? true : verified === 'false' ? false : null;
   });

@@ -1,5 +1,7 @@
-import { initializeApp as initFirebase } from 'firebase/app';
+import { initializeApp as initFirebase, getApps } from 'firebase/app';
+import { isEmulator } from '@/lib/firebase/env';
 import { getAnalytics, logEvent } from 'firebase/analytics';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 import {
@@ -8,9 +10,9 @@ import {
   httpsCallable,
 } from 'firebase/functions';
 
-// Firebase configuration - these values are public by design
-// They identify the project and are visible in all deployed JavaScript bundles
-// Security is enforced via Firebase Security Rules, not secrecy of these values
+// Firebase configuration — these values are public by design.
+// They identify the project and are visible in all deployed JavaScript bundles.
+// Security is enforced via Firebase Security Rules, not secrecy of these values.
 export const firebaseConfig = {
   apiKey: 'AIzaSyB0qrTVmQ8gRvmx-4oJ_dQHP6RA2kZ3FJk',
   authDomain: 'rush-n-relax.firebaseapp.com',
@@ -21,30 +23,61 @@ export const firebaseConfig = {
   measurementId: 'G-MRCWGZC1F1',
 };
 
-let app: ReturnType<typeof initFirebase> | null = null;
+let auth: ReturnType<typeof getAuth> | null = null;
 let db: ReturnType<typeof getFirestore> | null = null;
 let storage: ReturnType<typeof getStorage> | null = null;
 let functions: ReturnType<typeof getFunctions> | null = null;
 let analytics: ReturnType<typeof getAnalytics> | null = null;
 
+function shouldDisableAnalytics(): boolean {
+  if (
+    process.env.NEXT_PUBLIC_DISABLE_ANALYTICS === 'true' ||
+    process.env.NEXT_PUBLIC_E2E === 'true' ||
+    process.env.NODE_ENV === 'test'
+  ) {
+    return true;
+  }
+
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  // Blocks browser automation traffic (Playwright/Cypress/WebDriver) from GA.
+  if (window.navigator.webdriver) {
+    return true;
+  }
+
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  return /playwright|puppeteer|cypress|headlesschrome/.test(userAgent);
+}
+
 export function initializeApp() {
-  if (!app) {
-    app = initFirebase(firebaseConfig);
+  const app =
+    getApps().length > 0 ? getApps()[0] : initFirebase(firebaseConfig);
+
+  if (!db) {
+    auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
     functions = getFunctions(app, 'us-central1');
-    analytics = getAnalytics(app);
 
-    if (import.meta.env.DEV || import.meta.env.VITE_USE_EMULATORS === 'true') {
+    if (typeof window !== 'undefined' && !shouldDisableAnalytics()) {
+      analytics = getAnalytics(app);
+    }
+
+    if (isEmulator) {
+      connectAuthEmulator(auth, 'http://localhost:9099', {
+        disableWarnings: true,
+      });
       connectFirestoreEmulator(db, 'localhost', 8080);
       connectStorageEmulator(storage, 'localhost', 9199);
       connectFunctionsEmulator(functions, 'localhost', 5001);
     }
   }
-  return { app, db, storage, functions, analytics };
+
+  return { app, auth, db, storage, functions, analytics };
 }
 
-// Lazy getters that ensure the instance is initialized
 export function getFirestore$() {
   if (!db)
     throw new Error('Firestore not initialized. Call initializeApp() first.');
@@ -75,11 +108,6 @@ export function getAnalytics$() {
   return analytics;
 }
 
-/**
- * Track analytics event
- * @param eventName - Name of the event (e.g., 'page_view', 'form_submit')
- * @param eventData - Optional event data
- */
 export function trackEvent(
   eventName: string,
   eventData?: Record<string, unknown>
@@ -89,21 +117,13 @@ export function trackEvent(
   }
 }
 
-/**
- * Track page view
- * @param pageName - Name of the page (e.g., 'home', 'about')
- */
 export function trackPageView(pageName: string) {
   trackEvent('page_view', {
     page_title: pageName,
-    page_location: window.location.href,
+    page_location: typeof window !== 'undefined' ? window.location.href : '',
   });
 }
 
-/**
- * Create a typed callable function wrapper.
- * Ensures Firebase is initialized before calling.
- */
 export function callFunction<TReq, TRes>(name: string) {
   return async (data: TReq): Promise<TRes> => {
     const fns = getFunctions$();
