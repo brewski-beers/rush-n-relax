@@ -19,6 +19,7 @@
     "test:unit": "vitest --run",
     "test:unit:coverage": "vitest --run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:local": "concurrently --kill-others-on-fail \"npm run dev:all\" \"wait-on http://localhost:3000 tcp:localhost:8080 && npm run test:e2e\"",
     "test:e2e:smoke": "TEST_MODE=smoke playwright test e2e/age-gate.spec.ts --reporter=line",
     "test:e2e:smoke:prod": "TEST_MODE=smoke PLAYWRIGHT_BASE_URL=https://rushnrelax.com playwright test e2e/age-gate.spec.ts --reporter=line",
     "test:e2e:core": "TEST_MODE=core playwright test e2e/age-gate.spec.ts e2e/user-journey.spec.ts e2e/app.spec.ts e2e/reviews.spec.ts --reporter=line",
