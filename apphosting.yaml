@@ -4,8 +4,6 @@
 # https://firebase.google.com/docs/app-hosting/configure
 
 runConfig:
-  # Next.js server process
-  command: node .next/standalone/server.js
   # Concurrent requests per instance
   concurrency: 80
   # Memory per instance
