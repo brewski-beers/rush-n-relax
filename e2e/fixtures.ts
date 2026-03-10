@@ -33,22 +33,29 @@ export async function verifyAge(page: Page): Promise<void> {
 
   await page.locator('input[id="month"]').fill(LEGAL_DOB.month);
   await page.locator('input[id="day"]').fill(LEGAL_DOB.day);
+  // Filling a 4-digit year triggers auto-submit — no button click needed
   await page.locator('input[id="year"]').fill(LEGAL_DOB.year);
-  await page.locator('button[type="submit"]').click();
 
   // Wait for gate to close — targeted check, not networkidle
   await overlay.waitFor({ state: 'hidden', timeout: 3000 });
 }
 
 /**
- * Sets age verification directly in localStorage before navigation.
+ * Sets age verification cookie before navigation so the server reads it
+ * on the first request — no flash, gate never renders.
  * Fastest path — skips the UI entirely. Use when age-gate isn't under test.
  *
  * @param page - Playwright page instance (call BEFORE page.goto)
  */
 export async function preVerifyAge(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    document.cookie =
-      'ageVerified=true; max-age=31536000; path=/; SameSite=Strict';
-  });
+  await page.context().addCookies([
+    {
+      name: 'ageVerified',
+      value: 'true',
+      domain: 'localhost',
+      path: '/',
+      maxAge: 31536000,
+      sameSite: 'Strict',
+    },
+  ]);
 }

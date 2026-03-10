@@ -21,21 +21,24 @@ test.describe('Full User Journey - Mobile nav', () => {
     await page.goto('/');
 
     // Open the menu first (nav links live in .mobile-drawer, visible at <768px only)
+    // Scope clicks to the mobile nav element to avoid matching body links that
+    // contain the same words (e.g. "Learn More About Us →" on the homepage).
     const toggle = page.locator('.nav-toggle');
+    const mobileNav = page.locator('nav[aria-label="Mobile navigation"]');
 
     // About
     await toggle.click();
-    await page.getByRole('link', { name: /about/i }).click();
+    await mobileNav.getByRole('link', { name: 'About' }).click();
     await expect(page).toHaveURL(/\/about/);
 
     // Locations
     await toggle.click();
-    await page.getByRole('link', { name: /locations/i }).click();
+    await mobileNav.getByRole('link', { name: 'Locations' }).click();
     await expect(page).toHaveURL(/\/locations/);
 
     // Contact
     await toggle.click();
-    await page.getByRole('link', { name: /contact/i }).click();
+    await mobileNav.getByRole('link', { name: 'Contact' }).click();
     await expect(page).toHaveURL(/\/contact/);
 
     // Home (via logo)
