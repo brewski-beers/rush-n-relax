@@ -29,7 +29,7 @@
     "test:health": "playwright test e2e/health-checks.spec.ts",
     "functions:shell": "firebase functions:shell",
     "functions:logs": "firebase functions:log",
-    "prepare": "[ -n \"$CI\" ] || husky"
+    "prepare": "[ -n \"$CI\" ] || { command -v husky >/dev/null 2>&1 && husky; } || true"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
