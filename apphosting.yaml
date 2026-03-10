@@ -19,70 +19,34 @@ buildConfig:
     - npm run build
 
 # Environment variables exposed to the Next.js server at runtime.
-# Secret values are stored in Secret Manager, not here.
-# Client-side vars (NEXT_PUBLIC_*) are embedded at build time.
+# Client-side vars (NEXT_PUBLIC_*) are public and embedded at build time.
 env:
   - variable: NODE_ENV
     value: production
 
   # Firebase project config (public — embedded in client bundle)
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    secret: FIREBASE_API_KEY
+    value: "AIzaSyB0qrTVmQ8gRvmx-4oJ_dQHP6RA2kZ3FJk"
 
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    secret: FIREBASE_AUTH_DOMAIN
+    value: "rush-n-relax.firebaseapp.com"
 
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    secret: FIREBASE_PROJECT_ID
+    value: "rush-n-relax"
 
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    secret: FIREBASE_STORAGE_BUCKET
+    value: "rush-n-relax.firebasestorage.app"
 
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    secret: FIREBASE_MESSAGING_SENDER_ID
+    value: "556383052079"
 
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    secret: FIREBASE_APP_ID
+    value: "1:556383052079:web:6780513e5d7d79140f01da"
 
   - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
-    secret: FIREBASE_MEASUREMENT_ID
+    value: "G-MRCWGZC1F1"
 
   # Google Maps (public)
   - variable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    secret: GOOGLE_MAPS_API_KEY
+    value: "AIzaSyAcUo58FHBrCWyWiqDh_mzauM17ptqX7xM"
 
-  # Ambient video (public — optional)
-  - variable: NEXT_PUBLIC_AMBIENT_VIDEO_URL
-    secret: AMBIENT_VIDEO_URL
-    availability:
-      - BUILD
-      - RUNTIME
-    optional: true
-
-  - variable: NEXT_PUBLIC_AMBIENT_VIDEO_POSTER
-    secret: AMBIENT_VIDEO_POSTER
-    availability:
-      - BUILD
-      - RUNTIME
-    optional: true
-
-  - variable: NEXT_PUBLIC_AMBIENT_STORAGE_PATH
-    secret: AMBIENT_STORAGE_PATH
-    availability:
-      - BUILD
-      - RUNTIME
-    optional: true
-
-  - variable: NEXT_PUBLIC_AMBIENT_MOBILE_PATH
-    secret: AMBIENT_MOBILE_PATH
-    availability:
-      - BUILD
-      - RUNTIME
-    optional: true
-
-  - variable: NEXT_PUBLIC_AMBIENT_STORAGE_BUCKET
-    secret: AMBIENT_STORAGE_BUCKET
-    availability:
-      - BUILD
-      - RUNTIME
-    optional: true
