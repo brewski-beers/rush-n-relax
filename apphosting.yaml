@@ -5,7 +5,7 @@
 
 runConfig:
   # Next.js server process
-  command: node server.js
+  command: node .next/standalone/server.js
   # Concurrent requests per instance
   concurrency: 80
   # Memory per instance
@@ -16,9 +16,8 @@ runConfig:
   maxInstances: 10
 
 buildConfig:
-  # Commands run during build — must all pass before deploy
+  # Tests run in GitHub Actions before triggering this rollout — no need to repeat here
   commands:
-    - npm run test:unit:coverage
     - npm run build
 
 # Environment variables exposed to the Next.js server at runtime.

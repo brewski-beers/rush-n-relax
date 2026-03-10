@@ -1,6 +1,7 @@
 # Production deployment on merge to main
-# - `verify` runs core E2E suite against emulators
-# - `deploy` only runs after verify passes
+# - `verify` runs lint, type check, unit tests, and E2E against emulators
+# - `deploy` deploys Cloud Functions + Firestore/Storage rules after verify passes
+# - Next.js app is deployed automatically by Firebase App Hosting on push to main
 name: Main — Verify & Deploy
 
 on:
@@ -114,11 +115,10 @@ jobs:
     needs: [changes, auth_preflight, verify]
     if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     env:
       FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
       FIREBASE_PROJECT_ID: rush-n-relax
-      FIREBASE_HOSTING_SITE: rush-n-relax
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -128,23 +128,11 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Setup Playwright (Chromium)
-        uses: ./.github/actions/setup-playwright
-        with:
-          browsers: chromium
-
       - name: Setup Firebase auth
         id: auth
         uses: ./.github/actions/firebase-auth-setup
         with:
           service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
-
-      - name: Resolve preview channel id
-        id: channel
-        run: |
-          CHANNEL_ID="pr-${{ github.event.pull_request.number }}"
-
-          echo "preview_channel_id=$CHANNEL_ID" >> "$GITHUB_OUTPUT"
 
       - name: Build Cloud Functions
         run: cd functions && npm ci && npm run build
@@ -186,91 +174,62 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Resolve preview channel URL
-        id: preview
-        env:
-          CHANNEL_ID: ${{ steps.channel.outputs.preview_channel_id }}
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
-        run: |
-          CHANNEL_URL=$(npx firebase-tools hosting:channel:list \
-            --project "$FIREBASE_PROJECT_ID" \
-            --json | node -e "
-              const fs = require('fs');
-              const payload = JSON.parse(fs.readFileSync(0, 'utf8'));
-              const channelId = process.env.CHANNEL_ID;
-              const channels = payload?.result?.channels || payload?.channels || [];
-              const match = channels.find((channel) => {
-                const name = channel.name || '';
-                return channel.id === channelId || channel.channelId === channelId || name.endsWith('/channels/' + channelId);
-              });
-              if (!match || !match.url) {
-                process.exit(1);
-              }
-              process.stdout.write(match.url);
-            ")
-
-          if [ -z "$CHANNEL_URL" ]; then
-            echo "Preview channel URL not found for $CHANNEL_ID."
-            exit 1
-          fi
-
-          echo "preview_url=$CHANNEL_URL" >> "$GITHUB_OUTPUT"
-
-      - name: Run smoke tests against preview channel
-        id: smoke
-        run: npm run test:e2e:smoke
-        env:
-          CI: 'true'
-          PLAYWRIGHT_BASE_URL: ${{ steps.preview.outputs.preview_url }}
-
-      - name: Upload smoke failure artifacts
-        if: failure() && steps.smoke.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: main-preview-smoke-failures
-          path: test-results/
-          if-no-files-found: ignore
-          retention-days: 3
-
-      - name: Promote preview channel to live
-        id: promote
-        if: steps.smoke.outcome == 'success'
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
-        run: |
-          npx firebase-tools hosting:clone \
-            "$FIREBASE_HOSTING_SITE:${{ steps.channel.outputs.preview_channel_id }}" \
-            "$FIREBASE_HOSTING_SITE:live" \
-            --project "$FIREBASE_PROJECT_ID" \
-            --non-interactive
-
-      - name: Delete merged preview channel
-        if: steps.promote.outcome == 'success'
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
-        run: |
-          npx firebase-tools hosting:channel:delete "${{ steps.channel.outputs.preview_channel_id }}" \
-            --project "$FIREBASE_PROJECT_ID" \
-            --force
-
-      - name: Retain preview channel for debugging
-        if: always() && (steps.smoke.outcome != 'success' || steps.promote.outcome != 'success')
-        run: |
-          echo "Smoke failed or promotion was skipped. Retaining preview channel: ${{ steps.channel.outputs.preview_channel_id }}"
-          echo "Preview URL: ${{ steps.preview.outputs.preview_url }}"
-
       - name: Release summary
         if: always()
         run: |
           {
             echo "## Main release summary"
-            echo "- Preview channel: \\`${{ steps.channel.outputs.preview_channel_id }}\\`"
-            echo "- Preview URL: ${{ steps.preview.outputs.preview_url }}"
-            echo "- Smoke outcome: \\`${{ steps.smoke.outcome }}\\`"
-            echo "- Promote outcome: \\`${{ steps.promote.outcome }}\\`"
+            echo "- Firestore/Storage deploy: \`${{ steps.deploy_rules_storage.outcome }}\`"
+            echo "- Functions deploy: \`${{ steps.deploy_functions.outcome }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Cleanup deploy credentials
+        if: always()
+        run: rm -f "${{ steps.auth.outputs.credentials_path }}"
+
+  app-hosting-rollout:
+    name: app-hosting-rollout
+    needs: [changes, auth_preflight, verify, deploy]
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
+      FIREBASE_PROJECT_ID: rush-n-relax
+      APP_HOSTING_BACKEND_ID: rush-n-relax
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Setup Firebase auth
+        id: auth
+        uses: ./.github/actions/firebase-auth-setup
+        with:
+          service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
+
+      - name: Create App Hosting rollout
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
+        run: |
+          npx firebase-tools apphosting:rollouts:create "$APP_HOSTING_BACKEND_ID" \
+            --project "$FIREBASE_PROJECT_ID" \
+            --git-commit "${{ github.event.pull_request.merge_commit_sha || github.sha }}" \
+            --force \
+            --non-interactive
+
+      - name: Rollout summary
+        if: always()
+        run: |
+          {
+            echo "## App Hosting rollout"
+            echo "- Backend: \`${{ env.APP_HOSTING_BACKEND_ID }}\`"
+            echo "- Commit: \`${{ github.event.pull_request.merge_commit_sha || github.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cleanup credentials
         if: always()
         run: rm -f "${{ steps.auth.outputs.credentials_path }}"
 
