@@ -48,6 +48,7 @@ export async function verifyAge(page: Page): Promise<void> {
  */
 export async function preVerifyAge(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    localStorage.setItem('ageVerified', 'true');
+    document.cookie =
+      'ageVerified=true; max-age=31536000; path=/; SameSite=Strict';
   });
 }
