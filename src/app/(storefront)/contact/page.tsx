@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import Link from 'next/link';
 import { ContactForm } from '@/components/ContactForm';
 import { listLocations } from '@/lib/repositories';

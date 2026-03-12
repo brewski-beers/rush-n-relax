@@ -1,13 +1,10 @@
 /**
  * Firestore document shape for a promotion.
- * Lives at: tenants/{tenantId}/promos/{promoId}
+ * Lives at: promos/{slug}
  */
 export interface Promo {
-  /** Firestore document ID (same as promoId for backwards compatibility) */
+  /** Firestore document ID (same as slug) */
   id: string;
-  tenantId: string;
-  /** Stable human-readable identifier, e.g. 'hitoki-laser-bong-2025' */
-  promoId: string;
   slug: string;
   name: string;
   tagline: string;

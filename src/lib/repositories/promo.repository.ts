@@ -2,17 +2,13 @@
  * Promo repository — all Firestore access for promotion documents.
  * Server-side only (uses firebase-admin).
  */
-import {
-  getAdminFirestore,
-  toDate,
-  DEFAULT_TENANT_ID,
-} from '@/lib/firebase/admin';
+import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type { Promo, PromoSummary } from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
-function promosCol(tenantId: string = DEFAULT_TENANT_ID) {
-  return getAdminFirestore().collection(`tenants/${tenantId}/promos`);
+function promosCol() {
+  return getAdminFirestore().collection('promos');
 }
 
 // ── Read operations ───────────────────────────────────────────────────────
@@ -21,10 +17,8 @@ function promosCol(tenantId: string = DEFAULT_TENANT_ID) {
  * List all currently active promos.
  * "Active" = active flag is true AND endDate is either absent or in the future.
  */
-export async function listActivePromos(
-  tenantId: string = DEFAULT_TENANT_ID
-): Promise<PromoSummary[]> {
-  const snap = await promosCol(tenantId)
+export async function listActivePromos(): Promise<PromoSummary[]> {
+  const snap = await promosCol()
     .where('active', '==', true)
     .orderBy('name')
     .get();
@@ -51,29 +45,20 @@ export async function listActivePromos(
  * Fetch a single promo by slug.
  * Returns null if not found.
  */
-export async function getPromoBySlug(
-  slug: string,
-  tenantId: string = DEFAULT_TENANT_ID
-): Promise<Promo | null> {
-  const snap = await promosCol(tenantId)
-    .where('slug', '==', slug)
-    .limit(1)
-    .get();
-
-  if (snap.empty) return null;
-
-  const doc = snap.docs[0];
-  return docToPromo(doc.id, doc.data());
+export async function getPromoBySlug(slug: string): Promise<Promo | null> {
+  const doc = await promosCol().doc(slug).get();
+  if (!doc.exists) return null;
+  // doc.data() is safe here: existence is confirmed on the line above
+  return docToPromo(doc.id, doc.data()!);
 }
 
 /**
  * Fetch promos for a specific location slug.
  */
 export async function getPromosByLocationSlug(
-  locationSlug: string,
-  tenantId: string = DEFAULT_TENANT_ID
+  locationSlug: string
 ): Promise<PromoSummary[]> {
-  const snap = await promosCol(tenantId)
+  const snap = await promosCol()
     .where('active', '==', true)
     .where('locationSlug', '==', locationSlug)
     .get();
@@ -96,19 +81,12 @@ export async function getPromosByLocationSlug(
 // ── Write operations ──────────────────────────────────────────────────────
 
 export async function upsertPromo(
-  data: Omit<Promo, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
-  tenantId: string = DEFAULT_TENANT_ID
+  data: Omit<Promo, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
-  const col = promosCol(tenantId);
+  const col = promosCol();
   const now = new Date();
-
-  if (data.id) {
-    await col.doc(data.id).set({ ...data, updatedAt: now }, { merge: true });
-    return data.id;
-  }
-
-  const ref = await col.add({ ...data, createdAt: now, updatedAt: now });
-  return ref.id;
+  await col.doc(data.slug).set({ ...data, updatedAt: now }, { merge: true });
+  return data.slug;
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────
@@ -116,8 +94,6 @@ export async function upsertPromo(
 function docToPromo(id: string, d: FirebaseFirestore.DocumentData): Promo {
   return {
     id,
-    tenantId: d.tenantId,
-    promoId: d.promoId ?? id,
     slug: d.slug,
     name: d.name,
     tagline: d.tagline ?? '',

@@ -9,8 +9,7 @@ import { getPromoBySlug, type Promo } from '../constants/promos';
  *
  * Expected document shape — must match the Promo interface:
  * {
- *   promoId:     string   (stable ID, e.g. "hitoki-laser-bong-2025")
- *   slug:        string
+ *   slug:        string   (document ID)
  *   name:        string
  *   tagline:     string
  *   description: string
@@ -53,16 +52,17 @@ function promoReducer(state: PromoState, action: PromoAction): PromoState {
 }
 
 export function usePromo(slug: string | undefined): UsePromoResult {
-  const staticFallback = slug ? (getPromoBySlug(slug) ?? null) : null;
-
   const [state, dispatch] = useReducer(promoReducer, {
-    promo: staticFallback,
+    promo: slug ? (getPromoBySlug(slug) ?? null) : null,
     status: 'idle',
   });
 
   useEffect(() => {
     if (!slug) return;
 
+    // Compute fallback inside the effect so it's captured in the same closure
+    // as slug — no need to suppress exhaustive-deps for an outer binding.
+    const staticFallback = getPromoBySlug(slug) ?? null;
     let cancelled = false;
     dispatch({ type: 'loading' });
 
@@ -76,6 +76,9 @@ export function usePromo(slug: string | undefined): UsePromoResult {
             dispatch({ type: 'error', fallback: staticFallback });
             return;
           }
+          // Safe cast: Firestore document was seeded from the Promo type and
+          // is only written by seed scripts or future admin routes that enforce
+          // the same shape.
           dispatch({ type: 'success', promo: snap.data() as Promo });
         })
         .catch(() => {
@@ -90,7 +93,7 @@ export function usePromo(slug: string | undefined): UsePromoResult {
     return () => {
       cancelled = true;
     };
-  }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   return state;
 }

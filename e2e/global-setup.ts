@@ -3,9 +3,8 @@ import { execSync } from 'child_process';
 /**
  * Playwright global setup — runs once before all tests.
  *
- * Seeds the Firebase emulator with location-reviews and
- * tenants/rnr/{locations,products,promos} data so e2e assertions
- * have real content to verify against.
+ * Seeds the Firebase emulator with locations, products, promos,
+ * and location-reviews so e2e assertions have real content to verify against.
  *
  * Requires: Firebase emulators already running on their default ports.
  * Start with: npm run dev:all
@@ -27,7 +26,7 @@ export default async function globalSetup() {
       timeout: 15000,
     });
 
-    // Seed tenants/rnr/{locations,products,promos} (used by app.spec.ts, user-journey.spec.ts)
+    // Seed locations, products, promos from constants (used by app.spec.ts, user-journey.spec.ts)
     execSync('npx tsx scripts/seed-from-constants.ts', {
       stdio: 'inherit',
       timeout: 30000,

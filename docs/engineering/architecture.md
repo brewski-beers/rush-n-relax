@@ -36,12 +36,12 @@ flowchart LR
 
 ### Legend
 
-| Abbrev | Meaning                                                        |
-| ------ | -------------------------------------------------------------- |
-| SPA    | Single-Page Application (previous Vite architecture)           |
-| ADC    | Application Default Credentials (Firebase auth in App Hosting) |
-| CMS    | Content Management System (admin UI)                           |
-| POS    | Point of Sale (Clover integration target)                      |
+| Abbrev | Meaning                                                   |
+| ------ | --------------------------------------------------------- |
+| SPA    | Single-Page Application (previous Vite architecture)      |
+| ADC    | Application Default Credentials (Firebase auth in Vercel) |
+| CMS    | Content Management System (admin UI)                      |
+| POS    | Point of Sale (Clover integration target)                 |
 
 ### Key Paths
 
@@ -86,7 +86,7 @@ graph TB
     end
 
     subgraph GCP["Firebase — GCP"]
-        FS[("Firestore\ntenants/rnr/\nlocations · products\npromos · compliance-logs")]
+        FS[("Firestore\nlocations · products · promos\ninventory · location-reviews\ncontact-submissions")]
         AUTH["Firebase Auth"]
         FN["Cloud Functions v2\nfetchLocationReviews"]
     end
@@ -168,7 +168,7 @@ flowchart TD
     subgraph CREDS["Admin SDK Credential Source"]
         C1{"FIREBASE_SERVICE_ACCOUNT_JSON set?"}
         C1 -->|"yes"| SC["Service Account JSON\n(CI / local override)"]
-        C1 -->|"no"| ADC["Application Default Credentials\n(App Hosting prod · gcloud local)"]
+        C1 -->|"no"| ADC["Application Default Credentials\n(Vercel prod · gcloud local)"]
     end
 
     EMU --> CREDS
@@ -216,12 +216,12 @@ sequenceDiagram
     Note over Emu,Next: Parallel via concurrently
 
     Dev->>NPM: npm run dev:seed
-    NPM->>Seed: seed-emulators.cjs → location-reviews/
-    NPM->>Seed: seed-from-constants.ts → tenants/rnr/{locations,products,promos}
+    NPM->>Seed: seed-emulators.cjs → locations/ products/ promos/ location-reviews/
+    NPM->>Seed: seed-from-constants.ts → locations/ products/ promos/
     Note over Seed,Emu: FIRESTORE_EMULATOR_HOST=localhost:8080
 
     Dev->>Next: http://localhost:3000
-    Next->>Emu: Admin SDK reads tenants/rnr/locations
+    Next->>Emu: Admin SDK reads locations/
     Emu-->>Next: Location documents
     Next-->>Dev: Server-rendered page with Firestore data
 ```
@@ -255,7 +255,7 @@ flowchart LR
         R1["VITE_* env vars\n→ NEXT_PUBLIC_*"]
         R2["React Router\n→ App Router"]
         R3["src/pages/*.tsx\n→ src/app/(storefront)/*/page.tsx"]
-        R4["GH Actions deploy\n→ apphosting.yaml"]
+        R4["Firebase App Hosting\n→ Vercel (PR previews + prod)"]
         R5["Inline NODE_ENV checks\n→ src/lib/firebase/env.ts"]
     end
 
@@ -316,7 +316,7 @@ src/app/api/clover/
 └── sync/route.ts                      # POST — manual sync trigger
 
 src/lib/repositories/
-└── inventory.repository.ts            # tenants/rnr/inventory/{locationId}/items/
+└── inventory.repository.ts            # inventory/{locationId}/items/
 
 src/types/
 └── inventory.ts                       # CloverItem · InventorySnapshot

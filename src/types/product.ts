@@ -12,25 +12,12 @@ export type ProductStatus =
   | 'compliance-hold';
 
 /**
- * Which shipping tiers this product qualifies for.
- * Enforced in checkout via validateShippingEligibility().
- * Context: hemp-derived cannabinoid products have complex carrier/state restrictions.
- */
-export type ShippableCategory =
-  | 'accessory'
-  | 'merchandise'
-  | 'cbd_topical'
-  | 'cbd_tincture'
-  | 'hemp_flower';
-
-/**
  * Firestore document shape for a product.
- * Lives at: tenants/{tenantId}/products/{productId}
+ * Lives at: products/{slug}
  */
 export interface Product {
-  /** Firestore document ID */
+  /** Firestore document ID (same as slug) */
   id: string;
-  tenantId: string;
   slug: string;
   name: string;
   category: ProductCategory;
@@ -46,15 +33,23 @@ export interface Product {
    * A Cloud Function sets affected products to 'compliance-hold' on Nov 1, 2026.
    */
   federalDeadlineRisk: boolean;
-  /** Which shipping programs this product qualifies for */
-  shippableCategories: ShippableCategory[];
-  /** Link to Certificate of Analysis — required for consumable shipping */
+  /** Link to Certificate of Analysis — required for compliance documentation */
   coaUrl?: string;
+  /** Location slugs where this product is carried, e.g. ['oak-ridge', 'seymour'] */
+  availableAt: string[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 export type ProductSummary = Pick<
   Product,
-  'id' | 'slug' | 'name' | 'category' | 'image' | 'featured' | 'status'
+  | 'id'
+  | 'slug'
+  | 'name'
+  | 'category'
+  | 'description'
+  | 'image'
+  | 'featured'
+  | 'status'
+  | 'availableAt'
 >;

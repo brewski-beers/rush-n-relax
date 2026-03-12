@@ -1,0 +1,44 @@
+version: 2
+updates:
+  # Next.js app dependencies
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    groups:
+      nextjs:
+        patterns: ["next", "react", "react-dom", "@types/react*"]
+      firebase:
+        patterns: ["firebase*", "@firebase/*"]
+      testing:
+        patterns: ["vitest*", "@vitest/*", "playwright*", "@playwright/*", "@testing-library/*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # Firebase Functions dependencies
+  - package-ecosystem: npm
+    directory: /functions
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 3

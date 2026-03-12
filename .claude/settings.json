@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/check-docs.cjs 2>&1 || echo '[doc-check] ⚠️  Stale doc references detected — run /doc-writer'"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -7,12 +7,11 @@ export interface LocationCoordinates {
 
 /**
  * Firestore document shape for a dispensary location.
- * Lives at: tenants/{tenantId}/locations/{locationId}
+ * Lives at: locations/{slug}
  */
 export interface Location {
-  /** Firestore document ID */
+  /** Firestore document ID (same as slug) */
   id: string;
-  tenantId: string;
   slug: string;
   name: string;
   address: string;

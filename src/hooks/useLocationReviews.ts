@@ -71,6 +71,8 @@ export function useLocationReviews(
         if (cancelled) return;
         if (!snap.exists()) throw new Error('No reviews available');
         const data = snap.data();
+        // These casts are safe: the document is written exclusively by the
+        // fetchLocationReviews Cloud Function, which always produces this shape.
         dispatch({
           type: 'success',
           rating: data.rating as number,

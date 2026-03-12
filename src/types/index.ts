@@ -8,7 +8,6 @@ export type {
   ProductSummary,
   ProductCategory,
   ProductStatus,
-  ShippableCategory,
 } from './product';
 export type { Promo, PromoSummary } from './promo';
 export type {

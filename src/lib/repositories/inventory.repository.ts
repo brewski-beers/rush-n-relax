@@ -3,26 +3,21 @@
  * Server-side only (uses firebase-admin).
  *
  * Inventory items live in a subcollection scoped per location:
- *   tenants/{tenantId}/inventory/{locationId}/items/{productId}
+ *   inventory/{locationId}/items/{productId}
  *
- * locationId can be a retail location doc ID or HUB_LOCATION_ID ('hub').
+ * locationId can be a retail location slug or HUB_LOCATION_ID ('hub').
  */
 import {
   getAdminFirestore,
   toDate,
-  DEFAULT_TENANT_ID,
+  HUB_LOCATION_ID,
 } from '@/lib/firebase/admin';
 import type { InventoryItem, InventoryItemSummary } from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
-function inventoryItemsCol(
-  locationId: string,
-  tenantId: string = DEFAULT_TENANT_ID
-) {
-  return getAdminFirestore().collection(
-    `tenants/${tenantId}/inventory/${locationId}/items`
-  );
+function inventoryItemsCol(locationId: string) {
+  return getAdminFirestore().collection(`inventory/${locationId}/items`);
 }
 
 // ── Read operations ───────────────────────────────────────────────────────
@@ -32,10 +27,9 @@ function inventoryItemsCol(
  * Returns an empty array if no items have been tracked yet.
  */
 export async function listInventoryForLocation(
-  locationId: string,
-  tenantId: string = DEFAULT_TENANT_ID
+  locationId: string
 ): Promise<InventoryItem[]> {
-  const snap = await inventoryItemsCol(locationId, tenantId).get();
+  const snap = await inventoryItemsCol(locationId).get();
   return snap.docs.map(doc => docToInventoryItem(doc.id, doc.data()));
 }
 
@@ -46,13 +40,11 @@ export async function listInventoryForLocation(
  */
 export async function getInventoryItem(
   locationId: string,
-  productId: string,
-  tenantId: string = DEFAULT_TENANT_ID
+  productId: string
 ): Promise<InventoryItem | null> {
-  const doc = await inventoryItemsCol(locationId, tenantId)
-    .doc(productId)
-    .get();
+  const doc = await inventoryItemsCol(locationId).doc(productId).get();
   if (!doc.exists) return null;
+  // doc.data() is safe here: existence is confirmed on the line above
   return docToInventoryItem(doc.id, doc.data()!);
 }
 
@@ -60,10 +52,10 @@ export async function getInventoryItem(
  * List all hub inventory items that are flagged as available online.
  * Used by the storefront (Phase 3A) to show products available for purchase.
  */
-export async function listOnlineAvailableInventory(
-  tenantId: string = DEFAULT_TENANT_ID
-): Promise<InventoryItemSummary[]> {
-  const snap = await inventoryItemsCol('hub', tenantId)
+export async function listOnlineAvailableInventory(): Promise<
+  InventoryItemSummary[]
+> {
+  const snap = await inventoryItemsCol(HUB_LOCATION_ID)
     .where('availableOnline', '==', true)
     .where('inStock', '==', true)
     .get();
@@ -72,9 +64,10 @@ export async function listOnlineAvailableInventory(
     const d = doc.data();
     return {
       productId: doc.id,
-      locationId: 'hub',
+      locationId: HUB_LOCATION_ID,
       inStock: d.inStock ?? false,
       availableOnline: d.availableOnline ?? false,
+      availablePickup: false,
       quantity: d.quantity ?? undefined,
     } satisfies InventoryItemSummary;
   });
@@ -85,6 +78,9 @@ export async function listOnlineAvailableInventory(
 /**
  * Create or update an inventory item (merge: true).
  * Document ID is the productId — one record per product per location.
+ *
+ * Compliance guard: setting availableOnline: true is blocked if the product
+ * has status 'compliance-hold'. Throws if violated.
  */
 export async function setInventoryItem(
   locationId: string,
@@ -92,13 +88,28 @@ export async function setInventoryItem(
   patch: {
     inStock: boolean;
     availableOnline?: boolean;
+    availablePickup?: boolean;
     quantity?: number;
     notes?: string;
     updatedBy?: string;
-  },
-  tenantId: string = DEFAULT_TENANT_ID
+  }
 ): Promise<void> {
-  await inventoryItemsCol(locationId, tenantId)
+  if (patch.availableOnline || patch.availablePickup) {
+    // Intentional cross-collection read: this compliance guard must be
+    // co-located with the write to ensure atomicity of the check. Importing
+    // getProductBySlug would create a circular dependency between repositories.
+    const productDoc = await getAdminFirestore()
+      .collection('products')
+      .doc(productId)
+      .get();
+    if (productDoc.exists && productDoc.data()?.status === 'compliance-hold') {
+      throw new Error(
+        `Cannot mark '${productId}' available for purchase: product is on compliance-hold`
+      );
+    }
+  }
+
+  await inventoryItemsCol(locationId)
     .doc(productId)
     .set(
       {
@@ -106,6 +117,7 @@ export async function setInventoryItem(
         locationId,
         inStock: patch.inStock,
         availableOnline: patch.availableOnline ?? false,
+        availablePickup: patch.availablePickup ?? false,
         ...(patch.quantity !== undefined && { quantity: patch.quantity }),
         ...(patch.notes !== undefined && { notes: patch.notes }),
         ...(patch.updatedBy !== undefined && { updatedBy: patch.updatedBy }),
@@ -126,6 +138,7 @@ function docToInventoryItem(
     locationId: d.locationId,
     inStock: d.inStock ?? false,
     availableOnline: d.availableOnline ?? false,
+    availablePickup: d.availablePickup ?? false,
     quantity: d.quantity ?? undefined,
     notes: d.notes ?? undefined,
     updatedAt: toDate(d.updatedAt),

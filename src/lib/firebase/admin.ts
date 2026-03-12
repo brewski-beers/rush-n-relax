@@ -2,8 +2,7 @@
  * Firebase Admin SDK singleton — server-side only.
  * Used by Server Components and API routes for privileged Firestore reads/writes.
  *
- * In Firebase App Hosting the environment is auto-configured with Application Default
- * Credentials — no explicit service account key needed in production.
+ * In Vercel: set FIREBASE_SERVICE_ACCOUNT_JSON env var with the service account JSON.
  * For local development, set GOOGLE_APPLICATION_CREDENTIALS to a service account JSON.
  */
 import { getApps, initializeApp, cert, type App } from 'firebase-admin/app';
@@ -67,12 +66,6 @@ export function toDate(value: Timestamp | Date | string | undefined): Date {
   if (value instanceof Date) return value;
   return new Date(value);
 }
-
-/**
- * Standard tenant ID for Rush N Relax (single-tenant in Phase 1).
- * Swap out for dynamic tenant resolution once Phase 5 multi-tenant is active.
- */
-export const DEFAULT_TENANT_ID = 'rnr';
 
 /**
  * Reserved inventory location ID for the RnR Hub (warehouse/non-physical).

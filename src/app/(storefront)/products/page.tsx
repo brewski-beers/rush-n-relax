@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import { Card } from '@/components/Card';
 import { CardGrid } from '@/components/CardGrid';
 import { listProducts } from '@/lib/repositories';
@@ -57,9 +55,7 @@ export default async function ProductsPage() {
                     {product.category.toUpperCase()}
                   </div>
                   <h2>{product.name}</h2>
-                  <p className="product-description">
-                    {(product as { description?: string }).description}
-                  </p>
+                  <p className="product-description">{product.description}</p>
                   <div className="product-card-cta">View Details →</div>
                 </div>
               </Card>

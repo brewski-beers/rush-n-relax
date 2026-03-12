@@ -1,33 +1,25 @@
 /**
  * Location repository — all Firestore access for location documents.
  * Server-side only (uses firebase-admin). UI code calls these from Server Components.
- *
- * Multi-tenant: every query is scoped to a tenantId.
- * Phase 1: tenantId defaults to DEFAULT_TENANT_ID ('rnr').
  */
-import {
-  getAdminFirestore,
-  toDate,
-  DEFAULT_TENANT_ID,
-} from '@/lib/firebase/admin';
+import { cache } from 'react';
+import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type { Location, LocationSummary } from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
-function locationsCol(tenantId: string = DEFAULT_TENANT_ID) {
-  return getAdminFirestore().collection(`tenants/${tenantId}/locations`);
+function locationsCol() {
+  return getAdminFirestore().collection('locations');
 }
 
 // ── Read operations ───────────────────────────────────────────────────────
 
 /**
- * List all locations for a tenant, ordered by name.
+ * List all locations, ordered by name.
  * Returns lightweight summaries — use getLocationBySlug for full detail.
  */
-export async function listLocations(
-  tenantId: string = DEFAULT_TENANT_ID
-): Promise<LocationSummary[]> {
-  const snap = await locationsCol(tenantId).orderBy('name').get();
+export async function listLocations(): Promise<LocationSummary[]> {
+  const snap = await locationsCol().orderBy('name').get();
   return snap.docs.map(doc => {
     const d = doc.data();
     return {
@@ -49,31 +41,25 @@ export async function listLocations(
 /**
  * Fetch a single location by slug.
  * Returns null if not found (caller decides whether to notFound()).
+ * Wrapped with React cache() to deduplicate parallel calls within the same
+ * request (e.g. generateMetadata + page component both reading the same slug).
  */
-export async function getLocationBySlug(
-  slug: string,
-  tenantId: string = DEFAULT_TENANT_ID
-): Promise<Location | null> {
-  const snap = await locationsCol(tenantId)
-    .where('slug', '==', slug)
-    .limit(1)
-    .get();
-
-  if (snap.empty) return null;
-
-  const doc = snap.docs[0];
-  return docToLocation(doc.id, doc.data());
-}
+export const getLocationBySlug = cache(
+  async (slug: string): Promise<Location | null> => {
+    const doc = await locationsCol().doc(slug).get();
+    if (!doc.exists) return null;
+    // doc.data() is safe here: existence is confirmed on the line above
+    return docToLocation(doc.id, doc.data()!);
+  }
+);
 
 /**
  * Fetch a single location by Firestore document ID.
  */
-export async function getLocationById(
-  id: string,
-  tenantId: string = DEFAULT_TENANT_ID
-): Promise<Location | null> {
-  const doc = await locationsCol(tenantId).doc(id).get();
+export async function getLocationById(id: string): Promise<Location | null> {
+  const doc = await locationsCol().doc(id).get();
   if (!doc.exists) return null;
+  // doc.data() is safe here: existence is confirmed on the line above
   return docToLocation(doc.id, doc.data()!);
 }
 
@@ -81,22 +67,15 @@ export async function getLocationById(
 
 /**
  * Upsert a location document (admin use only).
- * Creates if ID is absent, merges if ID is present.
+ * Uses slug as the document ID. Creates if absent, merges if present.
  */
 export async function upsertLocation(
-  data: Omit<Location, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
-  tenantId: string = DEFAULT_TENANT_ID
+  data: Omit<Location, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
-  const col = locationsCol(tenantId);
+  const col = locationsCol();
   const now = new Date();
-
-  if (data.id) {
-    await col.doc(data.id).set({ ...data, updatedAt: now }, { merge: true });
-    return data.id;
-  }
-
-  const ref = await col.add({ ...data, createdAt: now, updatedAt: now });
-  return ref.id;
+  await col.doc(data.slug).set({ ...data, updatedAt: now }, { merge: true });
+  return data.slug;
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────
@@ -107,7 +86,6 @@ function docToLocation(
 ): Location {
   return {
     id,
-    tenantId: d.tenantId,
     slug: d.slug,
     name: d.name,
     address: d.address,

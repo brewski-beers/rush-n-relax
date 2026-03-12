@@ -1,7 +1,7 @@
 # Pull Request CI
 # - `verify` job is the required status check for branch protection
-# - `preview` job triggers an App Hosting preview rollout after tests pass
-name: PR — Verify & Preview
+# - Vercel automatically creates a preview deployment for each PR via its GitHub integration
+name: PR — Verify
 
 on:
   pull_request:
@@ -41,6 +41,10 @@ jobs:
         if: needs.changes.outputs.should_run == 'true'
         run: npm run test
 
+      - name: Functions unit tests
+        if: needs.changes.outputs.should_run == 'true'
+        run: cd functions && npm ci && npm test
+
       - name: Setup Playwright (Chromium)
         if: needs.changes.outputs.should_run == 'true'
         uses: ./.github/actions/setup-playwright
@@ -51,9 +55,10 @@ jobs:
         if: needs.changes.outputs.should_run == 'true'
         run: >-
           npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,storage
-          "node scripts/seed-emulators.cjs && npm run test:e2e:core -- --project=chromium"
+          "npx tsx scripts/seed-emulators.ts && npm run test:e2e:core -- --project=chromium"
         env:
-          VITE_USE_EMULATORS: 'true'
+          # Note: emulator routing is handled via NODE_ENV=development (set by
+          # `npm run dev` in playwright.config.ts webServer). No extra env needed.
           CI: 'true'
 
       - name: No-op summary
@@ -74,48 +79,3 @@ jobs:
           if-no-files-found: ignore
           retention-days: 3
 
-  preview:
-    name: preview
-    needs: [changes, verify]
-    if: needs.changes.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      FIREBASE_PREVIEW_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
-      FIREBASE_PROJECT_ID: rush-n-relax
-      APP_HOSTING_BACKEND_ID: rush-n-relax
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup
-        uses: ./.github/actions/setup
-
-      - name: Setup Firebase auth
-        id: auth
-        uses: ./.github/actions/firebase-auth-setup
-        with:
-          service-account-json: ${{ env.FIREBASE_PREVIEW_SERVICE_ACCOUNT_JSON }}
-
-      - name: Create App Hosting preview rollout
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
-        run: |
-          npx firebase-tools apphosting:rollouts:create "$APP_HOSTING_BACKEND_ID" \
-            --project "$FIREBASE_PROJECT_ID" \
-            --git-branch "${{ github.head_ref }}" \
-            --force \
-            --non-interactive
-
-      - name: Preview summary
-        if: always()
-        run: |
-          {
-            echo "## App Hosting preview rollout"
-            echo "- Backend: \`${{ env.APP_HOSTING_BACKEND_ID }}\`"
-            echo "- Branch: \`${{ github.head_ref }}\`"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Cleanup credentials
-        if: always()
-        run: rm -f "${{ steps.auth.outputs.credentials_path }}"

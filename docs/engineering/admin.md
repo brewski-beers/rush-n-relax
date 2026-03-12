@@ -74,12 +74,12 @@ flowchart LR
     INV --> RETAIL["/admin/inventory/locationId\nRetail location"]
 
     HUB --> HUB_COLS["In-Stock toggle\nAvailable Online toggle"]
-    RETAIL --> RETAIL_COLS["In-Stock toggle only"]
+    RETAIL --> RETAIL_COLS["In-Stock toggle\nAvailable Pickup toggle"]
 
-    subgraph FS["Firestore — tenants/rnr/"]
-        FS_LOC["locations/"]
-        FS_PROD["products/"]
-        FS_PROMO["promos/"]
+    subgraph FS["Firestore"]
+        FS_LOC["locations/{slug}"]
+        FS_PROD["products/{slug}"]
+        FS_PROMO["promos/{slug}"]
         FS_INV["inventory/{locationId}/items/{productId}"]
     end
 
@@ -111,6 +111,8 @@ flowchart LR
 
 - Dashboard is the entry point after login — all CMS modules link from here.
 - Inventory is the only module with a nested route (`[locationId]`).
-- Hub inventory items have an `availableOnline` flag — toggles a product's online store availability for Phase 3A.
+- Hub inventory items have an `availableOnline` flag — toggles online shipping availability (Phase 3A).
+- Retail inventory items have an `availablePickup` flag — toggles buy-online / pick-up-in-store (Phase 3A).
+- Compliance guard: setting either flag is blocked if the product's status is `compliance-hold`.
 - All admin pages use `export const dynamic = 'force-dynamic'` — no static prerender at build time.
 - Writes go through Server Actions (`actions.ts`) which call the repository layer directly.

@@ -2,17 +2,13 @@
  * Product repository — all Firestore access for product documents.
  * Server-side only (uses firebase-admin).
  */
-import {
-  getAdminFirestore,
-  toDate,
-  DEFAULT_TENANT_ID,
-} from '@/lib/firebase/admin';
+import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type { Product, ProductSummary, ProductCategory } from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
-function productsCol(tenantId: string = DEFAULT_TENANT_ID) {
-  return getAdminFirestore().collection(`tenants/${tenantId}/products`);
+function productsCol() {
+  return getAdminFirestore().collection('products');
 }
 
 // ── Read operations ───────────────────────────────────────────────────────
@@ -21,10 +17,8 @@ function productsCol(tenantId: string = DEFAULT_TENANT_ID) {
  * List all active products, ordered by name.
  * Returns lightweight summaries for grid/list views.
  */
-export async function listProducts(
-  tenantId: string = DEFAULT_TENANT_ID
-): Promise<ProductSummary[]> {
-  const snap = await productsCol(tenantId)
+export async function listProducts(): Promise<ProductSummary[]> {
+  const snap = await productsCol()
     .where('status', '==', 'active')
     .orderBy('name')
     .get();
@@ -36,9 +30,11 @@ export async function listProducts(
       slug: d.slug,
       name: d.name,
       category: d.category,
+      description: d.description ?? '',
       image: d.image ?? undefined,
       featured: d.featured ?? false,
       status: d.status,
+      availableAt: d.availableAt ?? [],
     } satisfies ProductSummary;
   });
 }
@@ -46,10 +42,8 @@ export async function listProducts(
 /**
  * List featured active products (used on homepage).
  */
-export async function listFeaturedProducts(
-  tenantId: string = DEFAULT_TENANT_ID
-): Promise<ProductSummary[]> {
-  const snap = await productsCol(tenantId)
+export async function listFeaturedProducts(): Promise<ProductSummary[]> {
+  const snap = await productsCol()
     .where('status', '==', 'active')
     .where('featured', '==', true)
     .orderBy('name')
@@ -62,9 +56,11 @@ export async function listFeaturedProducts(
       slug: d.slug,
       name: d.name,
       category: d.category,
+      description: d.description ?? '',
       image: d.image ?? undefined,
       featured: true,
       status: d.status,
+      availableAt: d.availableAt ?? [],
     } satisfies ProductSummary;
   });
 }
@@ -73,10 +69,9 @@ export async function listFeaturedProducts(
  * List active products by category.
  */
 export async function listProductsByCategory(
-  category: ProductCategory,
-  tenantId: string = DEFAULT_TENANT_ID
+  category: ProductCategory
 ): Promise<ProductSummary[]> {
-  const snap = await productsCol(tenantId)
+  const snap = await productsCol()
     .where('status', '==', 'active')
     .where('category', '==', category)
     .orderBy('name')
@@ -89,9 +84,11 @@ export async function listProductsByCategory(
       slug: d.slug,
       name: d.name,
       category: d.category,
+      description: d.description ?? '',
       image: d.image ?? undefined,
       featured: d.featured ?? false,
       status: d.status,
+      availableAt: d.availableAt ?? [],
     } satisfies ProductSummary;
   });
 }
@@ -100,45 +97,29 @@ export async function listProductsByCategory(
  * Fetch a single product by slug.
  * Returns null if not found.
  */
-export async function getProductBySlug(
-  slug: string,
-  tenantId: string = DEFAULT_TENANT_ID
-): Promise<Product | null> {
-  const snap = await productsCol(tenantId)
-    .where('slug', '==', slug)
-    .limit(1)
-    .get();
-
-  if (snap.empty) return null;
-
-  const doc = snap.docs[0];
-  return docToProduct(doc.id, doc.data());
+export async function getProductBySlug(slug: string): Promise<Product | null> {
+  const doc = await productsCol().doc(slug).get();
+  if (!doc.exists) return null;
+  // doc.data() is safe here: existence is confirmed on the line above
+  return docToProduct(doc.id, doc.data()!);
 }
 
 // ── Write operations ──────────────────────────────────────────────────────
 
 export async function upsertProduct(
-  data: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
-  tenantId: string = DEFAULT_TENANT_ID
+  data: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
-  const col = productsCol(tenantId);
+  const col = productsCol();
   const now = new Date();
-
-  if (data.id) {
-    await col.doc(data.id).set({ ...data, updatedAt: now }, { merge: true });
-    return data.id;
-  }
-
-  const ref = await col.add({ ...data, createdAt: now, updatedAt: now });
-  return ref.id;
+  await col.doc(data.slug).set({ ...data, updatedAt: now }, { merge: true });
+  return data.slug;
 }
 
 export async function setProductStatus(
   id: string,
-  status: Product['status'],
-  tenantId: string = DEFAULT_TENANT_ID
+  status: Product['status']
 ): Promise<void> {
-  await productsCol(tenantId).doc(id).update({ status, updatedAt: new Date() });
+  await productsCol().doc(id).update({ status, updatedAt: new Date() });
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────
@@ -146,7 +127,6 @@ export async function setProductStatus(
 function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
   return {
     id,
-    tenantId: d.tenantId,
     slug: d.slug,
     name: d.name,
     category: d.category,
@@ -156,8 +136,8 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     featured: d.featured ?? false,
     status: d.status ?? 'active',
     federalDeadlineRisk: d.federalDeadlineRisk ?? false,
-    shippableCategories: d.shippableCategories ?? [],
     coaUrl: d.coaUrl ?? undefined,
+    availableAt: d.availableAt ?? [],
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
   };

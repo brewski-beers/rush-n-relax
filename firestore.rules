@@ -16,6 +16,21 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Core data collections: server-side only via Admin SDK (Next.js Server Components)
+    // No client access needed — all reads go through the server
+    match /locations/{docId} {
+      allow read, write: if false;
+    }
+    match /products/{docId} {
+      allow read, write: if false;
+    }
+    match /promos/{docId} {
+      allow read, write: if false;
+    }
+    match /inventory/{locationId}/items/{productId} {
+      allow read, write: if false;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;
