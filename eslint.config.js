@@ -9,11 +9,21 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'coverage', '*.config.ts', '.next', 'next-env.d.ts'] },
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      ...tseslint.configs.recommendedTypeChecked,
+    ],
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+      parserOptions: {
+        projectService: true,
+      },
     },
     plugins: {
       react,
@@ -60,6 +70,29 @@ export default tseslint.config(
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'prefer-const': 'error',
       'no-var': 'error',
+    },
+  },
+  {
+    files: ['src/lib/repositories/**/*.ts', 'src/lib/firebase/admin.ts', 'src/constants/social.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+    },
+  },
+  {
+    files: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/**/__tests__/**/*.ts', 'src/**/__tests__/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
+  {
+    files: ['src/app/(admin)/**/actions.ts'],
+    rules: {
+      '@typescript-eslint/no-base-to-string': 'off',
     },
   },
   eslintConfigPrettier, // Disable ESLint rules that conflict with Prettier

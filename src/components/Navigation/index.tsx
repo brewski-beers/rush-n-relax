@@ -13,6 +13,8 @@ import { isRouteActive } from '../../utils/routeMatching';
 import cannabisLeaf from '../../assets/icons/cannabis-leaf.svg';
 import './Navigation.css';
 
+const CANNABIS_LEAF_ICON_SRC = String(cannabisLeaf);
+
 const NAV_LINKS = [
   { label: 'Home', path: '/' },
   { label: 'About', path: '/about' },
@@ -49,7 +51,7 @@ export function Navigation() {
       }
     };
 
-    loadLogo();
+    void loadLogo();
 
     return () => {
       isMounted = false;
@@ -83,7 +85,11 @@ export function Navigation() {
           aria-expanded={isMenuOpen}
           aria-controls="nav-menu"
         >
-          <img src={cannabisLeaf} alt="" className="cannabis-leaf-icon" />
+          <img
+            src={CANNABIS_LEAF_ICON_SRC}
+            alt=""
+            className="cannabis-leaf-icon"
+          />
         </button>
 
         {/* Mobile Menu Drawer */}

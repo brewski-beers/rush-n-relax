@@ -19,4 +19,10 @@ export type {
   ComplianceLogType,
 } from './compliance';
 export type { User, UserRole } from './user';
-export type { InventoryItem, InventoryItemSummary } from './inventory';
+export type {
+  InventoryItem,
+  InventoryItemSummary,
+  InventoryAdjustment,
+  InventoryAdjustmentReason,
+  InventoryAdjustmentSource,
+} from './inventory';

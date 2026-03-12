@@ -9,7 +9,9 @@ export default async function AdminInventoryPage() {
 
   return (
     <>
-      <h1>Inventory</h1>
+      <div className="admin-page-header">
+        <h1>Inventory</h1>
+      </div>
       <p className="admin-section-desc">
         Manage product stock levels by location. Select a location to view and
         update its inventory.

@@ -1,3 +1,6 @@
+#!/usr/bin/env sh
+set -e
+
+npm run typecheck
 npx lint-staged
 npm run lint:styles
-npx tsc --noEmit

@@ -36,8 +36,8 @@ export async function updateLocation(
     return { error: 'All fields are required.' };
   }
 
-  await upsertLocation({
-    ...existing,
+  const payload = {
+    slug: existing.slug,
     name,
     address,
     city,
@@ -46,6 +46,22 @@ export async function updateLocation(
     phone,
     hours,
     description,
+    placeId: existing.placeId,
+  };
+
+  await upsertLocation({
+    ...payload,
+    ...(existing.coordinates ? { coordinates: existing.coordinates } : {}),
+    ...(existing.socialLinkIds
+      ? { socialLinkIds: existing.socialLinkIds }
+      : {}),
+    ...(existing.cloverMerchantId
+      ? { cloverMerchantId: existing.cloverMerchantId }
+      : {}),
+    ...(existing.ogImagePath ? { ogImagePath: existing.ogImagePath } : {}),
+    ...(existing.seoDescription
+      ? { seoDescription: existing.seoDescription }
+      : {}),
   });
 
   redirect(`/admin/locations`);

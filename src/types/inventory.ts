@@ -41,3 +41,39 @@ export type InventoryItemSummary = Pick<
   | 'availablePickup'
   | 'quantity'
 >;
+
+export type InventoryAdjustmentReason =
+  | 'manual-count'
+  | 'toggle-stock'
+  | 'toggle-online'
+  | 'toggle-pickup'
+  | 'system-sync'
+  | 'correction';
+
+export type InventoryAdjustmentSource = 'admin-ui' | 'system' | 'api';
+
+/**
+ * Immutable audit record for a single inventory mutation.
+ * Lives at: inventory/{locationId}/items/{productId}/adjustments/{adjustmentId}
+ */
+export interface InventoryAdjustment {
+  productId: string;
+  locationId: string;
+  reason: InventoryAdjustmentReason;
+  source: InventoryAdjustmentSource;
+  updatedBy: string;
+  changedFields: Array<
+    'quantity' | 'inStock' | 'availableOnline' | 'availablePickup' | 'notes'
+  >;
+  previousQuantity: number;
+  nextQuantity: number;
+  deltaQuantity: number;
+  previousInStock: boolean;
+  nextInStock: boolean;
+  previousAvailableOnline: boolean;
+  nextAvailableOnline: boolean;
+  previousAvailablePickup: boolean;
+  nextAvailablePickup: boolean;
+  note?: string;
+  createdAt: Date;
+}

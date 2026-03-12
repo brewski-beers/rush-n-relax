@@ -16,52 +16,56 @@ export default async function AdminProductsPage() {
           New Product
         </Link>
       </div>
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Status</th>
-            <th>Featured</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map(product => (
-            <tr key={product.id} data-status={product.status}>
-              <td>{product.name}</td>
-              <td>{product.category}</td>
-              <td>{product.status}</td>
-              <td>{product.featured ? 'Yes' : 'No'}</td>
-              <td className="admin-actions">
-                <Link href={`/admin/products/${product.slug}/edit`}>Edit</Link>
-                {product.status === 'archived' ? (
-                  <ConfirmButton
-                    action={restoreProduct.bind(null, product.slug)}
-                    message={`Restore "${product.name}"?`}
-                  >
-                    Restore
-                  </ConfirmButton>
-                ) : product.status !== 'compliance-hold' ? (
-                  <ConfirmButton
-                    action={archiveProduct.bind(null, product.slug)}
-                    message={`Archive "${product.name}"? It will be hidden from the storefront.`}
-                  >
-                    Archive
-                  </ConfirmButton>
-                ) : null}
-              </td>
-            </tr>
-          ))}
-          {products.length === 0 && (
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
             <tr>
-              <td colSpan={5} className="admin-empty">
-                No products found.
-              </td>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>Featured</th>
+              <th>Actions</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {products.map(product => (
+              <tr key={product.id} data-status={product.status}>
+                <td>{product.name}</td>
+                <td>{product.category}</td>
+                <td>{product.status}</td>
+                <td>{product.featured ? 'Yes' : 'No'}</td>
+                <td className="admin-actions">
+                  <Link href={`/admin/products/${product.slug}/edit`}>
+                    Edit
+                  </Link>
+                  {product.status === 'archived' ? (
+                    <ConfirmButton
+                      action={restoreProduct.bind(null, product.slug)}
+                      message={`Restore "${product.name}"?`}
+                    >
+                      Restore
+                    </ConfirmButton>
+                  ) : product.status !== 'compliance-hold' ? (
+                    <ConfirmButton
+                      action={archiveProduct.bind(null, product.slug)}
+                      message={`Archive "${product.name}"? It will be hidden from the storefront.`}
+                    >
+                      Archive
+                    </ConfirmButton>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+            {products.length === 0 && (
+              <tr>
+                <td colSpan={5} className="admin-empty">
+                  No products found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

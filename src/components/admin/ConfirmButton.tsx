@@ -12,9 +12,9 @@ interface Props {
  * Used for destructive admin operations (delete, archive).
  */
 export function ConfirmButton({ action, message, children, className }: Props) {
-  const handleClick = async () => {
+  const handleClick = () => {
     if (!confirm(message)) return;
-    await action();
+    void action();
   };
 
   return (

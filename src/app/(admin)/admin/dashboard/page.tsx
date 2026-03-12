@@ -3,7 +3,12 @@ import Link from 'next/link';
 export default function DashboardPage() {
   return (
     <>
-      <h1>Admin Dashboard</h1>
+      <div className="admin-page-header">
+        <h1>Admin Dashboard</h1>
+      </div>
+      <p className="admin-section-desc">
+        Control locations, products, promos, and inventory from one workspace.
+      </p>
       <div className="dashboard-links">
         <Link href="/admin/locations" className="dashboard-card">
           Manage Locations

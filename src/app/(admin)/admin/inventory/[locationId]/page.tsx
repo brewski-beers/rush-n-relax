@@ -37,6 +37,7 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
     const inv = inventoryMap.get(product.id);
     return {
       ...product,
+      quantity: inv?.quantity ?? 0,
       inStock: inv?.inStock ?? false,
       availableOnline: inv?.availableOnline ?? false,
     };
@@ -46,7 +47,9 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
 
   return (
     <>
-      <h1>Inventory — {locationLabel}</h1>
+      <div className="admin-page-header">
+        <h1>Inventory — {locationLabel}</h1>
+      </div>
       {isHub && (
         <p className="admin-section-desc">
           Hub inventory. Toggle <strong>Available Online</strong> to promote

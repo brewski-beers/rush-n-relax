@@ -121,8 +121,9 @@ export async function listProductsByCategory(
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const doc = await productsCol().doc(slug).get();
   if (!doc.exists) return null;
-  // doc.data() is safe here: existence is confirmed on the line above
-  return docToProduct(doc.id, doc.data()!);
+  const data = doc.data();
+  if (!data) return null;
+  return docToProduct(doc.id, data);
 }
 
 // ── Write operations ──────────────────────────────────────────────────────
@@ -132,15 +133,22 @@ export async function upsertProduct(
 ): Promise<string> {
   const col = productsCol();
   const now = new Date();
-  await col.doc(data.slug).set({ ...data, updatedAt: now }, { merge: true });
+  const payload = stripUndefinedFields({ ...data, updatedAt: now });
+  await col.doc(data.slug).set(payload, { merge: true });
   return data.slug;
 }
 
 export async function setProductStatus(
-  id: string,
+  slug: string,
   status: Product['status']
 ): Promise<void> {
-  await productsCol().doc(id).update({ status, updatedAt: new Date() });
+  const docRef = productsCol().doc(slug);
+  const docSnap = await docRef.get();
+  if (!docSnap.exists) {
+    throw new Error(`Product '${slug}' not found`);
+  }
+
+  await docRef.update({ status, updatedAt: new Date() });
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────
@@ -162,4 +170,12 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
   };
+}
+
+function stripUndefinedFields<T extends Record<string, unknown>>(
+  value: T
+): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, v]) => v !== undefined)
+  ) as Partial<T>;
 }

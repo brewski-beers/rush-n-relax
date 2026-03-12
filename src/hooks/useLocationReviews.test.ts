@@ -132,7 +132,7 @@ describe('useLocationReviews', () => {
       mockGetDoc.mockReturnValue(
         new Promise(resolve => {
           resolveSnap = resolve;
-        }) as ReturnType<typeof getDoc>
+        })
       );
 
       const { result, unmount } = renderHook(() =>

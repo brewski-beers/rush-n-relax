@@ -50,16 +50,22 @@ export async function updateProduct(
     return { error: 'Cannot set that status directly.' };
   }
 
-  await upsertProduct({
-    ...existing,
+  const payload = {
+    slug: existing.slug,
     name,
     category,
     description,
     details,
+    image: existing.image,
     status,
     featured,
     federalDeadlineRisk,
     availableAt,
+  };
+
+  await upsertProduct({
+    ...payload,
+    ...(existing.coaUrl ? { coaUrl: existing.coaUrl } : {}),
   });
 
   redirect('/admin/products');

@@ -14,37 +14,39 @@ export default async function AdminLocationsPage() {
           New Location
         </Link>
       </div>
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>City</th>
-            <th>Phone</th>
-            <th>Hours</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {locations.map(loc => (
-            <tr key={loc.id}>
-              <td>{loc.name}</td>
-              <td>{loc.city}</td>
-              <td>{loc.phone}</td>
-              <td>{loc.hours}</td>
-              <td>
-                <Link href={`/admin/locations/${loc.slug}/edit`}>Edit</Link>
-              </td>
-            </tr>
-          ))}
-          {locations.length === 0 && (
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
             <tr>
-              <td colSpan={5} className="admin-empty">
-                No locations found.
-              </td>
+              <th>Name</th>
+              <th>City</th>
+              <th>Phone</th>
+              <th>Hours</th>
+              <th>Actions</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {locations.map(loc => (
+              <tr key={loc.id}>
+                <td>{loc.name}</td>
+                <td>{loc.city}</td>
+                <td>{loc.phone}</td>
+                <td>{loc.hours}</td>
+                <td>
+                  <Link href={`/admin/locations/${loc.slug}/edit`}>Edit</Link>
+                </td>
+              </tr>
+            ))}
+            {locations.length === 0 && (
+              <tr>
+                <td colSpan={5} className="admin-empty">
+                  No locations found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

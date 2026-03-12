@@ -78,7 +78,7 @@ export function AmbientOverlay() {
       }
     }
 
-    resolveUrls();
+    void resolveUrls();
     return () => {
       cancelled = true;
     };

@@ -32,16 +32,24 @@ export async function updatePromo(
     return { error: 'CTA Path must be an internal path starting with /.' };
   }
 
-  await upsertPromo({
-    ...existing,
+  const payload = {
+    slug: existing.slug,
     name,
     tagline,
     description,
     details,
     cta,
     ctaPath,
-    locationSlug,
     active,
+  };
+
+  await upsertPromo({
+    ...payload,
+    ...(locationSlug ? { locationSlug } : {}),
+    ...(existing.image ? { image: existing.image } : {}),
+    ...(existing.keywords ? { keywords: existing.keywords } : {}),
+    ...(existing.startDate ? { startDate: existing.startDate } : {}),
+    ...(existing.endDate ? { endDate: existing.endDate } : {}),
   });
 
   redirect(`/admin/promos`);
