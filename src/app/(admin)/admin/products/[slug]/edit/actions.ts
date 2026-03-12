@@ -1,0 +1,66 @@
+'use server';
+
+import { redirect } from 'next/navigation';
+import { requireRole } from '@/lib/admin-auth';
+import { upsertProduct, getProductBySlug } from '@/lib/repositories';
+import type { ProductCategory, ProductStatus } from '@/types';
+
+const VALID_CATEGORIES: ProductCategory[] = [
+  'flower',
+  'concentrates',
+  'drinks',
+  'edibles',
+  'vapes',
+];
+// compliance-hold is system-managed — admins cannot set it directly
+const SETTABLE_STATUSES: ProductStatus[] = [
+  'active',
+  'pending-reformulation',
+  'archived',
+];
+
+export async function updateProduct(
+  slug: string,
+  _prev: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string }> {
+  await requireRole('superadmin');
+
+  const existing = await getProductBySlug(slug);
+  if (!existing) return { error: 'Product not found.' };
+
+  const name = formData.get('name')?.toString().trim();
+  const category = formData.get('category')?.toString() as ProductCategory;
+  const description = formData.get('description')?.toString().trim();
+  const details = formData.get('details')?.toString().trim();
+  const status = formData.get('status')?.toString() as ProductStatus;
+  const featured = formData.get('featured') === 'true';
+  const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
+  const availableAt = formData.getAll('availableAt').map(v => v.toString());
+
+  if (!name || !category || !description || !details || !status) {
+    return { error: 'All required fields must be filled.' };
+  }
+
+  if (!VALID_CATEGORIES.includes(category)) {
+    return { error: 'Invalid category.' };
+  }
+
+  if (!SETTABLE_STATUSES.includes(status)) {
+    return { error: 'Cannot set that status directly.' };
+  }
+
+  await upsertProduct({
+    ...existing,
+    name,
+    category,
+    description,
+    details,
+    status,
+    featured,
+    federalDeadlineRisk,
+    availableAt,
+  });
+
+  redirect('/admin/products');
+}

@@ -14,6 +14,27 @@ function productsCol() {
 // ── Read operations ───────────────────────────────────────────────────────
 
 /**
+ * List all products regardless of status — admin use only.
+ */
+export async function listAllProducts(): Promise<ProductSummary[]> {
+  const snap = await productsCol().orderBy('name').get();
+  return snap.docs.map(doc => {
+    const d = doc.data();
+    return {
+      id: doc.id,
+      slug: d.slug,
+      name: d.name,
+      category: d.category,
+      description: d.description ?? '',
+      image: d.image ?? undefined,
+      featured: d.featured ?? false,
+      status: d.status,
+      availableAt: d.availableAt ?? [],
+    } satisfies ProductSummary;
+  });
+}
+
+/**
  * List all active products, ordered by name.
  * Returns lightweight summaries for grid/list views.
  */

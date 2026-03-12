@@ -533,7 +533,6 @@ async function seedStorageStub() {
 
 async function seedAdminUsers() {
   await seedFirestoreDoc('users', 'dev-superadmin-uid', {
-    uid: str('dev-superadmin-uid'),
     email: str('admin@rushnrelax.com'),
     displayName: str('Dev Admin'),
     role: str('superadmin'),

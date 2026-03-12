@@ -8,7 +8,12 @@ export default async function AdminLocationsPage() {
 
   return (
     <>
-      <h1>Locations</h1>
+      <div className="admin-page-header">
+        <h1>Locations</h1>
+        <Link href="/admin/locations/new" className="admin-btn-primary">
+          New Location
+        </Link>
+      </div>
       <table className="admin-table">
         <thead>
           <tr>
