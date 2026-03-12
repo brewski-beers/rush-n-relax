@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import Link from 'next/link';
 import { listActivePromos } from '@/lib/repositories';
 
 export default async function AdminPromosPage() {
@@ -26,9 +27,7 @@ export default async function AdminPromosPage() {
               <td>{promo.locationSlug ?? 'All'}</td>
               <td>{promo.active ? 'Yes' : 'No'}</td>
               <td>
-                <button type="button" disabled>
-                  Edit
-                </button>
+                <Link href={`/admin/promos/${promo.slug}/edit`}>Edit</Link>
               </td>
             </tr>
           ))}

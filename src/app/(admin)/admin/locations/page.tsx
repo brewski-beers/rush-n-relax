@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import Link from 'next/link';
 import { listLocations } from '@/lib/repositories';
 
 export default async function AdminLocationsPage() {
@@ -26,9 +27,7 @@ export default async function AdminLocationsPage() {
               <td>{loc.phone}</td>
               <td>{loc.hours}</td>
               <td>
-                <button type="button" disabled>
-                  Edit
-                </button>
+                <Link href={`/admin/locations/${loc.slug}/edit`}>Edit</Link>
               </td>
             </tr>
           ))}

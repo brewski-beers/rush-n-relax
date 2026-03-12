@@ -16,6 +16,7 @@ promos/{slug}
 inventory/{locationId}/items/{productId}
 location-reviews/{placeId}
 contact-submissions/{docId}
+users/{uid}
 ```
 
 - Flat root collections — no nested tenant paths, ever
