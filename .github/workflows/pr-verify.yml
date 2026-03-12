@@ -1,0 +1,81 @@
+# Pull Request CI
+# - `verify` job is the required status check for branch protection
+# - Vercel automatically creates a preview deployment for each PR via its GitHub integration
+name: PR — Verify
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+concurrency:
+  group: pr-verify-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    uses: ./.github/workflows/release-changes-gate.yml
+
+  verify:
+    name: verify
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Lint
+        if: needs.changes.outputs.should_run == 'true'
+        run: npm run lint
+
+      - name: Type check
+        if: needs.changes.outputs.should_run == 'true'
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        if: needs.changes.outputs.should_run == 'true'
+        run: npm run test
+
+      - name: Functions unit tests
+        if: needs.changes.outputs.should_run == 'true'
+        run: cd functions && npm ci && npm test
+
+      - name: Setup Playwright (Chromium)
+        if: needs.changes.outputs.should_run == 'true'
+        uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
+
+      - name: E2E tests
+        if: needs.changes.outputs.should_run == 'true'
+        run: >-
+          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,storage
+          "npx tsx scripts/seed-emulators.ts && npm run test:e2e:core -- --project=chromium"
+        env:
+          # Note: emulator routing is handled via NODE_ENV=development (set by
+          # `npm run dev` in playwright.config.ts webServer). No extra env needed.
+          CI: 'true'
+
+      - name: No-op summary
+        if: needs.changes.outputs.should_run != 'true'
+        run: |
+          {
+            echo "## PR verify summary"
+            echo "- No release-relevant changes detected."
+            echo "- Skipping heavy verify steps."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verify failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-verify-failures
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 3
+

@@ -1,7 +1,9 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getStorage$, initializeApp } from '@/firebase';
-import { getDownloadURL, ref, getStorage } from 'firebase/storage';
+import { getDownloadURL, ref } from 'firebase/storage';
 import './AmbientOverlay.css';
 
 interface ResolvedUrls {
@@ -16,21 +18,8 @@ const DEFAULT_AMBIENT_PATHS = {
 } as const;
 
 export function AmbientOverlay() {
-  const directUrl = import.meta.env.VITE_AMBIENT_VIDEO_URL as
-    | string
-    | undefined;
-  const posterUrl = import.meta.env.VITE_AMBIENT_VIDEO_POSTER as
-    | string
-    | undefined;
-  const storagePath =
-    (import.meta.env.VITE_AMBIENT_STORAGE_PATH as string | undefined) ||
-    DEFAULT_AMBIENT_PATHS.desktop;
-  const mobileStoragePath =
-    (import.meta.env.VITE_AMBIENT_MOBILE_PATH as string | undefined) ||
-    DEFAULT_AMBIENT_PATHS.mobile;
-  const customBucket = import.meta.env.VITE_AMBIENT_STORAGE_BUCKET as
-    | string
-    | undefined;
+  const storagePath = DEFAULT_AMBIENT_PATHS.desktop;
+  const mobileStoragePath = DEFAULT_AMBIENT_PATHS.mobile;
 
   // User preference from localStorage (defaults to enabled)
   const [resolvedUrls, setResolvedUrls] = useState<ResolvedUrls>({
@@ -38,6 +27,7 @@ export function AmbientOverlay() {
     mobile: null,
   });
   const [enabled, setEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
     try {
       const ls = localStorage.getItem('ambientEnabled');
       return ls === null ? true : ls === 'true';
@@ -54,46 +44,31 @@ export function AmbientOverlay() {
     async function resolveUrls() {
       try {
         const urls: ResolvedUrls = { desktop: null, mobile: null };
+        const storage = getStorage$();
 
         // Resolve desktop (4K) video
-        if (storagePath) {
-          try {
-            const storage = customBucket
-              ? getStorage(undefined, `gs://${customBucket}`)
-              : getStorage$();
-            const videoRef = ref(storage, storagePath);
-            const url = await getDownloadURL(videoRef);
-            if (!cancelled) urls.desktop = url;
-          } catch (err) {
-            console.warn(
-              'AmbientOverlay: failed to resolve desktop video URL',
-              err
-            );
-            if (directUrl) urls.desktop = directUrl;
-          }
-        } else if (directUrl) {
-          urls.desktop = directUrl;
+        try {
+          const videoRef = ref(storage, storagePath);
+          const url = await getDownloadURL(videoRef);
+          if (!cancelled) urls.desktop = url;
+        } catch (err) {
+          console.warn(
+            'AmbientOverlay: failed to resolve desktop video URL',
+            err
+          );
         }
 
         // Resolve mobile (1080p) video
-        if (mobileStoragePath) {
-          try {
-            const storage = customBucket
-              ? getStorage(undefined, `gs://${customBucket}`)
-              : getStorage$();
-            const videoRef = ref(storage, mobileStoragePath);
-            const url = await getDownloadURL(videoRef);
-            if (!cancelled) urls.mobile = url;
-          } catch (err) {
-            console.warn(
-              'AmbientOverlay: failed to resolve mobile video URL',
-              err
-            );
-            // Fall back to desktop if mobile fails
-            urls.mobile = urls.desktop;
-          }
-        } else {
-          // Fall back to desktop if no mobile path
+        try {
+          const videoRef = ref(storage, mobileStoragePath);
+          const url = await getDownloadURL(videoRef);
+          if (!cancelled) urls.mobile = url;
+        } catch (err) {
+          console.warn(
+            'AmbientOverlay: failed to resolve mobile video URL',
+            err
+          );
+          // Fall back to desktop if mobile fails
           urls.mobile = urls.desktop;
         }
 
@@ -107,7 +82,7 @@ export function AmbientOverlay() {
     return () => {
       cancelled = true;
     };
-  }, [directUrl, storagePath, mobileStoragePath, customBucket]);
+  }, [storagePath, mobileStoragePath]);
 
   // Listen for preference changes dispatched by UI (custom event) or storage updates
   useEffect(() => {
@@ -155,7 +130,6 @@ export function AmbientOverlay() {
       crossOrigin="anonymous"
       disablePictureInPicture
       controls={false}
-      poster={posterUrl}
       className="ambient-video"
     >
       {videoSrc && <source src={videoSrc} type="video/mp4" />}

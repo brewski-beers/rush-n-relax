@@ -1,11 +1,59 @@
+'use client';
+
 import { useState, useRef } from 'react';
 import './AgeGate.css';
 
-export function AgeGate() {
-  const [isVerified, setIsVerified] = useState<boolean | null>(() => {
-    const verified = localStorage.getItem('ageVerified');
-    return verified === 'true' ? true : verified === 'false' ? false : null;
-  });
+interface Props {
+  onVerified: () => void;
+}
+
+const COOKIE = 'ageVerified=true; max-age=31536000; path=/; SameSite=Strict';
+
+/**
+ * Pure age validation — returns null on pass, error string on fail.
+ * Extracted so the submit button, Enter key, and auto-submit on year
+ * complete all use the same logic without stale-state issues.
+ */
+function checkAge(month: string, day: string, year: string): string | null {
+  if (!month || !day || !year) {
+    return 'Please enter your complete birth date';
+  }
+
+  const m = parseInt(month, 10);
+  const d = parseInt(day, 10);
+  const y = parseInt(year, 10);
+
+  if (
+    m < 1 ||
+    m > 12 ||
+    d < 1 ||
+    d > 31 ||
+    y < 1900 ||
+    y > new Date().getFullYear()
+  ) {
+    return 'Please enter a valid birth date';
+  }
+
+  const birthDate = new Date(y, m - 1, d);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+
+  if (age < 21) {
+    return 'You must be 21 or older to enter';
+  }
+
+  return null;
+}
+
+export function AgeGate({ onVerified }: Props) {
   const [userMonth, setUserMonth] = useState('');
   const [userDay, setUserDay] = useState('');
   const [userYear, setUserYear] = useState('');
@@ -14,89 +62,41 @@ export function AgeGate() {
   const dayRef = useRef<HTMLInputElement>(null);
   const yearRef = useRef<HTMLInputElement>(null);
 
-  const handleVerify = () => {
+  const handleSubmit = (month = userMonth, day = userDay, year = userYear) => {
     setError('');
-
-    if (!userMonth || !userDay || !userYear) {
-      setError('Please enter your complete birth date');
+    const err = checkAge(month, day, year);
+    if (err) {
+      setError(err);
       return;
     }
-
-    const month = parseInt(userMonth, 10);
-    const day = parseInt(userDay, 10);
-    const year = parseInt(userYear, 10);
-
-    // Validate date ranges
-    if (
-      month < 1 ||
-      month > 12 ||
-      day < 1 ||
-      day > 31 ||
-      year < 1900 ||
-      year > new Date().getFullYear()
-    ) {
-      setError('Please enter a valid birth date');
-      return;
-    }
-
-    const birthDate = new Date(year, month - 1, day);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
-
-    if (age < 21) {
-      setError('You must be 21 or older to enter');
-      return;
-    }
-
-    localStorage.setItem('ageVerified', 'true');
-    setIsVerified(true);
-    // Dispatch custom event for RootLayout to listen
-    window.dispatchEvent(new CustomEvent('ageVerified'));
+    document.cookie = COOKIE;
+    onVerified();
   };
 
   const handleMonthChange = (value: string) => {
-    // Cap to 2 digits max
     const capped = value.slice(0, 2);
     setUserMonth(capped);
-    // Auto-focus to day when field is full (2 digits) for UX
     if (capped.length === 2) {
       setTimeout(() => dayRef.current?.focus(), 50);
     }
   };
 
   const handleDayChange = (value: string) => {
-    // Cap to 2 digits max
     const capped = value.slice(0, 2);
     setUserDay(capped);
-    // Auto-focus to year when field is full (2 digits) for UX
     if (capped.length === 2) {
       setTimeout(() => yearRef.current?.focus(), 50);
     }
   };
 
   const handleYearChange = (value: string) => {
-    // Only allow 4 digits max
     const capped = value.slice(0, 4);
     setUserYear(capped);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleVerify();
+    // Auto-submit once year is complete — use local value to avoid stale state
+    if (capped.length === 4) {
+      handleSubmit(userMonth, userDay, capped);
     }
   };
-
-  if (isVerified === true) {
-    return null; // Age verified, render nothing
-  }
 
   return (
     <div className="age-gate-overlay">
@@ -110,7 +110,7 @@ export function AgeGate() {
           className="age-gate-form"
           onSubmit={e => {
             e.preventDefault();
-            handleVerify();
+            handleSubmit();
           }}
         >
           <div className="date-inputs">
@@ -125,7 +125,6 @@ export function AgeGate() {
                 maxLength={2}
                 value={userMonth}
                 onChange={e => handleMonthChange(e.target.value)}
-                onKeyPress={handleKeyPress}
               />
             </div>
             <div className="date-input-group">
@@ -139,7 +138,6 @@ export function AgeGate() {
                 maxLength={2}
                 value={userDay}
                 onChange={e => handleDayChange(e.target.value)}
-                onKeyPress={handleKeyPress}
               />
             </div>
             <div className="date-input-group">
@@ -153,7 +151,6 @@ export function AgeGate() {
                 maxLength={4}
                 value={userYear}
                 onChange={e => handleYearChange(e.target.value)}
-                onKeyPress={handleKeyPress}
               />
             </div>
           </div>

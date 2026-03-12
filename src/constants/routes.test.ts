@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readdirSync } from 'fs';
-import { resolve } from 'path';
+import { readdirSync, statSync } from 'fs';
+import { resolve, join } from 'path';
 import {
   PAGE_TO_ROUTE,
   ROUTE_SECTIONS,
@@ -13,44 +13,63 @@ import { LOCATIONS } from './locations';
  * Drift Detection Tests
  *
  * These tests ensure that:
- * 1. Every page component has a route mapping
- * 2. Every route mapping points to an existing page
+ * 1. Every page.tsx in the App Router storefront has a route mapping
+ * 2. Every route mapping points to an existing App Router page
  * 3. All static routes have section definitions
  *
  * If any of these fail, it means the routes config is out of sync
  * with the actual codebase.
  */
 
+/**
+ * Recursively find all page.tsx files under a directory.
+ * Returns route keys relative to the storefront root:
+ *   - Root page.tsx → 'index'
+ *   - about/page.tsx → 'about'
+ *   - locations/[slug]/page.tsx → 'locations/[slug]'
+ */
+function collectAppRouterKeys(dir: string, baseDir: string = dir): string[] {
+  const entries = readdirSync(dir);
+  const keys: string[] = [];
+
+  for (const entry of entries) {
+    const fullPath = join(dir, entry);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      if (!entry.startsWith('_') && !entry.startsWith('.')) {
+        keys.push(...collectAppRouterKeys(fullPath, baseDir));
+      }
+    } else if (entry === 'page.tsx') {
+      const relative =
+        dir === baseDir ? 'index' : dir.slice(baseDir.length + 1);
+      keys.push(relative);
+    }
+  }
+
+  return keys;
+}
+
 describe('Routes Configuration', () => {
   describe('drift detection', () => {
+    const storefrontDir = resolve(__dirname, '../app/(storefront)');
+    const appRouterKeys = collectAppRouterKeys(storefrontDir);
+    const mappedPages = Object.keys(PAGE_TO_ROUTE);
+
     it('all page components have route mappings', () => {
-      const pagesDir = resolve(__dirname, '../pages');
-      const pageFiles = readdirSync(pagesDir)
-        .filter(f => f.endsWith('.tsx') && !f.includes('.test.'))
-        .map(f => f.replace('.tsx', ''));
-
-      const mappedPages = Object.keys(PAGE_TO_ROUTE);
-
-      for (const file of pageFiles) {
+      for (const key of appRouterKeys) {
         expect(
           mappedPages,
-          `Page "${file}.tsx" exists but has no entry in PAGE_TO_ROUTE. Add it to src/constants/routes.ts`
-        ).toContain(file);
+          `App Router page "${key}/page.tsx" exists but has no entry in PAGE_TO_ROUTE. Add it to src/constants/routes.ts`
+        ).toContain(key);
       }
     });
 
     it('all route mappings point to existing page components', () => {
-      const pagesDir = resolve(__dirname, '../pages');
-      const pageFiles = readdirSync(pagesDir)
-        .filter(f => f.endsWith('.tsx') && !f.includes('.test.'))
-        .map(f => f.replace('.tsx', ''));
-
-      const mappedPages = Object.keys(PAGE_TO_ROUTE);
-
       for (const page of mappedPages) {
         expect(
-          pageFiles,
-          `PAGE_TO_ROUTE contains "${page}" but no ${page}.tsx exists in src/pages/`
+          appRouterKeys,
+          `PAGE_TO_ROUTE contains "${page}" but no page.tsx exists at src/app/(storefront)/${page === 'index' ? '' : page + '/'}`
         ).toContain(page);
       }
     });
@@ -96,7 +115,6 @@ describe('Routes Configuration', () => {
     });
 
     it('LOCATION_ROUTES matches LOCATIONS slugs and names', () => {
-      // Ensure LOCATION_ROUTES in routes.ts stays in sync with LOCATIONS in locations.ts
       const locationSlugs = LOCATIONS.map(loc => loc.slug).sort();
       const routeSlugs = LOCATION_ROUTES.map(r => r.slug).sort();
 
@@ -105,7 +123,6 @@ describe('Routes Configuration', () => {
         'LOCATION_ROUTES is out of sync with LOCATIONS. Update src/constants/routes.ts'
       ).toEqual(locationSlugs);
 
-      // Also verify labels match names
       for (const loc of LOCATIONS) {
         const route = LOCATION_ROUTES.find(r => r.slug === loc.slug);
         expect(

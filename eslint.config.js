@@ -2,13 +2,12 @@ import js from '@eslint/js';
 import globals from 'globals';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
-import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage', '*.config.ts'] },
+  { ignores: ['dist', 'node_modules', 'coverage', '*.config.ts', '.next', 'next-env.d.ts'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
@@ -19,15 +18,10 @@ export default tseslint.config(
     plugins: {
       react,
       'react-hooks': reactHooks,
-      'react-refresh': reactRefresh,
       'jsx-a11y': jsxA11y,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
 
       // Style enforcement: No inline styles — use CSS classes
       'react/forbid-dom-props': [
@@ -42,7 +36,7 @@ export default tseslint.config(
           ],
         },
       ],
-      
+
       // Accessibility rules
       'jsx-a11y/alt-text': 'error',
       'jsx-a11y/anchor-has-content': 'error',
@@ -57,11 +51,11 @@ export default tseslint.config(
       'jsx-a11y/no-redundant-roles': 'error',
       'jsx-a11y/role-has-required-aria-props': 'error',
       'jsx-a11y/role-supports-aria-props': 'error',
-      
+
       // TypeScript rules
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
-      
+
       // General best practices
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'prefer-const': 'error',

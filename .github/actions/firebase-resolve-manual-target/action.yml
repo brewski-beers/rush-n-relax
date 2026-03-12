@@ -5,9 +5,6 @@ inputs:
   deploy_all:
     description: 'Deploy all configured targets'
     required: true
-  deploy_hosting:
-    description: 'Include hosting'
-    required: true
   deploy_functions:
     description: 'Include functions'
     required: true
@@ -44,10 +41,6 @@ runs:
           DEPLOY_SCOPE="all-configured-targets"
         else
           SELECTORS=()
-
-          if [ "${{ inputs.deploy_hosting }}" = "true" ]; then
-            SELECTORS+=("hosting")
-          fi
 
           if [ "${{ inputs.deploy_functions }}" = "true" ]; then
             SELECTORS+=("functions")

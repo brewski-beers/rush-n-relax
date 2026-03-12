@@ -2,14 +2,9 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Age Gate Modal UX', () => {
   test.beforeEach(async ({ page }) => {
-    // Clear age verification to force modal
-    await page.context().addCookies([]);
+    // Clear all cookies so the server sees no ageVerified cookie and renders the gate
+    await page.context().clearCookies();
     await page.goto('/');
-    // Now clear localStorage after page has loaded
-    await page.evaluate(() => localStorage.removeItem('ageVerified'));
-    // Reload to trigger age gate since we just cleared the flag
-    await page.reload();
-    // Wait for modal to be interactive, not entire page load
     await page
       .locator('.age-gate-overlay')
       .waitFor({ state: 'visible', timeout: 5000 });
@@ -92,17 +87,13 @@ test.describe('Age Gate Modal UX', () => {
     await page.waitForTimeout(100);
     await expect(yearInput).toBeFocused();
 
-    // Fill year
-    await yearInput.fill('1995');
+    // Type 3 digits only — 4 digits would trigger auto-submit and destroy the form
+    await yearInput.type('199');
 
-    // Verify all fields have correct values (use inputValue for raw DOM value)
-    const monthValue = await monthInput.inputValue();
-    const dayValue = await dayInput.inputValue();
-    const yearValue = await yearInput.inputValue();
-
-    expect(monthValue).toBe('05');
-    expect(dayValue).toBe('15');
-    expect(yearValue).toBe('1995');
+    // Verify all fields held their values
+    await expect(monthInput).toHaveValue('05');
+    await expect(dayInput).toHaveValue('15');
+    await expect(yearInput).toHaveValue('199');
   });
 
   test('enforces max length on input fields', async ({ page }) => {
@@ -168,7 +159,6 @@ test.describe('Age Gate Modal UX', () => {
     const monthInput = page.locator('input[id="month"]');
     const dayInput = page.locator('input[id="day"]');
     const yearInput = page.locator('input[id="year"]');
-    const enterButton = page.locator('button:has-text("Enter")');
     const ageGateOverlay = page.locator('.age-gate-overlay');
     const header = page.locator('.header');
 
@@ -180,8 +170,8 @@ test.describe('Age Gate Modal UX', () => {
 
     await monthInput.fill(legalMonth.toString());
     await dayInput.fill(legalDay.toString());
+    // 4-digit year triggers auto-submit — no button click needed
     await yearInput.fill(legalYear.toString());
-    await enterButton.click();
 
     // Age gate should disappear
     await expect(ageGateOverlay).not.toBeVisible();
@@ -265,52 +255,38 @@ test.describe('Age Gate Modal UX', () => {
     await expect(errorMessage).toContainText('Please enter a valid birth date');
   });
 
-  test('persists age verification in localStorage', async ({ page }) => {
-    const monthInput = page.locator('input[id="month"]');
-    const dayInput = page.locator('input[id="day"]');
-    const yearInput = page.locator('input[id="year"]');
-    const enterButton = page.locator('button:has-text("Enter")');
-
-    // Verify age
+  test('persists age verification in cookie', async ({ page }) => {
     const today = new Date();
     const legalYear = today.getFullYear() - 21;
-    await monthInput.fill((today.getMonth() + 1).toString());
-    await dayInput.fill('1');
-    await yearInput.fill(legalYear.toString());
-    await enterButton.click();
+    await page
+      .locator('input[id="month"]')
+      .fill((today.getMonth() + 1).toString());
+    await page.locator('input[id="day"]').fill('1');
+    await page.locator('input[id="year"]').fill(legalYear.toString());
+    // 4-digit year triggers auto-submit
 
-    // Check localStorage
-    const ageVerified = await page.evaluate(() =>
-      localStorage.getItem('ageVerified')
-    );
-    expect(ageVerified).toBe('true');
+    // Cookie should be set
+    const cookies = await page.context().cookies();
+    const cookie = cookies.find(c => c.name === 'ageVerified');
+    expect(cookie?.value).toBe('true');
 
-    // Reload page - age gate should not appear
+    // Reload — server reads cookie → gate does not appear
     await page.reload();
-    const ageGateOverlay = page.locator('.age-gate-overlay');
-    await expect(ageGateOverlay).not.toBeVisible();
-
-    // Navigation should be visible immediately
-    const header = page.locator('.header');
-    await expect(header).toBeVisible();
+    await expect(page.locator('.age-gate-overlay')).not.toBeVisible();
+    await expect(page.locator('.header')).toBeVisible();
   });
 
-  test('handles Enter key submission', async ({ page }) => {
-    const monthInput = page.locator('input[id="month"]');
-    const dayInput = page.locator('input[id="day"]');
-    const yearInput = page.locator('input[id="year"]');
-    const ageGateOverlay = page.locator('.age-gate-overlay');
-
-    // Fill and press Enter on year field
+  test('auto-submits when year field is complete', async ({ page }) => {
     const today = new Date();
     const legalYear = today.getFullYear() - 21;
-    await monthInput.fill((today.getMonth() + 1).toString());
-    await dayInput.fill('1');
-    await yearInput.fill(legalYear.toString());
-    await yearInput.press('Enter');
+    await page
+      .locator('input[id="month"]')
+      .fill((today.getMonth() + 1).toString());
+    await page.locator('input[id="day"]').fill('1');
+    // Filling a 4-digit year triggers auto-submit without needing the Enter key
+    await page.locator('input[id="year"]').fill(legalYear.toString());
 
-    // Age gate should disappear
-    await expect(ageGateOverlay).not.toBeVisible();
+    await expect(page.locator('.age-gate-overlay')).not.toBeVisible();
   });
 
   test('displays disclaimer text', async ({ page }) => {

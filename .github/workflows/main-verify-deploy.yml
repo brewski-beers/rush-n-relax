@@ -1,0 +1,203 @@
+# Production deployment on merge to main
+# - `verify` runs lint, type check, unit tests, and E2E against emulators
+# - `deploy` deploys Cloud Functions + Firestore/Storage rules after verify passes
+# - Next.js app is deployed automatically by Vercel on push to main
+name: Main — Verify & Deploy
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+concurrency:
+  group: main-verify-deploy-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  changes:
+    if: github.event.pull_request.merged == true
+    uses: ./.github/workflows/release-changes-gate.yml
+
+  auth_preflight:
+    name: auth-preflight
+    needs: changes
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FIREBASE_PROJECT_ID: rush-n-relax
+      FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Setup Firebase auth
+        id: auth
+        uses: ./.github/actions/firebase-auth-setup
+        with:
+          service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
+
+      - name: Validate Firebase auth and extensions access
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
+        run: |
+          npx firebase-tools ext:list \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive > /dev/null
+
+      - name: Validate Functions secret access
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
+        run: |
+          npx firebase-tools functions:secrets:access GOOGLE_PLACES_API_KEY \
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive > /dev/null
+
+      - name: Cleanup preflight credentials
+        if: always()
+        run: rm -f "${{ steps.auth.outputs.credentials_path }}"
+
+  verify:
+    name: verify
+    needs: [changes, auth_preflight]
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Functions unit tests
+        run: cd functions && npm ci && npm test
+
+      - name: Setup Playwright (Chromium)
+        uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
+
+      - name: E2E tests
+        run: >-
+          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,storage
+          "npx tsx scripts/seed-emulators.ts && npm run test:e2e:core -- --project=chromium"
+        env:
+          # Note: emulator routing is handled via NODE_ENV=development (set by
+          # `npm run dev` in playwright.config.ts webServer). No extra env needed.
+          CI: 'true'
+
+      - name: Upload verify failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-verify-failures
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  deploy:
+    name: deploy
+    needs: [changes, auth_preflight, verify]
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
+      FIREBASE_PROJECT_ID: rush-n-relax
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Setup Firebase auth
+        id: auth
+        uses: ./.github/actions/firebase-auth-setup
+        with:
+          service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
+
+      - name: Build Cloud Functions
+        run: cd functions && npm ci && npm run build
+
+      - name: Deploy Firestore rules, indexes, and Storage rules
+        id: deploy_rules_storage
+        uses: ./.github/actions/firebase-deploy
+        with:
+          project-id: ${{ env.FIREBASE_PROJECT_ID }}
+          credentials-path: ${{ steps.auth.outputs.credentials_path }}
+          only: firestore:rules,firestore:indexes,storage
+          log-file-name: firebase-deploy-rules-storage.log
+
+      - name: Deploy Cloud Functions
+        id: deploy_functions
+        uses: ./.github/actions/firebase-deploy
+        with:
+          project-id: ${{ env.FIREBASE_PROJECT_ID }}
+          credentials-path: ${{ steps.auth.outputs.credentials_path }}
+          only: functions
+          log-file-name: firebase-deploy-functions.log
+
+      - name: Tail deploy logs on failure
+        if: failure()
+        run: |
+          echo "--- Rules/Storage deploy log (tail) ---"
+          tail -n 120 "${{ runner.temp }}/firebase-deploy-rules-storage.log" || true
+          echo "--- Functions deploy log (tail) ---"
+          tail -n 120 "${{ runner.temp }}/firebase-deploy-functions.log" || true
+
+      - name: Upload deploy failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-deploy-logs
+          path: |
+            ${{ runner.temp }}/firebase-deploy-rules-storage.log
+            ${{ runner.temp }}/firebase-deploy-functions.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Release summary
+        if: always()
+        run: |
+          {
+            echo "## Main release summary"
+            echo "- Firestore/Storage deploy: \`${{ steps.deploy_rules_storage.outcome }}\`"
+            echo "- Functions deploy: \`${{ steps.deploy_functions.outcome }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cleanup deploy credentials
+        if: always()
+        run: rm -f "${{ steps.auth.outputs.credentials_path }}"
+
+  no_changes:
+    name: no-changes
+    needs: changes
+    if: github.event.pull_request.merged == true && needs.changes.outputs.should_run != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip summary
+        run: |
+          {
+            echo "## Main release summary"
+            echo "- No release-relevant changes detected in merged PR."
+            echo "- Skipping verify and deploy jobs."
+          } >> "$GITHUB_STEP_SUMMARY"

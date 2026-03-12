@@ -1,4 +1,7 @@
-import { Link, useLocation } from 'react-router-dom';
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useNavigation } from '../../contexts/useNavigation';
 import {
@@ -20,7 +23,7 @@ const NAV_LINKS = [
 
 export function Navigation() {
   const { isMenuOpen, toggleMenu } = useNavigation();
-  const location = useLocation();
+  const pathname = usePathname();
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
 
   // Lock body scroll when mobile drawer is open
@@ -56,7 +59,7 @@ export function Navigation() {
   return (
     <header className="header">
       <div className="header-content">
-        <Link to="/" className="logo">
+        <Link href="/" className="logo">
           {logoSrc ? (
             <img
               src={logoSrc}
@@ -93,13 +96,11 @@ export function Navigation() {
             {NAV_LINKS.map((link, index) => (
               <li key={link.path}>
                 <Link
-                  to={link.path}
+                  href={link.path}
                   onClick={() => toggleMenu()}
                   className={`nav-link${index === Math.floor(NAV_LINKS.length / 2) ? ' nav-link--center' : ''}`}
                   aria-current={
-                    isRouteActive(location.pathname, link.path)
-                      ? 'page'
-                      : undefined
+                    isRouteActive(pathname, link.path) ? 'page' : undefined
                   }
                 >
                   {link.label}
