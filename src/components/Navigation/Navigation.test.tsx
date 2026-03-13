@@ -3,7 +3,18 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { Navigation } from './index';
 import { NavigationProvider } from '@/contexts/NavigationContext';
 
-const pushMock = vi.fn();
+const { pushMock, refreshMock, signOutMock, fetchMock, initializeAppMock } =
+  vi.hoisted(() => ({
+    pushMock: vi.fn(),
+    refreshMock: vi.fn(),
+    signOutMock: vi.fn(() => Promise.resolve()),
+    fetchMock: vi.fn(() =>
+      Promise.resolve(new Response(null, { status: 200 }))
+    ),
+    initializeAppMock: vi.fn(() => ({ auth: {} })),
+  }));
+
+vi.stubGlobal('fetch', fetchMock);
 
 // Mock next/link as a plain anchor
 vi.mock('next/link', () => ({
@@ -30,14 +41,18 @@ vi.mock('next/navigation', () => ({
     replace: vi.fn(),
     back: vi.fn(),
     forward: vi.fn(),
-    refresh: vi.fn(),
+    refresh: refreshMock,
     prefetch: vi.fn(),
   })),
 }));
 
-// Mock Firebase storage
 vi.mock('@/firebase', () => ({
+  initializeApp: initializeAppMock,
   storage: {},
+}));
+
+vi.mock('firebase/auth', () => ({
+  signOut: signOutMock,
 }));
 
 vi.mock('firebase/storage', () => ({
@@ -227,6 +242,28 @@ describe('Navigation Component', () => {
     expect(
       screen.getAllByRole('link', { name: 'ADMIN' }).length
     ).toBeGreaterThan(0);
+
+    expect(
+      screen.getAllByRole('button', { name: 'LOGOUT' }).length
+    ).toBeGreaterThan(0);
+  });
+
+  it('clears auth session when LOGOUT is clicked', async () => {
+    render(<NavigationWrappedWithAuth isAdminAuthenticated />);
+
+    const logoutButton = screen.getAllByRole('button', { name: 'LOGOUT' })[0];
+    fireEvent.click(logoutButton);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(signOutMock).toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/session', {
+      method: 'DELETE',
+    });
+    expect(pushMock).toHaveBeenCalledWith('/admin/login');
+    expect(refreshMock).toHaveBeenCalled();
   });
 
   it('navigates to /admin after a 4.2 second hold when unauthenticated', () => {

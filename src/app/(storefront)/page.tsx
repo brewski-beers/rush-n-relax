@@ -3,9 +3,9 @@ import Link from 'next/link';
 import { Card } from '@/components/Card';
 import { CardGrid } from '@/components/CardGrid';
 import { LOCATIONS } from '@/constants/locations';
-import { PRODUCTS } from '@/constants/products';
 import { ProductImage } from '@/components/ProductImage';
 import { seoConfig } from '@/config/seo.config';
+import { listFeaturedProducts } from '@/lib/repositories';
 
 export const metadata: Metadata = {
   title: 'Rush N Relax — Premium Cannabis Dispensary | East Tennessee',
@@ -16,7 +16,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const featuredProducts = await listFeaturedProducts();
+
   return (
     <main className="home-page">
       <section id="hero" className="hero page-hero-shell">
@@ -69,7 +71,7 @@ export default function HomePage() {
             same uncompromising standard.
           </p>
           <CardGrid columns="auto" gap="lg">
-            {PRODUCTS.slice(0, 3).map((product, index) => (
+            {featuredProducts.map((product, index) => (
               <Card
                 key={product.id}
                 variant="product"

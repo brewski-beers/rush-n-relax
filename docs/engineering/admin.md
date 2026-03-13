@@ -49,6 +49,11 @@ flowchart TD
 
 - All `/admin/*` routes except `/admin/login` require the `__session` cookie.
 - The cookie is set server-side (HTTP-only) — not accessible to client JS.
+- Admin login uses Firebase Google popup auth, then exchanges ID token at `/api/auth/session`.
+- Admin authorization is claims-first: routes and actions require a custom `role` claim with minimum `owner`.
+- If the signing-in email is listed in `ADMIN_OWNER_ALLOWLIST` and has no owner claim yet,
+  `/api/auth/session` applies `role: owner` and returns `409` with `CLAIMS_UPDATED_RETRY`.
+- Client login then refreshes the ID token once and retries session exchange automatically.
 - Firebase Client Auth and the session cookie are separate: Client Auth is for the ID token exchange only; the session cookie is the actual server gate.
 - Phase 4 can upgrade to full JWT verification in middleware by switching to `runtime = 'nodejs'`.
 
@@ -69,6 +74,7 @@ flowchart LR
     DASH --> PROD["/admin/products\nProducts table"]
     DASH --> PROMO["/admin/promos\nPromos table"]
     DASH --> INV["/admin/inventory\nLocation picker"]
+    DASH --> USERS["/admin/users\nRole management"]
 
     INV --> HUB["/admin/inventory/hub\nRnR Hub"]:::active
     INV --> RETAIL["/admin/inventory/locationId\nRetail location"]
@@ -104,12 +110,14 @@ flowchart LR
 | PROD   | Products CMS page                                                     |
 | PROMO  | Promos CMS page                                                       |
 | INV    | Inventory module — Phase 2                                            |
+| USERS  | Users module — owner-only custom-claim role assignments               |
 | HUB    | RnR Hub — non-physical warehouse location (`HUB_LOCATION_ID = 'hub'`) |
 | FS     | Firestore database                                                    |
 
 ### Key Paths
 
 - Dashboard is the entry point after login — all CMS modules link from here.
+- Users module manages non-owner role claims (`storeOwner`, `storeManager`, `staff`, `customer`) by UID/email.
 - Inventory is the only module with a nested route (`[locationId]`).
 - Hub inventory items have an `availableOnline` flag — toggles online shipping availability (Phase 3A).
 - Retail inventory items have an `availablePickup` flag — toggles buy-online / pick-up-in-store (Phase 3A).

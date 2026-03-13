@@ -6,6 +6,9 @@
  */
 
 import facebookIcon from '../assets/icons/facebook.svg';
+import { getAssetSrc } from '@/utils/assetSrc';
+
+const FACEBOOK_ICON_SRC = getAssetSrc(facebookIcon);
 
 export enum SocialId {
   FACEBOOK_MARYVILLE = 'fb_maryville',
@@ -40,21 +43,21 @@ export const SOCIAL_METADATA: Record<SocialId, SocialLink> = {
     id: SocialId.FACEBOOK_MARYVILLE,
     name: 'Facebook',
     url: 'https://www.facebook.com/profile.php?id=61585628978171',
-    icon: { src: facebookIcon, alt: 'Facebook' },
+    icon: { src: FACEBOOK_ICON_SRC, alt: 'Facebook' },
     ariaLabel: 'Visit Rush N Relax Maryville on Facebook',
   },
   [SocialId.FACEBOOK_OAK_RIDGE]: {
     id: SocialId.FACEBOOK_OAK_RIDGE,
     name: 'Facebook',
     url: 'https://www.facebook.com/profile.php?id=61585846739777',
-    icon: { src: facebookIcon, alt: 'Facebook' },
+    icon: { src: FACEBOOK_ICON_SRC, alt: 'Facebook' },
     ariaLabel: 'Visit Rush N Relax Oak Ridge on Facebook',
   },
   [SocialId.FACEBOOK_SEYMOUR]: {
     id: SocialId.FACEBOOK_SEYMOUR,
     name: 'Facebook',
     url: 'https://www.facebook.com/profile.php?id=61585953144207',
-    icon: { src: facebookIcon, alt: 'Facebook' },
+    icon: { src: FACEBOOK_ICON_SRC, alt: 'Facebook' },
     ariaLabel: 'Visit Rush N Relax Seymour on Facebook',
   },
 };

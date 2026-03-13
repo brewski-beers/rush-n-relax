@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { notFound } from 'next/navigation';
+import { requireRole } from '@/lib/admin-auth';
 import { getPromoBySlug } from '@/lib/repositories';
 import { PromoEditForm } from './PromoEditForm';
 
@@ -9,6 +10,8 @@ interface Props {
 }
 
 export default async function PromoEditPage({ params }: Props) {
+  await requireRole('owner');
+
   const { slug } = await params;
   const promo = await getPromoBySlug(slug);
   if (!promo) notFound();

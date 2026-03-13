@@ -8,7 +8,7 @@ export async function createLocation(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await requireRole('superadmin');
+  await requireRole('owner');
 
   const slug = formData.get('slug')?.toString().trim().toLowerCase();
   const name = formData.get('name')?.toString().trim();

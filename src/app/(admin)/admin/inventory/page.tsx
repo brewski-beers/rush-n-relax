@@ -1,10 +1,13 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
+import { requireRole } from '@/lib/admin-auth';
 import { listLocations } from '@/lib/repositories';
 import { HUB_LOCATION_ID } from '@/lib/firebase/admin';
 
 export default async function AdminInventoryPage() {
+  await requireRole('owner');
+
   const locations = await listLocations();
 
   return (

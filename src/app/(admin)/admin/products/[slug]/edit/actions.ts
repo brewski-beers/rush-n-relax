@@ -24,7 +24,7 @@ export async function updateProduct(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await requireRole('superadmin');
+  await requireRole('owner');
 
   const existing = await getProductBySlug(slug);
   if (!existing) return { error: 'Product not found.' };

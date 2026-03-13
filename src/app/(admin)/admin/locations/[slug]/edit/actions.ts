@@ -9,7 +9,7 @@ export async function updateLocation(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await requireRole('superadmin');
+  await requireRole('owner');
 
   const existing = await getLocationBySlug(slug);
   if (!existing) return { error: 'Location not found.' };

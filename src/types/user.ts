@@ -1,4 +1,9 @@
-export type UserRole = 'owner' | 'manager' | 'staff' | 'superadmin';
+export type UserRole =
+  | 'owner'
+  | 'storeOwner'
+  | 'storeManager'
+  | 'staff'
+  | 'customer';
 
 /**
  * Firestore document shape for an authenticated user.
@@ -11,7 +16,7 @@ export interface User {
   role: UserRole;
   /**
    * Location IDs this user can access.
-   * For owner/manager: all locations.
+   * For owner/storeOwner/storeManager: all locations.
    * For staff: only the locations listed here.
    */
   locationIds: string[];

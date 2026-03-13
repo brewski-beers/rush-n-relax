@@ -2,35 +2,44 @@
 
 /**
  * Admin authorization utilities — server-side only.
- * Verifies the session cookie AND checks the caller's role in Firestore.
+ * Verifies the session cookie and checks the caller's custom auth claim.
  *
  * Usage in Server Actions:
- *   await requireRole('superadmin');
+ *   await requireRole('owner');
  *
- * Role hierarchy (lowest → highest): staff < manager < owner < superadmin
- * All admin CMS writes currently require 'superadmin'. Lower roles are defined
- * here for future use when store managers / staff get scoped access.
+ * Role hierarchy (lowest → highest): customer < staff < storeManager < storeOwner < owner
+ * All admin CMS reads and writes currently require 'owner'.
  */
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { DecodedIdToken } from 'firebase-admin/auth';
-import { getAdminAuth, getAdminFirestore } from '@/lib/firebase/admin';
+import { getAdminAuth } from '@/lib/firebase/admin';
 import type { UserRole } from '@/types';
 
 const ROLE_RANK: Record<UserRole, number> = {
+  customer: 0,
   staff: 1,
-  manager: 2,
-  owner: 3,
-  superadmin: 4,
+  storeManager: 2,
+  storeOwner: 3,
+  owner: 4,
 };
 
 function isUserRole(value: unknown): value is UserRole {
   return (
+    value === 'customer' ||
     value === 'staff' ||
-    value === 'manager' ||
-    value === 'owner' ||
-    value === 'superadmin'
+    value === 'storeOwner' ||
+    value === 'storeManager' ||
+    value === 'owner'
   );
+}
+
+function getRoleClaim(payload: unknown): unknown {
+  if (typeof payload !== 'object' || payload === null) {
+    return undefined;
+  }
+
+  return (payload as Record<string, unknown>).role;
 }
 
 export interface AdminActorContext {
@@ -41,8 +50,7 @@ export interface AdminActorContext {
 
 async function resolveActorFromSessionCookie(
   sessionCookie: string,
-  minRole: UserRole,
-  options?: { bootstrapInDevelopment?: boolean }
+  minRole: UserRole
 ): Promise<AdminActorContext | null> {
   let decoded: DecodedIdToken;
   try {
@@ -54,43 +62,7 @@ async function resolveActorFromSessionCookie(
     return null;
   }
 
-  const userDoc = await getAdminFirestore()
-    .collection('users')
-    .doc(decoded.uid)
-    .get();
-
-  if (!userDoc.exists) {
-    if (
-      options?.bootstrapInDevelopment &&
-      process.env.NODE_ENV === 'development'
-    ) {
-      // Local emulator convenience: allow first login to bootstrap a role doc.
-      await getAdminFirestore()
-        .collection('users')
-        .doc(decoded.uid)
-        .set({
-          email: decoded.email ?? '',
-          displayName: decoded.email ?? 'Dev Admin',
-          role: 'superadmin',
-          locationIds: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-      return {
-        uid: decoded.uid,
-        email: decoded.email ?? '',
-        role: 'superadmin',
-      };
-    }
-
-    return null;
-  }
-
-  const userData = userDoc.data() as unknown;
-  const roleValue =
-    typeof userData === 'object' && userData !== null
-      ? (userData as { role?: unknown }).role
-      : undefined;
+  const roleValue = getRoleClaim(decoded);
 
   const role = isUserRole(roleValue) ? roleValue : undefined;
   if (!role || (ROLE_RANK[role] ?? 0) < ROLE_RANK[minRole]) {
@@ -107,7 +79,7 @@ async function resolveActorFromSessionCookie(
 /**
  * Lightweight session check for server-rendered UI (no redirects).
  */
-export async function hasAdminSession(minRole: UserRole = 'staff') {
+export async function hasAdminSession(minRole: UserRole = 'owner') {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('__session')?.value;
   if (!sessionCookie) return false;
@@ -128,9 +100,7 @@ export async function requireRole(
   const sessionCookie = cookieStore.get('__session')?.value;
   if (!sessionCookie) redirect('/admin/login');
 
-  const actor = await resolveActorFromSessionCookie(sessionCookie, minRole, {
-    bootstrapInDevelopment: true,
-  });
+  const actor = await resolveActorFromSessionCookie(sessionCookie, minRole);
   if (!actor) {
     // Covers stale/revoked/invalid cookies and insufficient role.
     redirect('/admin/login');

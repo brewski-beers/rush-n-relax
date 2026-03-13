@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { notFound } from 'next/navigation';
+import { requireRole } from '@/lib/admin-auth';
 import {
   listLocations,
   listProducts,
@@ -14,6 +15,8 @@ interface Props {
 }
 
 export default async function AdminInventoryLocationPage({ params }: Props) {
+  await requireRole('owner');
+
   const { locationId } = await params;
   const isHub = locationId === HUB_LOCATION_ID;
 

@@ -526,16 +526,16 @@ async function seedStorageStub() {
 // ── Entry point ────────────────────────────────────────────────────────────────
 
 // ── Admin users ───────────────────────────────────────────────────────────────
-// Seed a test superadmin so edit forms work in local dev.
+// Seed a test owner so edit forms work in local dev.
 // UID must match a Firebase Auth emulator user — create one via the emulator UI
 // at localhost:4000 or with: firebase auth:import (emulator only).
 // Production: create the users/{uid} doc manually in Firestore Console.
 
 async function seedAdminUsers() {
-  await seedFirestoreDoc('users', 'dev-superadmin-uid', {
+  await seedFirestoreDoc('users', 'dev-owner-uid', {
     email: str('admin@rushnrelax.com'),
     displayName: str('Dev Admin'),
-    role: str('superadmin'),
+    role: str('owner'),
     locationIds: strArray([]),
     createdAt: now(),
     updatedAt: now(),
@@ -554,7 +554,8 @@ async function run() {
   console.log('\nEmulator seed complete ✓');
 }
 
-run().catch(err => {
-  console.error('Seed failed:', err.message);
+run().catch((err: unknown) => {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error('Seed failed:', message);
   process.exit(1);
 });

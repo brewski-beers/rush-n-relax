@@ -9,7 +9,7 @@ export async function updatePromo(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await requireRole('superadmin');
+  await requireRole('owner');
 
   const existing = await getPromoBySlug(slug);
   if (!existing) return { error: 'Promo not found.' };

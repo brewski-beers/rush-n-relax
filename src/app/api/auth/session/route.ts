@@ -3,6 +3,26 @@ import { getAdminAuth } from '@/lib/firebase/admin';
 const SESSION_DURATION_MS = 60 * 60 * 24 * 5 * 1000; // 5 days
 const SESSION_MAX_AGE_S = 60 * 60 * 24 * 5; // 5 days in seconds
 
+const OWNER_ROLE = 'owner';
+const CLAIMS_UPDATED_RETRY_CODE = 'CLAIMS_UPDATED_RETRY';
+
+function getRoleClaim(payload: unknown): unknown {
+  if (typeof payload !== 'object' || payload === null) {
+    return undefined;
+  }
+
+  return (payload as Record<string, unknown>).role;
+}
+
+function parseOwnerAllowlist(): Set<string> {
+  return new Set(
+    (process.env.ADMIN_OWNER_ALLOWLIST ?? '')
+      .split(',')
+      .map(email => email.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
 /**
  * POST /api/auth/session
  * Exchange a Firebase ID token for a server-side session cookie.
@@ -29,7 +49,36 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const sessionCookie = await getAdminAuth().createSessionCookie(idToken, {
+    const adminAuth = getAdminAuth();
+    const decoded = await adminAuth.verifyIdToken(idToken, true);
+    const roleClaim = getRoleClaim(decoded);
+
+    if (roleClaim !== OWNER_ROLE) {
+      const normalizedEmail = decoded.email?.trim().toLowerCase();
+      const isAllowlisted = Boolean(
+        normalizedEmail && parseOwnerAllowlist().has(normalizedEmail)
+      );
+
+      if (isAllowlisted) {
+        const userRecord = await adminAuth.getUser(decoded.uid);
+        await adminAuth.setCustomUserClaims(decoded.uid, {
+          ...(userRecord.customClaims ?? {}),
+          role: OWNER_ROLE,
+        });
+
+        return Response.json(
+          {
+            error: 'Owner claim applied. Refreshing token required.',
+            code: CLAIMS_UPDATED_RETRY_CODE,
+          },
+          { status: 409 }
+        );
+      }
+
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, {
       expiresIn: SESSION_DURATION_MS,
     });
 
