@@ -1,25 +1,13 @@
 import type { ListUsersResult, UserRecord } from 'firebase-admin/auth';
 import { getAdminAuth } from '@/lib/firebase/admin';
+import { isManageableRole, type ManageableRole } from '@/lib/admin/roles';
 import type { UserRole } from '@/types';
-
-export const MANAGEABLE_ROLES = [
-  'storeOwner',
-  'storeManager',
-  'staff',
-  'customer',
-] as const;
-
-export type ManageableRole = (typeof MANAGEABLE_ROLES)[number];
 
 export interface ManagedUserSummary {
   uid: string;
   email: string;
   displayName: string;
   role: ManageableRole;
-}
-
-function isManageableRole(value: unknown): value is ManageableRole {
-  return MANAGEABLE_ROLES.includes(value as ManageableRole);
 }
 
 function isUserRole(value: unknown): value is UserRole {

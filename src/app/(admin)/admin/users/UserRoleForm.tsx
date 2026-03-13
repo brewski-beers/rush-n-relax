@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import { MANAGEABLE_ROLES } from '@/lib/admin/user-management';
+import { MANAGEABLE_ROLES } from '@/lib/admin/roles';
 import { assignUserRole } from './actions';
 
 export function UserRoleForm() {

@@ -2,19 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/admin-auth';
-import {
-  MANAGEABLE_ROLES,
-  type ManageableRole,
-  assignNonOwnerRole,
-} from '@/lib/admin/user-management';
+import { assignNonOwnerRole } from '@/lib/admin/user-management';
+import { isManageableRole } from '@/lib/admin/roles';
 
 interface ActionState {
   error?: string;
   success?: string;
-}
-
-function isManageableRole(value: string): value is ManageableRole {
-  return (MANAGEABLE_ROLES as readonly string[]).includes(value);
 }
 
 export async function assignUserRole(
