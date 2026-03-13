@@ -17,10 +17,15 @@ export const config = {
 export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const { pathname } = url;
+  const sessionCookie = request.cookies.get('__session')?.value;
+
+  if (pathname === '/admin') {
+    url.pathname = sessionCookie ? '/admin/dashboard' : '/admin/login';
+    return NextResponse.redirect(url);
+  }
 
   // 0. Admin auth guard — redirect to login if no session cookie
   if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-    const sessionCookie = request.cookies.get('__session')?.value;
     if (!sessionCookie) {
       url.pathname = '/admin/login';
       return NextResponse.redirect(url);

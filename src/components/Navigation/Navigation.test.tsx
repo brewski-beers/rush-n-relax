@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { Navigation } from './index';
 import { NavigationProvider } from '@/contexts/NavigationContext';
+
+const pushMock = vi.fn();
 
 // Mock next/link as a plain anchor
 vi.mock('next/link', () => ({
@@ -24,7 +26,7 @@ vi.mock('next/link', () => ({
 vi.mock('next/navigation', () => ({
   usePathname: vi.fn(() => '/'),
   useRouter: vi.fn(() => ({
-    push: vi.fn(),
+    push: pushMock,
     replace: vi.fn(),
     back: vi.fn(),
     forward: vi.fn(),
@@ -59,9 +61,20 @@ const NavigationWrapped = () => (
   </NavigationProvider>
 );
 
+const NavigationWrappedWithAuth = ({
+  isAdminAuthenticated,
+}: {
+  isAdminAuthenticated: boolean;
+}) => (
+  <NavigationProvider>
+    <Navigation isAdminAuthenticated={isAdminAuthenticated} />
+  </NavigationProvider>
+);
+
 describe('Navigation Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   it('renders navigation header', () => {
@@ -198,5 +211,53 @@ describe('Navigation Component', () => {
       expect(link).toHaveAttribute('href');
       expect(link.getAttribute('href')).toBeTruthy();
     });
+  });
+
+  it('shows ADMIN shortcut only for authenticated admins', () => {
+    const { rerender } = render(
+      <NavigationWrappedWithAuth isAdminAuthenticated={false} />
+    );
+
+    expect(
+      screen.queryByRole('link', { name: 'ADMIN' })
+    ).not.toBeInTheDocument();
+
+    rerender(<NavigationWrappedWithAuth isAdminAuthenticated />);
+
+    expect(
+      screen.getAllByRole('link', { name: 'ADMIN' }).length
+    ).toBeGreaterThan(0);
+  });
+
+  it('navigates to /admin after a 4.2 second hold when unauthenticated', () => {
+    vi.useFakeTimers();
+    render(<NavigationWrappedWithAuth isAdminAuthenticated={false} />);
+
+    const menuButton = screen.getByRole('button', { name: /open menu/i });
+    fireEvent.pointerDown(menuButton);
+
+    act(() => {
+      vi.advanceTimersByTime(4200);
+    });
+
+    expect(pushMock).toHaveBeenCalledWith('/admin');
+
+    fireEvent.pointerUp(menuButton);
+    vi.useRealTimers();
+  });
+
+  it('does not trigger hidden hold navigation once admin is authenticated', () => {
+    vi.useFakeTimers();
+    render(<NavigationWrappedWithAuth isAdminAuthenticated />);
+
+    const menuButton = screen.getByRole('button', { name: /open menu/i });
+    fireEvent.pointerDown(menuButton);
+
+    act(() => {
+      vi.advanceTimersByTime(4200);
+    });
+
+    expect(pushMock).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });

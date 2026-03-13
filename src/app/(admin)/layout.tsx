@@ -16,6 +16,7 @@ export default function AdminLayout({
         <Link href="/admin/products">Products</Link>
         <Link href="/admin/promos">Promos</Link>
         <Link href="/admin/inventory">Inventory</Link>
+        <Link href="/">Back to Client Site</Link>
       </header>
       <main className="admin-main">{children}</main>
     </div>

@@ -39,18 +39,11 @@ export interface AdminActorContext {
   role: UserRole;
 }
 
-/**
- * Verify the caller holds at least `minRole`.
- * Throws with 'Unauthorized' (no session) or 'Forbidden' (insufficient role).
- * Call at the top of every admin Server Action.
- */
-export async function requireRole(
-  minRole: UserRole
-): Promise<AdminActorContext> {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('__session')?.value;
-  if (!sessionCookie) redirect('/admin/login');
-
+async function resolveActorFromSessionCookie(
+  sessionCookie: string,
+  minRole: UserRole,
+  options?: { bootstrapInDevelopment?: boolean }
+): Promise<AdminActorContext | null> {
   let decoded: DecodedIdToken;
   try {
     decoded = await getAdminAuth().verifySessionCookie(
@@ -58,9 +51,7 @@ export async function requireRole(
       true /* checkRevoked */
     );
   } catch {
-    // Covers stale/revoked/invalid emulator cookies. Redirect keeps actions from
-    // surfacing opaque Firebase auth errors as 500s in the admin UI.
-    redirect('/admin/login');
+    return null;
   }
 
   const userDoc = await getAdminFirestore()
@@ -69,7 +60,10 @@ export async function requireRole(
     .get();
 
   if (!userDoc.exists) {
-    if (process.env.NODE_ENV === 'development') {
+    if (
+      options?.bootstrapInDevelopment &&
+      process.env.NODE_ENV === 'development'
+    ) {
       // Local emulator convenience: allow first login to bootstrap a role doc.
       await getAdminFirestore()
         .collection('users')
@@ -89,7 +83,7 @@ export async function requireRole(
       };
     }
 
-    throw new Error('Forbidden');
+    return null;
   }
 
   const userData = userDoc.data() as unknown;
@@ -100,7 +94,7 @@ export async function requireRole(
 
   const role = isUserRole(roleValue) ? roleValue : undefined;
   if (!role || (ROLE_RANK[role] ?? 0) < ROLE_RANK[minRole]) {
-    throw new Error('Forbidden');
+    return null;
   }
 
   return {
@@ -108,4 +102,39 @@ export async function requireRole(
     email: decoded.email ?? '',
     role,
   };
+}
+
+/**
+ * Lightweight session check for server-rendered UI (no redirects).
+ */
+export async function hasAdminSession(minRole: UserRole = 'staff') {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('__session')?.value;
+  if (!sessionCookie) return false;
+
+  const actor = await resolveActorFromSessionCookie(sessionCookie, minRole);
+  return actor !== null;
+}
+
+/**
+ * Verify the caller holds at least `minRole`.
+ * Throws with 'Unauthorized' (no session) or 'Forbidden' (insufficient role).
+ * Call at the top of every admin Server Action.
+ */
+export async function requireRole(
+  minRole: UserRole
+): Promise<AdminActorContext> {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('__session')?.value;
+  if (!sessionCookie) redirect('/admin/login');
+
+  const actor = await resolveActorFromSessionCookie(sessionCookie, minRole, {
+    bootstrapInDevelopment: true,
+  });
+  if (!actor) {
+    // Covers stale/revoked/invalid cookies and insufficient role.
+    redirect('/admin/login');
+  }
+
+  return actor;
 }

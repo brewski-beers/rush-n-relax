@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigation } from '../../contexts/useNavigation';
 import {
   BrandAssetFormat,
@@ -14,6 +14,7 @@ import cannabisLeaf from '../../assets/icons/cannabis-leaf.svg';
 import './Navigation.css';
 
 const CANNABIS_LEAF_ICON_SRC = String(cannabisLeaf);
+const ADMIN_ENTRY_HOLD_MS = 4200;
 
 const NAV_LINKS = [
   { label: 'Home', path: '/' },
@@ -23,10 +24,48 @@ const NAV_LINKS = [
   { label: 'Contact', path: '/contact' },
 ] as const;
 
-export function Navigation() {
+interface NavigationProps {
+  isAdminAuthenticated?: boolean;
+}
+
+export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
   const { isMenuOpen, toggleMenu } = useNavigation();
   const pathname = usePathname();
+  const router = useRouter();
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  const holdTimerRef = useRef<number | null>(null);
+  const holdTriggeredRef = useRef(false);
+
+  const clearHoldTimer = () => {
+    if (holdTimerRef.current !== null) {
+      window.clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
+
+  const handlePressStart = () => {
+    if (isAdminAuthenticated) return;
+
+    holdTriggeredRef.current = false;
+    clearHoldTimer();
+    holdTimerRef.current = window.setTimeout(() => {
+      holdTriggeredRef.current = true;
+      router.push('/admin');
+    }, ADMIN_ENTRY_HOLD_MS);
+  };
+
+  const handlePressEnd = () => {
+    clearHoldTimer();
+  };
+
+  const handleToggleClick = () => {
+    if (holdTriggeredRef.current) {
+      holdTriggeredRef.current = false;
+      return;
+    }
+
+    toggleMenu();
+  };
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
@@ -58,6 +97,12 @@ export function Navigation() {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      clearHoldTimer();
+    };
+  }, []);
+
   return (
     <header className="header">
       <div className="header-content">
@@ -78,9 +123,19 @@ export function Navigation() {
           21+ only
         </p>
 
+        {isAdminAuthenticated ? (
+          <Link href="/admin/dashboard" className="admin-shortcut-link">
+            ADMIN
+          </Link>
+        ) : null}
+
         <button
           className={`nav-toggle ${isMenuOpen ? 'active' : ''}`}
-          onClick={toggleMenu}
+          onClick={handleToggleClick}
+          onPointerDown={handlePressStart}
+          onPointerUp={handlePressEnd}
+          onPointerCancel={handlePressEnd}
+          onPointerLeave={handlePressEnd}
           aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={isMenuOpen}
           aria-controls="nav-menu"
@@ -113,6 +168,17 @@ export function Navigation() {
                 </Link>
               </li>
             ))}
+            {isAdminAuthenticated ? (
+              <li>
+                <Link
+                  href="/admin/dashboard"
+                  onClick={() => toggleMenu()}
+                  className="nav-link"
+                >
+                  ADMIN
+                </Link>
+              </li>
+            ) : null}
           </ul>
 
           {/* Mobile Menu Hub - Only visible on mobile */}

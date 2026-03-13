@@ -92,6 +92,30 @@
   white-space: nowrap;
 }
 
+.admin-shortcut-link {
+  border: 1px solid var(--color-border-accent-medium);
+  border-radius: 999px;
+  color: var(--color-accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  min-height: 32px;
+  padding: var(--space-xs);
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.admin-shortcut-link:hover,
+.admin-shortcut-link:focus-visible {
+  background-color: var(--color-surface-anchor-faint);
+  border-color: var(--color-accent-light);
+  color: var(--color-accent-light);
+  outline: none;
+}
+
 /* Unified nav toggle button */
 .nav-toggle {
   display: flex;
@@ -279,6 +303,12 @@
 @media (max-width: 767px) {
   .header-legal {
     display: none;
+  }
+
+  .admin-shortcut-link {
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    padding: var(--space-xs);
   }
 }
 
