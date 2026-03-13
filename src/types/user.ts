@@ -6,8 +6,6 @@ export type UserRole = 'owner' | 'manager' | 'staff' | 'superadmin';
  * Global (not per-tenant) — tenantId scopes the user to a tenant.
  */
 export interface User {
-  uid: string;
-  tenantId: string;
   email: string;
   displayName?: string;
   role: UserRole;

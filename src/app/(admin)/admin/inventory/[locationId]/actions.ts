@@ -1,27 +1,40 @@
 'use server';
 
-import { cookies } from 'next/headers';
-import { getAdminAuth } from '@/lib/firebase/admin';
+import { revalidatePath } from 'next/cache';
+import { requireRole } from '@/lib/admin-auth';
 import { setInventoryItem } from '@/lib/repositories';
 
 export async function updateInventoryItem(
   locationId: string,
   productId: string,
-  patch: { inStock?: boolean; availableOnline?: boolean }
+  patch: { inStock?: boolean; quantity?: number; availableOnline?: boolean }
 ): Promise<void> {
-  // Verify the caller holds a valid admin session — Server Actions are
-  // publicly reachable HTTP endpoints; middleware only checks cookie presence.
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('__session')?.value;
-  if (!sessionCookie) throw new Error('Unauthorized');
-  await getAdminAuth().verifySessionCookie(
-    sessionCookie,
-    true /* checkRevoked */
+  const actor = await requireRole('superadmin');
+
+  const reason =
+    patch.quantity !== undefined
+      ? 'manual-count'
+      : patch.inStock !== undefined
+        ? 'toggle-stock'
+        : 'toggle-online';
+
+  await setInventoryItem(
+    locationId,
+    productId,
+    {
+      ...(patch.inStock !== undefined && { inStock: patch.inStock }),
+      ...(patch.quantity !== undefined && { quantity: patch.quantity }),
+      ...(patch.availableOnline !== undefined && {
+        availableOnline: patch.availableOnline,
+      }),
+    },
+    {
+      reason,
+      source: 'admin-ui',
+      updatedBy: actor.email,
+    }
   );
 
-  await setInventoryItem(locationId, productId, {
-    inStock: patch.inStock ?? false,
-    availableOnline: patch.availableOnline ?? false,
-    updatedBy: 'admin',
-  });
+  revalidatePath(`/admin/inventory/${locationId}`);
+  revalidatePath('/admin/inventory');
 }

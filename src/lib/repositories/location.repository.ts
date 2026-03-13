@@ -74,7 +74,8 @@ export async function upsertLocation(
 ): Promise<string> {
   const col = locationsCol();
   const now = new Date();
-  await col.doc(data.slug).set({ ...data, updatedAt: now }, { merge: true });
+  const payload = stripUndefinedFields({ ...data, updatedAt: now });
+  await col.doc(data.slug).set(payload, { merge: true });
   return data.slug;
 }
 
@@ -104,4 +105,12 @@ function docToLocation(
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
   };
+}
+
+function stripUndefinedFields<T extends Record<string, unknown>>(
+  value: T
+): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, v]) => v !== undefined)
+  ) as Partial<T>;
 }

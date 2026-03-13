@@ -48,9 +48,7 @@ describe('usePromo', () => {
 
   describe('when slug is provided', () => {
     it('initialises with static fallback data before Firestore resolves', () => {
-      mockGetDoc.mockReturnValue(
-        new Promise(() => {}) as ReturnType<typeof getDoc>
-      );
+      mockGetDoc.mockReturnValue(new Promise(() => {}));
 
       const { result } = renderHook(() => usePromo('laser-bong'));
 
@@ -130,7 +128,7 @@ describe('usePromo', () => {
       mockGetDoc.mockReturnValue(
         new Promise(resolve => {
           resolveSnap = resolve;
-        }) as ReturnType<typeof getDoc>
+        })
       );
 
       const { result, unmount } = renderHook(() => usePromo('laser-bong'));

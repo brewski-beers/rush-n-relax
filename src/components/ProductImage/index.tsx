@@ -22,12 +22,16 @@ export function ProductImage({ slug, alt, className }: ProductImageProps) {
 
   useEffect(() => {
     let cancelled = false;
-    resolveProductImageUrl(slug).then(url => {
-      if (!cancelled) {
-        if (url) setSrc(url);
-        else setFailed(true);
-      }
-    });
+    void resolveProductImageUrl(slug)
+      .then(url => {
+        if (!cancelled) {
+          if (url) setSrc(url);
+          else setFailed(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
     return () => {
       cancelled = true;
     };

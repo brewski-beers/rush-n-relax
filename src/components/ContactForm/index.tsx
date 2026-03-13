@@ -137,7 +137,13 @@ export function ContactForm() {
   };
 
   return (
-    <form className="contact-form" onSubmit={handleSubmit} noValidate>
+    <form
+      className="contact-form"
+      onSubmit={event => {
+        void handleSubmit(event);
+      }}
+      noValidate
+    >
       {formStatus.message && (
         <div
           className={`form-status form-status-${formStatus.type}`}

@@ -12,11 +12,18 @@ export async function POST(request: Request): Promise<Response> {
   let idToken: string;
 
   try {
-    const body = await request.json();
-    idToken = body?.idToken;
-    if (!idToken || typeof idToken !== 'string') {
+    const body: unknown = await request.json();
+
+    if (typeof body !== 'object' || body === null) {
       return Response.json({ error: 'idToken required' }, { status: 400 });
     }
+
+    const tokenValue = (body as { idToken?: unknown }).idToken;
+    if (typeof tokenValue !== 'string' || tokenValue.length === 0) {
+      return Response.json({ error: 'idToken required' }, { status: 400 });
+    }
+
+    idToken = tokenValue;
   } catch {
     return Response.json({ error: 'Invalid request body' }, { status: 400 });
   }
@@ -54,7 +61,7 @@ export async function POST(request: Request): Promise<Response> {
  * DELETE /api/auth/session
  * Clear the session cookie (logout).
  */
-export async function DELETE(): Promise<Response> {
+export function DELETE(): Response {
   const cookieHeader =
     '__session=; Max-Age=0; Path=/; HttpOnly; SameSite=Strict';
   return new Response(null, {

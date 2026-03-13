@@ -15,7 +15,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { app, auth } = initializeApp();
+      const { auth } = initializeApp();
       if (!auth) throw new Error('Auth not initialized.');
 
       const provider = new GoogleAuthProvider();
@@ -50,7 +50,9 @@ export default function LoginPage() {
       )}
       <button
         type="button"
-        onClick={handleGoogleSignIn}
+        onClick={() => {
+          void handleGoogleSignIn();
+        }}
         disabled={loading}
         className="admin-submit"
       >

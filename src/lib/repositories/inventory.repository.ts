@@ -5,14 +5,30 @@
  * Inventory items live in a subcollection scoped per location:
  *   inventory/{locationId}/items/{productId}
  *
+ * Adjustment history is recorded as an immutable subcollection:
+ *   inventory/{locationId}/items/{productId}/adjustments/{adjustmentId}
+ *
  * locationId can be a retail location slug or HUB_LOCATION_ID ('hub').
+ *
+ * Invariants (enforced at every write):
+ *   - quantity ≥ 0, integer
+ *   - inStock = quantity > 0
+ *   - availableOnline = false when inStock = false
+ *   - availablePickup = false when inStock = false
+ *   - Every mutation writes an immutable adjustment record
  */
 import {
   getAdminFirestore,
   toDate,
   HUB_LOCATION_ID,
 } from '@/lib/firebase/admin';
-import type { InventoryItem, InventoryItemSummary } from '@/types';
+import type {
+  InventoryItem,
+  InventoryItemSummary,
+  InventoryAdjustment,
+  InventoryAdjustmentReason,
+  InventoryAdjustmentSource,
+} from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -76,32 +92,71 @@ export async function listOnlineAvailableInventory(): Promise<
 // ── Write operations ──────────────────────────────────────────────────────
 
 /**
- * Create or update an inventory item (merge: true).
+ * Create or update an inventory item.
  * Document ID is the productId — one record per product per location.
  *
  * Compliance guard: setting availableOnline: true is blocked if the product
  * has status 'compliance-hold'. Throws if violated.
+ *
+ * Every call writes an immutable adjustment log entry atomically alongside
+ * the item update. The `adjustment` parameter controls the log metadata.
+ * Omitting `adjustment` is only valid for automated/system writes (e.g.
+ * seeding); manually triggered updates must always supply it.
  */
 export async function setInventoryItem(
   locationId: string,
   productId: string,
   patch: {
-    inStock: boolean;
+    inStock?: boolean;
     availableOnline?: boolean;
     availablePickup?: boolean;
     quantity?: number;
     notes?: string;
     updatedBy?: string;
+  },
+  adjustment?: {
+    reason: InventoryAdjustmentReason;
+    note?: string;
+    updatedBy: string;
+    source?: InventoryAdjustmentSource;
   }
 ): Promise<void> {
-  if (patch.availableOnline || patch.availablePickup) {
+  const db = getAdminFirestore();
+  const itemRef = inventoryItemsCol(locationId).doc(productId);
+  const currentSnap = await itemRef.get();
+  const current = currentSnap.data();
+
+  const currentQuantity = normalizeQuantity(
+    current?.quantity,
+    current?.inStock ?? false
+  );
+  const currentInStock: boolean = current?.inStock ?? false;
+  const currentAvailableOnline: boolean = current?.availableOnline ?? false;
+  const currentAvailablePickup: boolean = current?.availablePickup ?? false;
+
+  const nextQuantity =
+    patch.quantity !== undefined
+      ? normalizeQuantity(patch.quantity, false)
+      : patch.inStock !== undefined
+        ? patch.inStock
+          ? Math.max(currentQuantity, 1)
+          : 0
+        : currentQuantity;
+
+  const nextInStock = nextQuantity > 0;
+
+  const requestedAvailableOnline =
+    patch.availableOnline ?? currentAvailableOnline;
+  const requestedAvailablePickup =
+    patch.availablePickup ?? currentAvailablePickup;
+
+  const nextAvailableOnline = nextInStock ? requestedAvailableOnline : false;
+  const nextAvailablePickup = nextInStock ? requestedAvailablePickup : false;
+
+  if (nextAvailableOnline || nextAvailablePickup) {
     // Intentional cross-collection read: this compliance guard must be
-    // co-located with the write to ensure atomicity of the check. Importing
-    // getProductBySlug would create a circular dependency between repositories.
-    const productDoc = await getAdminFirestore()
-      .collection('products')
-      .doc(productId)
-      .get();
+    // co‑located with the write to avoid a circular dependency between repos.
+    const productDoc = await db.collection('products').doc(productId).get();
     if (productDoc.exists && productDoc.data()?.status === 'compliance-hold') {
       throw new Error(
         `Cannot mark '${productId}' available for purchase: product is on compliance-hold`
@@ -109,22 +164,67 @@ export async function setInventoryItem(
     }
   }
 
-  await inventoryItemsCol(locationId)
-    .doc(productId)
-    .set(
-      {
-        productId,
-        locationId,
-        inStock: patch.inStock,
-        availableOnline: patch.availableOnline ?? false,
-        availablePickup: patch.availablePickup ?? false,
-        ...(patch.quantity !== undefined && { quantity: patch.quantity }),
-        ...(patch.notes !== undefined && { notes: patch.notes }),
-        ...(patch.updatedBy !== undefined && { updatedBy: patch.updatedBy }),
-        updatedAt: new Date(),
-      },
-      { merge: true }
-    );
+  const now = new Date();
+
+  const effectiveUpdatedBy = adjustment?.updatedBy ?? patch.updatedBy;
+
+  const itemPayload = {
+    productId,
+    locationId,
+    quantity: nextQuantity,
+    inStock: nextInStock,
+    availableOnline: nextAvailableOnline,
+    availablePickup: nextAvailablePickup,
+    ...(patch.notes !== undefined && { notes: patch.notes }),
+    ...(effectiveUpdatedBy !== undefined && { updatedBy: effectiveUpdatedBy }),
+    updatedAt: now,
+  };
+
+  if (adjustment) {
+    // Compute which fields actually changed for the audit record.
+    const changedFields: InventoryAdjustment['changedFields'] = [];
+    if (nextQuantity !== currentQuantity) changedFields.push('quantity');
+    if (nextInStock !== currentInStock) changedFields.push('inStock');
+    if (nextAvailableOnline !== currentAvailableOnline)
+      changedFields.push('availableOnline');
+    if (nextAvailablePickup !== currentAvailablePickup)
+      changedFields.push('availablePickup');
+    if (
+      patch.notes !== undefined &&
+      patch.notes !== (current?.notes ?? undefined)
+    )
+      changedFields.push('notes');
+
+    // Atomic write: item update + immutable audit log entry in one batch.
+    const logRef = itemRef.collection('adjustments').doc();
+    const logEntry = {
+      productId,
+      locationId,
+      reason: adjustment.reason,
+      source: adjustment.source ?? 'admin-ui',
+      updatedBy: adjustment.updatedBy,
+      changedFields,
+      previousQuantity: currentQuantity,
+      nextQuantity,
+      deltaQuantity: nextQuantity - currentQuantity,
+      previousInStock: currentInStock,
+      nextInStock,
+      previousAvailableOnline: currentAvailableOnline,
+      nextAvailableOnline,
+      previousAvailablePickup: currentAvailablePickup,
+      nextAvailablePickup,
+      ...(adjustment.note !== undefined && { note: adjustment.note }),
+      createdAt: now,
+    } satisfies InventoryAdjustment;
+
+    const batch = db.batch();
+    batch.set(itemRef, itemPayload, { merge: true });
+    batch.set(logRef, logEntry);
+    await batch.commit();
+  } else {
+    // System / seed writes: no audit actor available, skip log entry.
+    await itemRef.set(itemPayload, { merge: true });
+  }
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────
@@ -133,15 +233,26 @@ function docToInventoryItem(
   id: string,
   d: FirebaseFirestore.DocumentData
 ): InventoryItem {
+  const quantity = normalizeQuantity(d.quantity, d.inStock ?? false);
+  const inStock = quantity > 0;
+
   return {
     productId: id,
     locationId: d.locationId,
-    inStock: d.inStock ?? false,
-    availableOnline: d.availableOnline ?? false,
-    availablePickup: d.availablePickup ?? false,
-    quantity: d.quantity ?? undefined,
+    inStock,
+    availableOnline: inStock ? (d.availableOnline ?? false) : false,
+    availablePickup: inStock ? (d.availablePickup ?? false) : false,
+    quantity,
     notes: d.notes ?? undefined,
     updatedAt: toDate(d.updatedAt),
     updatedBy: d.updatedBy ?? undefined,
   };
+}
+
+function normalizeQuantity(value: unknown, fallbackInStock: boolean): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(0, Math.floor(value));
+  }
+
+  return fallbackInStock ? 1 : 0;
 }

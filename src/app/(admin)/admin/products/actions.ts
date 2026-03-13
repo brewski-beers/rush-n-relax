@@ -1,0 +1,17 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { requireRole } from '@/lib/admin-auth';
+import { setProductStatus } from '@/lib/repositories';
+
+export async function archiveProduct(slug: string): Promise<void> {
+  await requireRole('superadmin');
+  await setProductStatus(slug, 'archived');
+  revalidatePath('/admin/products');
+}
+
+export async function restoreProduct(slug: string): Promise<void> {
+  await requireRole('superadmin');
+  await setProductStatus(slug, 'active');
+  revalidatePath('/admin/products');
+}

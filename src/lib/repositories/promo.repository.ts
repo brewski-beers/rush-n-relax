@@ -14,6 +14,26 @@ function promosCol() {
 // ── Read operations ───────────────────────────────────────────────────────
 
 /**
+ * List all promos regardless of active flag — admin use only.
+ */
+export async function listAllPromos(): Promise<PromoSummary[]> {
+  const snap = await promosCol().orderBy('name').get();
+  return snap.docs.map(doc => {
+    const d = doc.data();
+    return {
+      id: doc.id,
+      slug: d.slug,
+      name: d.name,
+      tagline: d.tagline,
+      image: d.image ?? undefined,
+      active: d.active,
+      endDate: d.endDate ?? undefined,
+      locationSlug: d.locationSlug ?? undefined,
+    } satisfies PromoSummary;
+  });
+}
+
+/**
  * List all currently active promos.
  * "Active" = active flag is true AND endDate is either absent or in the future.
  */
@@ -80,12 +100,17 @@ export async function getPromosByLocationSlug(
 
 // ── Write operations ──────────────────────────────────────────────────────
 
+export async function deletePromo(slug: string): Promise<void> {
+  await promosCol().doc(slug).delete();
+}
+
 export async function upsertPromo(
   data: Omit<Promo, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
   const col = promosCol();
   const now = new Date();
-  await col.doc(data.slug).set({ ...data, updatedAt: now }, { merge: true });
+  const payload = stripUndefinedFields({ ...data, updatedAt: now });
+  await col.doc(data.slug).set(payload, { merge: true });
   return data.slug;
 }
 
@@ -110,4 +135,12 @@ function docToPromo(id: string, d: FirebaseFirestore.DocumentData): Promo {
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
   };
+}
+
+function stripUndefinedFields<T extends Record<string, unknown>>(
+  value: T
+): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, v]) => v !== undefined)
+  ) as Partial<T>;
 }

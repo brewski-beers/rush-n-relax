@@ -6,6 +6,7 @@ export {
 } from './location.repository';
 
 export {
+  listAllProducts,
   listProducts,
   listFeaturedProducts,
   listProductsByCategory,
@@ -15,9 +16,11 @@ export {
 } from './product.repository';
 
 export {
+  listAllPromos,
   listActivePromos,
   getPromoBySlug,
   getPromosByLocationSlug,
+  deletePromo,
   upsertPromo,
 } from './promo.repository';
 

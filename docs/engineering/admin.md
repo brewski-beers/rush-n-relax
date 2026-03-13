@@ -116,3 +116,9 @@ flowchart LR
 - Compliance guard: setting either flag is blocked if the product's status is `compliance-hold`.
 - All admin pages use `export const dynamic = 'force-dynamic'` — no static prerender at build time.
 - Writes go through Server Actions (`actions.ts`) which call the repository layer directly.
+- Repository upserts sanitize `undefined` optional fields before Firestore `set(..., { merge: true })` to prevent runtime write errors from sparse form payloads.
+- Inventory semantics are strict and derived at repository level:
+  `inStock = quantity > 0`, and `availableOnline`/`availablePickup` are forced `false` whenever quantity is `0`.
+- Inventory writes now append an immutable adjustment log at
+  `inventory/{locationId}/items/{productId}/adjustments/{adjustmentId}` in the same batch as the item write.
+- Adjustment payload includes before/after snapshots (`previous*`/`next*`), computed delta (`deltaQuantity`), `changedFields`, `reason`, `source`, `updatedBy`, and `createdAt`.
