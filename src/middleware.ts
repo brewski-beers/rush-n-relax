@@ -10,7 +10,7 @@ export const config = {
      * - favicon.ico, icons/, images/, og/ (static assets)
      * - api routes handled by Next.js directly
      */
-    '/((?!_next/static|_next/image|favicon\\.ico|icons/|images/|og/).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|icons/|images/|og/|__firebaseapphosting/).*)',
   ],
 };
 

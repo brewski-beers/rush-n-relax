@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import LogoutButton from './admin/LogoutButton';
 import '@/styles/admin.css';
 
 export default function AdminLayout({
@@ -20,6 +21,7 @@ export default function AdminLayout({
         <Link href="/admin/email-templates">Email Templates</Link>
         <Link href="/admin/email-queue">Email Queue</Link>
         <Link href="/">Back to Client Site</Link>
+        <LogoutButton />
       </header>
       <main className="admin-main">{children}</main>
     </div>

@@ -72,7 +72,7 @@ graph TB
             SFP["/ · /about · /locations · /products\n/contact · /locations/slug\n/products/slug · /promo/slug"]
         end
         subgraph ADM["(admin)"]
-            ADMP["/admin/login · /admin/dashboard\n/admin/locations · /admin/products\n/admin/promos"]
+            ADMP["/admin/login · /admin/dashboard\n/admin/locations · /admin/products\n/admin/promos · /admin/users\n/admin/email-templates · /admin/email-queue"]
         end
         SITE["sitemap.ts · robots.ts"]
     end
@@ -86,7 +86,7 @@ graph TB
     end
 
     subgraph GCP["Firebase — GCP"]
-        FS[("Firestore\nlocations · products · promos\ninventory · location-reviews\ncontact-submissions")]
+        FS[("Firestore\nlocations · products · promos\ninventory · location-reviews\ncontact-submissions\npending-user-invites · outbound-emails\nemail-templates · email-template-revisions")]
         AUTH["Firebase Auth"]
         FN["Cloud Functions v2\nfetchLocationReviews"]
     end

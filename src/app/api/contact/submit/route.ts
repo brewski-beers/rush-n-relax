@@ -1,4 +1,5 @@
 import { submitContactAndQueueEmail } from '@/lib/repositories';
+import { isRateLimited } from '@/lib/rate-limit';
 
 interface ContactSubmissionRequest {
   name: string;
@@ -15,6 +16,15 @@ function sanitizeText(value: unknown, maxLength: number): string {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    request.headers.get('x-real-ip') ??
+    'unknown';
+
+  if (isRateLimited(ip)) {
+    return Response.json({ error: 'Too many requests.' }, { status: 429 });
+  }
+
   let body: ContactSubmissionRequest;
 
   try {

@@ -22,6 +22,10 @@ promos/{slug}
 inventory/{locationId}/items/{productId}
 location-reviews/{placeId}
 contact-submissions/{docId}
+pending-user-invites/{email}
+outbound-emails/{docId}
+email-templates/{templateId}
+email-template-revisions/{docId}
 ```
 
 All Firestore access is **server-side only** via Admin SDK. No client-side Firestore reads.

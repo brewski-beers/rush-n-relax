@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
+import { createId } from '@/lib/utils/id';
 import type {
   EmailTemplate,
   EmailTemplateBlock,
@@ -18,10 +19,6 @@ function emailTemplatesCol() {
 
 function emailTemplateRevisionsCol() {
   return getAdminFirestore().collection('email-template-revisions');
-}
-
-function createId(prefix: string): string {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 const DEFAULT_THEME: EmailTemplateTheme = {
@@ -160,12 +157,11 @@ export async function listEmailTemplateRevisions(
 ): Promise<EmailTemplateRevision[]> {
   const snap = await emailTemplateRevisionsCol()
     .where('templateId', '==', templateId)
+    .orderBy('createdAt', 'desc')
+    .limit(limit)
     .get();
 
-  return snap.docs
-    .map(doc => docToEmailTemplateRevision(doc.id, doc.data()))
-    .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
-    .slice(0, limit);
+  return snap.docs.map(doc => docToEmailTemplateRevision(doc.id, doc.data()));
 }
 
 export async function restoreEmailTemplateRevision(

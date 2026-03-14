@@ -218,6 +218,29 @@
   outline: none;
 }
 
+.admin-logout-btn {
+  color: var(--admin-text-muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: var(--admin-nav-link-padding);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.admin-logout-btn:hover,
+.admin-logout-btn:focus-visible {
+  color: var(--admin-text);
+  border-color: var(--admin-nav-link-focus-border);
+  background: var(--admin-nav-link-focus-bg);
+  outline: none;
+}
+
 .admin-main {
   max-width: 1180px;
   margin: 0 auto;

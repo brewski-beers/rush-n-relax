@@ -6,6 +6,7 @@ import {
   createEmailPreviewDocument,
   renderContactSubmissionEmailHtml,
 } from '@/lib/email-template-renderer';
+import { createId } from '@/lib/utils/id';
 import type {
   ContactSubmissionPayload,
   EmailTemplate,
@@ -38,10 +39,6 @@ const VALUE_PATH_OPTIONS: EmailTemplateValuePath[] = [
   'submissionId',
   'userAgent',
 ];
-
-function createId(prefix: string): string {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
-}
 
 export function EmailTemplateEditor({ initialTemplate }: Props) {
   const [state, formAction, pending] = useActionState(saveEmailTemplate, null);
