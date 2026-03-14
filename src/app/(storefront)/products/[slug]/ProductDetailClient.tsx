@@ -1,27 +1,18 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/Card';
 import { CardGrid } from '@/components/CardGrid';
-import { getProductBySlug, PRODUCTS } from '@/constants/products';
 import { ProductImage } from '@/components/ProductImage';
+import type { Product, ProductSummary } from '@/types';
 
-export default function ProductDetailClient({ slug }: { slug: string }) {
-  const router = useRouter();
-  const product = getProductBySlug(slug);
-
-  useEffect(() => {
-    if (!product) {
-      router.replace('/products');
-    }
-  }, [product, router]);
-
-  if (!product) return null;
-
-  const otherProducts = PRODUCTS.filter(p => p.id !== product.id).slice(0, 3);
-
+export default function ProductDetailClient({
+  product,
+  relatedProducts,
+}: {
+  product: Product;
+  relatedProducts: ProductSummary[];
+}) {
   return (
     <main className="product-detail-page">
       <section className="back-to-products">
@@ -57,12 +48,12 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
         </div>
       </section>
 
-      {otherProducts.length > 0 && (
+      {relatedProducts.length > 0 && (
         <section className="related-products asymmetry-section-anchor">
           <div className="container">
             <h2 className="asymmetry-headline-anchor">Explore More</h2>
             <CardGrid columns="3" gap="lg">
-              {otherProducts.map((related, index) => (
+              {relatedProducts.map((related, index) => (
                 <Card
                   key={related.id}
                   variant="product-small"

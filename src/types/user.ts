@@ -5,21 +5,19 @@ export type UserRole =
   | 'staff'
   | 'customer';
 
-/**
- * Firestore document shape for an authenticated user.
- * Lives at: users/{uid}
- * Global (not per-tenant) — tenantId scopes the user to a tenant.
- */
-export interface User {
+export type InvitableUserRole = Exclude<UserRole, 'owner'>;
+
+export type PendingUserInviteStatus = 'pending' | 'accepted' | 'revoked';
+
+export interface PendingUserInvite {
+  id: string;
   email: string;
-  displayName?: string;
-  role: UserRole;
-  /**
-   * Location IDs this user can access.
-   * For owner/storeOwner/storeManager: all locations.
-   * For staff: only the locations listed here.
-   */
-  locationIds: string[];
+  role: InvitableUserRole;
+  status: PendingUserInviteStatus;
+  invitedByUid: string;
+  invitedByEmail?: string;
+  acceptedByUid?: string;
   createdAt: Date;
   updatedAt: Date;
+  acceptedAt?: Date;
 }

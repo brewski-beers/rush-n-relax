@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { usePromo } from './usePromo';
-import { getPromoBySlug } from '../constants/promos';
+import { PROMO_FIXTURES } from '@/lib/fixtures';
 
 vi.mock('firebase/firestore', () => ({
   doc: vi.fn(() => ({ __stub: true })),
@@ -18,7 +18,7 @@ import { doc, getDoc } from 'firebase/firestore';
 const mockDoc = vi.mocked(doc);
 const mockGetDoc = vi.mocked(getDoc);
 
-const staticPromo = getPromoBySlug('laser-bong')!;
+const promoFixture = PROMO_FIXTURES.find(promo => promo.slug === 'laser-bong')!;
 
 function makeSnap(exists: boolean, data?: object) {
   return { exists: () => exists, data: () => data } as ReturnType<
@@ -47,19 +47,21 @@ describe('usePromo', () => {
   });
 
   describe('when slug is provided', () => {
-    it('initialises with static fallback data before Firestore resolves', () => {
+    it('initialises with null promo before Firestore resolves', () => {
       mockGetDoc.mockReturnValue(new Promise(() => {}));
 
       const { result } = renderHook(() => usePromo('laser-bong'));
 
-      // Static fallback is available immediately — page can render without waiting
-      expect(result.current.promo?.slug).toBe('laser-bong');
+      expect(result.current.promo).toBeNull();
       expect(result.current.status).toBe('loading');
     });
 
     it('updates to Firestore data on success', async () => {
       const firestorePromo = {
-        ...staticPromo,
+        ...promoFixture,
+        id: promoFixture.slug,
+        createdAt: new Date('2026-03-14T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-14T00:00:00.000Z'),
         tagline: 'Updated from Firestore',
       };
       mockGetDoc.mockResolvedValue(makeSnap(true, firestorePromo));
@@ -71,37 +73,33 @@ describe('usePromo', () => {
       expect(result.current.promo?.tagline).toBe('Updated from Firestore');
     });
 
-    it('falls back to static data when document does not exist', async () => {
+    it('returns null when document does not exist', async () => {
       mockGetDoc.mockResolvedValue(makeSnap(false));
 
       const { result } = renderHook(() => usePromo('laser-bong'));
 
       await waitFor(() => expect(result.current.status).toBe('error'));
-
-      // Page still renders — static fallback is preserved
-      expect(result.current.promo?.slug).toBe('laser-bong');
+      expect(result.current.promo).toBeNull();
     });
 
-    it('falls back to static data when document is inactive', async () => {
+    it('returns null when document is inactive', async () => {
       mockGetDoc.mockResolvedValue(
-        makeSnap(true, { ...staticPromo, active: false })
+        makeSnap(true, { ...promoFixture, active: false })
       );
 
       const { result } = renderHook(() => usePromo('laser-bong'));
 
       await waitFor(() => expect(result.current.status).toBe('error'));
-
-      expect(result.current.promo?.slug).toBe('laser-bong');
+      expect(result.current.promo).toBeNull();
     });
 
-    it('falls back to static data when fetch throws', async () => {
+    it('returns null when fetch throws', async () => {
       mockGetDoc.mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => usePromo('laser-bong'));
 
       await waitFor(() => expect(result.current.status).toBe('error'));
-
-      expect(result.current.promo?.slug).toBe('laser-bong');
+      expect(result.current.promo).toBeNull();
     });
 
     it('returns null on error for an unknown slug (no static fallback)', async () => {
@@ -115,7 +113,14 @@ describe('usePromo', () => {
     });
 
     it('reads from the promos collection with the correct slug as document ID', async () => {
-      mockGetDoc.mockResolvedValue(makeSnap(true, staticPromo));
+      mockGetDoc.mockResolvedValue(
+        makeSnap(true, {
+          ...promoFixture,
+          id: promoFixture.slug,
+          createdAt: new Date('2026-03-14T00:00:00.000Z'),
+          updatedAt: new Date('2026-03-14T00:00:00.000Z'),
+        })
+      );
 
       renderHook(() => usePromo('laser-bong'));
 
@@ -135,7 +140,14 @@ describe('usePromo', () => {
 
       expect(result.current.status).toBe('loading');
       unmount();
-      resolveSnap(makeSnap(true, staticPromo));
+      resolveSnap(
+        makeSnap(true, {
+          ...promoFixture,
+          id: promoFixture.slug,
+          createdAt: new Date('2026-03-14T00:00:00.000Z'),
+          updatedAt: new Date('2026-03-14T00:00:00.000Z'),
+        })
+      );
 
       expect(result.current.status).toBe('loading');
     });

@@ -24,8 +24,8 @@ export interface Location {
   description: string;
   coordinates?: LocationCoordinates;
   socialLinkIds?: SocialId[];
-  /** Google Maps Place ID — used to fetch live reviews and ratings */
-  placeId: string;
+  /** Optional Google Maps Place ID — enables richer Maps/reviews integration */
+  placeId?: string;
   /** Clover merchant ID for this specific location */
   cloverMerchantId?: string;
   /** Firebase Storage path for OG image, e.g. locations/{slug}/og.jpg */

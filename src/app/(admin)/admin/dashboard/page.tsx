@@ -28,6 +28,12 @@ export default async function DashboardPage() {
         <Link href="/admin/users" className="dashboard-card">
           Manage Users
         </Link>
+        <Link href="/admin/email-templates" className="dashboard-card">
+          Manage Email Templates
+        </Link>
+        <Link href="/admin/email-queue" className="dashboard-card">
+          Monitor Email Queue
+        </Link>
       </div>
     </>
   );

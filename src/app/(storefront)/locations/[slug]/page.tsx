@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getLocationBySlug } from '@/lib/repositories';
+import { getLocationBySlug, getPromosByLocationSlug } from '@/lib/repositories';
 import { buildMetadata } from '@/lib/seo/metadata.factory';
 import { buildLocalBusinessSchema } from '@/lib/seo/schemas/local-business';
 import { buildBreadcrumbSchema } from '@/lib/seo/schemas/breadcrumb';
@@ -28,7 +28,10 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function LocationDetailPage({ params }: Props) {
   const { slug } = await params;
-  const location = await getLocationBySlug(slug);
+  const [location, promos] = await Promise.all([
+    getLocationBySlug(slug),
+    getPromosByLocationSlug(slug),
+  ]);
   if (!location) notFound();
 
   return (
@@ -40,7 +43,7 @@ export default async function LocationDetailPage({ params }: Props) {
           { name: location.name, href: `/locations/${slug}` },
         ])}
       />
-      <LocationDetailClient slug={slug} />
+      <LocationDetailClient location={location} promos={promos} />
     </>
   );
 }

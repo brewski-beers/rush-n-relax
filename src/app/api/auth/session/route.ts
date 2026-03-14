@@ -1,4 +1,9 @@
 import { getAdminAuth } from '@/lib/firebase/admin';
+import {
+  getPendingUserInviteByEmail,
+  markPendingUserInviteAccepted,
+  normalizeInviteEmail,
+} from '@/lib/repositories';
 
 const SESSION_DURATION_MS = 60 * 60 * 24 * 5 * 1000; // 5 days
 const SESSION_MAX_AGE_S = 60 * 60 * 24 * 5; // 5 days in seconds
@@ -52,9 +57,41 @@ export async function POST(request: Request): Promise<Response> {
     const adminAuth = getAdminAuth();
     const decoded = await adminAuth.verifyIdToken(idToken, true);
     const roleClaim = getRoleClaim(decoded);
+    const normalizedEmail = decoded.email
+      ? normalizeInviteEmail(decoded.email)
+      : undefined;
 
     if (roleClaim !== OWNER_ROLE) {
-      const normalizedEmail = decoded.email?.trim().toLowerCase();
+      if (normalizedEmail) {
+        const pendingInvite =
+          await getPendingUserInviteByEmail(normalizedEmail);
+
+        if (pendingInvite) {
+          const userRecord = await adminAuth.getUser(decoded.uid);
+          const currentRole = getRoleClaim(userRecord.customClaims);
+
+          if (currentRole !== pendingInvite.role) {
+            await adminAuth.setCustomUserClaims(decoded.uid, {
+              ...(userRecord.customClaims ?? {}),
+              role: pendingInvite.role,
+            });
+          }
+
+          await markPendingUserInviteAccepted({
+            email: normalizedEmail,
+            acceptedByUid: decoded.uid,
+          });
+
+          return Response.json(
+            {
+              error: 'Invite role applied. Refreshing token required.',
+              code: CLAIMS_UPDATED_RETRY_CODE,
+            },
+            { status: 409 }
+          );
+        }
+      }
+
       const isAllowlisted = Boolean(
         normalizedEmail && parseOwnerAllowlist().has(normalizedEmail)
       );

@@ -54,8 +54,8 @@ jobs:
       - name: E2E tests
         if: needs.changes.outputs.should_run == 'true'
         run: >-
-          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,storage
-          "npx tsx scripts/seed-emulators.ts && npm run test:e2e:core -- --project=chromium"
+          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,auth,storage
+          "npm run dev:seed && npm run test:e2e:core -- --project=chromium"
         env:
           # Note: emulator routing is handled via NODE_ENV=development (set by
           # `npm run dev` in playwright.config.ts webServer). No extra env needed.

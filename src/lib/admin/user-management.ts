@@ -1,13 +1,13 @@
 import type { ListUsersResult, UserRecord } from 'firebase-admin/auth';
 import { getAdminAuth } from '@/lib/firebase/admin';
-import { isManageableRole, type ManageableRole } from '@/lib/admin/roles';
+import type { ManageableRole } from '@/lib/admin/roles';
 import type { UserRole } from '@/types';
 
 export interface ManagedUserSummary {
   uid: string;
   email: string;
   displayName: string;
-  role: ManageableRole;
+  role: UserRole | 'unassigned';
 }
 
 function isUserRole(value: unknown): value is UserRole {
@@ -74,15 +74,12 @@ export async function listManagedUsers(
     const page: ListUsersResult = await auth.listUsers(1000, pageToken);
     for (const user of page.users) {
       const role = roleFromClaims(user);
-      if (!isManageableRole(role)) {
-        continue;
-      }
 
       summaries.push({
         uid: user.uid,
         email: user.email ?? '(no email)',
         displayName: user.displayName ?? '-',
-        role,
+        role: role ?? 'unassigned',
       });
 
       if (summaries.length >= limit) {

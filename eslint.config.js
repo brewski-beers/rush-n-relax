@@ -22,7 +22,8 @@ export default tseslint.config(
         ...globals.node,
       },
       parserOptions: {
-        projectService: true,
+        project: ['./tsconfig.eslint.json'],
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     plugins: {
@@ -81,11 +82,25 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/**/__tests__/**/*.ts', 'src/**/__tests__/**/*.tsx'],
+    files: [
+      'src/**/*.test.ts',
+      'src/**/*.test.tsx',
+      'src/**/__tests__/**/*.ts',
+      'src/**/__tests__/**/*.tsx',
+      'functions/**/*.test.ts',
+      'functions/**/*.test.tsx',
+    ],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-base-to-string': 'off',
+    },
+  },
+  {
+    files: ['e2e/**/*.ts', 'e2e/**/*.tsx'],
+    rules: {
       '@typescript-eslint/require-await': 'off',
     },
   },

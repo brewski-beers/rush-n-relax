@@ -2,10 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card } from '@/components/Card';
 import { CardGrid } from '@/components/CardGrid';
-import { LOCATIONS } from '@/constants/locations';
 import { ProductImage } from '@/components/ProductImage';
 import { seoConfig } from '@/config/seo.config';
-import { listFeaturedProducts } from '@/lib/repositories';
+import { listFeaturedProducts, listLocations } from '@/lib/repositories';
 
 export const metadata: Metadata = {
   title: 'Rush N Relax — Premium Cannabis Dispensary | East Tennessee',
@@ -17,7 +16,10 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const featuredProducts = await listFeaturedProducts();
+  const [featuredProducts, locations] = await Promise.all([
+    listFeaturedProducts(),
+    listLocations(),
+  ]);
 
   return (
     <main className="home-page">
@@ -111,7 +113,7 @@ export default async function HomePage() {
             10 PM.
           </p>
           <div className="locations-grid">
-            {LOCATIONS.map((loc, index) => (
+            {locations.map((loc, index) => (
               <Card
                 key={loc.id}
                 variant="location"

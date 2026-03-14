@@ -1,36 +1,31 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/Card';
 import { ReviewsSection } from '@/components/ReviewsSection';
-import { getLocationBySlug } from '@/constants/locations';
-import { getPromosByLocationSlug } from '@/constants/promos';
 import { getSocialLink, isSocialIconObject } from '@/constants/social';
 import { useLocationReviews } from '@/hooks/useLocationReviews';
+import type { Location, PromoSummary } from '@/types';
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-export default function LocationDetailClient({ slug }: { slug: string }) {
-  const router = useRouter();
-  const location = getLocationBySlug(slug);
-  const locationPromos = location ? getPromosByLocationSlug(location.slug) : [];
-
-  useEffect(() => {
-    if (!location) {
-      router.replace('/locations');
-    }
-  }, [location, router]);
+export default function LocationDetailClient({
+  location,
+  promos,
+}: {
+  location: Location;
+  promos: PromoSummary[];
+}) {
+  const mapQuery = location.placeId
+    ? `place_id:${location.placeId}`
+    : `${location.address}, ${location.city}, ${location.state} ${location.zip}`;
 
   const {
     rating,
     totalRatings,
     reviews,
     status: reviewsStatus,
-  } = useLocationReviews(location?.placeId);
-
-  if (!location) return null;
+  } = useLocationReviews(location.placeId);
 
   return (
     <main className="location-detail-page">
@@ -57,12 +52,12 @@ export default function LocationDetailClient({ slug }: { slug: string }) {
         locationName={location.name}
       />
 
-      {locationPromos.length > 0 && (
+      {promos.length > 0 && (
         <section className="location-promos-section asymmetry-section-stable">
           <div className="container location-promos-inner">
-            {locationPromos.map(promo => (
+            {promos.map(promo => (
               <Card
-                key={promo.promoId}
+                key={promo.id}
                 variant="info"
                 as="div"
                 surface="anchor"
@@ -182,7 +177,7 @@ export default function LocationDetailClient({ slug }: { slug: string }) {
                   loading="lazy"
                   allowFullScreen
                   referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(`place_id:${location.placeId}`)}`}
+                  src={`https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${encodeURIComponent(mapQuery)}`}
                 />
               </div>
               <a

@@ -56,14 +56,15 @@ firebase login
 
 \\\ash
 
-# Start development server and Firebase emulators
+# Start Next.js and Firebase emulators
 
-npm run dev
-firebase emulators:start
+npm run dev:all
 
-# In another terminal
+# In another terminal, generate deterministic emulator artifacts
 
-npm run firebase:emulate
+# and seed Firestore + Auth + storage fixtures
+
+npm run dev:seed
 \\\
 
 ### Building
@@ -101,6 +102,9 @@ This keeps local feedback loops fast while CI validates everything.
 | **Full**  | `npm run test:e2e:full`  | All specs, all browsers                       | Manual release gate     |
 
 ```bash
+# Generate deterministic Firestore/Auth emulator artifacts
+npm run emulators:artifacts
+
 # Quick check — runs in < 15s
 npm run test:e2e:smoke
 

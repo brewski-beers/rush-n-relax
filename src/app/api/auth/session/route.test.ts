@@ -1,9 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const createSessionCookieMock = vi.fn();
-const verifyIdTokenMock = vi.fn();
-const getUserMock = vi.fn();
-const setCustomUserClaimsMock = vi.fn();
+const {
+  createSessionCookieMock,
+  verifyIdTokenMock,
+  getUserMock,
+  setCustomUserClaimsMock,
+  getPendingUserInviteByEmailMock,
+  markPendingUserInviteAcceptedMock,
+} = vi.hoisted(() => ({
+  createSessionCookieMock: vi.fn(),
+  verifyIdTokenMock: vi.fn(),
+  getUserMock: vi.fn(),
+  setCustomUserClaimsMock: vi.fn(),
+  getPendingUserInviteByEmailMock: vi.fn(),
+  markPendingUserInviteAcceptedMock: vi.fn(),
+}));
 
 vi.mock('@/lib/firebase/admin', () => ({
   getAdminAuth: () => ({
@@ -12,6 +23,12 @@ vi.mock('@/lib/firebase/admin', () => ({
     getUser: getUserMock,
     setCustomUserClaims: setCustomUserClaimsMock,
   }),
+}));
+
+vi.mock('@/lib/repositories', () => ({
+  normalizeInviteEmail: (email: string) => email.trim().toLowerCase(),
+  getPendingUserInviteByEmail: getPendingUserInviteByEmailMock,
+  markPendingUserInviteAccepted: markPendingUserInviteAcceptedMock,
 }));
 
 import { DELETE, POST } from './route';
@@ -28,6 +45,7 @@ describe('auth session route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.ADMIN_OWNER_ALLOWLIST = '';
+    getPendingUserInviteByEmailMock.mockResolvedValue(null);
   });
 
   it('creates a session for owner role', async () => {
@@ -65,6 +83,35 @@ describe('auth session route', () => {
     expect(setCustomUserClaimsMock).toHaveBeenCalledWith('new-owner-uid', {
       betaFlag: true,
       role: 'owner',
+    });
+    expect(createSessionCookieMock).not.toHaveBeenCalled();
+  });
+
+  it('applies pending invite role and asks client to retry token', async () => {
+    verifyIdTokenMock.mockResolvedValue({
+      uid: 'invitee-uid',
+      email: 'new.staff@rushnrelax.com',
+      role: 'customer',
+    });
+    getPendingUserInviteByEmailMock.mockResolvedValue({
+      email: 'new.staff@rushnrelax.com',
+      role: 'staff',
+      status: 'pending',
+    });
+    getUserMock.mockResolvedValue({ customClaims: { betaFlag: true } });
+
+    const response = await POST(createPostRequest('invite-token'));
+    const body = (await response.json()) as { code?: string };
+
+    expect(response.status).toBe(409);
+    expect(body.code).toBe('CLAIMS_UPDATED_RETRY');
+    expect(setCustomUserClaimsMock).toHaveBeenCalledWith('invitee-uid', {
+      betaFlag: true,
+      role: 'staff',
+    });
+    expect(markPendingUserInviteAcceptedMock).toHaveBeenCalledWith({
+      email: 'new.staff@rushnrelax.com',
+      acceptedByUid: 'invitee-uid',
     });
     expect(createSessionCookieMock).not.toHaveBeenCalled();
   });

@@ -2,11 +2,23 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Contact submissions collection: public write only (for contact form)
+    // Contact submissions collection: server-side only via Admin SDK endpoint
     match /contact-submissions/{docId} {
       allow read: if false;
-      allow create: if true;
-      allow update, delete: if false;
+      allow create, update, delete: if false;
+    }
+
+    // Email template + queue collections are server-only
+    match /email-templates/{docId} {
+      allow read, write: if false;
+    }
+
+    match /email-template-revisions/{docId} {
+      allow read, write: if false;
+    }
+
+    match /outbound-emails/{docId} {
+      allow read, write: if false;
     }
 
     // Location reviews: written daily by scheduled Cloud Function (Admin SDK bypasses rules)
@@ -28,11 +40,6 @@ service cloud.firestore {
       allow read, write: if false;
     }
     match /inventory/{locationId}/items/{productId} {
-      allow read, write: if false;
-    }
-
-    // Admin users: server-side only via Admin SDK — no client access
-    match /users/{uid} {
       allow read, write: if false;
     }
 

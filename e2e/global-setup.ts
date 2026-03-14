@@ -15,26 +15,14 @@ import { execSync } from 'child_process';
  * messages rather than an opaque setup crash.
  */
 export default async function globalSetup() {
-  const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST || 'localhost:8080';
-
   try {
-    console.log('[e2e] Seeding Firebase emulators...');
+    console.log(
+      '[e2e] Generating emulator artifacts and seeding Firebase emulators...'
+    );
 
-    // Seed location-reviews collection (used by reviews.spec.ts)
-    execSync('node scripts/seed-emulators.cjs', {
-      stdio: 'inherit',
-      timeout: 15000,
-    });
-
-    // Seed locations, products, promos from constants (used by app.spec.ts, user-journey.spec.ts)
-    execSync('npx tsx scripts/seed-from-constants.ts', {
+    execSync('npm run dev:seed', {
       stdio: 'inherit',
       timeout: 30000,
-      env: {
-        ...process.env,
-        FIRESTORE_EMULATOR_HOST: emulatorHost,
-        NODE_ENV: 'development',
-      },
     });
 
     console.log('[e2e] Emulator seed complete.');

@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { Analytics } from '@vercel/analytics/next';
 import { hasAdminSession } from '@/lib/admin-auth';
 import { NavigationProvider } from '@/contexts/NavigationContext';
 import { StorefrontContent } from './StorefrontContent';
@@ -20,6 +21,7 @@ export default async function StorefrontLayout({
       >
         {children}
       </StorefrontContent>
+      <Analytics />
     </NavigationProvider>
   );
 }

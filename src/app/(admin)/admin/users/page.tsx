@@ -2,11 +2,15 @@ export const dynamic = 'force-dynamic';
 
 import { requireRole } from '@/lib/admin-auth';
 import { listManagedUsers } from '@/lib/admin/user-management';
+import { listPendingUserInvites } from '@/lib/repositories';
 import { UserRoleForm } from './UserRoleForm';
 
 export default async function AdminUsersPage() {
   await requireRole('owner');
-  const users = await listManagedUsers();
+  const [users, pendingInvites] = await Promise.all([
+    listManagedUsers(),
+    listPendingUserInvites(),
+  ]);
 
   return (
     <>
@@ -14,13 +18,45 @@ export default async function AdminUsersPage() {
         <h1>Users</h1>
       </div>
       <p className="admin-section-desc">
-        Assign non-owner roles using Firebase custom claims. Owner accounts are
-        immutable from this panel.
+        Invite users by email and assign a role, or assign roles to existing
+        Firebase Auth users. Owner accounts remain immutable from this panel.
       </p>
 
       <UserRoleForm />
 
       <div className="admin-table-wrap">
+        <h2 className="admin-section-title">Pending Invites</h2>
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Invited By</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pendingInvites.map(invite => (
+              <tr key={invite.id}>
+                <td>{invite.email}</td>
+                <td>{invite.role}</td>
+                <td>{invite.invitedByEmail ?? invite.invitedByUid}</td>
+                <td>{invite.updatedAt.toLocaleString()}</td>
+              </tr>
+            ))}
+            {pendingInvites.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="admin-empty">
+                  No pending invites.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="admin-table-wrap">
+        <h2 className="admin-section-title">Firebase Auth Users</h2>
         <table className="admin-table">
           <thead>
             <tr>
@@ -42,7 +78,7 @@ export default async function AdminUsersPage() {
             {users.length === 0 ? (
               <tr>
                 <td colSpan={4} className="admin-empty">
-                  No non-owner users found yet.
+                  No users found yet.
                 </td>
               </tr>
             ) : null}

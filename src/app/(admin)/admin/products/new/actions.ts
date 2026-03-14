@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
 import { upsertProduct, getProductBySlug } from '@/lib/repositories';
@@ -57,6 +58,10 @@ export async function createProduct(
     availableAt,
     status: 'active',
   });
+
+  revalidatePath('/admin/products');
+  revalidatePath('/products');
+  revalidatePath(`/products/${slug}`);
 
   redirect('/admin/products');
 }

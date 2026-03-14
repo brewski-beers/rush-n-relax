@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getProductBySlug } from '@/lib/repositories';
+import { getProductBySlug, listProducts } from '@/lib/repositories';
 import { buildMetadata } from '@/lib/seo/metadata.factory';
 import { buildProductSchema } from '@/lib/seo/schemas/product';
 import { buildBreadcrumbSchema } from '@/lib/seo/schemas/breadcrumb';
@@ -28,8 +28,15 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [product, activeProducts] = await Promise.all([
+    getProductBySlug(slug),
+    listProducts(),
+  ]);
   if (!product || product.status === 'archived') notFound();
+
+  const relatedProducts = activeProducts
+    .filter(candidate => candidate.slug !== product.slug)
+    .slice(0, 3);
 
   return (
     <>
@@ -40,7 +47,10 @@ export default async function ProductDetailPage({ params }: Props) {
           { name: product.name, href: `/products/${slug}` },
         ])}
       />
-      <ProductDetailClient slug={slug} />
+      <ProductDetailClient
+        product={product}
+        relatedProducts={relatedProducts}
+      />
     </>
   );
 }

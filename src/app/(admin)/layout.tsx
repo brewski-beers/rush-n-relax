@@ -17,6 +17,8 @@ export default function AdminLayout({
         <Link href="/admin/promos">Promos</Link>
         <Link href="/admin/inventory">Inventory</Link>
         <Link href="/admin/users">Users</Link>
+        <Link href="/admin/email-templates">Email Templates</Link>
+        <Link href="/admin/email-queue">Email Queue</Link>
         <Link href="/">Back to Client Site</Link>
       </header>
       <main className="admin-main">{children}</main>

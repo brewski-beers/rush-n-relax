@@ -1,3 +1,10 @@
+import { getApps, initializeApp as initializeFirebaseApp } from 'firebase/app';
+import {
+  GoogleAuthProvider,
+  connectAuthEmulator,
+  getAuth,
+  signInWithCredential,
+} from 'firebase/auth';
 import { Page } from '@playwright/test';
 
 /**
@@ -17,6 +24,56 @@ const LEGAL_DOB = {
   day: '15',
   year: '1990',
 };
+
+const PLAYWRIGHT_FIREBASE_APP_NAME = 'playwright-auth-emulator';
+const TEST_ADMIN_ACTOR = {
+  email: 'kb@rushnrelax.com',
+  displayName: 'KB',
+  providerUid: 'kb-google-oauth',
+};
+
+export interface EmulatorGoogleActor {
+  email: string;
+  displayName: string;
+  providerUid: string;
+}
+
+function getPlaywrightAuth() {
+  const existingApp = getApps().find(
+    app => app.name === PLAYWRIGHT_FIREBASE_APP_NAME
+  );
+  const app =
+    existingApp ??
+    initializeFirebaseApp(
+      {
+        apiKey: 'AIzaSyB0qrTVmQ8gRvmx-4oJ_dQHP6RA2kZ3FJk',
+        authDomain: 'rush-n-relax.firebaseapp.com',
+        projectId: 'rush-n-relax',
+        storageBucket: 'rush-n-relax.firebasestorage.app',
+        messagingSenderId: '556383052079',
+        appId: '1:556383052079:web:6780513e5d7d79140f01da',
+      },
+      PLAYWRIGHT_FIREBASE_APP_NAME
+    );
+  const auth = getAuth(app);
+
+  if (!auth.emulatorConfig) {
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', {
+      disableWarnings: true,
+    });
+  }
+
+  return auth;
+}
+
+function extractSessionCookie(setCookieHeader: string | null): string | null {
+  if (!setCookieHeader) {
+    return null;
+  }
+
+  const match = setCookieHeader.match(/__session=([^;]+)/);
+  return match ? match[1] : null;
+}
 
 /**
  * Completes age verification so tests can access post-gate pages.
@@ -58,4 +115,55 @@ export async function preVerifyAge(page: Page): Promise<void> {
       sameSite: 'Strict',
     },
   ]);
+}
+
+export async function establishAdminSession(page: Page): Promise<void> {
+  const response = await exchangeSessionForActor(page, TEST_ADMIN_ACTOR);
+
+  if (!response.ok()) {
+    throw new Error(`Failed to create admin session (${response.status()})`);
+  }
+
+  const sessionCookie = extractSessionCookie(
+    response.headers()['set-cookie'] ?? null
+  );
+
+  if (!sessionCookie) {
+    throw new Error(
+      'Admin session cookie was not returned by /api/auth/session'
+    );
+  }
+
+  const currentUrl = new URL(page.url());
+  await page.context().addCookies([
+    {
+      name: '__session',
+      value: sessionCookie,
+      domain: currentUrl.hostname,
+      path: '/',
+      httpOnly: true,
+      sameSite: 'Strict',
+    },
+  ]);
+}
+
+export async function exchangeSessionForActor(
+  page: Page,
+  actor: EmulatorGoogleActor
+) {
+  const auth = getPlaywrightAuth();
+  const credential = GoogleAuthProvider.credential(
+    JSON.stringify({
+      sub: actor.providerUid,
+      email: actor.email,
+      email_verified: true,
+      name: actor.displayName,
+    })
+  );
+  const userCredential = await signInWithCredential(auth, credential);
+  const idToken = await userCredential.user.getIdToken(true);
+  const loginUrl = new URL('/api/auth/session', page.url()).toString();
+  return page.context().request.post(loginUrl, {
+    data: { idToken },
+  });
 }

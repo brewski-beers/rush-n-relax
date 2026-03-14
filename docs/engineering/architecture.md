@@ -208,7 +208,8 @@ sequenceDiagram
     participant NPM as npm scripts
     participant Emu as Firebase Emulators
     participant Next as Next.js Dev Server
-    participant Seed as Seed Scripts
+    participant Gen as Artifact Generator
+    participant Seed as Seed Loader
 
     Dev->>NPM: npm run dev:all
     NPM->>Emu: firebase emulators:start (8080/9099/5001/9199)
@@ -216,9 +217,9 @@ sequenceDiagram
     Note over Emu,Next: Parallel via concurrently
 
     Dev->>NPM: npm run dev:seed
-    NPM->>Seed: seed-emulators.cjs → locations/ products/ promos/ location-reviews/
-    NPM->>Seed: seed-from-constants.ts → locations/ products/ promos/
-    Note over Seed,Emu: FIRESTORE_EMULATOR_HOST=localhost:8080
+    NPM->>Gen: generate-emulator-artifacts.ts → emulator-data/firestore.seed.json + auth.seed.json
+    NPM->>Seed: seed-emulators.ts → import Firestore/Auth artifacts + storage stubs
+    Note over Gen,Emu: FIRESTORE_EMULATOR_HOST=localhost:8080 / FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
 
     Dev->>Next: http://localhost:3000
     Next->>Emu: Admin SDK reads locations/
@@ -229,7 +230,8 @@ sequenceDiagram
 ### Key Paths
 
 - `dev:all` starts both services in parallel — no manual ordering required.
-- `dev:seed` must be run after emulators are ready (emulators first, then seed).
+- `dev:seed` generates deterministic emulator artifacts, then seeds Firestore/Auth from those artifacts and uploads storage stubs.
+- Auth authority is Firebase Auth custom claims; there is no required Firestore `users/{uid}` mirror in runtime.
 - All Admin SDK calls in dev automatically route to `localhost:8080` via `isEmulator`.
 
 ---
@@ -265,7 +267,7 @@ flowchart LR
         A3["src/lib/seo/\nmetadata.factory + schemas/"]
         A4["src/app/(admin)/\nLogin + CMS UI"]
         A5["app/sitemap.ts · app/robots.ts"]
-        A6["scripts/seed-from-constants.ts"]
+        A6["src/lib/fixtures/ + scripts/generate-emulator-artifacts.ts"]
     end
 
     subgraph GATE["Pending Deletion — after prod Firestore confirmed"]

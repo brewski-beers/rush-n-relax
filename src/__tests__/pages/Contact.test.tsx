@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import ContactPage from '@/app/(storefront)/contact/page';
-import { LOCATIONS } from '@/constants/locations';
-import type { LocationSummary } from '@/types';
+import { buildLocationSummaries } from '@/lib/fixtures';
 
 vi.mock('next/link', () => ({
   default: ({
@@ -30,10 +29,10 @@ vi.mock('@/lib/repositories', () => ({
 
 import { listLocations } from '@/lib/repositories';
 
+const locations = buildLocationSummaries();
+
 beforeEach(() => {
-  vi.mocked(listLocations).mockResolvedValue(
-    LOCATIONS as unknown as LocationSummary[]
-  );
+  vi.mocked(listLocations).mockResolvedValue(locations);
 });
 
 describe('Contact page', () => {
@@ -41,7 +40,7 @@ describe('Contact page', () => {
     const page = await ContactPage();
     render(page);
 
-    const activeLocations = LOCATIONS.filter(
+    const activeLocations = locations.filter(
       location => location.hours !== 'Coming soon'
     );
     const phoneLinks = screen.getAllByRole('link', {

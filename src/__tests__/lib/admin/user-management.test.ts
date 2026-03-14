@@ -55,7 +55,7 @@ describe('user-management', () => {
     expect(setCustomUserClaimsMock).not.toHaveBeenCalled();
   });
 
-  it('lists only non-owner managed users', async () => {
+  it('lists all users including owner and unassigned', async () => {
     listUsersMock.mockResolvedValue({
       users: [
         {
@@ -76,6 +76,12 @@ describe('user-management', () => {
           displayName: null,
           customClaims: { role: 'staff' },
         },
+        {
+          uid: 'new-user-uid',
+          email: 'new@rushnrelax.com',
+          displayName: 'New User',
+          customClaims: undefined,
+        },
       ],
       pageToken: undefined,
     });
@@ -83,6 +89,12 @@ describe('user-management', () => {
     const users = await listManagedUsers();
 
     expect(users).toEqual([
+      {
+        uid: 'owner-uid',
+        email: 'owner@rushnrelax.com',
+        displayName: 'Owner',
+        role: 'owner',
+      },
       {
         uid: 'mgr-uid',
         email: 'manager@rushnrelax.com',
@@ -94,6 +106,12 @@ describe('user-management', () => {
         email: 'staff@rushnrelax.com',
         displayName: '-',
         role: 'staff',
+      },
+      {
+        uid: 'new-user-uid',
+        email: 'new@rushnrelax.com',
+        displayName: 'New User',
+        role: 'unassigned',
       },
     ]);
   });

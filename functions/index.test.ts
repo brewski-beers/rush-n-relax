@@ -8,32 +8,49 @@ const {
   mockDocRef,
   mockCollection,
   mockApiKeyRef,
-  scheduledHandlerRef,
+  scheduledHandlerRefs,
 } = vi.hoisted(() => {
   const mockSet = vi.fn().mockResolvedValue(undefined);
   const mockDocRef = vi.fn(() => ({ set: mockSet }));
   const mockCollection = vi.fn(() => ({ doc: mockDocRef }));
   // Object references so tests can mutate values between runs
   const mockApiKeyRef = { value: 'test-api-key' };
-  const scheduledHandlerRef: { fn: (() => Promise<void>) | null } = {
-    fn: null,
+  const scheduledHandlerRefs: {
+    refreshFn: (() => Promise<void>) | null;
+    retryFn: (() => Promise<void>) | null;
+  } = {
+    refreshFn: null,
+    retryFn: null,
   };
   return {
     mockSet,
     mockDocRef,
     mockCollection,
     mockApiKeyRef,
-    scheduledHandlerRef,
+    scheduledHandlerRefs,
   };
 });
 
 // ─── Module mocks ─────────────────────────────────────────────────────────
 
 vi.mock('firebase-functions/v2/scheduler', () => ({
-  onSchedule: vi.fn((_config: unknown, handler: () => Promise<void>) => {
-    scheduledHandlerRef.fn = handler;
+  onSchedule: vi.fn((config: unknown, handler: () => Promise<void>) => {
+    const schedule =
+      typeof config === 'object' && config !== null && 'schedule' in config
+        ? String((config as { schedule?: unknown }).schedule ?? '')
+        : '';
+
+    if (schedule === 'every 6 hours') {
+      scheduledHandlerRefs.refreshFn = handler;
+    } else {
+      scheduledHandlerRefs.retryFn = handler;
+    }
     return {};
   }),
+}));
+
+vi.mock('firebase-functions/v2/firestore', () => ({
+  onDocumentCreated: vi.fn(),
 }));
 
 vi.mock('firebase-functions/params', () => ({
@@ -260,14 +277,14 @@ describe('refreshLocationReviews scheduled handler', () => {
   });
 
   it('is registered with the scheduler on module load', () => {
-    expect(scheduledHandlerRef.fn).not.toBeNull();
+    expect(scheduledHandlerRefs.refreshFn).not.toBeNull();
   });
 
   it('logs an error and skips all fetches when API key is empty', async () => {
     mockApiKeyRef.value = '';
     vi.stubGlobal('fetch', vi.fn());
 
-    await scheduledHandlerRef.fn!();
+    await scheduledHandlerRefs.refreshFn!();
 
     expect(mockLogger.error).toHaveBeenCalledWith(
       expect.stringContaining('GOOGLE_PLACES_API_KEY')
@@ -281,7 +298,7 @@ describe('refreshLocationReviews scheduled handler', () => {
       vi.fn(() => makeFetchResponse('OK', okResult))
     );
 
-    await scheduledHandlerRef.fn!();
+    await scheduledHandlerRefs.refreshFn!();
 
     expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(
       LOCATIONS.length
@@ -300,7 +317,7 @@ describe('refreshLocationReviews scheduled handler', () => {
       })
     );
 
-    await scheduledHandlerRef.fn!();
+    await scheduledHandlerRefs.refreshFn!();
 
     expect(mockLogger.error).toHaveBeenCalledWith(
       'Failed to refresh reviews',
@@ -316,7 +333,7 @@ describe('refreshLocationReviews scheduled handler', () => {
       vi.fn(() => makeFetchResponse('OK', okResult))
     );
 
-    await scheduledHandlerRef.fn!();
+    await scheduledHandlerRefs.refreshFn!();
 
     expect(mockLogger.info).toHaveBeenCalledTimes(LOCATIONS.length);
     expect(mockLogger.info).toHaveBeenCalledWith(
