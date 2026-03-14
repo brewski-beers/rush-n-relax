@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { initializeApp } from '@/firebase';
 
 const CLAIMS_UPDATED_RETRY_CODE = 'CLAIMS_UPDATED_RETRY';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -48,7 +46,9 @@ export default function LoginPage() {
         throw new Error('Unable to establish admin session. Please try again.');
       }
 
-      router.push('/admin/dashboard');
+      // Hard navigation so the browser commits the Set-Cookie before the
+      // middleware auth check runs (soft router.push fires too fast).
+      window.location.assign('/admin/dashboard');
     } catch (err: unknown) {
       const message =
         err instanceof Error

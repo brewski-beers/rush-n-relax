@@ -91,6 +91,7 @@ vi.mock('@/lib/email-template-renderer', () => ({
 
 import { queueTestContactEmail } from '@/lib/repositories/contact.repository';
 import { submitContactAndQueueEmail } from '@/lib/repositories/contact.repository';
+import { requeueOutboundEmailJob } from '@/lib/repositories/contact.repository';
 
 describe('contact.repository queueing', () => {
   beforeEach(() => {
@@ -112,6 +113,24 @@ describe('contact.repository queueing', () => {
     expect(Object.prototype.hasOwnProperty.call(payload, 'lastAttemptAt')).toBe(
       false
     );
+  });
+
+  it('requeueOutboundEmailJob calls set with queued status, null errorMessage, nextAttemptAt, and updatedAt', async () => {
+    await requeueOutboundEmailJob('job-abc');
+
+    expect(collectionMock).toHaveBeenCalledWith('outbound-emails');
+    expect(setMock).toHaveBeenCalledTimes(1);
+
+    const [payload, options] = setMock.mock.calls[0] as [
+      Record<string, unknown>,
+      Record<string, unknown>,
+    ];
+
+    expect(payload.status).toBe('queued');
+    expect(payload.errorMessage).toBeNull();
+    expect(payload.nextAttemptAt).toBeInstanceOf(Date);
+    expect(payload.updatedAt).toBeInstanceOf(Date);
+    expect(options).toEqual({ merge: true });
   });
 
   it('does not write undefined fields in batched contact queue jobs', async () => {
