@@ -1,9 +1,12 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
+import { requireRole } from '@/lib/admin-auth';
 import { listLocations } from '@/lib/repositories';
 
 export default async function AdminLocationsPage() {
+  await requireRole('owner');
+
   const locations = await listLocations();
 
   return (

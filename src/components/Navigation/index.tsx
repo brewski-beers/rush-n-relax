@@ -1,19 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { signOut } from 'firebase/auth';
+import { initializeApp } from '@/firebase';
 import { useNavigation } from '../../contexts/useNavigation';
 import {
   BrandAssetFormat,
   BrandSurface,
   resolvePreferredLogoUrlForSurface,
 } from '../../constants/branding';
+import { getAssetSrc } from '../../utils/assetSrc';
 import { isRouteActive } from '../../utils/routeMatching';
 import cannabisLeaf from '../../assets/icons/cannabis-leaf.svg';
 import './Navigation.css';
 
-const CANNABIS_LEAF_ICON_SRC = String(cannabisLeaf);
+const CANNABIS_LEAF_ICON_SRC = getAssetSrc(cannabisLeaf);
+const ADMIN_ENTRY_HOLD_MS = 4200;
 
 const NAV_LINKS = [
   { label: 'Home', path: '/' },
@@ -23,10 +27,67 @@ const NAV_LINKS = [
   { label: 'Contact', path: '/contact' },
 ] as const;
 
-export function Navigation() {
+interface NavigationProps {
+  isAdminAuthenticated?: boolean;
+}
+
+export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
   const { isMenuOpen, toggleMenu } = useNavigation();
   const pathname = usePathname();
+  const router = useRouter();
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const holdTimerRef = useRef<number | null>(null);
+  const holdTriggeredRef = useRef(false);
+
+  const clearHoldTimer = () => {
+    if (holdTimerRef.current !== null) {
+      window.clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
+
+  const handlePressStart = () => {
+    if (isAdminAuthenticated) return;
+
+    holdTriggeredRef.current = false;
+    clearHoldTimer();
+    holdTimerRef.current = window.setTimeout(() => {
+      holdTriggeredRef.current = true;
+      router.push('/admin');
+    }, ADMIN_ENTRY_HOLD_MS);
+  };
+
+  const handlePressEnd = () => {
+    clearHoldTimer();
+  };
+
+  const handleToggleClick = () => {
+    if (holdTriggeredRef.current) {
+      holdTriggeredRef.current = false;
+      return;
+    }
+
+    toggleMenu();
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
+    try {
+      const { auth } = initializeApp();
+      if (auth) {
+        await signOut(auth);
+      }
+
+      await fetch('/api/auth/session', { method: 'DELETE' });
+      router.push('/admin/login');
+      router.refresh();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
@@ -58,6 +119,12 @@ export function Navigation() {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      clearHoldTimer();
+    };
+  }, []);
+
   return (
     <header className="header">
       <div className="header-content">
@@ -78,18 +145,46 @@ export function Navigation() {
           21+ only
         </p>
 
+        {isAdminAuthenticated ? (
+          <div className="admin-shortcuts" aria-label="Admin shortcuts">
+            <Link href="/admin/dashboard" className="admin-shortcut-link">
+              ADMIN
+            </Link>
+            <button
+              type="button"
+              className="admin-shortcut-link admin-shortcut-button"
+              onClick={() => {
+                void handleLogout();
+              }}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? 'LOGGING OUT' : 'LOGOUT'}
+            </button>
+          </div>
+        ) : null}
+
         <button
           className={`nav-toggle ${isMenuOpen ? 'active' : ''}`}
-          onClick={toggleMenu}
+          onClick={handleToggleClick}
+          onPointerDown={handlePressStart}
+          onPointerUp={handlePressEnd}
+          onPointerCancel={handlePressEnd}
+          onPointerLeave={handlePressEnd}
           aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={isMenuOpen}
           aria-controls="nav-menu"
         >
-          <img
-            src={CANNABIS_LEAF_ICON_SRC}
-            alt=""
-            className="cannabis-leaf-icon"
-          />
+          {CANNABIS_LEAF_ICON_SRC ? (
+            <img
+              src={CANNABIS_LEAF_ICON_SRC}
+              alt=""
+              className="cannabis-leaf-icon"
+            />
+          ) : (
+            <span className="cannabis-leaf-icon" aria-hidden="true">
+              🌿
+            </span>
+          )}
         </button>
 
         {/* Mobile Menu Drawer */}
@@ -113,6 +208,32 @@ export function Navigation() {
                 </Link>
               </li>
             ))}
+            {isAdminAuthenticated ? (
+              <li>
+                <Link
+                  href="/admin/dashboard"
+                  onClick={() => toggleMenu()}
+                  className="nav-link"
+                >
+                  ADMIN
+                </Link>
+              </li>
+            ) : null}
+            {isAdminAuthenticated ? (
+              <li>
+                <button
+                  type="button"
+                  className="nav-link nav-link-button"
+                  onClick={() => {
+                    toggleMenu();
+                    void handleLogout();
+                  }}
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? 'LOGGING OUT' : 'LOGOUT'}
+                </button>
+              </li>
+            ) : null}
           </ul>
 
           {/* Mobile Menu Hub - Only visible on mobile */}

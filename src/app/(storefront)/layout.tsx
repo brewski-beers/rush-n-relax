@@ -1,4 +1,6 @@
 import { cookies } from 'next/headers';
+import { Analytics } from '@vercel/analytics/next';
+import { hasAdminSession } from '@/lib/admin-auth';
 import { NavigationProvider } from '@/contexts/NavigationContext';
 import { StorefrontContent } from './StorefrontContent';
 
@@ -9,12 +11,17 @@ export default async function StorefrontLayout({
 }) {
   const cookieStore = await cookies();
   const initiallyVerified = cookieStore.get('ageVerified')?.value === 'true';
+  const isAdminAuthenticated = await hasAdminSession();
 
   return (
     <NavigationProvider>
-      <StorefrontContent initiallyVerified={initiallyVerified}>
+      <StorefrontContent
+        initiallyVerified={initiallyVerified}
+        isAdminAuthenticated={isAdminAuthenticated}
+      >
         {children}
       </StorefrontContent>
+      <Analytics />
     </NavigationProvider>
   );
 }

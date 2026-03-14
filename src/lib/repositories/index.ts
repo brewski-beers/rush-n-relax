@@ -30,3 +30,29 @@ export {
   listOnlineAvailableInventory,
   setInventoryItem,
 } from './inventory.repository';
+
+export {
+  normalizeInviteEmail,
+  getPendingUserInviteByEmail,
+  listPendingUserInvites,
+  createOrUpdatePendingUserInvite,
+  markPendingUserInviteAccepted,
+  revokePendingUserInvite,
+} from './pending-user-invite.repository';
+
+export {
+  submitContactAndQueueEmail,
+  queueOutboundEmail,
+  queueTestContactEmail,
+  listOutboundEmailJobs,
+  requeueOutboundEmailJob,
+} from './contact.repository';
+
+export {
+  getDefaultContactEmailTemplate,
+  getEmailTemplateById,
+  listEmailTemplates,
+  listEmailTemplateRevisions,
+  restoreEmailTemplateRevision,
+  upsertEmailTemplate,
+} from './email-template.repository';

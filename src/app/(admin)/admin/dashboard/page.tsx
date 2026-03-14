@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import { requireRole } from '@/lib/admin-auth';
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  await requireRole('owner');
+
   return (
     <>
       <div className="admin-page-header">
@@ -21,6 +24,15 @@ export default function DashboardPage() {
         </Link>
         <Link href="/admin/inventory" className="dashboard-card">
           Manage Inventory
+        </Link>
+        <Link href="/admin/users" className="dashboard-card">
+          Manage Users
+        </Link>
+        <Link href="/admin/email-templates" className="dashboard-card">
+          Manage Email Templates
+        </Link>
+        <Link href="/admin/email-queue" className="dashboard-card">
+          Monitor Email Queue
         </Link>
       </div>
     </>

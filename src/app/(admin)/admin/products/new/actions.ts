@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
 import { upsertProduct, getProductBySlug } from '@/lib/repositories';
@@ -17,7 +18,7 @@ export async function createProduct(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await requireRole('superadmin');
+  await requireRole('owner');
 
   const slug = formData.get('slug')?.toString().trim().toLowerCase();
   const name = formData.get('name')?.toString().trim();
@@ -57,6 +58,10 @@ export async function createProduct(
     availableAt,
     status: 'active',
   });
+
+  revalidatePath('/admin/products');
+  revalidatePath('/products');
+  revalidatePath(`/products/${slug}`);
 
   redirect('/admin/products');
 }

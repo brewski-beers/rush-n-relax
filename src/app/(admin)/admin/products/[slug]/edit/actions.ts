@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
 import { upsertProduct, getProductBySlug } from '@/lib/repositories';
@@ -24,7 +25,7 @@ export async function updateProduct(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await requireRole('superadmin');
+  await requireRole('owner');
 
   const existing = await getProductBySlug(slug);
   if (!existing) return { error: 'Product not found.' };
@@ -67,6 +68,10 @@ export async function updateProduct(
     ...payload,
     ...(existing.coaUrl ? { coaUrl: existing.coaUrl } : {}),
   });
+
+  revalidatePath('/admin/products');
+  revalidatePath('/products');
+  revalidatePath(`/products/${existing.slug}`);
 
   redirect('/admin/products');
 }

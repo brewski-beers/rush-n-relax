@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { getFirestore$, trackEvent } from '../../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { trackEvent } from '../../firebase';
 import './ContactForm.css';
 
 interface FormData {
@@ -87,18 +86,20 @@ export function ContactForm() {
     });
 
     try {
-      const db = getFirestore$();
-      const contactSubmissionsRef = collection(db, 'contact-submissions');
-
-      await addDoc(contactSubmissionsRef, {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone || null,
-        message: formData.message,
-        createdAt: serverTimestamp(),
-        userAgent: navigator.userAgent,
-        timestamp: new Date().toISOString(),
+      const response = await fetch('/api/contact/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          message: formData.message,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Request failed');
+      }
 
       // Track analytics event
       trackEvent('contact_form_submitted', {

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { initializeApp } from '@/firebase';
 
+const CLAIMS_UPDATED_RETRY_CODE = 'CLAIMS_UPDATED_RETRY';
+
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +24,29 @@ export default function LoginPage() {
       const credential = await signInWithPopup(auth, provider);
       const idToken = await credential.user.getIdToken();
 
-      await fetch('/api/auth/session', {
+      let response = await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken }),
       });
+
+      if (response.status === 409) {
+        const body = (await response.json()) as {
+          code?: unknown;
+        };
+        if (body.code === CLAIMS_UPDATED_RETRY_CODE) {
+          const refreshedToken = await credential.user.getIdToken(true);
+          response = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken: refreshedToken }),
+          });
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error('Unable to establish admin session. Please try again.');
+      }
 
       router.push('/admin/dashboard');
     } catch (err: unknown) {

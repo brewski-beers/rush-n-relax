@@ -1,3 +1,4 @@
+import { PROMO_FIXTURES } from '@/lib/fixtures';
 import { SITE_URL } from './site';
 
 export interface Promo {
@@ -19,32 +20,20 @@ export interface Promo {
   active: boolean;
 }
 
-export const PROMOS: Promo[] = [
-  {
-    promoId: 'hitoki-laser-bong-2025',
-    slug: 'laser-bong',
-    name: 'Hitoki Trident',
-    tagline: 'Fire Without Flame.',
-    description:
-      'The Hitoki Trident uses three precision laser beams to ignite your flower — no butane, no torch, just pure flavor. Try it now at Rush N Relax Seymour, 500 Maryville Hwy.',
-    details:
-      'The Hitoki Trident replaces your lighter or torch with three high-powered laser beams that ignite flower directly — no butane, no residue, no compromised terpenes. Compatible with standard 14mm water pipes, rechargeable via USB-C, and built for daily use. The result is a noticeably cleaner, more flavorful hit every time. Available to try at Rush N Relax Seymour — 500 Maryville Hwy, Suite 205. Ask our staff for a walkthrough.',
-    cta: 'Visit Seymour',
-    ctaPath: '/locations/seymour',
-    image: 'promos/laser-bong.png',
-    locationSlug: 'seymour',
-    keywords: [
-      'Hitoki Trident',
-      'laser bong',
-      'laser powered bong',
-      'laser lighter',
-      'laser ignition',
-      'no butane',
-      '500 Maryville Hwy',
-    ],
-    active: true,
-  },
-];
+export const PROMOS: Promo[] = PROMO_FIXTURES.map(promo => ({
+  promoId: promo.promoId,
+  slug: promo.slug,
+  name: promo.name,
+  tagline: promo.tagline,
+  description: promo.description,
+  details: promo.details,
+  cta: promo.cta,
+  ctaPath: promo.ctaPath,
+  image: promo.image,
+  locationSlug: promo.locationSlug,
+  keywords: promo.keywords,
+  active: promo.active,
+}));
 
 export function getPromoBySlug(slug: string): Promo | undefined {
   return PROMOS.find(p => p.slug === slug && p.active);

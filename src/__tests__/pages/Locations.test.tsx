@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import LocationsPage from '@/app/(storefront)/locations/page';
-import { LOCATIONS } from '@/constants/locations';
-import type { LocationSummary } from '@/types';
+import { buildLocationSummaries } from '@/lib/fixtures';
 
 vi.mock('next/link', () => ({
   default: ({
@@ -26,10 +25,10 @@ vi.mock('@/lib/repositories', () => ({
 
 import { listLocations } from '@/lib/repositories';
 
+const locations = buildLocationSummaries();
+
 beforeEach(() => {
-  vi.mocked(listLocations).mockResolvedValue(
-    LOCATIONS as unknown as LocationSummary[]
-  );
+  vi.mocked(listLocations).mockResolvedValue(locations);
 });
 
 describe('Locations page', () => {
@@ -38,7 +37,7 @@ describe('Locations page', () => {
     render(page);
 
     const phoneLinks = screen.getAllByRole('link', { name: /^\+1/ });
-    expect(phoneLinks).toHaveLength(LOCATIONS.length);
+    expect(phoneLinks).toHaveLength(locations.length);
 
     phoneLinks.forEach(link => {
       expect(link).toHaveAttribute('href');
@@ -52,6 +51,6 @@ describe('Locations page', () => {
 
     // Check that location cards are rendered and clickable (they contain "View Location" text)
     const locationCards = screen.getAllByText(/View Location/);
-    expect(locationCards).toHaveLength(LOCATIONS.length);
+    expect(locationCards).toHaveLength(locations.length);
   });
 });

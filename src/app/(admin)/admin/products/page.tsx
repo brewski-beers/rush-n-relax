@@ -1,11 +1,14 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
+import { requireRole } from '@/lib/admin-auth';
 import { listAllProducts } from '@/lib/repositories';
 import { ConfirmButton } from '@/components/admin/ConfirmButton';
 import { archiveProduct, restoreProduct } from './actions';
 
 export default async function AdminProductsPage() {
+  await requireRole('owner');
+
   const products = await listAllProducts();
 
   return (

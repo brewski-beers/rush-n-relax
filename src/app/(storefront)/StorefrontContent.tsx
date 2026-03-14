@@ -115,10 +115,15 @@ function DesktopModal() {
 
 interface Props {
   initiallyVerified: boolean;
+  isAdminAuthenticated: boolean;
   children: React.ReactNode;
 }
 
-export function StorefrontContent({ initiallyVerified, children }: Props) {
+export function StorefrontContent({
+  initiallyVerified,
+  isAdminAuthenticated,
+  children,
+}: Props) {
   const [isAgeVerified, setIsAgeVerified] = useState(initiallyVerified);
   const pathname = usePathname();
 
@@ -138,7 +143,7 @@ export function StorefrontContent({ initiallyVerified, children }: Props) {
         </div>
       ) : (
         <>
-          <Navigation />
+          <Navigation isAdminAuthenticated={isAdminAuthenticated} />
           <DesktopModal />
           <div className="content-wrapper">{children}</div>
         </>

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getPromoBySlug } from '@/lib/repositories';
+import { getLocationBySlug, getPromoBySlug } from '@/lib/repositories';
 import { buildMetadata } from '@/lib/seo/metadata.factory';
 import { seoConfig } from '@/config/seo.config';
 import PromoClient from './PromoClient';
@@ -34,5 +34,9 @@ export default async function PromoPage({ params }: Props) {
   const { slug } = await params;
   const promo = await getPromoBySlug(slug);
   if (!promo || !promo.active) notFound();
-  return <PromoClient slug={slug} />;
+  const location = promo.locationSlug
+    ? await getLocationBySlug(promo.locationSlug)
+    : null;
+
+  return <PromoClient promo={promo} locationName={location?.name} />;
 }

@@ -5,7 +5,7 @@ import { preVerifyAge } from './fixtures';
  * Reviews E2E Tests
  *
  * Verifies that the ReviewsSection renders correctly on location detail pages
- * using data read directly from Firestore (seeded by scripts/seed-emulators.cjs).
+ * using data read directly from Firestore loaded from generated emulator artifacts.
  *
  * Seeded data:
  *   Oak Ridge  — rating 4.8, 312 reviews, 5 cards (Jane D., Marcus H., Patricia L., Ryan K., Sandra W.)

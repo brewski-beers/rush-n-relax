@@ -1,7 +1,20 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { Navigation } from './index';
 import { NavigationProvider } from '@/contexts/NavigationContext';
+
+const { pushMock, refreshMock, signOutMock, fetchMock, initializeAppMock } =
+  vi.hoisted(() => ({
+    pushMock: vi.fn(),
+    refreshMock: vi.fn(),
+    signOutMock: vi.fn(() => Promise.resolve()),
+    fetchMock: vi.fn(() =>
+      Promise.resolve(new Response(null, { status: 200 }))
+    ),
+    initializeAppMock: vi.fn(() => ({ auth: {} })),
+  }));
+
+vi.stubGlobal('fetch', fetchMock);
 
 // Mock next/link as a plain anchor
 vi.mock('next/link', () => ({
@@ -24,18 +37,22 @@ vi.mock('next/link', () => ({
 vi.mock('next/navigation', () => ({
   usePathname: vi.fn(() => '/'),
   useRouter: vi.fn(() => ({
-    push: vi.fn(),
+    push: pushMock,
     replace: vi.fn(),
     back: vi.fn(),
     forward: vi.fn(),
-    refresh: vi.fn(),
+    refresh: refreshMock,
     prefetch: vi.fn(),
   })),
 }));
 
-// Mock Firebase storage
 vi.mock('@/firebase', () => ({
+  initializeApp: initializeAppMock,
   storage: {},
+}));
+
+vi.mock('firebase/auth', () => ({
+  signOut: signOutMock,
 }));
 
 vi.mock('firebase/storage', () => ({
@@ -59,9 +76,20 @@ const NavigationWrapped = () => (
   </NavigationProvider>
 );
 
+const NavigationWrappedWithAuth = ({
+  isAdminAuthenticated,
+}: {
+  isAdminAuthenticated: boolean;
+}) => (
+  <NavigationProvider>
+    <Navigation isAdminAuthenticated={isAdminAuthenticated} />
+  </NavigationProvider>
+);
+
 describe('Navigation Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   it('renders navigation header', () => {
@@ -198,5 +226,75 @@ describe('Navigation Component', () => {
       expect(link).toHaveAttribute('href');
       expect(link.getAttribute('href')).toBeTruthy();
     });
+  });
+
+  it('shows ADMIN shortcut only for authenticated admins', () => {
+    const { rerender } = render(
+      <NavigationWrappedWithAuth isAdminAuthenticated={false} />
+    );
+
+    expect(
+      screen.queryByRole('link', { name: 'ADMIN' })
+    ).not.toBeInTheDocument();
+
+    rerender(<NavigationWrappedWithAuth isAdminAuthenticated />);
+
+    expect(
+      screen.getAllByRole('link', { name: 'ADMIN' }).length
+    ).toBeGreaterThan(0);
+
+    expect(
+      screen.getAllByRole('button', { name: 'LOGOUT' }).length
+    ).toBeGreaterThan(0);
+  });
+
+  it('clears auth session when LOGOUT is clicked', async () => {
+    render(<NavigationWrappedWithAuth isAdminAuthenticated />);
+
+    const logoutButton = screen.getAllByRole('button', { name: 'LOGOUT' })[0];
+    fireEvent.click(logoutButton);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(signOutMock).toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/session', {
+      method: 'DELETE',
+    });
+    expect(pushMock).toHaveBeenCalledWith('/admin/login');
+    expect(refreshMock).toHaveBeenCalled();
+  });
+
+  it('navigates to /admin after a 4.2 second hold when unauthenticated', () => {
+    vi.useFakeTimers();
+    render(<NavigationWrappedWithAuth isAdminAuthenticated={false} />);
+
+    const menuButton = screen.getByRole('button', { name: /open menu/i });
+    fireEvent.pointerDown(menuButton);
+
+    act(() => {
+      vi.advanceTimersByTime(4200);
+    });
+
+    expect(pushMock).toHaveBeenCalledWith('/admin');
+
+    fireEvent.pointerUp(menuButton);
+    vi.useRealTimers();
+  });
+
+  it('does not trigger hidden hold navigation once admin is authenticated', () => {
+    vi.useFakeTimers();
+    render(<NavigationWrappedWithAuth isAdminAuthenticated />);
+
+    const menuButton = screen.getByRole('button', { name: /open menu/i });
+    fireEvent.pointerDown(menuButton);
+
+    act(() => {
+      vi.advanceTimersByTime(4200);
+    });
+
+    expect(pushMock).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });

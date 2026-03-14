@@ -9,7 +9,7 @@ export async function updateInventoryItem(
   productId: string,
   patch: { inStock?: boolean; quantity?: number; availableOnline?: boolean }
 ): Promise<void> {
-  const actor = await requireRole('superadmin');
+  const actor = await requireRole('owner');
 
   const reason =
     patch.quantity !== undefined

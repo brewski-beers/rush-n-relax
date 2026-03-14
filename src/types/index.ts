@@ -18,7 +18,12 @@ export type {
   ComplianceLog,
   ComplianceLogType,
 } from './compliance';
-export type { User, UserRole } from './user';
+export type {
+  UserRole,
+  InvitableUserRole,
+  PendingUserInvite,
+  PendingUserInviteStatus,
+} from './user';
 export type {
   InventoryItem,
   InventoryItemSummary,
@@ -26,3 +31,16 @@ export type {
   InventoryAdjustmentReason,
   InventoryAdjustmentSource,
 } from './inventory';
+export type {
+  EmailTemplateId,
+  OutboundEmailStatus,
+  ContactSubmissionPayload,
+  EmailTemplateValuePath,
+  EmailTemplateBlock,
+  EmailTemplateContainer,
+  OutboundEmailJob,
+  EmailTemplate,
+  EmailTemplateRevision,
+  EmailTemplateTheme,
+} from './email';
+export type { GoogleReview } from './reviews';

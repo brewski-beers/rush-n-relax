@@ -1,25 +1,21 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getDownloadURL, ref } from 'firebase/storage';
-import { usePromo } from '@/hooks/usePromo';
-import { getLocationBySlug } from '@/constants/locations';
 import { getStorage$, initializeApp } from '@/firebase';
 import { Card } from '@/components/Card';
+import type { Promo } from '@/types';
 import '@/styles/promo.css';
 
-export default function PromoClient({ slug }: { slug: string }) {
-  const router = useRouter();
-  const { promo } = usePromo(slug);
+export default function PromoClient({
+  promo,
+  locationName,
+}: {
+  promo: Promo;
+  locationName?: string;
+}) {
   const [imageSrc, setImageSrc] = useState<string | undefined>();
-
-  useEffect(() => {
-    if (!promo) {
-      router.replace('/');
-    }
-  }, [promo, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,9 +45,7 @@ export default function PromoClient({ slug }: { slug: string }) {
     return () => {
       cancelled = true;
     };
-  }, [promo?.image]);
-
-  if (!promo) return null;
+  }, [promo.image]);
 
   return (
     <main className="promo-page">
@@ -96,16 +90,14 @@ export default function PromoClient({ slug }: { slug: string }) {
           >
             <div className="promo-detail-body">
               <p>{promo.details}</p>
-              {promo.locationSlug &&
-                (() => {
-                  const loc = getLocationBySlug(promo.locationSlug);
-                  return loc ? (
-                    <p className="promo-location-note">
-                      Available at{' '}
-                      <Link href={`/locations/${loc.slug}`}>{loc.name}</Link>
-                    </p>
-                  ) : null;
-                })()}
+              {promo.locationSlug && locationName ? (
+                <p className="promo-location-note">
+                  Available at{' '}
+                  <Link href={`/locations/${promo.locationSlug}`}>
+                    {locationName}
+                  </Link>
+                </p>
+              ) : null}
             </div>
           </Card>
         </div>

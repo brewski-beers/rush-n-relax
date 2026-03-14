@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { notFound } from 'next/navigation';
+import { requireRole } from '@/lib/admin-auth';
 import { getLocationBySlug } from '@/lib/repositories';
 import { LocationEditForm } from './LocationEditForm';
 
@@ -9,6 +10,8 @@ interface Props {
 }
 
 export default async function LocationEditPage({ params }: Props) {
+  await requireRole('owner');
+
   const { slug } = await params;
   const location = await getLocationBySlug(slug);
   if (!location) notFound();
