@@ -43,14 +43,19 @@ export async function updatePromo(
     active,
   };
 
-  await upsertPromo({
-    ...payload,
-    ...(locationSlug ? { locationSlug } : {}),
-    ...(existing.image ? { image: existing.image } : {}),
-    ...(existing.keywords ? { keywords: existing.keywords } : {}),
-    ...(existing.startDate ? { startDate: existing.startDate } : {}),
-    ...(existing.endDate ? { endDate: existing.endDate } : {}),
-  });
+  try {
+    await upsertPromo({
+      ...payload,
+      ...(locationSlug ? { locationSlug } : {}),
+      ...(existing.image ? { image: existing.image } : {}),
+      ...(existing.keywords ? { keywords: existing.keywords } : {}),
+      ...(existing.startDate ? { startDate: existing.startDate } : {}),
+      ...(existing.endDate ? { endDate: existing.endDate } : {}),
+    });
 
-  redirect(`/admin/promos`);
+    redirect(`/admin/promos`);
+  } catch (err) {
+    if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
+    return { error: 'Failed to save. Please try again.' };
+  }
 }

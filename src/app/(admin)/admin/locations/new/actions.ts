@@ -93,18 +93,23 @@ export async function createLocation(
   if (existing)
     return { error: `A location with slug "${slug}" already exists.` };
 
-  await upsertLocation({
-    slug,
-    name,
-    address,
-    city,
-    state,
-    zip,
-    phone,
-    hours,
-    description,
-    ...(placeId ? { placeId } : {}),
-  });
+  try {
+    await upsertLocation({
+      slug,
+      name,
+      address,
+      city,
+      state,
+      zip,
+      phone,
+      hours,
+      description,
+      ...(placeId ? { placeId } : {}),
+    });
 
-  redirect('/admin/locations');
+    redirect('/admin/locations');
+  } catch (err) {
+    if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
+    return { error: 'Failed to save. Please try again.' };
+  }
 }

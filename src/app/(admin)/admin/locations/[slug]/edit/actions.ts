@@ -102,20 +102,25 @@ export async function updateLocation(
         : {}),
   };
 
-  await upsertLocation({
-    ...payload,
-    ...(existing.coordinates ? { coordinates: existing.coordinates } : {}),
-    ...(existing.socialLinkIds
-      ? { socialLinkIds: existing.socialLinkIds }
-      : {}),
-    ...(existing.cloverMerchantId
-      ? { cloverMerchantId: existing.cloverMerchantId }
-      : {}),
-    ...(existing.ogImagePath ? { ogImagePath: existing.ogImagePath } : {}),
-    ...(existing.seoDescription
-      ? { seoDescription: existing.seoDescription }
-      : {}),
-  });
+  try {
+    await upsertLocation({
+      ...payload,
+      ...(existing.coordinates ? { coordinates: existing.coordinates } : {}),
+      ...(existing.socialLinkIds
+        ? { socialLinkIds: existing.socialLinkIds }
+        : {}),
+      ...(existing.cloverMerchantId
+        ? { cloverMerchantId: existing.cloverMerchantId }
+        : {}),
+      ...(existing.ogImagePath ? { ogImagePath: existing.ogImagePath } : {}),
+      ...(existing.seoDescription
+        ? { seoDescription: existing.seoDescription }
+        : {}),
+    });
 
-  redirect(`/admin/locations`);
+    redirect(`/admin/locations`);
+  } catch (err) {
+    if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
+    return { error: 'Failed to save. Please try again.' };
+  }
 }

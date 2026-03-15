@@ -64,14 +64,19 @@ export async function updateProduct(
     availableAt,
   };
 
-  await upsertProduct({
-    ...payload,
-    ...(existing.coaUrl ? { coaUrl: existing.coaUrl } : {}),
-  });
+  try {
+    await upsertProduct({
+      ...payload,
+      ...(existing.coaUrl ? { coaUrl: existing.coaUrl } : {}),
+    });
 
-  revalidatePath('/admin/products');
-  revalidatePath('/products');
-  revalidatePath(`/products/${existing.slug}`);
+    revalidatePath('/admin/products');
+    revalidatePath('/products');
+    revalidatePath(`/products/${existing.slug}`);
 
-  redirect('/admin/products');
+    redirect('/admin/products');
+  } catch (err) {
+    if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
+    return { error: 'Failed to save. Please try again.' };
+  }
 }
