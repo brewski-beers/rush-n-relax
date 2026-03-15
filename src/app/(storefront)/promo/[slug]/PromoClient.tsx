@@ -36,7 +36,11 @@ export default function PromoClient({
         const storageRef = ref(getStorage$(), promo.image);
         const downloadUrl = await getDownloadURL(storageRef);
         if (!cancelled) setImageSrc(downloadUrl);
-      } catch {
+      } catch (err) {
+        console.error(
+          '[PromoClient] Firebase Storage error resolving image:',
+          err
+        );
         if (!cancelled) setImageSrc(`/${promo.image}`);
       }
     };
