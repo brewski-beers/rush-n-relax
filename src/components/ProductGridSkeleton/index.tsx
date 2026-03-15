@@ -7,7 +7,6 @@ export function ProductGridSkeleton() {
         <div
           key={i}
           className="product-grid-skeleton__card"
-          style={{ '--delay': `${i * 0.1}s` } as React.CSSProperties}
         >
           <div className="product-grid-skeleton__image" />
           <div className="product-grid-skeleton__body">

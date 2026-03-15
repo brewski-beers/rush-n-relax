@@ -70,6 +70,7 @@ function SortableCard({ card }: { card: DashboardCard }) {
   return (
     <div
       ref={setNodeRef}
+      // eslint-disable-next-line react/forbid-dom-props -- @dnd-kit requires inline transform/transition for drag animation
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={`dashboard-card-wrapper${isDragging ? ' dashboard-card-wrapper--dragging' : ''}`}
     >
@@ -101,6 +102,7 @@ export function DashboardGrid() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-mount guard; localStorage not available on server
     setMounted(true);
     const saved = loadOrder();
     if (saved) setCards(applyOrder(DEFAULT_CARDS, saved));

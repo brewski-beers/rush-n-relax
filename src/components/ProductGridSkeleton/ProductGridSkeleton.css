@@ -25,8 +25,14 @@
   flex-direction: column;
   border-radius: 0.75rem;
   overflow: hidden;
-  animation: skeleton-pulse 1.5s ease-in-out var(--delay, 0s) infinite;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
+
+.product-grid-skeleton__card:nth-child(2) { animation-delay: 0.1s; }
+.product-grid-skeleton__card:nth-child(3) { animation-delay: 0.2s; }
+.product-grid-skeleton__card:nth-child(4) { animation-delay: 0.3s; }
+.product-grid-skeleton__card:nth-child(5) { animation-delay: 0.4s; }
+.product-grid-skeleton__card:nth-child(6) { animation-delay: 0.5s; }
 
 /* Image placeholder — 16:9 on mobile, 5:3 on desktop (matches ProductImage.css) */
 .product-grid-skeleton__image {

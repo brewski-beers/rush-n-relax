@@ -32,10 +32,6 @@ export function AdminNav() {
   const pathname = usePathname();
 
   useEffect(() => {
-    setIsOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       return () => {
