@@ -7,7 +7,13 @@ import { setInventoryItem } from '@/lib/repositories';
 export async function updateInventoryItem(
   locationId: string,
   productId: string,
-  patch: { inStock?: boolean; quantity?: number; availableOnline?: boolean }
+  patch: {
+    inStock?: boolean;
+    quantity?: number;
+    availableOnline?: boolean;
+    availablePickup?: boolean;
+    featured?: boolean;
+  }
 ): Promise<void> {
   const actor = await requireRole('owner');
 
@@ -16,7 +22,11 @@ export async function updateInventoryItem(
       ? 'manual-count'
       : patch.inStock !== undefined
         ? 'toggle-stock'
-        : 'toggle-online';
+        : patch.featured !== undefined
+          ? 'toggle-featured'
+          : patch.availablePickup !== undefined
+            ? 'toggle-pickup'
+            : 'toggle-online';
 
   await setInventoryItem(
     locationId,
@@ -27,6 +37,10 @@ export async function updateInventoryItem(
       ...(patch.availableOnline !== undefined && {
         availableOnline: patch.availableOnline,
       }),
+      ...(patch.availablePickup !== undefined && {
+        availablePickup: patch.availablePickup,
+      }),
+      ...(patch.featured !== undefined && { featured: patch.featured }),
     },
     {
       reason,
@@ -37,4 +51,6 @@ export async function updateInventoryItem(
 
   revalidatePath(`/admin/inventory/${locationId}`);
   revalidatePath('/admin/inventory');
+  revalidatePath('/');
+  revalidatePath('/products');
 }

@@ -6,6 +6,7 @@ import type {
   Product,
   Promo,
 } from '@/types';
+import type { InventoryItem } from '@/types/inventory';
 
 export const FIXTURE_DATASET_VERSION = '2026-03-14';
 export const FIXTURE_TIMESTAMP = '2026-03-14T00:00:00.000Z';
@@ -36,11 +37,20 @@ export interface ProductFixture {
   description: string;
   details: string;
   image?: string;
-  featured: boolean;
   status: Product['status'];
   federalDeadlineRisk: boolean;
   availableAt?: string[];
   coaUrl?: string;
+}
+
+export interface InventoryItemFixture {
+  locationId: string;
+  productId: string;
+  inStock: boolean;
+  availableOnline: boolean;
+  availablePickup: boolean;
+  featured: boolean;
+  quantity: number;
 }
 
 export interface PromoFixture {
@@ -130,7 +140,6 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
     details:
       'Our flower collection is the cornerstone of the Rush N Relax experience. Every strain is hand-selected for potency, aroma, and bag appeal. From earthy indicas that melt away the day to energizing sativas that spark creativity, we carry a rotating lineup of top-shelf cultivars. Ask our staff about current strains, terpene profiles, and what pairs best with your mood.',
     image: 'products/flower.png',
-    featured: true,
     status: 'active',
     federalDeadlineRisk: true,
   },
@@ -143,7 +152,6 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
     details:
       'For those who appreciate purity and potency, our concentrate selection sets the bar. Choose from crumble, diamonds, diamond sauce, kief, and live rosin - each lab-tested and selected for exceptional terpene retention and clean extraction. Whether you dab, top a bowl, or vaporize, these concentrates deliver a depth of flavor and effect that flower alone cannot reach.',
     image: 'products/concentrates.png',
-    featured: true,
     status: 'active',
     federalDeadlineRisk: true,
   },
@@ -156,7 +164,6 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
     details:
       'Skip the smoke and sip your way to elevation. Our THCa-infused beverage lineup features light, carbonated seltzers in a range of natural flavors, each precisely dosed for a consistent, predictable experience. Low-calorie, fast-acting, and sessionable - they are equally at home at a backyard gathering or a quiet night in. Explore our current flavor rotation in store.',
     image: 'products/drinks.png',
-    featured: true,
     status: 'active',
     federalDeadlineRisk: true,
   },
@@ -169,7 +176,6 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
     details:
       'Edibles are where indulgence meets intention. Our shelves carry artisan chocolates, fruit-forward gummies, rich caramel chews, and freshly inspired cookies - every piece crafted for flavor first and dosed for reliability. Start low, go slow, and savor. Whether you are new to edibles or a seasoned enthusiast, our staff will help you find the perfect treat and dosage.',
     image: 'products/edibles.png',
-    featured: true,
     status: 'active',
     federalDeadlineRisk: true,
   },
@@ -182,11 +188,22 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
     details:
       'Our curated vape collection features trusted brands like TribeToke and Wildwoods alongside a rotating selection of premium cartridges and disposables. Every device is chosen for build quality, airflow, and oil compatibility so you get a smooth, flavorful draw every time. Compact enough for your pocket, refined enough for any occasion - vaping has never looked or tasted this good.',
     image: 'products/vapes.png',
-    featured: true,
     status: 'active',
     federalDeadlineRisk: false,
   },
 ];
+
+/** Hub inventory seed — all products available online and featured by default. */
+export const HUB_INVENTORY_FIXTURES: readonly InventoryItemFixture[] =
+  PRODUCT_FIXTURES.map(p => ({
+    locationId: 'hub',
+    productId: p.slug,
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: true,
+    quantity: 99,
+  }));
 
 export const PROMO_FIXTURES: readonly PromoFixture[] = [
   {
@@ -408,12 +425,26 @@ export function buildProductDocuments(date: Date = fixtureDate): Product[] {
     description: product.description,
     details: product.details,
     image: product.image,
-    featured: product.featured,
     status: product.status,
     federalDeadlineRisk: product.federalDeadlineRisk,
     coaUrl: product.coaUrl,
     availableAt: product.availableAt ?? [...LOCATION_SLUGS],
     createdAt: date,
+    updatedAt: date,
+  }));
+}
+
+export function buildHubInventoryDocuments(
+  date: Date = fixtureDate
+): InventoryItem[] {
+  return HUB_INVENTORY_FIXTURES.map(item => ({
+    productId: item.productId,
+    locationId: item.locationId,
+    inStock: item.inStock,
+    availableOnline: item.availableOnline,
+    availablePickup: item.availablePickup,
+    featured: item.featured,
+    quantity: item.quantity,
     updatedAt: date,
   }));
 }

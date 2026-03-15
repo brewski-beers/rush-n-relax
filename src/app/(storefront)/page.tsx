@@ -4,7 +4,12 @@ import { Card } from '@/components/Card';
 import { CardGrid } from '@/components/CardGrid';
 import { ProductImage } from '@/components/ProductImage';
 import { seoConfig } from '@/config/seo.config';
-import { listFeaturedProducts, listLocations } from '@/lib/repositories';
+import {
+  listFeaturedInventory,
+  listProductsByIds,
+  listLocations,
+} from '@/lib/repositories';
+import { HUB_LOCATION_ID } from '@/lib/firebase/admin';
 
 export const metadata: Metadata = {
   title: 'Rush N Relax — Premium Cannabis Dispensary | East Tennessee',
@@ -16,10 +21,14 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [featuredProducts, locations] = await Promise.all([
-    listFeaturedProducts(),
+  const [featuredInventory, locations] = await Promise.all([
+    listFeaturedInventory(HUB_LOCATION_ID),
     listLocations(),
   ]);
+
+  const featuredProducts = await listProductsByIds(
+    featuredInventory.map(i => i.productId)
+  );
 
   return (
     <main className="home-page">

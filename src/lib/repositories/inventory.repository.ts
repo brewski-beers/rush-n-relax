@@ -15,6 +15,8 @@
  *   - inStock = quantity > 0
  *   - availableOnline = false when inStock = false
  *   - availablePickup = false when inStock = false
+ *   - featured = false when inStock = false
+ *   - featured = false when availableOnline = false (hub only)
  *   - Every mutation writes an immutable adjustment record
  */
 import {
@@ -66,7 +68,7 @@ export async function getInventoryItem(
 
 /**
  * List all hub inventory items that are flagged as available online.
- * Used by the storefront (Phase 3A) to show products available for purchase.
+ * Used by the storefront to show products available for purchase on /products.
  */
 export async function listOnlineAvailableInventory(): Promise<
   InventoryItemSummary[]
@@ -84,6 +86,37 @@ export async function listOnlineAvailableInventory(): Promise<
       inStock: d.inStock ?? false,
       availableOnline: d.availableOnline ?? false,
       availablePickup: false,
+      featured: d.featured ?? false,
+      quantity: d.quantity ?? undefined,
+    } satisfies InventoryItemSummary;
+  });
+}
+
+/**
+ * List featured inventory items for a location.
+ *
+ * Hub: returns items where featured = true. Invariants guarantee availableOnline
+ * and inStock are also true. Used to populate homepage "What We Carry".
+ *
+ * Retail: returns items where featured = true. Invariants guarantee inStock is
+ * also true. Used to populate per-store featured sections.
+ */
+export async function listFeaturedInventory(
+  locationId: string
+): Promise<InventoryItemSummary[]> {
+  const snap = await inventoryItemsCol(locationId)
+    .where('featured', '==', true)
+    .get();
+
+  return snap.docs.map(doc => {
+    const d = doc.data();
+    return {
+      productId: doc.id,
+      locationId,
+      inStock: d.inStock ?? false,
+      availableOnline: d.availableOnline ?? false,
+      availablePickup: d.availablePickup ?? false,
+      featured: true,
       quantity: d.quantity ?? undefined,
     } satisfies InventoryItemSummary;
   });
@@ -110,6 +143,7 @@ export async function setInventoryItem(
     inStock?: boolean;
     availableOnline?: boolean;
     availablePickup?: boolean;
+    featured?: boolean;
     quantity?: number;
     notes?: string;
     updatedBy?: string;
@@ -125,6 +159,7 @@ export async function setInventoryItem(
   const itemRef = inventoryItemsCol(locationId).doc(productId);
   const currentSnap = await itemRef.get();
   const current = currentSnap.data();
+  const isHub = locationId === HUB_LOCATION_ID;
 
   const currentQuantity = normalizeQuantity(
     current?.quantity,
@@ -133,6 +168,7 @@ export async function setInventoryItem(
   const currentInStock: boolean = current?.inStock ?? false;
   const currentAvailableOnline: boolean = current?.availableOnline ?? false;
   const currentAvailablePickup: boolean = current?.availablePickup ?? false;
+  const currentFeatured: boolean = current?.featured ?? false;
 
   const nextQuantity =
     patch.quantity !== undefined
@@ -149,9 +185,14 @@ export async function setInventoryItem(
     patch.availableOnline ?? currentAvailableOnline;
   const requestedAvailablePickup =
     patch.availablePickup ?? currentAvailablePickup;
+  const requestedFeatured = patch.featured ?? currentFeatured;
 
   const nextAvailableOnline = nextInStock ? requestedAvailableOnline : false;
   const nextAvailablePickup = nextInStock ? requestedAvailablePickup : false;
+  // Hub: featured requires availableOnline; all locations: featured requires inStock
+  const nextFeatured = isHub
+    ? nextAvailableOnline && requestedFeatured
+    : nextInStock && requestedFeatured;
 
   if (nextAvailableOnline || nextAvailablePickup) {
     // Intentional cross-collection read: this compliance guard must be
@@ -175,6 +216,7 @@ export async function setInventoryItem(
     inStock: nextInStock,
     availableOnline: nextAvailableOnline,
     availablePickup: nextAvailablePickup,
+    featured: nextFeatured,
     ...(patch.notes !== undefined && { notes: patch.notes }),
     ...(effectiveUpdatedBy !== undefined && { updatedBy: effectiveUpdatedBy }),
     updatedAt: now,
@@ -189,6 +231,7 @@ export async function setInventoryItem(
       changedFields.push('availableOnline');
     if (nextAvailablePickup !== currentAvailablePickup)
       changedFields.push('availablePickup');
+    if (nextFeatured !== currentFeatured) changedFields.push('featured');
     if (
       patch.notes !== undefined &&
       patch.notes !== (current?.notes ?? undefined)
@@ -213,6 +256,8 @@ export async function setInventoryItem(
       nextAvailableOnline,
       previousAvailablePickup: currentAvailablePickup,
       nextAvailablePickup,
+      previousFeatured: currentFeatured,
+      nextFeatured,
       ...(adjustment.note !== undefined && { note: adjustment.note }),
       createdAt: now,
     } satisfies InventoryAdjustment;
@@ -235,13 +280,16 @@ function docToInventoryItem(
 ): InventoryItem {
   const quantity = normalizeQuantity(d.quantity, d.inStock ?? false);
   const inStock = quantity > 0;
+  const availableOnline = inStock ? (d.availableOnline ?? false) : false;
 
   return {
     productId: id,
     locationId: d.locationId,
     inStock,
-    availableOnline: inStock ? (d.availableOnline ?? false) : false,
+    availableOnline,
     availablePickup: inStock ? (d.availablePickup ?? false) : false,
+    // featured requires inStock; for hub it also requires availableOnline
+    featured: inStock ? (d.featured ?? false) : false,
     quantity,
     notes: d.notes ?? undefined,
     updatedAt: toDate(d.updatedAt),

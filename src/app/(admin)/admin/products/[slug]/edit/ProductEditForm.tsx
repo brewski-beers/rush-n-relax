@@ -95,16 +95,6 @@ export function ProductEditForm({ product, locations }: Props) {
       <label className="admin-checkbox">
         <input
           type="checkbox"
-          name="featured"
-          value="true"
-          defaultChecked={product.featured}
-        />
-        Featured on homepage
-      </label>
-
-      <label className="admin-checkbox">
-        <input
-          type="checkbox"
           name="federalDeadlineRisk"
           value="true"
           defaultChecked={product.federalDeadlineRisk}

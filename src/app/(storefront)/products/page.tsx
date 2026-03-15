@@ -1,6 +1,9 @@
 import { Card } from '@/components/Card';
 import { CardGrid } from '@/components/CardGrid';
-import { listProducts } from '@/lib/repositories';
+import {
+  listOnlineAvailableInventory,
+  listProductsByIds,
+} from '@/lib/repositories';
 import { ProductImage } from '@/components/ProductImage';
 import { buildMetadata } from '@/lib/seo/metadata.factory';
 import '@/styles/products.css';
@@ -16,7 +19,10 @@ export const metadata = buildMetadata('/products', {
 });
 
 export default async function ProductsPage() {
-  const products = await listProducts();
+  const onlineInventory = await listOnlineAvailableInventory();
+  const products = await listProductsByIds(
+    onlineInventory.map(i => i.productId)
+  );
 
   return (
     <main className="products-page">

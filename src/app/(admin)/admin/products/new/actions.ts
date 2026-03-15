@@ -25,7 +25,6 @@ export async function createProduct(
   const category = formData.get('category')?.toString() as ProductCategory;
   const description = formData.get('description')?.toString().trim();
   const details = formData.get('details')?.toString().trim();
-  const featured = formData.get('featured') === 'true';
   const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
@@ -53,7 +52,6 @@ export async function createProduct(
     category,
     description,
     details,
-    featured,
     federalDeadlineRisk,
     availableAt,
     status: 'active',
