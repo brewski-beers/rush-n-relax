@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -72,7 +72,7 @@ jobs:
 
       - name: Upload verify failure artifacts
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pr-verify-failures
           path: test-results/

@@ -17,7 +17,7 @@ jobs:
       should_run: ${{ steps.filter.outputs.release_relevant }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Detect release-relevant changes
         id: filter
