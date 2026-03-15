@@ -32,18 +32,16 @@ All Firestore access is **server-side only** via Admin SDK. No client-side Fires
 
 ---
 
-## Engineering Principles (non-negotiable)
+## Engineering Principles (project-specific additions)
 
-1. **KISS** — simplest working solution; no speculative complexity
-2. **YAGNI** — don't build what isn't needed today
-3. **SOLID** — Single Responsibility, Open/Closed, Liskov, Interface Segregation, Dependency Inversion applied to modules and repositories
+> KISS, YAGNI, SOLID, and Scan-before-build apply globally — see `~/.claude/CLAUDE.md`.
+
 4. **BDD** — tests describe user/system behavior, not implementation details
 5. **Emulator-first** — all dev and CI work uses Firebase emulators (`localhost:8080`); never hit production Firestore for dev/test
 6. **Branch → PR → main** — all changes via PR; direct pushes to `main` are blocked
 
 ## Code Standards
 
-- **Scan before build**: before proposing any new file, function, component, or abstraction, search the codebase for an existing implementation. Re-use what exists. Proposing to build something that already exists is a YAGNI violation.
 - **Repository pattern**: Firestore access only through `src/lib/repositories/`. Never inline `getFirestore()` in pages, components, or API routes.
 - **No `any`**: every TypeScript escape hatch (`any`, `as`, `!`) requires an inline justification comment.
 - **`satisfies` on Firestore mappings**: use `satisfies TypeName` on all `docToX()` return objects.
