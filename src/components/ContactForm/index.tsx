@@ -1,205 +1,103 @@
 'use client';
 
-import { useState } from 'react';
+import { useActionState, useEffect, useRef } from 'react';
+import { useFormStatus } from 'react-dom';
 import { trackEvent } from '../../firebase';
+import {
+  submitContact,
+  INITIAL_CONTACT_STATE,
+  type ContactState,
+} from './actions';
 import './ContactForm.css';
 
-interface FormData {
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
-}
-
-interface FormStatus {
-  type: 'idle' | 'loading' | 'success' | 'error';
-  message: string;
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="form-submit"
+      aria-busy={pending}
+    >
+      {pending ? 'Sending...' : 'Send Message'}
+    </button>
+  );
 }
 
 export function ContactForm() {
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
-  });
+  const [state, formAction] = useActionState(
+    submitContact,
+    INITIAL_CONTACT_STATE
+  );
+  const formRef = useRef<HTMLFormElement>(null);
+  const prevType = useRef<ContactState['type']>('idle');
 
-  const [formStatus, setFormStatus] = useState<FormStatus>({
-    type: 'idle',
-    message: '',
-  });
+  useEffect(() => {
+    if (state.type === prevType.current) return;
+    prevType.current = state.type;
 
-  const [errors, setErrors] = useState<Partial<FormData>>({});
-
-  const validateForm = (): boolean => {
-    const newErrors: Partial<FormData> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+    if (state.type === 'success') {
+      formRef.current?.reset();
+      trackEvent('contact_form_submitted', { email_domain: state.emailDomain });
+    } else if (
+      state.type === 'error' &&
+      Object.keys(state.errors).length === 0
+    ) {
+      trackEvent('contact_form_error', { error: state.message });
     }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email address';
-    }
-
-    if (!formData.message.trim()) {
-      newErrors.message = 'Message is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-    // Clear error for this field when user starts typing
-    if (errors[name as keyof FormData]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: '',
-      }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      setFormStatus({
-        type: 'error',
-        message: 'Please check the form for errors.',
-      });
-      return;
-    }
-
-    setFormStatus({
-      type: 'loading',
-      message: 'Sending your message...',
-    });
-
-    try {
-      const response = await fetch('/api/contact/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          message: formData.message,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Request failed');
-      }
-
-      // Track analytics event
-      trackEvent('contact_form_submitted', {
-        email_domain: formData.email.split('@')[1],
-      });
-
-      setFormStatus({
-        type: 'success',
-        message:
-          'Thank you! Your message has been sent successfully. We will get back to you soon.',
-      });
-
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        message: '',
-      });
-
-      // Clear success message after 5 seconds
-      setTimeout(() => {
-        setFormStatus({ type: 'idle', message: '' });
-      }, 5000);
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      trackEvent('contact_form_error', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      setFormStatus({
-        type: 'error',
-        message:
-          'There was an error sending your message. Please try again or contact us directly.',
-      });
-    }
-  };
+  }, [state]);
 
   return (
-    <form
-      className="contact-form"
-      onSubmit={event => {
-        void handleSubmit(event);
-      }}
-      noValidate
-    >
-      {formStatus.message && (
+    <form ref={formRef} className="contact-form" action={formAction} noValidate>
+      {state.message && (
         <div
-          className={`form-status form-status-${formStatus.type}`}
+          className={`form-status form-status-${state.type}`}
           role="alert"
           aria-live="polite"
         >
-          {formStatus.message}
+          {state.message}
         </div>
       )}
 
       <div className="form-group">
-        <label htmlFor="name" className={errors.name ? 'required' : ''}>
+        <label htmlFor="name" className={state.errors.name ? 'required' : ''}>
           Name
         </label>
         <input
           id="name"
           type="text"
           name="name"
-          value={formData.name}
-          onChange={handleChange}
           placeholder="Your name"
           required
-          disabled={formStatus.type === 'loading'}
-          className={errors.name ? 'error' : ''}
-          aria-invalid={!!errors.name}
-          aria-describedby={errors.name ? 'name-error' : undefined}
+          className={state.errors.name ? 'error' : ''}
+          aria-invalid={!!state.errors.name}
+          aria-describedby={state.errors.name ? 'name-error' : undefined}
         />
-        {errors.name && (
+        {state.errors.name && (
           <span id="name-error" className="error-message">
-            {errors.name}
+            {state.errors.name}
           </span>
         )}
       </div>
 
       <div className="form-group">
-        <label htmlFor="email" className={errors.email ? 'required' : ''}>
+        <label htmlFor="email" className={state.errors.email ? 'required' : ''}>
           Email
         </label>
         <input
           id="email"
           type="email"
           name="email"
-          value={formData.email}
-          onChange={handleChange}
           placeholder="your@email.com"
           required
           inputMode="email"
-          disabled={formStatus.type === 'loading'}
-          className={errors.email ? 'error' : ''}
-          aria-invalid={!!errors.email}
-          aria-describedby={errors.email ? 'email-error' : undefined}
+          className={state.errors.email ? 'error' : ''}
+          aria-invalid={!!state.errors.email}
+          aria-describedby={state.errors.email ? 'email-error' : undefined}
         />
-        {errors.email && (
+        {state.errors.email && (
           <span id="email-error" className="error-message">
-            {errors.email}
+            {state.errors.email}
           </span>
         )}
       </div>
@@ -212,46 +110,36 @@ export function ContactForm() {
           id="phone"
           type="tel"
           name="phone"
-          value={formData.phone}
-          onChange={handleChange}
           placeholder="(555) 123-4567"
           inputMode="tel"
-          disabled={formStatus.type === 'loading'}
         />
       </div>
 
       <div className="form-group">
-        <label htmlFor="message" className={errors.message ? 'required' : ''}>
+        <label
+          htmlFor="message"
+          className={state.errors.message ? 'required' : ''}
+        >
           Message
         </label>
         <textarea
           id="message"
           name="message"
-          value={formData.message}
-          onChange={handleChange}
           placeholder="Tell us how we can help..."
           required
-          disabled={formStatus.type === 'loading'}
-          className={errors.message ? 'error' : ''}
-          aria-invalid={!!errors.message}
-          aria-describedby={errors.message ? 'message-error' : undefined}
+          className={state.errors.message ? 'error' : ''}
+          aria-invalid={!!state.errors.message}
+          aria-describedby={state.errors.message ? 'message-error' : undefined}
           rows={5}
         />
-        {errors.message && (
+        {state.errors.message && (
           <span id="message-error" className="error-message">
-            {errors.message}
+            {state.errors.message}
           </span>
         )}
       </div>
 
-      <button
-        type="submit"
-        disabled={formStatus.type === 'loading'}
-        className="form-submit"
-        aria-busy={formStatus.type === 'loading'}
-      >
-        {formStatus.type === 'loading' ? 'Sending...' : 'Send Message'}
-      </button>
+      <SubmitButton />
     </form>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { signOut } from 'firebase/auth';
 import { initializeApp } from '@/firebase';
 import { useNavigation } from '../../contexts/useNavigation';
@@ -36,7 +36,7 @@ export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isLoggingOut, startLogoutTransition] = useTransition();
   const holdTimerRef = useRef<number | null>(null);
   const holdTriggeredRef = useRef(false);
 
@@ -71,22 +71,14 @@ export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
     toggleMenu();
   };
 
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-
-    try {
+  const handleLogout = () => {
+    startLogoutTransition(async () => {
       const { auth } = initializeApp();
-      if (auth) {
-        await signOut(auth);
-      }
-
+      if (auth) await signOut(auth);
       await fetch('/api/auth/session', { method: 'DELETE' });
       router.push('/admin/login');
       router.refresh();
-    } finally {
-      setIsLoggingOut(false);
-    }
+    });
   };
 
   // Lock body scroll when mobile drawer is open
@@ -154,7 +146,7 @@ export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
               type="button"
               className="admin-shortcut-link admin-shortcut-button"
               onClick={() => {
-                void handleLogout();
+                handleLogout();
               }}
               disabled={isLoggingOut}
             >
@@ -226,7 +218,7 @@ export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
                   className="nav-link nav-link-button"
                   onClick={() => {
                     toggleMenu();
-                    void handleLogout();
+                    handleLogout();
                   }}
                   disabled={isLoggingOut}
                 >
