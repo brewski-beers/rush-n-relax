@@ -1,124 +1,169 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { AgeGate } from './index';
+
+// ── Helpers ────────────────────────────────────────────────────────────────
 
 /**
- * AgeGate Component Tests
- *
- * Note: The AgeGate component is primarily tested via E2E tests (e2e/age-gate.spec.ts)
- * because it manages localStorage state and has complex date validation logic that's
- * best tested in a full browser environment.
- *
- * These unit tests verify the component's core dependencies and integration points.
+ * Fill in the three date inputs.
+ * Changing the Year field to a 4-char value triggers the component's
+ * auto-submit, so callers should NOT also click the Enter button.
  */
+function fillDate(month: string, day: string, year: string) {
+  fireEvent.change(screen.getByLabelText('Month'), {
+    target: { value: month },
+  });
+  fireEvent.change(screen.getByLabelText('Day'), {
+    target: { value: day },
+  });
+  fireEvent.change(screen.getByLabelText('Year'), {
+    target: { value: year },
+  });
+}
 
-describe('AgeGate Component Dependencies', () => {
+/**
+ * Fill in the three date inputs and click the Enter button explicitly.
+ * Only use this when the year value is NOT 4 chars (so auto-submit won't fire).
+ */
+function fillDateAndSubmit(month: string, day: string, year: string) {
+  fillDate(month, day, year);
+  fireEvent.click(screen.getByRole('button', { name: /enter/i }));
+}
+
+// ── Tests ──────────────────────────────────────────────────────────────────
+
+describe('AgeGate component', () => {
+  let onVerified: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
-    localStorage.clear();
-    vi.clearAllMocks();
-  });
-
-  it('uses localStorage to persist verification state', () => {
-    // Verify localStorage API is available
-    expect(typeof localStorage).toBe('object');
-    expect(typeof localStorage.getItem).toBe('function');
-    expect(typeof localStorage.setItem).toBe('function');
-  });
-
-  it('localStorage can store age verification flag', () => {
-    localStorage.setItem('ageVerified', 'true');
-    expect(localStorage.getItem('ageVerified')).toBe('true');
-  });
-
-  it('localStorage persists across checks', () => {
-    localStorage.setItem('ageVerified', 'true');
-    const value1 = localStorage.getItem('ageVerified');
-    const value2 = localStorage.getItem('ageVerified');
-
-    expect(value1).toBe(value2);
-    expect(value1).toBe('true');
-  });
-
-  it('can clear age verification from localStorage', () => {
-    localStorage.setItem('ageVerified', 'true');
-    localStorage.removeItem('ageVerified');
-
-    expect(localStorage.getItem('ageVerified')).toBeNull();
-  });
-
-  it('Date calculations work correctly', () => {
-    const birthDate = new Date(1995, 4, 15); // May 15, 1995
-    const today = new Date(2026, 1, 23); // Feb 23, 2026
-
-    // Calculate age
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
-
-    expect(age).toBeGreaterThanOrEqual(21);
-  });
-
-  it('detects underage users correctly', () => {
-    const birthDate = new Date(2020, 0, 15); // Jan 15, 2020
-    const today = new Date(2026, 1, 23); // Feb 23, 2026
-
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
-
-    expect(age).toBeLessThan(21);
-  });
-
-  it('validates month range (1-12)', () => {
-    const validMonths = [1, 6, 12];
-    const invalidMonths = [0, 13, 25];
-
-    validMonths.forEach(month => {
-      expect(month).toBeGreaterThanOrEqual(1);
-      expect(month).toBeLessThanOrEqual(12);
-    });
-
-    invalidMonths.forEach(month => {
-      expect(month < 1 || month > 12).toBe(true);
+    onVerified = vi.fn();
+    // Reset document.cookie between tests so cookie state doesn't leak
+    Object.defineProperty(document, 'cookie', {
+      writable: true,
+      value: '',
     });
   });
 
-  it('validates day range (1-31)', () => {
-    const validDays = [1, 15, 31];
-    const invalidDays = [0, 32, 99];
+  describe('rendering', () => {
+    it('renders the age gate overlay with a heading and the Enter button', () => {
+      render(<AgeGate onVerified={onVerified} />);
 
-    validDays.forEach(day => {
-      expect(day).toBeGreaterThanOrEqual(1);
-      expect(day).toBeLessThanOrEqual(31);
+      expect(
+        screen.getByRole('heading', { name: /age verification/i })
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Month')).toBeInTheDocument();
+      expect(screen.getByLabelText('Day')).toBeInTheDocument();
+      expect(screen.getByLabelText('Year')).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /enter/i })
+      ).toBeInTheDocument();
     });
 
-    invalidDays.forEach(day => {
-      expect(day < 1 || day > 31).toBe(true);
+    it('does not show an error message on initial render', () => {
+      render(<AgeGate onVerified={onVerified} />);
+
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
   });
 
-  it('validates year range (1900 to current year)', () => {
-    const currentYear = new Date().getFullYear();
-    const validYears = [1900, 1995, 2000, currentYear];
-    const invalidYears = [1800, currentYear + 1, 9999];
+  describe('given empty fields on submit', () => {
+    it('shows a validation error and does not call onVerified', () => {
+      render(<AgeGate onVerified={onVerified} />);
 
-    validYears.forEach(year => {
-      expect(year).toBeGreaterThanOrEqual(1900);
-      expect(year).toBeLessThanOrEqual(currentYear);
+      fireEvent.click(screen.getByRole('button', { name: /enter/i }));
+
+      expect(
+        screen.getByText(/please enter your complete birth date/i)
+      ).toBeInTheDocument();
+      expect(onVerified).not.toHaveBeenCalled();
     });
+  });
 
-    invalidYears.forEach(year => {
-      expect(year < 1900 || year > currentYear).toBe(true);
+  describe('given an underage birth date', () => {
+    it('shows "You must be 21 or older to enter" and does not call onVerified', () => {
+      render(<AgeGate onVerified={onVerified} />);
+
+      // Born in 2010 — well under 21 as of 2026.
+      // Year is 4 chars so auto-submit fires; no button click needed.
+      fillDate('06', '15', '2010');
+
+      // Use getByRole('alert') to target the error <p> specifically and avoid
+      // matching the header subtitle which contains the same wording.
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        /you must be 21 or older to enter/i
+      );
+      expect(onVerified).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('given a valid 21+ birth date', () => {
+    it('calls onVerified and sets the ageVerified cookie', () => {
+      render(<AgeGate onVerified={onVerified} />);
+
+      // Born in 1990 — clearly 21+ as of any reasonable test run date.
+      // Year is 4 chars so handleYearChange auto-submits; button click is NOT
+      // fired separately to avoid double-submission.
+      fillDate('03', '15', '1990');
+
+      expect(onVerified).toHaveBeenCalledOnce();
+      expect(document.cookie).toContain('ageVerified=true');
+    });
+  });
+
+  describe('given an out-of-range month', () => {
+    it('shows a valid birth date error and does not call onVerified', () => {
+      render(<AgeGate onVerified={onVerified} />);
+
+      // Year is 4 chars — auto-submit fires, no separate button click needed
+      fillDate('13', '01', '1990');
+
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        /please enter a valid birth date/i
+      );
+      expect(onVerified).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('given an out-of-range day', () => {
+    it('shows a valid birth date error and does not call onVerified', () => {
+      render(<AgeGate onVerified={onVerified} />);
+
+      fillDate('05', '32', '1990');
+
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        /please enter a valid birth date/i
+      );
+      expect(onVerified).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('given a year before 1900', () => {
+    it('shows a valid birth date error and does not call onVerified', () => {
+      render(<AgeGate onVerified={onVerified} />);
+
+      fillDate('01', '01', '1899');
+
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        /please enter a valid birth date/i
+      );
+      expect(onVerified).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('error state', () => {
+    it('clears the previous error message on a new submit attempt', () => {
+      render(<AgeGate onVerified={onVerified} />);
+
+      // First submit with empty fields → error appears
+      fireEvent.click(screen.getByRole('button', { name: /enter/i }));
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+
+      // Now provide a valid adult date — year auto-submits
+      fillDate('01', '01', '1990');
+
+      // Error should be gone and onVerified called exactly once
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(onVerified).toHaveBeenCalledOnce();
     });
   });
 });
