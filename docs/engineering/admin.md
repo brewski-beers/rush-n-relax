@@ -73,6 +73,7 @@ flowchart LR
 
     DASH --> LOC["/admin/locations\nLocations table"]
     DASH --> PROD["/admin/products\nProducts table"]
+    DASH --> CAT["/admin/categories\nCategories table"]
     DASH --> PROMO["/admin/promos\nPromos table"]
     DASH --> INV["/admin/inventory\nLocation picker"]
     DASH --> USERS["/admin/users\nRole management"]
@@ -88,6 +89,7 @@ flowchart LR
     subgraph FS["Firestore"]
         FS_LOC["locations/{slug}"]
         FS_PROD["products/{slug}"]
+        FS_CAT["product-categories/{slug}"]
         FS_PROMO["promos/{slug}"]
         FS_INV["inventory/{locationId}/items/{productId}"]
       FS_INVITES["pending-user-invites/{email}"]
@@ -98,6 +100,7 @@ flowchart LR
 
     LOC --> FS_LOC
     PROD --> FS_PROD
+    CAT --> FS_CAT
     PROMO --> FS_PROMO
     HUB --> FS_INV
     RETAIL --> FS_INV
@@ -119,6 +122,7 @@ flowchart LR
 | DASH      | `/admin/dashboard` — navigation hub                                   |
 | LOC       | Locations CMS page                                                    |
 | PROD      | Products CMS page                                                     |
+| CAT       | Categories CMS page                                                   |
 | PROMO     | Promos CMS page                                                       |
 | INV       | Inventory module — Phase 2                                            |
 | USERS     | Users module — owner-only invite + custom-claim role assignments      |
@@ -144,6 +148,10 @@ flowchart LR
 - Hub inventory items have an `availableOnline` flag — toggles online shipping availability (Phase 3A).
 - Retail inventory items have an `availablePickup` flag — toggles buy-online / pick-up-in-store (Phase 3A).
 - Compliance guard: setting either flag is blocked if the product's status is `compliance-hold`.
+- Categories admin is owner-only at `/admin/categories`; full CRUD — list, create (`/new`), edit (`/[slug]/edit`), and activate/deactivate toggle. Categories are stored in `product-categories/{slug}`.
+- Category slugs are immutable after creation (doc ID = slug). The edit form disables the slug field.
+- Deactivating a category hides it from the storefront filter bar and all product admin dropdowns — no code deploy required.
+- Product admin forms (`/admin/products/new` and `/admin/products/[slug]/edit`) source their category dropdown from `listActiveCategories()` — Firestore is the source of truth, not a TypeScript union.
 - All admin pages use `export const dynamic = 'force-dynamic'` — no static prerender at build time.
 - Writes go through Server Actions (`actions.ts`) which call the repository layer directly.
 - Location `placeId` is optional in admin forms; when absent, maps fall back to address queries and reviews remain unavailable until a Place ID is added.

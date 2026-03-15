@@ -302,10 +302,243 @@
     0 8px 18px rgba(0, 0, 0, 0.35);
 }
 
+/* ── Admin Nav (header right side) ───────────────────────── */
+
+.admin-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  position: relative;
+}
+
+.admin-nav-pinned {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.admin-nav-pinned-link {
+  color: var(--admin-text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: var(--admin-nav-link-padding);
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.admin-nav-pinned-link:hover,
+.admin-nav-pinned-link:focus-visible {
+  color: var(--admin-text);
+  border-color: var(--admin-nav-link-focus-border);
+  background: var(--admin-nav-link-focus-bg);
+  outline: none;
+}
+
+.admin-nav-pinned-link--active {
+  color: var(--admin-accent);
+  border-color: rgba(213, 179, 106, 0.28);
+}
+
+/* Cannabis leaf toggle button — matches storefront style */
+.admin-nav-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--admin-accent);
+  border: 1px solid rgba(213, 179, 106, 0.6);
+  border-radius: 50%;
+  cursor: pointer;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 0;
+  position: relative;
+  z-index: 110;
+  box-shadow: 0 0 10px rgba(213, 179, 106, 0.35);
+  transition:
+    background-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.admin-nav-toggle:hover {
+  background-color: var(--admin-accent-strong);
+  box-shadow: 0 0 16px rgba(213, 179, 106, 0.55);
+}
+
+.admin-nav-toggle:focus-visible {
+  outline: 2px solid var(--admin-accent-strong);
+  outline-offset: 2px;
+}
+
+.admin-nav-toggle.active {
+  box-shadow: 0 0 14px rgba(213, 179, 106, 0.5);
+}
+
+.admin-nav-toggle .cannabis-leaf-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.admin-nav-toggle:hover .cannabis-leaf-icon {
+  transform: scale(1.15);
+}
+
+.admin-nav-toggle.active .cannabis-leaf-icon {
+  transform: rotate(90deg) scale(1.15);
+}
+
+/* Full-screen overlay */
+.admin-nav-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+/* Slide-down drawer */
+.admin-nav-drawer {
+  display: none;
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  height: calc(100dvh - 64px);
+  background: rgba(2, 6, 12, 0.96);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--admin-border);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: var(--space-sm);
+}
+
+.admin-nav-drawer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--space-sm);
+  right: var(--space-sm);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(213, 179, 106, 0.1) 0%,
+    rgba(213, 179, 106, 0.45) 50%,
+    rgba(213, 179, 106, 0.1) 100%
+  );
+  pointer-events: none;
+}
+
+.admin-nav-drawer.active {
+  display: flex;
+}
+
+.admin-nav-drawer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  list-style: none;
+  margin: var(--space-xs) 0 0;
+  padding: 0;
+}
+
+.admin-nav-drawer-list li {
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-nav-drawer-list li:last-child {
+  border-bottom: none;
+}
+
+.admin-drawer-link {
+  display: flex;
+  align-items: center;
+  padding: var(--space-sm);
+  color: var(--admin-text-muted);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  min-height: 52px;
+  border-radius: 8px;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.admin-drawer-link:hover {
+  color: var(--admin-text);
+  background: var(--admin-surface-hover);
+}
+
+.admin-drawer-link--active {
+  color: var(--admin-accent);
+}
+
+.admin-nav-drawer-logout .admin-logout-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--space-sm);
+  font-size: 1rem;
+  min-height: 52px;
+  border-radius: 8px;
+  text-align: left;
+  border-color: transparent;
+}
+
+/* ── Dashboard cards with drag-and-drop ──────────────────── */
+
 .dashboard-links {
   display: grid;
   gap: var(--space-sm);
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.dashboard-card-wrapper {
+  position: relative;
+}
+
+.dashboard-card-wrapper--dragging {
+  opacity: 0.55;
+  z-index: 10;
+}
+
+.dashboard-card-handle {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--admin-text-subtle);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.dashboard-card-handle:hover {
+  color: var(--admin-text-muted);
+  background: rgba(213, 179, 106, 0.1);
+  border-color: rgba(213, 179, 106, 0.3);
+}
+
+.dashboard-card-handle:active,
+.dashboard-card-wrapper--dragging .dashboard-card-handle {
+  cursor: grabbing;
 }
 
 .dashboard-card {
@@ -322,6 +555,7 @@
   display: block;
   font-weight: 600;
   font-size: 1rem;
+  height: 100%;
   min-height: 110px;
   padding: var(--admin-card-padding);
   text-decoration: none;
@@ -988,18 +1222,6 @@
 }
 
 @media (max-width: 960px) {
-  .admin-header {
-    flex-wrap: wrap;
-    gap: var(--admin-mobile-header-gap);
-    height: auto;
-    padding: var(--admin-mobile-header-padding);
-  }
-
-  .admin-brand {
-    flex-basis: 100%;
-    margin-right: 0;
-  }
-
   .admin-main {
     padding: var(--space-lg) var(--space-sm) var(--space-2xl);
   }
@@ -1015,5 +1237,10 @@
 
   .admin-form {
     padding: var(--space-md);
+  }
+
+  /* Hide pinned links on small screens — drawer handles all nav */
+  .admin-nav-pinned {
+    display: none;
   }
 }

@@ -3,7 +3,7 @@
  * Server-side only (uses firebase-admin).
  */
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
-import type { Product, ProductSummary, ProductCategory } from '@/types';
+import type { Product, ProductSummary } from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ export async function listProductsByIds(
  * List active products by category.
  */
 export async function listProductsByCategory(
-  category: ProductCategory
+  category: string
 ): Promise<ProductSummary[]> {
   const snap = await productsCol()
     .where('status', '==', 'active')

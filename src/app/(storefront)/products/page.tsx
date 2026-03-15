@@ -1,14 +1,12 @@
-import { Card } from '@/components/Card';
-import { CardGrid } from '@/components/CardGrid';
-import {
-  listOnlineAvailableInventory,
-  listProductsByIds,
-} from '@/lib/repositories';
-import { ProductImage } from '@/components/ProductImage';
+import { Suspense } from 'react';
+import { CategoryFilter } from '@/components/CategoryFilter';
+import { ProductGridSkeleton } from '@/components/ProductGridSkeleton';
 import { buildMetadata } from '@/lib/seo/metadata.factory';
+import { listActiveCategories } from '@/lib/repositories';
+import { ProductsGrid } from './ProductsGrid';
 import '@/styles/products.css';
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export const metadata = buildMetadata('/products', {
   title:
@@ -18,11 +16,17 @@ export const metadata = buildMetadata('/products', {
   path: '/products',
 });
 
-export default async function ProductsPage() {
-  const onlineInventory = await listOnlineAvailableInventory();
-  const products = await listProductsByIds(
-    onlineInventory.map(i => i.productId)
-  );
+interface Props {
+  searchParams: Promise<{ category?: string; page?: string }>;
+}
+
+export default async function ProductsPage({ searchParams }: Props) {
+  const { category: rawCategory, page: rawPage } = await searchParams;
+
+  const categories = await listActiveCategories();
+  const validCategory = categories.some(c => c.slug === rawCategory)
+    ? rawCategory
+    : null;
 
   return (
     <main className="products-page">
@@ -45,28 +49,19 @@ export default async function ProductsPage() {
         className="products-grid-section asymmetry-section-anchor"
       >
         <div className="container">
-          <CardGrid columns="auto" gap="lg">
-            {products.map((product, index) => (
-              <Card
-                key={product.id}
-                variant="product"
-                to={`/products/${product.slug}`}
-                surface={index % 3 === 1 ? 'anchor' : 'stable'}
-                elevation={index % 3 === 1 ? 'soft' : 'none'}
-                motion={index % 3 === 1}
-              >
-                <ProductImage slug={product.slug} alt={product.name} />
-                <div className="product-card-content">
-                  <div className="product-category">
-                    {product.category.toUpperCase()}
-                  </div>
-                  <h2>{product.name}</h2>
-                  <p className="product-description">{product.description}</p>
-                  <div className="product-card-cta">View Details →</div>
-                </div>
-              </Card>
-            ))}
-          </CardGrid>
+          <Suspense fallback={<div className="category-filter-placeholder" />}>
+            <CategoryFilter
+              categories={categories}
+              currentCategory={validCategory ?? null}
+            />
+          </Suspense>
+
+          <Suspense
+            key={`${validCategory ?? 'all'}-${rawPage ?? '1'}`}
+            fallback={<ProductGridSkeleton />}
+          >
+            <ProductsGrid category={validCategory ?? null} rawPage={rawPage} />
+          </Suspense>
         </div>
       </section>
     </main>

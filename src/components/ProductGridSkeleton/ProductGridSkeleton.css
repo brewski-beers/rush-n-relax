@@ -1,0 +1,80 @@
+/* ============================================================
+   PRODUCT GRID SKELETON
+   Pulse-animated placeholder matching the CardGrid auto layout
+   ============================================================ */
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.product-grid-skeleton {
+  display: grid;
+  width: 100%;
+  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.product-grid-skeleton__card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  animation: skeleton-pulse 1.5s ease-in-out var(--delay, 0s) infinite;
+}
+
+/* Image placeholder — 16:9 on mobile, 5:3 on desktop (matches ProductImage.css) */
+.product-grid-skeleton__image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 0.5rem;
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.06));
+  margin-bottom: var(--space-sm);
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .product-grid-skeleton__image {
+    aspect-ratio: 5 / 3;
+  }
+}
+
+.product-grid-skeleton__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: 0 var(--space-xs);
+}
+
+.product-grid-skeleton__category {
+  height: 0.65rem;
+  width: 4rem;
+  border-radius: 0.25rem;
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.06));
+  margin: 0 auto;
+}
+
+.product-grid-skeleton__title {
+  height: 1.1rem;
+  width: 70%;
+  border-radius: 0.25rem;
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.06));
+  margin: 0 auto;
+}
+
+.product-grid-skeleton__desc {
+  height: 0.8rem;
+  width: 90%;
+  border-radius: 0.25rem;
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.06));
+  margin: 0 auto;
+}
+
+.product-grid-skeleton__desc--short {
+  width: 65%;
+}

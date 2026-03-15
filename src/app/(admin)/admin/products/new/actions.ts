@@ -3,16 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
-import { upsertProduct, getProductBySlug } from '@/lib/repositories';
-import type { ProductCategory } from '@/types';
-
-const VALID_CATEGORIES: ProductCategory[] = [
-  'flower',
-  'concentrates',
-  'drinks',
-  'edibles',
-  'vapes',
-];
+import {
+  upsertProduct,
+  getProductBySlug,
+  listActiveCategories,
+} from '@/lib/repositories';
 
 export async function createProduct(
   _prev: { error?: string } | null,
@@ -22,7 +17,7 @@ export async function createProduct(
 
   const slug = formData.get('slug')?.toString().trim().toLowerCase();
   const name = formData.get('name')?.toString().trim();
-  const category = formData.get('category')?.toString() as ProductCategory;
+  const category = formData.get('category')?.toString();
   const description = formData.get('description')?.toString().trim();
   const details = formData.get('details')?.toString().trim();
   const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
@@ -38,7 +33,8 @@ export async function createProduct(
     };
   }
 
-  if (!VALID_CATEGORIES.includes(category)) {
+  const activeCategories = await listActiveCategories();
+  if (!activeCategories.some(c => c.slug === category)) {
     return { error: 'Invalid category.' };
   }
 
