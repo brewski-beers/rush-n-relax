@@ -14,6 +14,9 @@ export type ProductStatus =
 /**
  * Firestore document shape for a product.
  * Lives at: products/{slug}
+ *
+ * Visibility and featuring are controlled at the inventory level
+ * (inventory/{locationId}/items/{productId}.featured), not here.
  */
 export interface Product {
   /** Firestore document ID (same as slug) */
@@ -25,7 +28,6 @@ export interface Product {
   details: string;
   /** Firebase Storage path, e.g. products/{slug}.jpg */
   image?: string;
-  featured: boolean;
   status: ProductStatus;
   /**
    * Flagged true if this product will be affected by the Nov 12, 2026
@@ -49,7 +51,6 @@ export type ProductSummary = Pick<
   | 'category'
   | 'description'
   | 'image'
-  | 'featured'
   | 'status'
   | 'availableAt'
 >;

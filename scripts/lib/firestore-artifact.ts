@@ -5,6 +5,7 @@ import {
   PROMO_FIXTURES,
   buildLocationDocuments,
   buildProductDocuments,
+  buildHubInventoryDocuments,
 } from '../../src/lib/fixtures';
 
 export type FirestoreValue =
@@ -116,13 +117,30 @@ export function buildStorefrontSeedArtifact(): FirestoreSeedArtifact {
         description: product.description,
         details: product.details,
         image: product.image,
-        featured: product.featured,
         status: product.status,
         federalDeadlineRisk: product.federalDeadlineRisk,
         availableAt: product.availableAt,
         coaUrl: product.coaUrl,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
+      }),
+    });
+  }
+
+  for (const item of buildHubInventoryDocuments(fixtureDate)) {
+    documents.push({
+      // subcollection path: inventory/{locationId}/items/{productId}
+      collection: `inventory/${item.locationId}/items`,
+      docId: item.productId,
+      fields: toFirestoreFields({
+        productId: item.productId,
+        locationId: item.locationId,
+        inStock: item.inStock,
+        availableOnline: item.availableOnline,
+        availablePickup: item.availablePickup,
+        featured: item.featured,
+        quantity: item.quantity,
+        updatedAt: item.updatedAt,
       }),
     });
   }

@@ -11,7 +11,6 @@ export interface Product {
   description: string;
   details: string;
   image: string;
-  featured?: boolean;
 }
 
 /**
@@ -58,7 +57,6 @@ export const PRODUCTS: Product[] = PRODUCT_FIXTURES.map((product, index) => ({
   description: product.description,
   details: product.details,
   image: product.image ?? '',
-  featured: product.featured,
 }));
 
 export function getProductBySlug(slug: string): Product | undefined {

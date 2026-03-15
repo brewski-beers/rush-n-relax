@@ -43,6 +43,8 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
       quantity: inv?.quantity ?? 0,
       inStock: inv?.inStock ?? false,
       availableOnline: inv?.availableOnline ?? false,
+      availablePickup: inv?.availablePickup ?? false,
+      featured: inv?.featured ?? false,
     };
   });
 
@@ -53,10 +55,16 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
       <div className="admin-page-header">
         <h1>Inventory — {locationLabel}</h1>
       </div>
-      {isHub && (
+      {isHub ? (
         <p className="admin-section-desc">
-          Hub inventory. Toggle <strong>Available Online</strong> to promote
-          in-stock products to the online store.
+          Hub inventory. Toggle <strong>Available Online</strong> to list a
+          product on the store, and <strong>Featured</strong> to spotlight it on
+          the homepage.
+        </p>
+      ) : (
+        <p className="admin-section-desc">
+          Retail inventory. Toggle <strong>Featured</strong> to spotlight a
+          product for this location.
         </p>
       )}
       <InventoryTable rows={rows} locationId={locationId} isHub={isHub} />

@@ -67,11 +67,6 @@ export function ProductCreateForm({ locations }: Props) {
       </fieldset>
 
       <label className="admin-checkbox">
-        <input type="checkbox" name="featured" value="true" />
-        Featured on homepage
-      </label>
-
-      <label className="admin-checkbox">
         <input type="checkbox" name="federalDeadlineRisk" value="true" />
         Federal deadline risk{' '}
         <span className="admin-hint">

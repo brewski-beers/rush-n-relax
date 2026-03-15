@@ -26,7 +26,6 @@ export default async function AdminProductsPage() {
               <th>Name</th>
               <th>Category</th>
               <th>Status</th>
-              <th>Featured</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -36,7 +35,6 @@ export default async function AdminProductsPage() {
                 <td>{product.name}</td>
                 <td>{product.category}</td>
                 <td>{product.status}</td>
-                <td>{product.featured ? 'Yes' : 'No'}</td>
                 <td className="admin-actions">
                   <Link href={`/admin/products/${product.slug}/edit`}>
                     Edit
@@ -61,7 +59,7 @@ export default async function AdminProductsPage() {
             ))}
             {products.length === 0 && (
               <tr>
-                <td colSpan={5} className="admin-empty">
+                <td colSpan={4} className="admin-empty">
                   No products found.
                 </td>
               </tr>

@@ -5,10 +5,12 @@ export {
   LOCATION_REVIEW_FIXTURES,
   LOCATION_SLUGS,
   PRODUCT_FIXTURES,
+  HUB_INVENTORY_FIXTURES,
   PROMO_FIXTURES,
   buildLocationDocuments,
   buildLocationSummaries,
   buildProductDocuments,
+  buildHubInventoryDocuments,
   buildPromoDocuments,
 } from './storefront';
 

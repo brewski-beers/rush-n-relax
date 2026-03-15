@@ -35,7 +35,6 @@ export async function updateProduct(
   const description = formData.get('description')?.toString().trim();
   const details = formData.get('details')?.toString().trim();
   const status = formData.get('status')?.toString() as ProductStatus;
-  const featured = formData.get('featured') === 'true';
   const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
@@ -59,7 +58,6 @@ export async function updateProduct(
     details,
     image: existing.image,
     status,
-    featured,
     federalDeadlineRisk,
     availableAt,
   };
