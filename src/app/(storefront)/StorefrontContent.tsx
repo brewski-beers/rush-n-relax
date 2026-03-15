@@ -66,7 +66,7 @@ function DesktopModal() {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isMenuOpen, setIsMenuOpen]);
+  }, [isMenuOpen]);
 
   if (!isMenuOpen) return null;
 
