@@ -9,6 +9,7 @@ export interface InventoryRow extends ProductSummary {
   quantity: number;
   inStock: boolean;
   availableOnline: boolean;
+  availablePickup: boolean;
   featured: boolean;
 }
 
@@ -20,8 +21,8 @@ interface Props {
 
 export default function InventoryTable({ rows, locationId, isHub }: Props) {
   // hub: 6 cols (Product, Category, Qty, In Stock, Available Online, Featured)
-  // retail: 5 cols (Product, Category, Qty, In Stock, Featured)
-  const colSpan = isHub ? 6 : 5;
+  // retail: 6 cols (Product, Category, Qty, In Stock, Available Pickup, Featured)
+  const colSpan = isHub ? 6 : 6;
 
   return (
     <div className="admin-table-wrap">
@@ -33,13 +34,14 @@ export default function InventoryTable({ rows, locationId, isHub }: Props) {
             <th className="admin-col-qty">Quantity</th>
             <th className="admin-col-toggle">In Stock</th>
             {isHub && <th className="admin-col-toggle">Available Online</th>}
+            {!isHub && <th className="admin-col-toggle">Available Pickup</th>}
             <th className="admin-col-toggle">Featured</th>
           </tr>
         </thead>
         <tbody>
           {rows.map(row => (
             <InventoryRow
-              key={`${row.id}:${row.quantity}:${row.availableOnline}:${row.featured}`}
+              key={`${row.id}:${row.quantity}:${row.inStock}:${row.availableOnline}:${row.featured}`}
               row={row}
               locationId={locationId}
               isHub={isHub}
@@ -71,6 +73,7 @@ function InventoryRow({
   const [isPending, startTransition] = useTransition();
   const [quantityInput, setQuantityInput] = useState(String(row.quantity));
   const [availableOnline, setAvailableOnline] = useState(row.availableOnline);
+  const [availablePickup, setAvailablePickup] = useState(row.availablePickup);
   const [featured, setFeatured] = useState(row.featured);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
@@ -81,35 +84,46 @@ function InventoryRow({
   const featuredEnabled = isHub ? availableOnline : inStock;
 
   function handleToggle(
-    field: 'inStock' | 'availableOnline' | 'featured',
+    field: 'inStock' | 'availableOnline' | 'availablePickup' | 'featured',
     value: boolean
   ) {
     setUpdateError(null);
-    const previous = { quantityInput, availableOnline, featured };
+    const previous = { quantityInput, availableOnline, availablePickup, featured };
 
     if (field === 'inStock') {
       const nextQuantity = value ? Math.max(quantity, 1) : 0;
       setQuantityInput(String(nextQuantity));
       if (!value) {
         setAvailableOnline(false);
+        setAvailablePickup(false);
         setFeatured(false);
       }
     } else if (field === 'availableOnline') {
       setAvailableOnline(value);
       if (!value) setFeatured(false);
+    } else if (field === 'availablePickup') {
+      setAvailablePickup(value);
     } else {
       setFeatured(value);
     }
 
-    const nextPatch: Parameters<typeof updateInventoryItem>[2] =
+    const nextPatch: {
+      inStock?: boolean;
+      quantity?: number;
+      availableOnline?: boolean;
+      availablePickup?: boolean;
+      featured?: boolean;
+    } =
       field === 'inStock'
         ? {
             quantity: value ? Math.max(quantity, 1) : 0,
-            ...(value ? {} : { availableOnline: false, featured: false }),
+            ...(value ? {} : { availableOnline: false, availablePickup: false, featured: false }),
           }
         : field === 'availableOnline'
           ? { availableOnline: value, ...(!value ? { featured: false } : {}) }
-          : { featured: value };
+          : field === 'availablePickup'
+            ? { availablePickup: value }
+            : { featured: value };
 
     startTransition(async () => {
       try {
@@ -119,6 +133,7 @@ function InventoryRow({
       } catch {
         setQuantityInput(previous.quantityInput);
         setAvailableOnline(previous.availableOnline);
+        setAvailablePickup(previous.availablePickup);
         setFeatured(previous.featured);
         setUpdateError('Failed to update. Please try again.');
       }
@@ -218,6 +233,18 @@ function InventoryRow({
             disabled={isPending || !inStock}
             onChange={e => handleToggle('availableOnline', e.target.checked)}
             aria-label={`Available online for ${row.name}`}
+          />
+        </td>
+      )}
+      {!isHub && (
+        <td className="admin-col-toggle">
+          <input
+            type="checkbox"
+            className="admin-toggle"
+            checked={availablePickup}
+            disabled={isPending || !inStock}
+            onChange={e => handleToggle('availablePickup', e.target.checked)}
+            aria-label={`Available pickup for ${row.name}`}
           />
         </td>
       )}

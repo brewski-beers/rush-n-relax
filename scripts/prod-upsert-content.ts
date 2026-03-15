@@ -13,6 +13,7 @@ import {
   LOCATION_SLUGS,
   PRODUCT_FIXTURES,
   PROMO_FIXTURES,
+  buildHubInventoryDocuments,
 } from '../src/lib/fixtures';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -165,18 +166,46 @@ async function upsertPromos(): Promise<number> {
   return written;
 }
 
+async function upsertHubInventory(): Promise<number> {
+  let written = 0;
+
+  for (const item of buildHubInventoryDocuments()) {
+    await db
+      .collection(`inventory/${item.locationId}/items`)
+      .doc(item.productId)
+      .set(
+        {
+          productId: item.productId,
+          locationId: item.locationId,
+          inStock: item.inStock,
+          availableOnline: item.availableOnline,
+          availablePickup: item.availablePickup,
+          featured: item.featured,
+          ...(item.quantity !== undefined ? { quantity: item.quantity } : {}),
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+
+    written += 1;
+  }
+
+  return written;
+}
+
 async function main(): Promise<void> {
   console.log('[prod-upsert-content] Starting upsert...');
   console.log(`[prod-upsert-content] Project: ${projectId}`);
 
-  const [locations, products, promos] = await Promise.all([
+  const [locations, products, promos, hubInventory] = await Promise.all([
     upsertLocations(),
     upsertProducts(),
     upsertPromos(),
+    upsertHubInventory(),
   ]);
 
   console.log(
-    `[prod-upsert-content] Done: locations=${locations}, products=${products}, promos=${promos}`
+    `[prod-upsert-content] Done: locations=${locations}, products=${products}, promos=${promos}, hubInventory=${hubInventory}`
   );
 }
 

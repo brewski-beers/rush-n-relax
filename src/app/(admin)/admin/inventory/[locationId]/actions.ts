@@ -11,6 +11,7 @@ export async function updateInventoryItem(
     inStock?: boolean;
     quantity?: number;
     availableOnline?: boolean;
+    availablePickup?: boolean;
     featured?: boolean;
   }
 ): Promise<void> {
@@ -23,7 +24,9 @@ export async function updateInventoryItem(
         ? 'toggle-stock'
         : patch.featured !== undefined
           ? 'toggle-featured'
-          : 'toggle-online';
+          : patch.availablePickup !== undefined
+            ? 'toggle-pickup'
+            : 'toggle-online';
 
   await setInventoryItem(
     locationId,
@@ -33,6 +36,9 @@ export async function updateInventoryItem(
       ...(patch.quantity !== undefined && { quantity: patch.quantity }),
       ...(patch.availableOnline !== undefined && {
         availableOnline: patch.availableOnline,
+      }),
+      ...(patch.availablePickup !== undefined && {
+        availablePickup: patch.availablePickup,
       }),
       ...(patch.featured !== undefined && { featured: patch.featured }),
     },
@@ -45,4 +51,6 @@ export async function updateInventoryItem(
 
   revalidatePath(`/admin/inventory/${locationId}`);
   revalidatePath('/admin/inventory');
+  revalidatePath('/');
+  revalidatePath('/products');
 }

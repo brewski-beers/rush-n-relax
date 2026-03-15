@@ -67,3 +67,4 @@ When any of these files change → `docs/engineering/` must be reviewed and upda
 | `research`    | Web lookups, library comparisons, doc fetches (runs on Haiku — fast/cheap) |
 | `engineering` | Complex multi-file code changes, refactors, bug hunts                      |
 | `architect`   | System design, schema decisions, architectural trade-offs                  |
+| `qa`          | Test strategy, coverage audits, BDD validation, missing test scenarios     |
