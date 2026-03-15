@@ -65,11 +65,13 @@ function InventoryRow({
   const [isPending, startTransition] = useTransition();
   const [quantityInput, setQuantityInput] = useState(String(row.quantity));
   const [availableOnline, setAvailableOnline] = useState(row.availableOnline);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const quantity = normalizeQuantityInput(quantityInput);
   const inStock = quantity > 0;
 
   function handleToggle(field: 'inStock' | 'availableOnline', value: boolean) {
+    setUpdateError(null);
     const previous = { quantityInput, availableOnline };
 
     if (field === 'inStock') {
@@ -91,10 +93,12 @@ function InventoryRow({
     startTransition(async () => {
       try {
         await updateInventoryItem(locationId, row.id, nextPatch);
+        setUpdateError(null);
         router.refresh();
       } catch {
         setQuantityInput(previous.quantityInput);
         setAvailableOnline(previous.availableOnline);
+        setUpdateError('Failed to update. Please try again.');
       }
     });
   }
@@ -109,6 +113,7 @@ function InventoryRow({
   }
 
   function commitQuantity() {
+    setUpdateError(null);
     const previous = { quantityInput, availableOnline };
     const nextQuantity = normalizeQuantityInput(quantityInput);
     const nextAvailableOnline = nextQuantity > 0 ? availableOnline : false;
@@ -124,17 +129,24 @@ function InventoryRow({
             ? {}
             : { availableOnline: nextAvailableOnline }),
         });
+        setUpdateError(null);
         router.refresh();
       } catch {
         setQuantityInput(previous.quantityInput);
         setAvailableOnline(previous.availableOnline);
+        setUpdateError('Failed to update. Please try again.');
       }
     });
   }
 
   return (
     <tr className={isPending ? 'admin-row-pending' : undefined}>
-      <td>{row.name}</td>
+      <td>
+        {row.name}
+        {updateError && (
+          <span className="admin-inline-error">{updateError}</span>
+        )}
+      </td>
       <td>{row.category}</td>
       <td className="admin-qty-cell">
         <input

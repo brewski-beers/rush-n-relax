@@ -148,8 +148,16 @@ export async function POST(request: Request): Promise<Response> {
  * Clear the session cookie (logout).
  */
 export function DELETE(): Response {
-  const cookieHeader =
-    '__session=; Max-Age=0; Path=/; HttpOnly; SameSite=Strict';
+  const cookieHeader = [
+    '__session=',
+    'Max-Age=0',
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Strict',
+    process.env.NODE_ENV === 'production' ? 'Secure' : '',
+  ]
+    .filter(Boolean)
+    .join('; ');
   return new Response(null, {
     status: 200,
     headers: { 'Set-Cookie': cookieHeader },
