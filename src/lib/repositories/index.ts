@@ -50,6 +50,14 @@ export {
 } from './contact.repository';
 
 export {
+  listActiveCategories,
+  listAllCategories,
+  getCategoryBySlug,
+  upsertCategory,
+  setCategoryStatus,
+} from './category.repository';
+
+export {
   getDefaultContactEmailTemplate,
   getEmailTemplateById,
   listEmailTemplates,

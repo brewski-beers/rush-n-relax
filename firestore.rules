@@ -36,6 +36,9 @@ service cloud.firestore {
     match /products/{docId} {
       allow read, write: if false;
     }
+    match /product-categories/{docId} {
+      allow read, write: if false;
+    }
     match /promos/{docId} {
       allow read, write: if false;
     }

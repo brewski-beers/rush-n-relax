@@ -214,3 +214,8 @@
 .back-to-products .link-button:hover {
   color: var(--color-accent-light);
 }
+
+.category-filter-placeholder {
+  height: 2.5rem;
+  margin-bottom: var(--space-lg);
+}

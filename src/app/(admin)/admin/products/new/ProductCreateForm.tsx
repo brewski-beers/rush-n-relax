@@ -3,13 +3,14 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { createProduct } from './actions';
-import type { LocationSummary } from '@/types';
+import type { LocationSummary, ProductCategorySummary } from '@/types';
 
 interface Props {
   locations: LocationSummary[];
+  categories: ProductCategorySummary[];
 }
 
-export function ProductCreateForm({ locations }: Props) {
+export function ProductCreateForm({ locations, categories }: Props) {
   const [state, formAction, pending] = useActionState(createProduct, null);
 
   return (
@@ -33,11 +34,11 @@ export function ProductCreateForm({ locations }: Props) {
         Category
         <select name="category" required>
           <option value="">Select…</option>
-          <option value="flower">Flower</option>
-          <option value="concentrates">Concentrates</option>
-          <option value="drinks">Drinks</option>
-          <option value="edibles">Edibles</option>
-          <option value="vapes">Vapes</option>
+          {categories.map(cat => (
+            <option key={cat.slug} value={cat.slug}>
+              {cat.label}
+            </option>
+          ))}
         </select>
       </label>
 

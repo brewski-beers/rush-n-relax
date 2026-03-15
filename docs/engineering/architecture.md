@@ -86,7 +86,7 @@ graph TB
     end
 
     subgraph GCP["Firebase — GCP"]
-        FS[("Firestore\nlocations · products · promos\ninventory · location-reviews\ncontact-submissions\npending-user-invites · outbound-emails\nemail-templates · email-template-revisions")]
+        FS[("Firestore\nlocations · products · promos\nproduct-categories · inventory · location-reviews\ncontact-submissions\npending-user-invites · outbound-emails\nemail-templates · email-template-revisions")]
         AUTH["Firebase Auth"]
         FN["Cloud Functions v2\nfetchLocationReviews"]
     end
@@ -125,6 +125,12 @@ graph TB
 | GCP    | Google Cloud Platform / Firebase                    |
 | FS     | Firestore database                                  |
 | FN     | Cloud Functions v2                                  |
+
+### Schema Notes
+
+- `product-categories/{slug}` — Firestore-driven category configuration. Fields: `slug`, `label`, `description`, `order`, `isActive`, `createdAt`, `updatedAt`. Replaces the removed `ProductCategory` TypeScript union type.
+- `Product.category` is now `string` (a slug reference to `product-categories`), validated against live Firestore data in admin Server Actions.
+- All category access goes through `src/lib/repositories/category.repository.ts`. No client-side reads.
 
 ### Key Paths
 

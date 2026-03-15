@@ -3,14 +3,15 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { updateProduct } from './actions';
-import type { Product, LocationSummary } from '@/types';
+import type { Product, LocationSummary, ProductCategorySummary } from '@/types';
 
 interface Props {
   product: Product;
   locations: LocationSummary[];
+  categories: ProductCategorySummary[];
 }
 
-export function ProductEditForm({ product, locations }: Props) {
+export function ProductEditForm({ product, locations, categories }: Props) {
   const boundAction = updateProduct.bind(null, product.slug);
   const [state, formAction, pending] = useActionState(boundAction, null);
 
@@ -26,11 +27,11 @@ export function ProductEditForm({ product, locations }: Props) {
       <label>
         Category
         <select name="category" defaultValue={product.category} required>
-          <option value="flower">Flower</option>
-          <option value="concentrates">Concentrates</option>
-          <option value="drinks">Drinks</option>
-          <option value="edibles">Edibles</option>
-          <option value="vapes">Vapes</option>
+          {categories.map(cat => (
+            <option key={cat.slug} value={cat.slug}>
+              {cat.label}
+            </option>
+          ))}
         </select>
       </label>
 

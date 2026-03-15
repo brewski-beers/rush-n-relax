@@ -7,7 +7,7 @@ export interface Product {
   id: number;
   slug: string;
   name: string;
-  category: 'flower' | 'concentrates' | 'drinks' | 'edibles' | 'vapes';
+  category: string;
   description: string;
   details: string;
   image: string;

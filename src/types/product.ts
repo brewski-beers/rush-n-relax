@@ -1,10 +1,3 @@
-export type ProductCategory =
-  | 'flower'
-  | 'concentrates'
-  | 'drinks'
-  | 'edibles'
-  | 'vapes';
-
 export type ProductStatus =
   | 'active'
   | 'pending-reformulation'
@@ -23,7 +16,7 @@ export interface Product {
   id: string;
   slug: string;
   name: string;
-  category: ProductCategory;
+  category: string;
   description: string;
   details: string;
   /** Firebase Storage path, e.g. products/{slug}.jpg */

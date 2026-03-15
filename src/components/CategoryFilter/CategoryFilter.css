@@ -1,0 +1,68 @@
+/* ============================================================
+   CATEGORY FILTER
+   Horizontal pill row with active state and pending dimming
+   ============================================================ */
+
+.category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+  transition: opacity 0.2s ease;
+}
+
+/* Pending state: dim + block interaction while navigation resolves */
+.category-filter--pending {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.category-filter__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 1rem;
+  border-radius: 2rem;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.category-filter__pill:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.category-filter__pill--active {
+  border-color: var(--color-accent);
+  background-color: var(--color-surface-anchor, rgba(213, 179, 106, 0.1));
+  color: var(--color-accent);
+}
+
+/* Mobile: horizontal scroll instead of wrapping */
+@media (max-width: 640px) {
+  .category-filter {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* hide scrollbar visually while keeping it functional */
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .category-filter::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-filter__pill {
+    flex-shrink: 0;
+  }
+}

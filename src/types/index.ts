@@ -6,9 +6,9 @@ export type {
 export type {
   Product,
   ProductSummary,
-  ProductCategory,
   ProductStatus,
 } from './product';
+export type { ProductCategoryConfig, ProductCategorySummary } from './category';
 export type { Promo, PromoSummary } from './promo';
 export type {
   Violation,

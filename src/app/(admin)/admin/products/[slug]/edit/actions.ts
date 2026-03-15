@@ -3,16 +3,13 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
-import { upsertProduct, getProductBySlug } from '@/lib/repositories';
-import type { ProductCategory, ProductStatus } from '@/types';
+import {
+  upsertProduct,
+  getProductBySlug,
+  listActiveCategories,
+} from '@/lib/repositories';
+import type { ProductStatus } from '@/types';
 
-const VALID_CATEGORIES: ProductCategory[] = [
-  'flower',
-  'concentrates',
-  'drinks',
-  'edibles',
-  'vapes',
-];
 // compliance-hold is system-managed — admins cannot set it directly
 const SETTABLE_STATUSES: ProductStatus[] = [
   'active',
@@ -31,7 +28,7 @@ export async function updateProduct(
   if (!existing) return { error: 'Product not found.' };
 
   const name = formData.get('name')?.toString().trim();
-  const category = formData.get('category')?.toString() as ProductCategory;
+  const category = formData.get('category')?.toString();
   const description = formData.get('description')?.toString().trim();
   const details = formData.get('details')?.toString().trim();
   const status = formData.get('status')?.toString() as ProductStatus;
@@ -42,7 +39,8 @@ export async function updateProduct(
     return { error: 'All required fields must be filled.' };
   }
 
-  if (!VALID_CATEGORIES.includes(category)) {
+  const activeCategories = await listActiveCategories();
+  if (!activeCategories.some(c => c.slug === category)) {
     return { error: 'Invalid category.' };
   }
 
