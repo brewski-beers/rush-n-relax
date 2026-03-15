@@ -20,9 +20,10 @@ function locationsCol() {
  */
 export async function listLocations(): Promise<LocationSummary[]> {
   const snap = await locationsCol().orderBy('name').get();
-  return snap.docs.map(doc => {
+  return snap.docs.flatMap(doc => {
     const d = doc.data();
-    return {
+    if (!d) return []; // doc.data() returns undefined for non-existent docs; skip phantom snapshots
+    return [{
       id: doc.id,
       slug: d.slug,
       name: d.name,
@@ -34,7 +35,7 @@ export async function listLocations(): Promise<LocationSummary[]> {
       hours: d.hours,
       placeId: d.placeId,
       coordinates: d.coordinates ?? undefined,
-    } satisfies LocationSummary;
+    } satisfies LocationSummary];
   });
 }
 
