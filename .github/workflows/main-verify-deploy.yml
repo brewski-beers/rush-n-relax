@@ -104,7 +104,7 @@ jobs:
 
       - name: Upload verify failure artifacts
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: main-verify-failures
           path: test-results/
@@ -166,7 +166,7 @@ jobs:
 
       - name: Upload deploy failure logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: main-deploy-logs
           path: |
