@@ -8,7 +8,7 @@ export {
 export {
   listAllProducts,
   listProducts,
-  listFeaturedProducts,
+  listProductsByIds,
   listProductsByCategory,
   getProductBySlug,
   upsertProduct,
@@ -28,6 +28,7 @@ export {
   listInventoryForLocation,
   getInventoryItem,
   listOnlineAvailableInventory,
+  listFeaturedInventory,
   setInventoryItem,
 } from './inventory.repository';
 

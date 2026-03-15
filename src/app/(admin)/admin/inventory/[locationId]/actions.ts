@@ -7,7 +7,12 @@ import { setInventoryItem } from '@/lib/repositories';
 export async function updateInventoryItem(
   locationId: string,
   productId: string,
-  patch: { inStock?: boolean; quantity?: number; availableOnline?: boolean }
+  patch: {
+    inStock?: boolean;
+    quantity?: number;
+    availableOnline?: boolean;
+    featured?: boolean;
+  }
 ): Promise<void> {
   const actor = await requireRole('owner');
 
@@ -16,7 +21,9 @@ export async function updateInventoryItem(
       ? 'manual-count'
       : patch.inStock !== undefined
         ? 'toggle-stock'
-        : 'toggle-online';
+        : patch.featured !== undefined
+          ? 'toggle-featured'
+          : 'toggle-online';
 
   await setInventoryItem(
     locationId,
@@ -27,6 +34,7 @@ export async function updateInventoryItem(
       ...(patch.availableOnline !== undefined && {
         availableOnline: patch.availableOnline,
       }),
+      ...(patch.featured !== undefined && { featured: patch.featured }),
     },
     {
       reason,

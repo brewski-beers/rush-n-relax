@@ -18,25 +18,12 @@ function productsCol() {
  */
 export async function listAllProducts(): Promise<ProductSummary[]> {
   const snap = await productsCol().orderBy('name').get();
-  return snap.docs.map(doc => {
-    const d = doc.data();
-    return {
-      id: doc.id,
-      slug: d.slug,
-      name: d.name,
-      category: d.category,
-      description: d.description ?? '',
-      image: d.image ?? undefined,
-      featured: d.featured ?? false,
-      status: d.status,
-      availableAt: d.availableAt ?? [],
-    } satisfies ProductSummary;
-  });
+  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
 }
 
 /**
  * List all active products, ordered by name.
- * Returns lightweight summaries for grid/list views.
+ * Returns lightweight summaries for admin inventory tables.
  */
 export async function listProducts(): Promise<ProductSummary[]> {
   const snap = await productsCol()
@@ -44,46 +31,27 @@ export async function listProducts(): Promise<ProductSummary[]> {
     .orderBy('name')
     .get();
 
-  return snap.docs.map(doc => {
-    const d = doc.data();
-    return {
-      id: doc.id,
-      slug: d.slug,
-      name: d.name,
-      category: d.category,
-      description: d.description ?? '',
-      image: d.image ?? undefined,
-      featured: d.featured ?? false,
-      status: d.status,
-      availableAt: d.availableAt ?? [],
-    } satisfies ProductSummary;
-  });
+  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
 }
 
 /**
- * List featured active products (used on homepage).
+ * Fetch products by their slugs (document IDs).
+ * Used by storefront pages to join inventory results with product catalog data.
+ * Returns results ordered by name. Silently skips missing or non-active slugs.
  */
-export async function listFeaturedProducts(): Promise<ProductSummary[]> {
-  const snap = await productsCol()
-    .where('status', '==', 'active')
-    .where('featured', '==', true)
-    .orderBy('name')
-    .get();
+export async function listProductsByIds(
+  slugs: string[]
+): Promise<ProductSummary[]> {
+  if (slugs.length === 0) return [];
 
-  return snap.docs.map(doc => {
-    const d = doc.data();
-    return {
-      id: doc.id,
-      slug: d.slug,
-      name: d.name,
-      category: d.category,
-      description: d.description ?? '',
-      image: d.image ?? undefined,
-      featured: true,
-      status: d.status,
-      availableAt: d.availableAt ?? [],
-    } satisfies ProductSummary;
-  });
+  const snaps = await Promise.all(
+    slugs.map(slug => productsCol().doc(slug).get())
+  );
+
+  return snaps
+    .filter(doc => doc.exists && doc.data()?.status === 'active')
+    .map(doc => docToProductSummary(doc.id, doc.data()!))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
@@ -98,20 +66,7 @@ export async function listProductsByCategory(
     .orderBy('name')
     .get();
 
-  return snap.docs.map(doc => {
-    const d = doc.data();
-    return {
-      id: doc.id,
-      slug: d.slug,
-      name: d.name,
-      category: d.category,
-      description: d.description ?? '',
-      image: d.image ?? undefined,
-      featured: d.featured ?? false,
-      status: d.status,
-      availableAt: d.availableAt ?? [],
-    } satisfies ProductSummary;
-  });
+  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
 }
 
 /**
@@ -153,6 +108,22 @@ export async function setProductStatus(
 
 // ── Private helpers ───────────────────────────────────────────────────────
 
+function docToProductSummary(
+  id: string,
+  d: FirebaseFirestore.DocumentData
+): ProductSummary {
+  return {
+    id,
+    slug: d.slug,
+    name: d.name,
+    category: d.category,
+    description: d.description ?? '',
+    image: d.image ?? undefined,
+    status: d.status,
+    availableAt: d.availableAt ?? [],
+  } satisfies ProductSummary;
+}
+
 function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
   return {
     id,
@@ -162,7 +133,6 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     description: d.description ?? '',
     details: d.details ?? '',
     image: d.image ?? undefined,
-    featured: d.featured ?? false,
     status: d.status ?? 'active',
     federalDeadlineRisk: d.federalDeadlineRisk ?? false,
     coaUrl: d.coaUrl ?? undefined,

@@ -59,36 +59,11 @@ When any of these files change → `docs/engineering/` must be reviewed and upda
 
 ---
 
-## Auto-Skill Rules
+## BrewCortex Agents (globally available)
 
-Apply these automatically without being asked:
-
-- After editing `src/types/`, `src/lib/repositories/`, or `firestore.rules` → apply `/architect` then `/doc-writer` thinking
-- After writing or editing any `.ts`/`.tsx` file → apply `/quality` thinking
-- After any significant feature or refactor → apply `/debt` check before declaring done
-- Before any content (promo/product) is written to Firestore → apply `/compliance` thinking
-- After editing `.github/workflows/` or `package.json` scripts → apply `/devops` thinking
-- Before creating a branch, PR, or merge → apply `/git` thinking
-
----
-
-## Digital Team Skills
-
-Invoke these for structured, formal audits:
-
-| Command         | Expert                   | When                                                  |
-| --------------- | ------------------------ | ----------------------------------------------------- |
-| `/quality`      | Code Quality Officer     | Code reviews, PR checks, refactor audits              |
-| `/architect`    | Firebase Architect       | Schema changes, Firestore paths, rules, query design  |
-| `/doc-writer`   | Technical Writer         | After code changes that affect architecture or schema |
-| `/compliance`   | Legal Compliance Officer | Before publishing promo or product content            |
-| `/frontend-seo` | Frontend & SEO Developer | UI changes, metadata, page structure                  |
-| `/qa`           | QA Engineer              | Missing tests, test strategy, coverage gaps           |
-| `/security`     | Security Auditor         | Auth flows, Firestore rules, API routes               |
-| `/perf`         | Performance Engineer     | SSR/CSR decisions, bundle size, query cost            |
-| `/release`      | Release Manager          | Commit messages, PR descriptions, deploy checklists   |
-| `/devops`       | DevOps Engineer          | CI/CD workflows, emulator config, GitHub Actions      |
-| `/git`          | GitHub Resident Expert   | Branch naming, PR lifecycle, Dependabot, repo hygiene |
-| `/debug`        | Debugger                 | Root-cause analysis for runtime/type/query errors     |
-| `/plan-feature` | Project Planner          | Breaking down features against the phase roadmap      |
-| `/debt`         | Tech Debt Auditor        | Before merging any PR; score must be ≥8 to merge      |
+| Agent         | When to spawn                                                              |
+| ------------- | -------------------------------------------------------------------------- |
+| `strategist`  | Product direction, prioritization, what's next                             |
+| `research`    | Web lookups, library comparisons, doc fetches (runs on Haiku — fast/cheap) |
+| `engineering` | Complex multi-file code changes, refactors, bug hunts                      |
+| `architect`   | System design, schema decisions, architectural trade-offs                  |

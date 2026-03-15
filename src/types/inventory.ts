@@ -23,6 +23,13 @@ export interface InventoryItem {
    * Always false for hub.
    */
   availablePickup: boolean;
+  /**
+   * When true, product is spotlighted at this location.
+   * Hub: shown in homepage "What We Carry" (requires availableOnline = true).
+   * Retail: shown in per-store featured section (requires inStock = true).
+   * Always false when inStock = false; hub also clears when availableOnline = false.
+   */
+  featured: boolean;
   /** Optional unit count — for future staff-facing stock level display */
   quantity?: number;
   /** Admin freetext — e.g. "waiting on restock", "holds only" */
@@ -39,6 +46,7 @@ export type InventoryItemSummary = Pick<
   | 'inStock'
   | 'availableOnline'
   | 'availablePickup'
+  | 'featured'
   | 'quantity'
 >;
 
@@ -47,6 +55,7 @@ export type InventoryAdjustmentReason =
   | 'toggle-stock'
   | 'toggle-online'
   | 'toggle-pickup'
+  | 'toggle-featured'
   | 'system-sync'
   | 'correction';
 
@@ -63,7 +72,12 @@ export interface InventoryAdjustment {
   source: InventoryAdjustmentSource;
   updatedBy: string;
   changedFields: Array<
-    'quantity' | 'inStock' | 'availableOnline' | 'availablePickup' | 'notes'
+    | 'quantity'
+    | 'inStock'
+    | 'availableOnline'
+    | 'availablePickup'
+    | 'featured'
+    | 'notes'
   >;
   previousQuantity: number;
   nextQuantity: number;
@@ -74,6 +88,8 @@ export interface InventoryAdjustment {
   nextAvailableOnline: boolean;
   previousAvailablePickup: boolean;
   nextAvailablePickup: boolean;
+  previousFeatured: boolean;
+  nextFeatured: boolean;
   note?: string;
   createdAt: Date;
 }
