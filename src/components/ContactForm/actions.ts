@@ -3,21 +3,9 @@
 import { headers } from 'next/headers';
 import { submitContactAndQueueEmail } from '@/lib/repositories';
 import { isRateLimited } from '@/lib/rate-limit';
+import type { ContactState } from './types';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export interface ContactState {
-  type: 'idle' | 'success' | 'error';
-  message: string;
-  errors: { name?: string; email?: string; message?: string };
-  emailDomain?: string;
-}
-
-export const INITIAL_CONTACT_STATE: ContactState = {
-  type: 'idle',
-  message: '',
-  errors: {},
-};
 
 function sanitize(value: FormDataEntryValue | null, maxLength: number): string {
   if (typeof value !== 'string') return '';

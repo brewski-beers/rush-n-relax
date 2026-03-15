@@ -3,11 +3,8 @@
 import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import { trackEvent } from '../../firebase';
-import {
-  submitContact,
-  INITIAL_CONTACT_STATE,
-  type ContactState,
-} from './actions';
+import { submitContact } from './actions';
+import { INITIAL_CONTACT_STATE, type ContactState } from './types';
 import './ContactForm.css';
 
 function SubmitButton() {
