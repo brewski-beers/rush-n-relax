@@ -14,7 +14,7 @@ export function CategoryCreateForm() {
       <label>
         Slug{' '}
         <span className="admin-hint">
-          (URL identifier, e.g. flower — cannot be changed later)
+          (unique document ID, e.g. flower — cannot be changed later)
         </span>
         <input
           name="slug"
