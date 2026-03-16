@@ -9,31 +9,41 @@ import { GalleryStrip } from './GalleryStrip';
 import './ProductImageUpload.css';
 
 /**
- * Resolves a Firebase Storage path to a download URL.
- * blob: URLs (optimistic previews) are returned as-is.
- * Returns null while resolving or on failure.
+ * Resolves a Firebase Storage path to a download URL for display.
+ * - null input → returns null
+ * - blob: URLs (optimistic previews) → returned as-is, no async needed
+ * - Storage paths → resolved async via getDownloadURL; returns previous
+ *   resolved URL while the new one loads (avoids flash of empty slot)
  */
 function useResolvedSrc(pathOrObjectUrl: string | null): string | null {
+  // Only used for async storage-path resolution; blob/null cases bypass state.
   const [resolved, setResolved] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!pathOrObjectUrl) {
-      setResolved(null);
-      return;
-    }
-    // Object URLs from optimistic preview can be used directly.
-    if (pathOrObjectUrl.startsWith('blob:')) {
-      setResolved(pathOrObjectUrl);
-      return;
-    }
+    // blob: and null are handled synchronously in the return below — skip effect.
+    if (!pathOrObjectUrl || pathOrObjectUrl.startsWith('blob:')) return;
+
     let cancelled = false;
     initializeApp();
     void getDownloadURL(ref(getStorage$(), pathOrObjectUrl))
-      .then(url => { if (!cancelled) setResolved(url); })
-      .catch(() => { if (!cancelled) setResolved(null); });
-    return () => { cancelled = true; };
+      .then(url => {
+        if (!cancelled) setResolved(url);
+      })
+      .catch(err => {
+        console.error(
+          '[ProductImageUpload] Failed to resolve download URL:',
+          pathOrObjectUrl,
+          err
+        );
+        if (!cancelled) setResolved(null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [pathOrObjectUrl]);
 
+  if (!pathOrObjectUrl) return null;
+  if (pathOrObjectUrl.startsWith('blob:')) return pathOrObjectUrl;
   return resolved;
 }
 
@@ -63,7 +73,9 @@ interface InnerProps extends Props {
   featuredPath: string | null;
   setFeaturedPath: (p: string | null) => void;
   galleryPaths: (string | null)[];
-  setGalleryPaths: (updater: (prev: (string | null)[]) => (string | null)[]) => void;
+  setGalleryPaths: (
+    updater: (prev: (string | null)[]) => (string | null)[]
+  ) => void;
 }
 
 function ProductImageUploadInner({
@@ -76,8 +88,11 @@ function ProductImageUploadInner({
   const { pending: formPending } = useFormStatus();
 
   // Optimistic preview sources (object URLs while upload is in flight)
-  const [optimisticFeatured, setOptimisticFeatured] = useOptimistic<string | null>(featuredPath);
-  const [optimisticGallery, setOptimisticGallery] = useOptimistic<(string | null)[]>(galleryPaths);
+  const [optimisticFeatured, setOptimisticFeatured] = useOptimistic<
+    string | null
+  >(featuredPath);
+  const [optimisticGallery, setOptimisticGallery] =
+    useOptimistic<(string | null)[]>(galleryPaths);
 
   // Resolve storage paths → download URLs for display.
   // Object URLs (blob:) are returned as-is; storage paths are resolved via getDownloadURL.
@@ -87,11 +102,19 @@ function ProductImageUploadInner({
   const displayGallery2 = useResolvedSrc(optimisticGallery[2] ?? null);
   const displayGallery3 = useResolvedSrc(optimisticGallery[3] ?? null);
   const displayGallery4 = useResolvedSrc(optimisticGallery[4] ?? null);
-  const displayGallery = [displayGallery0, displayGallery1, displayGallery2, displayGallery3, displayGallery4];
+  const displayGallery = [
+    displayGallery0,
+    displayGallery1,
+    displayGallery2,
+    displayGallery3,
+    displayGallery4,
+  ];
 
   // Per-slot upload state
   const [isUploadingFeatured, startFeaturedUpload] = useTransition();
-  const [uploadingGallerySlots, setUploadingGallerySlots] = useState<Set<number>>(new Set());
+  const [uploadingGallerySlots, setUploadingGallerySlots] = useState<
+    Set<number>
+  >(new Set());
 
   const [errors, setErrors] = useState<Record<string | number, string>>({});
 
@@ -180,7 +203,9 @@ function ProductImageUploadInner({
         }
 
         const { path } = (await res.json()) as { path: string };
-        setGalleryPaths(prev => prev.map((p, i) => (i === slotIndex ? path : p)));
+        setGalleryPaths(prev =>
+          prev.map((p, i) => (i === slotIndex ? path : p))
+        );
       })();
     }
   }
@@ -203,9 +228,7 @@ function ProductImageUploadInner({
       setFeaturedPath(null);
     } else {
       const slotIndex = slot;
-      setGalleryPaths(prev =>
-        prev.map((p, i) => (i === slotIndex ? null : p))
-      );
+      setGalleryPaths(prev => prev.map((p, i) => (i === slotIndex ? null : p)));
     }
   }
 
@@ -223,7 +246,11 @@ function ProductImageUploadInner({
         <FeaturedSlot
           src={displayFeatured}
           uploading={isUploadingFeatured}
-          error={typeof errors['featured'] === 'string' ? errors['featured'] : undefined}
+          error={
+            typeof errors['featured'] === 'string'
+              ? errors['featured']
+              : undefined
+          }
           disabled={formPending}
           onFile={file => handleFile(file, 'featured')}
           onRemove={() => handleRemove('featured')}

@@ -11,7 +11,7 @@
 
 /* Section wrapper — provides bottom spacing between featured and gallery */
 .img-upload-featured-section {
-  margin-bottom: 1rem;
+  margin-bottom: var(--admin-img-upload-section-margin);
 }
 
 /* Drop zones */
@@ -24,14 +24,16 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
   position: relative;
   overflow: hidden;
 }
 
 .img-upload-featured-zone--dragover {
   border-color: var(--admin-accent);
-  background: rgba(213, 179, 106, 0.06);
+  background: var(--admin-img-upload-dragover-bg);
 }
 
 .img-upload-zone-label {
@@ -45,7 +47,7 @@
 .img-upload-gallery {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 0.5rem;
+  gap: var(--admin-img-upload-gallery-gap);
 }
 
 /* Individual slots */
@@ -57,12 +59,14 @@
   position: relative;
   overflow: hidden;
   cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .img-upload-slot--dragover {
   border-color: var(--admin-accent);
-  background: rgba(213, 179, 106, 0.06);
+  background: var(--admin-img-upload-dragover-bg);
 }
 
 .img-upload-slot--dragging {
@@ -82,7 +86,7 @@
 .img-upload-featured-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--admin-img-upload-overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -101,15 +105,15 @@
   top: 0.35rem;
   left: 0.35rem;
   z-index: 2;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--admin-img-upload-handle-bg);
+  border: var(--admin-img-upload-handle-border);
   border-radius: 6px;
   color: var(--admin-text-subtle);
   cursor: grab;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: var(--admin-img-upload-handle-padding);
 }
 
 .img-upload-slot-handle:active {
@@ -122,8 +126,8 @@
   top: 0.35rem;
   right: 0.35rem;
   z-index: 2;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 127, 148, 0.4);
+  background: var(--admin-img-upload-remove-bg);
+  border: var(--admin-img-upload-remove-border);
   border-radius: 50%;
   color: var(--admin-error-text);
   cursor: pointer;
@@ -139,14 +143,14 @@
 
 /* Remove button modifier — adds left gap when displayed inline next to Replace */
 .img-upload-remove-btn--featured {
-  margin-left: 0.5rem;
+  margin-left: var(--admin-img-upload-remove-margin);
 }
 
 /* Spinner */
 .img-upload-spinner-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--admin-img-upload-overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -155,14 +159,16 @@
 .img-upload-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid var(--admin-img-upload-spinner-track);
   border-top-color: var(--admin-accent);
   border-radius: 50%;
   animation: img-upload-spin 0.7s linear infinite;
 }
 
 @keyframes img-upload-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Empty slot "+" label */
@@ -180,5 +186,5 @@
 .img-upload-error {
   color: var(--admin-error-text);
   font-size: 0.78rem;
-  margin-top: 0.25rem;
+  margin-top: var(--admin-img-upload-error-margin);
 }

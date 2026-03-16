@@ -115,6 +115,34 @@
   --admin-email-preview-message-padding: 0.7rem;
   --admin-email-preview-divider-margin: 0.6rem 0;
 
+  /* ── Navigation ────────────────────────────────────────────────────────── */
+  --admin-nav-pinned-gap: calc(var(--space-xs) / 2);
+  --admin-nav-active-border: rgba(213, 179, 106, 0.28);
+  --admin-nav-toggle-border: 1px solid rgba(213, 179, 106, 0.6);
+  --admin-overlay-bg: rgba(0, 0, 0, 0.45);
+  --admin-drawer-bg: rgba(2, 6, 12, 0.96);
+
+  /* ── Dashboard card handle ──────────────────────────────────────────────── */
+  --admin-dashboard-handle-bg: rgba(255, 255, 255, 0.05);
+  --admin-dashboard-handle-border: 1px solid rgba(255, 255, 255, 0.1);
+  --admin-dashboard-handle-padding: 5px;
+  --admin-dashboard-handle-hover-bg: rgba(213, 179, 106, 0.1);
+  --admin-dashboard-handle-hover-border: rgba(213, 179, 106, 0.3);
+
+  /* ── Image upload widget ───────────────────────────────────────────────── */
+  --admin-img-upload-section-margin: var(--space-sm);
+  --admin-img-upload-gallery-gap: var(--space-xs);
+  --admin-img-upload-handle-padding: calc(var(--space-xs) / 2);
+  --admin-img-upload-remove-margin: var(--space-xs);
+  --admin-img-upload-error-margin: calc(var(--space-xs) / 2);
+  --admin-img-upload-dragover-bg: rgba(213, 179, 106, 0.06);
+  --admin-img-upload-overlay-bg: rgba(0, 0, 0, 0.55);
+  --admin-img-upload-handle-bg: rgba(255, 255, 255, 0.05);
+  --admin-img-upload-handle-border: 1px solid rgba(255, 255, 255, 0.1);
+  --admin-img-upload-remove-bg: rgba(0, 0, 0, 0.6);
+  --admin-img-upload-remove-border: 1px solid rgba(255, 127, 148, 0.4);
+  --admin-img-upload-spinner-track: rgba(255, 255, 255, 0.2);
+
   position: relative;
   min-height: 100vh;
   background:
@@ -314,7 +342,7 @@
 .admin-nav-pinned {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--admin-nav-pinned-gap);
 }
 
 .admin-nav-pinned-link {
@@ -341,7 +369,7 @@
 
 .admin-nav-pinned-link--active {
   color: var(--admin-accent);
-  border-color: rgba(213, 179, 106, 0.28);
+  border-color: var(--admin-nav-active-border);
 }
 
 /* Cannabis leaf toggle button — matches storefront style */
@@ -350,7 +378,7 @@
   align-items: center;
   justify-content: center;
   background-color: var(--admin-accent);
-  border: 1px solid rgba(213, 179, 106, 0.6);
+  border: var(--admin-nav-toggle-border);
   border-radius: 50%;
   cursor: pointer;
   min-height: 40px;
@@ -398,7 +426,7 @@
   position: fixed;
   inset: 0;
   z-index: 90;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--admin-overlay-bg);
   backdrop-filter: blur(2px);
 }
 
@@ -410,7 +438,7 @@
   left: 0;
   right: 0;
   height: calc(100dvh - 64px);
-  background: rgba(2, 6, 12, 0.96);
+  background: var(--admin-drawer-bg);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--admin-border);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
@@ -515,15 +543,15 @@
   top: 0.55rem;
   right: 0.55rem;
   z-index: 2;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--admin-dashboard-handle-bg);
+  border: var(--admin-dashboard-handle-border);
   border-radius: 6px;
   color: var(--admin-text-subtle);
   cursor: grab;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5px;
+  padding: var(--admin-dashboard-handle-padding);
   transition:
     color 0.15s ease,
     background-color 0.15s ease,
@@ -532,8 +560,8 @@
 
 .dashboard-card-handle:hover {
   color: var(--admin-text-muted);
-  background: rgba(213, 179, 106, 0.1);
-  border-color: rgba(213, 179, 106, 0.3);
+  background: var(--admin-dashboard-handle-hover-bg);
+  border-color: var(--admin-dashboard-handle-hover-border);
 }
 
 .dashboard-card-handle:active,
