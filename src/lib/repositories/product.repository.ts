@@ -119,6 +119,7 @@ function docToProductSummary(
     category: d.category ?? '',
     description: d.description ?? '',
     image: d.image ?? undefined,
+    images: Array.isArray(d.images) ? (d.images as string[]) : undefined,
     status: d.status,
     availableAt: d.availableAt ?? [],
   } satisfies ProductSummary;
@@ -133,6 +134,7 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     description: d.description ?? '',
     details: d.details ?? '',
     image: d.image ?? undefined,
+    images: Array.isArray(d.images) ? (d.images as string[]) : undefined,
     status: d.status ?? 'active',
     federalDeadlineRisk: d.federalDeadlineRisk ?? false,
     coaUrl: d.coaUrl ?? undefined,

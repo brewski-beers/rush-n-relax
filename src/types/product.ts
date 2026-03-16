@@ -21,6 +21,8 @@ export interface Product {
   details: string;
   /** Firebase Storage path, e.g. products/{slug}.jpg */
   image?: string;
+  /** Firebase Storage paths for the gallery (up to 5), e.g. products/{slug}/gallery/0.jpg */
+  images?: string[];
   status: ProductStatus;
   /**
    * Flagged true if this product will be affected by the Nov 12, 2026
@@ -44,6 +46,7 @@ export type ProductSummary = Pick<
   | 'category'
   | 'description'
   | 'image'
+  | 'images'
   | 'status'
   | 'availableAt'
 >;

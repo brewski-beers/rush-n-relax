@@ -29,6 +29,7 @@ export default function ProductDetailClient({
             slug={product.slug}
             alt={product.name}
             className="product-hero-img"
+            path={product.image}
           />
           <h1>{product.name}</h1>
           <p className="lead">{product.description}</p>
@@ -47,6 +48,24 @@ export default function ProductDetailClient({
           </div>
         </div>
       </section>
+
+      {product.images && product.images.length > 0 && (
+        <section className="product-gallery-section asymmetry-section-stable">
+          <div className="container">
+            <div className="product-gallery-strip">
+              {product.images.map((imagePath, index) => (
+                <ProductImage
+                  key={imagePath}
+                  slug={product.slug}
+                  path={imagePath}
+                  alt={`${product.name} image ${index + 1}`}
+                  className="product-gallery-img"
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {relatedProducts.length > 0 && (
         <section className="related-products asymmetry-section-anchor">

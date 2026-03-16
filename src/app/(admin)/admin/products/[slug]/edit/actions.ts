@@ -48,13 +48,21 @@ export async function updateProduct(
     return { error: 'Cannot set that status directly.' };
   }
 
+  const featuredImagePath =
+    formData.get('featuredImagePath')?.toString() || undefined;
+  const galleryImagePaths = ([0, 1, 2, 3, 4] as const)
+    .map(i => formData.get(`galleryImagePath_${i}`)?.toString() || undefined)
+    .filter((p): p is string => p !== undefined);
+
   const payload = {
     slug: existing.slug,
     name,
     category,
     description,
     details,
-    image: existing.image,
+    image: featuredImagePath ?? existing.image,
+    images:
+      galleryImagePaths.length > 0 ? galleryImagePaths : existing.images,
     status,
     federalDeadlineRisk,
     availableAt,

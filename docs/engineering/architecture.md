@@ -87,6 +87,7 @@ graph TB
 
     subgraph GCP["Firebase — GCP"]
         FS[("Firestore\nlocations · products · promos\nproduct-categories · inventory · location-reviews\ncontact-submissions\npending-user-invites · outbound-emails\nemail-templates · email-template-revisions")]
+        GCS[("Firebase Storage\nrush-n-relax.firebasestorage.app\nproducts/{slug}/featured.{ext}\nproducts/{slug}/gallery/{n}.{ext}")]
         AUTH["Firebase Auth"]
         FN["Cloud Functions v2\nfetchLocationReviews"]
     end
@@ -94,14 +95,18 @@ graph TB
     CC --> CSK
     CSK --> AUTH
     CSK --> FN
+    CSK --> GCS
     SFP --> REPO
     SFP --> SEO
     SFP --> COMP
     ADMP --> REPO
+    ADMP --> UPLOAD["api/admin/products/\nupload-image · delete-image"]
     SITE --> REPO
     REPO --> ADMIN
+    UPLOAD --> ADMIN
     ADMIN --> ENV
     ADMIN --> FS
+    ADMIN --> GCS
     MW --> SEO
 
     classDef title fill:#020617,color:#e6edf3,stroke:#22d3ee,stroke-width:2px;
@@ -124,20 +129,25 @@ graph TB
 | COMP   | `src/lib/compliance/` — content validation          |
 | GCP    | Google Cloud Platform / Firebase                    |
 | FS     | Firestore database                                  |
+| GCS    | Firebase Storage (`rush-n-relax.firebasestorage.app`) |
 | FN     | Cloud Functions v2                                  |
+| UPLOAD | Admin image upload/delete API routes                |
 
 ### Schema Notes
 
 - `product-categories/{slug}` — Firestore-driven category configuration. Fields: `slug`, `label`, `description`, `order`, `isActive`, `createdAt`, `updatedAt`. Replaces the removed `ProductCategory` TypeScript union type.
 - `Product.category` is now `string` (a slug reference to `product-categories`), validated against live Firestore data in admin Server Actions.
 - All category access goes through `src/lib/repositories/category.repository.ts`. No client-side reads.
+- `Product.image?: string` — Storage path to the featured image (`products/{slug}/featured.{ext}`). Resolved client-side via `getDownloadURL`. Falls back to legacy slug-guessing (`products/{slug}.{ext}`) for products not yet re-uploaded.
+- `Product.images?: string[]` — Up to 5 Storage paths for the product gallery (`products/{slug}/gallery/{n}.{ext}`). Displayed on the storefront product detail page.
 
 ### Key Paths
 
 - All Firestore reads go through `REPO → ADMIN → FS`. Pages never import `firebase/firestore` directly.
 - `ENV` is the single gating point for emulator vs. production routing.
-- Client SDK (`CSK`) only reaches Auth and Functions directly — never Firestore.
+- Client SDK (`CSK`) only reaches Auth, Functions, and Storage (read-only `getDownloadURL`) — never Firestore.
 - `COMP` validates content at the server layer before it reaches SEO or the response.
+- Image uploads go through `UPLOAD` (API routes) → `ADMIN` → `GCS`. Never client-to-Storage directly.
 
 ---
 

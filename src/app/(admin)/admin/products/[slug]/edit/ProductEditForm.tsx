@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { updateProduct } from './actions';
+import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import type { Product, LocationSummary, ProductCategorySummary } from '@/types';
 
 interface Props {
@@ -105,6 +106,15 @@ export function ProductEditForm({ product, locations, categories }: Props) {
           (≤0.4mg total THC — affected by Nov 2026 rule)
         </span>
       </label>
+
+      <fieldset className="admin-fieldset">
+        <legend>Images</legend>
+        <ProductImageUpload
+          slug={product.slug}
+          initialFeaturedPath={product.image}
+          initialGalleryPaths={product.images}
+        />
+      </fieldset>
 
       <div className="admin-form-actions">
         <Link href="/admin/products">Cancel</Link>
