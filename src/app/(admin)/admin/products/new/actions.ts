@@ -42,12 +42,16 @@ export async function createProduct(
   if (existing)
     return { error: `A product with slug "${slug}" already exists.` };
 
+  const featuredImagePath =
+    formData.get('featuredImagePath')?.toString() || undefined;
+
   await upsertProduct({
     slug,
     name,
     category,
     description,
     details,
+    image: featuredImagePath,
     federalDeadlineRisk,
     availableAt,
     status: 'active',

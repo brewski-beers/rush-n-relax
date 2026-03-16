@@ -162,6 +162,13 @@ flowchart LR
 - Cloud Functions dispatch the queued subject/HTML directly, with Firestore template rendering kept as a fallback for legacy jobs (`contact-submission-default`).
 - Failed outbound emails are retried by a scheduled Cloud Function with exponential backoff metadata stored on the queue doc (`attemptCount`, `nextAttemptAt`, `lastAttemptAt`).
 - Repository upserts sanitize `undefined` optional fields before Firestore `set(..., { merge: true })` to prevent runtime write errors from sparse form payloads.
+- Product image upload is handled by two API routes — not Server Actions — to avoid the 1 MB Server Action body size limit:
+  - `POST /api/admin/products/upload-image` — validates owner role, MIME type (jpeg/png/webp), 5 MB max, uploads to Firebase Storage via Admin SDK, returns `{ path: string }`.
+  - `DELETE /api/admin/products/delete-image` — validates owner role and that the path starts with `products/` (path traversal guard), deletes from Storage.
+- The `ProductImageUpload` widget uploads on file select/drop (not on form submit). Storage paths are stored in hidden form inputs and read by the Server Action on submit — no file bytes on submit.
+- Image widget uses React 19 hooks: `useOptimistic` for instant local previews, `useTransition` for non-blocking upload fetch calls, `useFormStatus` to disable controls while the parent form is submitting.
+- Gallery slots (up to 5) support drag-to-reorder via `@dnd-kit/sortable` — same pattern as the dashboard card grid. Order is persisted via hidden inputs on form submit.
+- Storage bucket: `rush-n-relax.firebasestorage.app`. The `storageBucket` property must be set in `initializeApp()` in `src/lib/firebase/admin.ts` — calling `.bucket()` with no argument fails without it.
 - Inventory semantics are strict and derived at repository level:
   `inStock = quantity > 0`, and `availableOnline`/`availablePickup` are forced `false` whenever quantity is `0`.
 - Inventory writes now append an immutable adjustment log at

@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { createProduct } from './actions';
+import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import type { LocationSummary, ProductCategorySummary } from '@/types';
 
 interface Props {
@@ -12,6 +14,7 @@ interface Props {
 
 export function ProductCreateForm({ locations, categories }: Props) {
   const [state, formAction, pending] = useActionState(createProduct, null);
+  const [slug, setSlug] = useState('');
 
   return (
     <form action={formAction} className="admin-form">
@@ -22,7 +25,14 @@ export function ProductCreateForm({ locations, categories }: Props) {
         <span className="admin-hint">
           (URL identifier, e.g. flower — cannot be changed later)
         </span>
-        <input name="slug" placeholder="flower" pattern="[a-z0-9-]+" required />
+        <input
+          name="slug"
+          placeholder="flower"
+          pattern="[a-z0-9-]+"
+          required
+          value={slug}
+          onChange={e => setSlug(e.target.value.trim().toLowerCase())}
+        />
       </label>
 
       <label>
@@ -74,6 +84,16 @@ export function ProductCreateForm({ locations, categories }: Props) {
           (≤0.4mg total THC — affected by Nov 2026 rule)
         </span>
       </label>
+
+      {slug && (
+        <fieldset className="admin-fieldset">
+          <legend>Featured Image</legend>
+          <span className="admin-hint">
+            Gallery images can be added after saving.
+          </span>
+          <ProductImageUpload slug={slug} />
+        </fieldset>
+      )}
 
       <div className="admin-form-actions">
         <Link href="/admin/products">Cancel</Link>

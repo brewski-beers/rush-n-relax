@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getDownloadURL, ref } from 'firebase/storage';
+import { initializeApp, getStorage$ } from '../../firebase';
 import { resolveProductImageUrl } from '../../constants/products';
 import './ProductImage.css';
 
@@ -8,21 +10,43 @@ interface ProductImageProps {
   slug: string;
   alt: string;
   className?: string;
+  /**
+   * Optional Firebase Storage path — resolves this path directly via
+   * getDownloadURL instead of the slug-based extension-probing lookup.
+   * Provide when the exact storage path is already known (e.g. after upload).
+   */
+  path?: string;
+}
+
+async function resolvePathUrl(storagePath: string): Promise<string | null> {
+  try {
+    initializeApp();
+    const storage = getStorage$();
+    return await getDownloadURL(ref(storage, storagePath));
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Async-loads a product image from Firebase Storage.
- * Shows a shimmer placeholder while loading, and a category-tinted
- * fallback if the image is unavailable.
+ * If `path` is provided, resolves that storage path directly.
+ * Otherwise falls back to the slug-based extension-probing lookup.
+ * Shows a shimmer placeholder while loading, and a fallback if unavailable.
  */
-export function ProductImage({ slug, alt, className }: ProductImageProps) {
+export function ProductImage({ slug, alt, className, path }: ProductImageProps) {
   const [src, setSrc] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    void resolveProductImageUrl(slug)
+
+    const resolve = path
+      ? () => resolvePathUrl(path)
+      : () => resolveProductImageUrl(slug);
+
+    void resolve()
       .then(url => {
         if (!cancelled) {
           if (url) setSrc(url);
@@ -35,7 +59,7 @@ export function ProductImage({ slug, alt, className }: ProductImageProps) {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, path]);
 
   const content =
     failed || (!src && !loaded) ? (
@@ -44,7 +68,7 @@ export function ProductImage({ slug, alt, className }: ProductImageProps) {
       </div>
     ) : (
       <img
-        src={src!}
+        src={src!} // src is non-null here: we only render this branch after setSrc(url)
         alt={alt}
         className={`product-image ${loaded ? 'product-image-loaded' : ''}`}
         loading="eager"

@@ -51,7 +51,7 @@ export async function ProductsGrid({ category, rawPage }: ProductsGridProps) {
             elevation={index % 3 === 1 ? 'soft' : 'none'}
             motion={index % 3 === 1}
           >
-            <ProductImage slug={product.slug} alt={product.name} />
+            <ProductImage slug={product.slug} alt={product.name} path={product.image} />
             <div className="product-card-content">
               <div className="product-category">
                 {product.category.toUpperCase()}

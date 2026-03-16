@@ -12,10 +12,12 @@ import {
   Timestamp,
 } from 'firebase-admin/firestore';
 import { getAuth, type Auth } from 'firebase-admin/auth';
+import { getStorage, type Storage } from 'firebase-admin/storage';
 
 let adminApp: App | null = null;
 let adminDb: Firestore | null = null;
 let adminAuth: Auth | null = null;
+let adminStorage: Storage | null = null;
 
 function getAdminApp(): App {
   if (adminApp) return adminApp;
@@ -35,10 +37,14 @@ function getAdminApp(): App {
     adminApp = initializeApp({
       credential: cert(serviceAccount),
       projectId: 'rush-n-relax',
+      storageBucket: 'rush-n-relax.firebasestorage.app',
     });
   } else {
     // Application Default Credentials (App Hosting + local with gcloud auth)
-    adminApp = initializeApp({ projectId: 'rush-n-relax' });
+    adminApp = initializeApp({
+      projectId: 'rush-n-relax',
+      storageBucket: 'rush-n-relax.firebasestorage.app',
+    });
   }
 
   return adminApp;
@@ -54,6 +60,12 @@ export function getAdminFirestore(): Firestore {
   if (adminDb) return adminDb;
   adminDb = getFirestore(getAdminApp());
   return adminDb;
+}
+
+export function getAdminStorage(): Storage {
+  if (adminStorage) return adminStorage;
+  adminStorage = getStorage(getAdminApp());
+  return adminStorage;
 }
 
 /**
