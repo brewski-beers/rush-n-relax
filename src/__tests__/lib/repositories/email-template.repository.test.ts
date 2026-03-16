@@ -5,6 +5,9 @@ const {
   orderByMock,
   limitMock,
   getMock,
+  docGetMock,
+  batchSetMock,
+  batchCommitMock,
   collectionMock,
   getAdminFirestoreMock,
   createIdMock,
@@ -14,16 +17,21 @@ const {
   const orderByMock = vi.fn().mockReturnValue({ limit: limitMock });
   const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
 
+  // Shared doc-level get mock so tests can control per-doc responses
+  const docGetMock = vi.fn().mockResolvedValue({
+    exists: false,
+    id: 'doc-id',
+    data: () => ({}),
+  });
+
+  const batchSetMock = vi.fn();
+  const batchCommitMock = vi.fn().mockResolvedValue(undefined);
+
   const collectionMock = vi.fn(() => ({
     doc: vi.fn((name?: string) => ({
       id: name ?? 'doc-id',
-      get: vi
-        .fn()
-        .mockResolvedValue({
-          exists: false,
-          id: name ?? 'doc-id',
-          data: () => ({}),
-        }),
+      get: docGetMock,
+      set: vi.fn().mockResolvedValue(undefined),
     })),
     where: whereMock,
     orderBy: vi.fn().mockReturnValue({ get: getMock }),
@@ -32,8 +40,8 @@ const {
   const getAdminFirestoreMock = vi.fn(() => ({
     collection: collectionMock,
     batch: vi.fn(() => ({
-      set: vi.fn(),
-      commit: vi.fn().mockResolvedValue(undefined),
+      set: batchSetMock,
+      commit: batchCommitMock,
     })),
   }));
 
@@ -44,6 +52,9 @@ const {
     orderByMock,
     limitMock,
     getMock,
+    docGetMock,
+    batchSetMock,
+    batchCommitMock,
     collectionMock,
     getAdminFirestoreMock,
     createIdMock,
@@ -59,7 +70,12 @@ vi.mock('@/lib/utils/id', () => ({
   createId: createIdMock,
 }));
 
-import { listEmailTemplateRevisions } from '@/lib/repositories/email-template.repository';
+import {
+  listEmailTemplateRevisions,
+  upsertEmailTemplate,
+  getEmailTemplateById,
+  restoreEmailTemplateRevision,
+} from '@/lib/repositories/email-template.repository';
 
 describe('email-template.repository', () => {
   beforeEach(() => {
@@ -122,6 +138,192 @@ describe('email-template.repository', () => {
       await listEmailTemplateRevisions('contact-submission-default');
 
       expect(limitMock).toHaveBeenCalledWith(12);
+    });
+  });
+
+  // ── upsertEmailTemplate ──────────────────────────────────────────────────
+
+  describe('upsertEmailTemplate', () => {
+    it('writes to the templates collection and appends a revision via batch', async () => {
+      // The template doc does not exist yet (new template)
+      docGetMock.mockResolvedValue({
+        exists: false,
+        id: 'contact-submission-default',
+        data: () => ({}),
+      });
+
+      await upsertEmailTemplate({
+        id: 'contact-submission-default',
+        name: 'Contact Submission Default',
+        subjectTemplate: 'New submission from {{name}}',
+        status: 'published',
+        theme: {
+          backgroundColor: '#0b1220',
+          panelColor: '#111a2b',
+          textColor: '#dce3f1',
+          accentColor: '#d8c488',
+          mutedTextColor: '#8fa6c8',
+          borderColor: '#2a3b5f',
+          fontFamily: 'sans-serif',
+          borderRadiusPx: 14,
+        },
+        containers: [],
+      });
+
+      // batch.commit() must be called once
+      expect(batchCommitMock).toHaveBeenCalledOnce();
+
+      // batch.set() is called twice: once for template, once for revision
+      expect(batchSetMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('uses the existing createdAt when the template document already exists', async () => {
+      const existingCreatedAt = new Date('2024-01-01').toISOString();
+      docGetMock.mockResolvedValue({
+        exists: true,
+        id: 'contact-submission-default',
+        data: () => ({ createdAt: existingCreatedAt }),
+      });
+
+      await upsertEmailTemplate({
+        id: 'contact-submission-default',
+        name: 'Contact Submission Default',
+        subjectTemplate: 'Hello',
+        status: 'published',
+        theme: {
+          backgroundColor: '#0b1220',
+          panelColor: '#111a2b',
+          textColor: '#dce3f1',
+          accentColor: '#d8c488',
+          mutedTextColor: '#8fa6c8',
+          borderColor: '#2a3b5f',
+          fontFamily: 'sans-serif',
+          borderRadiusPx: 14,
+        },
+        containers: [],
+      });
+
+      // The first batch.set() call carries the template document
+      const [, templatePayload] = batchSetMock.mock.calls[0] as [
+        unknown,
+        Record<string, unknown>,
+      ];
+      // createdAt should be the existing date, not now
+      expect((templatePayload.createdAt as Date).toISOString()).toBe(
+        existingCreatedAt
+      );
+    });
+  });
+
+  // ── getEmailTemplateById ─────────────────────────────────────────────────
+
+  describe('getEmailTemplateById', () => {
+    it('returns the default template when the document does not exist', async () => {
+      docGetMock.mockResolvedValue({
+        exists: false,
+        id: 'contact-submission-default',
+        data: () => ({}),
+      });
+
+      const result = await getEmailTemplateById('contact-submission-default');
+
+      expect(result.id).toBe('contact-submission-default');
+      expect(result.status).toBe('published');
+    });
+
+    it('returns the stored template when the document exists', async () => {
+      docGetMock.mockResolvedValue({
+        exists: true,
+        id: 'contact-submission-default',
+        data: () => ({
+          name: 'Custom Template',
+          subjectTemplate: 'Custom subject',
+          status: 'draft',
+          theme: {},
+          containers: [],
+          createdAt: new Date('2024-01-01').toISOString(),
+          updatedAt: new Date('2024-06-01').toISOString(),
+        }),
+      });
+
+      const result = await getEmailTemplateById('contact-submission-default');
+
+      expect(result.name).toBe('Custom Template');
+      expect(result.status).toBe('draft');
+    });
+  });
+
+  // ── restoreEmailTemplateRevision ─────────────────────────────────────────
+
+  describe('restoreEmailTemplateRevision', () => {
+    it('throws when the revision document does not exist', async () => {
+      docGetMock.mockResolvedValue({
+        exists: false,
+        id: 'rev-missing',
+        data: () => ({}),
+      });
+
+      await expect(
+        restoreEmailTemplateRevision(
+          'contact-submission-default',
+          'rev-missing'
+        )
+      ).rejects.toThrow('Revision not found.');
+
+      expect(batchCommitMock).not.toHaveBeenCalled();
+    });
+
+    it('throws when the revision belongs to a different template', async () => {
+      docGetMock.mockResolvedValue({
+        exists: true,
+        id: 'rev-abc',
+        data: () => ({
+          templateId: 'other-template',
+          templateName: 'Other Template',
+          subjectTemplate: 'Hello',
+          status: 'published',
+          theme: {},
+          containers: [],
+          source: 'save',
+          createdAt: new Date().toISOString(),
+        }),
+      });
+
+      await expect(
+        restoreEmailTemplateRevision('contact-submission-default', 'rev-abc')
+      ).rejects.toThrow('Revision does not belong to this template.');
+    });
+
+    it('calls batch.commit when revision matches the template', async () => {
+      // First docGetMock call: the revision doc
+      // Second docGetMock call: the existing template doc (for createdAt)
+      docGetMock
+        .mockResolvedValueOnce({
+          exists: true,
+          id: 'rev-good',
+          data: () => ({
+            templateId: 'contact-submission-default',
+            templateName: 'Contact Submission Default',
+            subjectTemplate: 'Restored subject',
+            status: 'published',
+            theme: {},
+            containers: [],
+            source: 'save',
+            createdAt: new Date().toISOString(),
+          }),
+        })
+        .mockResolvedValue({
+          exists: false,
+          id: 'contact-submission-default',
+          data: () => ({}),
+        });
+
+      await restoreEmailTemplateRevision(
+        'contact-submission-default',
+        'rev-good'
+      );
+
+      expect(batchCommitMock).toHaveBeenCalledOnce();
     });
   });
 });

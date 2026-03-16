@@ -2,28 +2,44 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── Hoisted mocks ──────────────────────────────────────────────────────────
 
-const { docGetMock, docUpdateMock, collectionMock, getAdminFirestoreMock } =
-  vi.hoisted(() => {
-    const docGetMock = vi.fn();
-    const docUpdateMock = vi.fn().mockResolvedValue(undefined);
+const {
+  docGetMock,
+  docSetMock,
+  docUpdateMock,
+  colGetMock,
+  collectionMock,
+  getAdminFirestoreMock,
+} = vi.hoisted(() => {
+  const docGetMock = vi.fn();
+  const docSetMock = vi.fn().mockResolvedValue(undefined);
+  const docUpdateMock = vi.fn().mockResolvedValue(undefined);
+  const colGetMock = vi.fn().mockResolvedValue({ docs: [] });
 
-    const collectionMock = vi.fn(() => ({
-      doc: vi.fn((id: string) => ({
-        id,
-        get: docGetMock,
-        update: docUpdateMock,
-      })),
-      where: vi.fn().mockReturnThis(),
-      orderBy: vi.fn().mockReturnThis(),
-      get: vi.fn().mockResolvedValue({ docs: [] }),
-    }));
+  const collectionMock = vi.fn(() => ({
+    doc: vi.fn((id: string) => ({
+      id,
+      get: docGetMock,
+      set: docSetMock,
+      update: docUpdateMock,
+    })),
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    get: colGetMock,
+  }));
 
-    const getAdminFirestoreMock = vi.fn(() => ({
-      collection: collectionMock,
-    }));
+  const getAdminFirestoreMock = vi.fn(() => ({
+    collection: collectionMock,
+  }));
 
-    return { docGetMock, docUpdateMock, collectionMock, getAdminFirestoreMock };
-  });
+  return {
+    docGetMock,
+    docSetMock,
+    docUpdateMock,
+    colGetMock,
+    collectionMock,
+    getAdminFirestoreMock,
+  };
+});
 
 vi.mock('@/lib/firebase/admin', () => ({
   getAdminFirestore: getAdminFirestoreMock,
@@ -34,6 +50,11 @@ vi.mock('@/lib/firebase/admin', () => ({
 import {
   listProductsByIds,
   setProductStatus,
+  upsertProduct,
+  getProductBySlug,
+  listProducts,
+  listAllProducts,
+  listProductsByCategory,
 } from '@/lib/repositories/product.repository';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -41,7 +62,11 @@ import {
 function makeDocSnapshot(
   id: string,
   data: Record<string, unknown> | null
-): { id: string; exists: boolean; data: () => Record<string, unknown> | undefined } {
+): {
+  id: string;
+  exists: boolean;
+  data: () => Record<string, unknown> | undefined;
+} {
   return {
     id,
     exists: data !== null,
@@ -124,9 +149,7 @@ describe('listProductsByIds', () => {
       });
       const missing = makeDocSnapshot('product-missing', null);
 
-      docGetMock
-        .mockResolvedValueOnce(existing)
-        .mockResolvedValueOnce(missing);
+      docGetMock.mockResolvedValueOnce(existing).mockResolvedValueOnce(missing);
 
       const result = await listProductsByIds(['product-a', 'product-missing']);
 
@@ -144,7 +167,7 @@ describe('setProductStatus', () => {
   });
 
   describe('given a non-existent product slug', () => {
-    it("throws a descriptive error containing the slug", async () => {
+    it('throws a descriptive error containing the slug', async () => {
       docGetMock.mockResolvedValue(makeDocSnapshot('ghost-product', null));
 
       await expect(
@@ -173,6 +196,235 @@ describe('setProductStatus', () => {
       ];
       expect(updatePayload.status).toBe('compliance-hold');
       expect(updatePayload.updatedAt).toBeInstanceOf(Date);
+    });
+  });
+});
+
+// ── upsertProduct ──────────────────────────────────────────────────────────
+
+describe('upsertProduct', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given a valid product payload', () => {
+    it('calls set with merge: true and returns the slug', async () => {
+      const result = await upsertProduct({
+        slug: 'blue-dream',
+        name: 'Blue Dream',
+        category: 'flower',
+        description: 'A classic sativa',
+        details: 'Smooth and uplifting',
+        status: 'active',
+        federalDeadlineRisk: false,
+        availableAt: ['oak-ridge'],
+      });
+
+      expect(result).toBe('blue-dream');
+      expect(docSetMock).toHaveBeenCalledOnce();
+      const [payload, options] = docSetMock.mock.calls[0] as [
+        Record<string, unknown>,
+        Record<string, unknown>,
+      ];
+      expect(payload.slug).toBe('blue-dream');
+      expect(payload.name).toBe('Blue Dream');
+      expect(payload.updatedAt).toBeInstanceOf(Date);
+      expect(options).toEqual({ merge: true });
+    });
+
+    it('strips undefined optional fields from the payload', async () => {
+      await upsertProduct({
+        slug: 'blue-dream',
+        name: 'Blue Dream',
+        category: 'flower',
+        description: 'Classic',
+        details: 'Details',
+        status: 'active',
+        federalDeadlineRisk: false,
+        availableAt: [],
+        // image intentionally absent
+      });
+
+      const [payload] = docSetMock.mock.calls[0] as [Record<string, unknown>];
+      expect('image' in payload).toBe(false);
+    });
+  });
+});
+
+// ── getProductBySlug ───────────────────────────────────────────────────────
+
+describe('getProductBySlug', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given a non-existent slug', () => {
+    it('returns null', async () => {
+      docGetMock.mockResolvedValue(makeDocSnapshot('ghost', null));
+
+      const result = await getProductBySlug('ghost');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('given an existing slug', () => {
+    it('returns the full product with all fields mapped', async () => {
+      docGetMock.mockResolvedValue(
+        makeDocSnapshot('blue-dream', {
+          slug: 'blue-dream',
+          name: 'Blue Dream',
+          category: 'flower',
+          description: 'Classic sativa',
+          details: 'Smooth',
+          status: 'active',
+          federalDeadlineRisk: false,
+          availableAt: ['oak-ridge'],
+          createdAt: new Date('2024-01-01').toISOString(),
+          updatedAt: new Date('2024-06-01').toISOString(),
+        })
+      );
+
+      const result = await getProductBySlug('blue-dream');
+
+      expect(result).not.toBeNull();
+      expect(result!.slug).toBe('blue-dream');
+      expect(result!.name).toBe('Blue Dream');
+      expect(result!.status).toBe('active');
+      expect(result!.federalDeadlineRisk).toBe(false);
+    });
+
+    it('defaults optional fields correctly', async () => {
+      docGetMock.mockResolvedValue(
+        makeDocSnapshot('blue-dream', {
+          slug: 'blue-dream',
+          name: 'Blue Dream',
+          // coaUrl absent
+          // image absent
+        })
+      );
+
+      const result = await getProductBySlug('blue-dream');
+
+      expect(result!.coaUrl).toBeUndefined();
+      expect(result!.image).toBeUndefined();
+    });
+  });
+});
+
+// ── listProducts ───────────────────────────────────────────────────────────
+
+describe('listProducts', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given active products exist', () => {
+    it('returns summaries for active products', async () => {
+      colGetMock.mockResolvedValue({
+        docs: [
+          makeDocSnapshot('blue-dream', {
+            slug: 'blue-dream',
+            name: 'Blue Dream',
+            category: 'flower',
+            description: 'Classic',
+            status: 'active',
+            availableAt: [],
+          }),
+        ],
+      });
+
+      const result = await listProducts();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].slug).toBe('blue-dream');
+    });
+  });
+
+  describe('given no active products', () => {
+    it('returns an empty array', async () => {
+      colGetMock.mockResolvedValue({ docs: [] });
+
+      const result = await listProducts();
+
+      expect(result).toEqual([]);
+    });
+  });
+});
+
+// ── listAllProducts ────────────────────────────────────────────────────────
+
+describe('listAllProducts', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given a mix of active and archived products', () => {
+    it('returns all products regardless of status', async () => {
+      colGetMock.mockResolvedValue({
+        docs: [
+          makeDocSnapshot('archived-product', {
+            slug: 'archived-product',
+            name: 'Archived Product',
+            category: 'concentrate',
+            description: 'Old',
+            status: 'archived',
+            availableAt: [],
+          }),
+          makeDocSnapshot('blue-dream', {
+            slug: 'blue-dream',
+            name: 'Blue Dream',
+            category: 'flower',
+            description: 'Classic',
+            status: 'active',
+            availableAt: [],
+          }),
+        ],
+      });
+
+      const result = await listAllProducts();
+
+      expect(result).toHaveLength(2);
+    });
+  });
+});
+
+// ── listProductsByCategory ─────────────────────────────────────────────────
+
+describe('listProductsByCategory', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given active products in a category', () => {
+    it('returns summaries for matching products', async () => {
+      colGetMock.mockResolvedValue({
+        docs: [
+          makeDocSnapshot('blue-dream', {
+            slug: 'blue-dream',
+            name: 'Blue Dream',
+            category: 'flower',
+            description: 'Classic',
+            status: 'active',
+            availableAt: [],
+          }),
+        ],
+      });
+
+      const result = await listProductsByCategory('flower');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].category).toBe('flower');
+    });
+  });
+
+  describe('given no products in the category', () => {
+    it('returns an empty array', async () => {
+      colGetMock.mockResolvedValue({ docs: [] });
+
+      const result = await listProductsByCategory('nonexistent');
+
+      expect(result).toEqual([]);
     });
   });
 });
