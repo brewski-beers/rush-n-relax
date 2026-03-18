@@ -6,6 +6,7 @@ import {
   buildLocationDocuments,
   buildProductDocuments,
   buildHubInventoryDocuments,
+  buildCategoryDocuments,
 } from '../../src/lib/fixtures';
 
 export type FirestoreValue =
@@ -166,6 +167,22 @@ export function buildStorefrontSeedArtifact(): FirestoreSeedArtifact {
         endDate: promo.endDate,
         createdAt: fixtureDate,
         updatedAt: fixtureDate,
+      }),
+    });
+  }
+
+  for (const category of buildCategoryDocuments(fixtureDate)) {
+    documents.push({
+      collection: 'product-categories',
+      docId: category.slug,
+      fields: toFirestoreFields({
+        slug: category.slug,
+        label: category.label,
+        description: category.description,
+        order: category.order,
+        isActive: category.isActive,
+        createdAt: category.createdAt,
+        updatedAt: category.updatedAt,
       }),
     });
   }
