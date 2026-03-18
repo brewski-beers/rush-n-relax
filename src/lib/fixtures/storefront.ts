@@ -4,6 +4,7 @@ import type {
   Location,
   LocationSummary,
   Product,
+  ProductCategoryConfig,
   Promo,
 } from '@/types';
 import type { InventoryItem } from '@/types/inventory';
@@ -70,6 +71,14 @@ export interface PromoFixture {
   endDate?: string;
 }
 
+export interface CategoryFixture {
+  slug: string;
+  label: string;
+  description: string;
+  order: number;
+  isActive: boolean;
+}
+
 export interface LocationReviewFixture {
   placeId: string;
   rating: number;
@@ -129,6 +138,44 @@ export const LOCATION_FIXTURES: readonly LocationFixture[] = [
 ];
 
 export const LOCATION_SLUGS = LOCATION_FIXTURES.map(location => location.slug);
+
+export const CATEGORY_FIXTURES: readonly CategoryFixture[] = [
+  {
+    slug: 'flower',
+    label: 'Flower',
+    description: 'Hand-selected THCa flower strains',
+    order: 1,
+    isActive: true,
+  },
+  {
+    slug: 'concentrates',
+    label: 'Concentrates',
+    description: 'Refined, potent extracts',
+    order: 2,
+    isActive: true,
+  },
+  {
+    slug: 'drinks',
+    label: 'Drinks',
+    description: 'THCa-infused beverages',
+    order: 3,
+    isActive: true,
+  },
+  {
+    slug: 'edibles',
+    label: 'Edibles',
+    description: 'Gourmet edibles and treats',
+    order: 4,
+    isActive: true,
+  },
+  {
+    slug: 'vapes',
+    label: 'Vapes',
+    description: 'Discreet vape hardware',
+    order: 5,
+    isActive: true,
+  },
+];
 
 export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
   {
@@ -465,6 +512,20 @@ export function buildPromoDocuments(date: Date = fixtureDate): Promo[] {
     active: promo.active,
     startDate: promo.startDate,
     endDate: promo.endDate,
+    createdAt: date,
+    updatedAt: date,
+  }));
+}
+
+export function buildCategoryDocuments(
+  date: Date = fixtureDate
+): ProductCategoryConfig[] {
+  return CATEGORY_FIXTURES.map(cat => ({
+    slug: cat.slug,
+    label: cat.label,
+    description: cat.description,
+    order: cat.order,
+    isActive: cat.isActive,
     createdAt: date,
     updatedAt: date,
   }));
