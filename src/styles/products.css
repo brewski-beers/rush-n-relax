@@ -3,6 +3,10 @@
   min-height: 100vh;
 }
 
+.category-filter-placeholder {
+  min-height: 48px;
+}
+
 .products-page .products-hero.page-hero-shell::before {
   background:
     radial-gradient(
