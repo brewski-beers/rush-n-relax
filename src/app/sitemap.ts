@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic';
-
 import type { MetadataRoute } from 'next';
 import { seoConfig } from '@/config/seo.config';
 import {
@@ -8,51 +6,63 @@ import {
   listActivePromos,
 } from '@/lib/repositories';
 
-export const revalidate = 86400;
+const { domain } = seoConfig.site;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const { site, routes } = seoConfig;
-
   const [locations, products, promos] = await Promise.all([
     listLocations(),
     listProducts(),
     listActivePromos(),
   ]);
 
-  const staticEntries: MetadataRoute.Sitemap = Object.entries(routes)
-    .filter(([path]) => !path.includes('['))
-    .map(([path, cfg]) => ({
-      url: `${site.domain}${path}`,
-      priority: cfg.priority,
-      changeFrequency: cfg.changefreq,
-      lastModified: new Date(),
-    }));
-
-  const locationEntries: MetadataRoute.Sitemap = locations.map(l => ({
-    url: `${site.domain}/locations/${l.slug}`,
-    priority: routes['/locations/[slug]'].priority,
-    changeFrequency: routes['/locations/[slug]'].changefreq,
-    lastModified: new Date(),
-  }));
-
-  const productEntries: MetadataRoute.Sitemap = products.map(p => ({
-    url: `${site.domain}/products/${p.slug}`,
-    priority: routes['/products/[slug]'].priority,
-    changeFrequency: routes['/products/[slug]'].changefreq,
-    lastModified: new Date(),
-  }));
-
-  const promoEntries: MetadataRoute.Sitemap = promos.map(p => ({
-    url: `${site.domain}/promo/${p.slug}`,
-    priority: routes['/promo/[slug]'].priority,
-    changeFrequency: routes['/promo/[slug]'].changefreq,
-    lastModified: new Date(),
-  }));
-
-  return [
-    ...staticEntries,
-    ...locationEntries,
-    ...productEntries,
-    ...promoEntries,
+  const staticRoutes: MetadataRoute.Sitemap = [
+    {
+      url: domain,
+      priority: seoConfig.routes['/'].priority,
+      changeFrequency: seoConfig.routes['/'].changefreq,
+    },
+    {
+      url: `${domain}/about`,
+      priority: seoConfig.routes['/about'].priority,
+      changeFrequency: seoConfig.routes['/about'].changefreq,
+    },
+    {
+      url: `${domain}/locations`,
+      priority: seoConfig.routes['/locations'].priority,
+      changeFrequency: seoConfig.routes['/locations'].changefreq,
+    },
+    {
+      url: `${domain}/products`,
+      priority: seoConfig.routes['/products'].priority,
+      changeFrequency: seoConfig.routes['/products'].changefreq,
+    },
+    {
+      url: `${domain}/contact`,
+      priority: seoConfig.routes['/contact'].priority,
+      changeFrequency: seoConfig.routes['/contact'].changefreq,
+    },
   ];
+
+  const locationRoutes: MetadataRoute.Sitemap = locations.map(loc => ({
+    url: `${domain}/locations/${loc.slug}`,
+    lastModified: new Date(),
+    priority: seoConfig.routes['/locations/[slug]'].priority,
+    changeFrequency: seoConfig.routes['/locations/[slug]'].changefreq,
+  }));
+
+  const productRoutes: MetadataRoute.Sitemap = products.map(product => ({
+    url: `${domain}/products/${product.slug}`,
+    lastModified: new Date(),
+    priority: seoConfig.routes['/products/[slug]'].priority,
+    changeFrequency: seoConfig.routes['/products/[slug]'].changefreq,
+  }));
+
+  const promoRoutes: MetadataRoute.Sitemap = promos.map(promo => ({
+    url: `${domain}/promo/${promo.slug}`,
+    lastModified: new Date(),
+    priority: seoConfig.routes['/promo/[slug]'].priority,
+    changeFrequency: seoConfig.routes['/promo/[slug]'].changefreq,
+  }));
+
+  return [...staticRoutes, ...locationRoutes, ...productRoutes, ...promoRoutes];
 }

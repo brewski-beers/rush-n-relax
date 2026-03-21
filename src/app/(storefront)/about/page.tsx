@@ -1,16 +1,13 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card } from '@/components/Card';
-import { seoConfig } from '@/config/seo.config';
+import { buildMetadata } from '@/lib/seo/metadata.factory';
 
-export const metadata: Metadata = {
+export const metadata = buildMetadata('/about', {
   title: 'About Rush N Relax — Our Story, Values & Team',
   description:
     'Meet the team behind Rush N Relax. Learn how two East Tennessee natives built a premium cannabis dispensary and speakeasy-style lounge across Oak Ridge, Maryville, and Seymour.',
-  alternates: {
-    canonical: `${seoConfig.site.domain}/about`,
-  },
-};
+  path: '/about',
+});
 
 export default function AboutPage() {
   return (

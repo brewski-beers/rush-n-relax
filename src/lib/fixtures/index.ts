@@ -7,11 +7,13 @@ export {
   PRODUCT_FIXTURES,
   HUB_INVENTORY_FIXTURES,
   PROMO_FIXTURES,
+  CATEGORY_FIXTURES,
   buildLocationDocuments,
   buildLocationSummaries,
   buildProductDocuments,
   buildHubInventoryDocuments,
   buildPromoDocuments,
+  buildCategoryDocuments,
 } from './storefront';
 
 export { AUTH_USER_FIXTURES } from './auth';
