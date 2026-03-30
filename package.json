@@ -88,7 +88,7 @@
     "jsdom": "^25.0.1",
     "lint-staged": "^16.2.7",
     "prettier": "^3.1.1",
-    "stylelint": "^17.4.0",
+    "stylelint": "^17.6.0",
     "stylelint-config-standard": "^40.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.3.3",
