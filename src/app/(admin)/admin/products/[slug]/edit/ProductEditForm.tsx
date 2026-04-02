@@ -5,14 +5,21 @@ import Link from 'next/link';
 import { updateProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import type { Product, LocationSummary, ProductCategorySummary } from '@/types';
+import type { VendorSummary } from '@/types/vendor';
 
 interface Props {
   product: Product;
   locations: LocationSummary[];
   categories: ProductCategorySummary[];
+  vendors: VendorSummary[];
 }
 
-export function ProductEditForm({ product, locations, categories }: Props) {
+export function ProductEditForm({
+  product,
+  locations,
+  categories,
+  vendors: _vendors,
+}: Props) {
   const boundAction = updateProduct.bind(null, product.slug);
   const [state, formAction, pending] = useActionState(boundAction, null);
 

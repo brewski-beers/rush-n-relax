@@ -34,6 +34,9 @@ export interface Product {
   coaUrl?: string;
   /** Location slugs where this product is carried, e.g. ['oak-ridge', 'seymour'] */
   availableAt: string[];
+  labResults?: LabResults;
+  vendorSlug?: string;
+  leaflyUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,3 +53,11 @@ export type ProductSummary = Pick<
   | 'status'
   | 'availableAt'
 >;
+
+export interface LabResults {
+  thcPercent?: number;
+  cbdPercent?: number;
+  terpenes?: string[];
+  testDate?: string;
+  labName?: string;
+}
