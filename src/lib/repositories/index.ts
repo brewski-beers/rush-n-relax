@@ -65,3 +65,11 @@ export {
   restoreEmailTemplateRevision,
   upsertEmailTemplate,
 } from './email-template.repository';
+
+export {
+  listVendors,
+  listAllVendors,
+  getVendorBySlug,
+  upsertVendor,
+  setVendorActive,
+} from './vendor.repository';
