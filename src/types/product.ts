@@ -1,8 +1,19 @@
+import type { DescriptionSource } from './vendor';
+
 export type ProductStatus =
   | 'active'
   | 'pending-reformulation'
   | 'archived'
   | 'compliance-hold';
+
+export interface LabResults {
+  thcPercent?: number;
+  cbdPercent?: number;
+  terpenes?: string[];
+  /** ISO date string, e.g. "2025-01-15" */
+  testDate?: string;
+  labName?: string;
+}
 
 /**
  * Firestore document shape for a product.
@@ -34,6 +45,13 @@ export interface Product {
   coaUrl?: string;
   /** Location slugs where this product is carried, e.g. ['oak-ridge', 'seymour'] */
   availableAt: string[];
+  /** References vendors/{slug} */
+  vendorSlug?: string;
+  /** RnR-owned lab result data (replaces generic coaUrl where available) */
+  labResults?: LabResults;
+  descriptionSource?: DescriptionSource;
+  /** Leafly product page URL — used when descriptionSource === 'leafly' */
+  leaflyUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,4 +67,5 @@ export type ProductSummary = Pick<
   | 'images'
   | 'status'
   | 'availableAt'
+  | 'vendorSlug'
 >;
