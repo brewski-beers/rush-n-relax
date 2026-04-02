@@ -73,3 +73,5 @@ export {
   upsertVendor,
   setVendorActive,
 } from './vendor.repository';
+
+export { createOrder, getOrder, updateOrderStatus } from './order.repository';
