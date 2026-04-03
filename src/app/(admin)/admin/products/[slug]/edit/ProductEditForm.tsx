@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { updateProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
+import { PricingFields } from '@/components/admin/PricingFields';
 import type { Product, LocationSummary, ProductCategorySummary } from '@/types';
 import type { VendorSummary } from '@/types/vendor';
 
@@ -12,6 +13,7 @@ interface Props {
   locations: LocationSummary[];
   categories: ProductCategorySummary[];
   vendors: VendorSummary[];
+  isOwner: boolean;
 }
 
 export function ProductEditForm({
@@ -19,6 +21,7 @@ export function ProductEditForm({
   locations,
   categories,
   vendors: _vendors,
+  isOwner,
 }: Props) {
   const boundAction = updateProduct.bind(null, product.slug);
   const [state, formAction, pending] = useActionState(boundAction, null);
@@ -113,6 +116,12 @@ export function ProductEditForm({
           (≤0.4mg total THC — affected by Nov 2026 rule)
         </span>
       </label>
+
+      <PricingFields
+        initialPricing={product.pricing}
+        isOwner={isOwner}
+        category={product.category}
+      />
 
       <fieldset className="admin-fieldset">
         <legend>Images</legend>

@@ -37,6 +37,7 @@ export interface Product {
   labResults?: LabResults;
   vendorSlug?: string;
   leaflyUrl?: string;
+  pricing?: ProductPricing;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,6 +53,7 @@ export type ProductSummary = Pick<
   | 'images'
   | 'status'
   | 'availableAt'
+  | 'pricing'
 >;
 
 export interface LabResults {
@@ -60,4 +62,28 @@ export interface LabResults {
   terpenes?: string[];
   testDate?: string;
   labName?: string;
+}
+
+export type PricingTier =
+  | 'gram'
+  | 'eighth'
+  | 'quarter'
+  | 'half'
+  | 'ounce'
+  | 'unit';
+export type WeightTier = 'gram' | 'eighth' | 'quarter' | 'half' | 'ounce';
+
+export interface ProductPricing {
+  /** Wholesale / COGS in cents -- owner-only */
+  cost?: number;
+  /** Retail selling price in cents */
+  price: number;
+  /** Original price in cents for strikethrough display */
+  compareAtPrice?: number;
+  /** Stored for admin display; computed from cost + price */
+  markupPercent?: number;
+  taxable: boolean;
+  pricingTier: PricingTier;
+  /** Weight-based tiered prices in cents -- shown for flower/pre-roll */
+  tieredPricing?: Partial<Record<WeightTier, number>>;
 }
