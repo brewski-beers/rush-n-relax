@@ -2,7 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from 'react';
 import { signOut } from 'firebase/auth';
 import { initializeApp } from '@/firebase';
 import { useNavigation } from '../../contexts/useNavigation';
@@ -29,9 +35,14 @@ const NAV_LINKS = [
 
 interface NavigationProps {
   isAdminAuthenticated?: boolean;
+  /** Optional slot — renders a cart icon/badge next to the hamburger */
+  cartSlot?: ReactNode;
 }
 
-export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
+export function Navigation({
+  isAdminAuthenticated = false,
+  cartSlot,
+}: NavigationProps) {
   const { isMenuOpen, toggleMenu } = useNavigation();
   const pathname = usePathname();
   const router = useRouter();
@@ -154,6 +165,8 @@ export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
             </button>
           </div>
         ) : null}
+
+        {cartSlot}
 
         <button
           className={`nav-toggle ${isMenuOpen ? 'active' : ''}`}

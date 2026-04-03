@@ -6,6 +6,7 @@ import {
   getProductBySlug,
   listLocations,
   listActiveCategories,
+  listAllVendors,
 } from '@/lib/repositories';
 import { ProductEditForm } from './ProductEditForm';
 
@@ -14,13 +15,14 @@ interface Props {
 }
 
 export default async function ProductEditPage({ params }: Props) {
-  await requireRole('owner');
+  const actor = await requireRole('owner');
 
   const { slug } = await params;
-  const [product, locations, categories] = await Promise.all([
+  const [product, locations, categories, vendors] = await Promise.all([
     getProductBySlug(slug),
     listLocations(),
     listActiveCategories(),
+    listAllVendors(),
   ]);
   if (!product) notFound();
 
@@ -31,6 +33,8 @@ export default async function ProductEditPage({ params }: Props) {
         product={product}
         locations={locations}
         categories={categories}
+        vendors={vendors}
+        isOwner={actor.role === 'owner'}
       />
     </>
   );

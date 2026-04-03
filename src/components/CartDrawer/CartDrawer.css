@@ -1,0 +1,183 @@
+/* ── Cart Backdrop ────────────────────────────────────────────────────── */
+.cart-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--color-surface-backdrop);
+  z-index: 200;
+  cursor: pointer;
+}
+
+/* ── Cart Drawer Panel ────────────────────────────────────────────────── */
+.cart-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(400px, 100vw);
+  background: var(--color-bg);
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -4px 0 24px var(--color-surface-backdrop);
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+.cart-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cart-drawer-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.cart-drawer-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: var(--space-xs) var(--space-xs);
+  color: var(--color-text);
+}
+
+/* ── Empty State ─────────────────────────────────────────────────────── */
+.cart-drawer-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+/* ── Items List ──────────────────────────────────────────────────────── */
+.cart-drawer-items {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cart-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cart-item-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.cart-item-name {
+  font-weight: 500;
+}
+
+.cart-item-price {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.cart-item-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.cart-qty-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.125rem;
+  border-radius: 4px;
+  color: var(--color-text);
+}
+
+.cart-item-qty {
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.cart-item-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  margin-left: auto;
+  padding: var(--space-xs) var(--space-xs);
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+.cart-drawer-footer {
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.cart-subtotal {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.cart-view-btn,
+.cart-checkout-btn {
+  width: 100%;
+  text-align: center;
+}
+
+/* ── Cart Icon Button (nav) ──────────────────────────────────────────── */
+.cart-icon-button {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-xs) var(--space-xs);
+  display: flex;
+  align-items: center;
+}
+
+.cart-icon {
+  font-size: 1.25rem;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

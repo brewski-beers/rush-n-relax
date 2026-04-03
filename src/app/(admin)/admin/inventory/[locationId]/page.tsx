@@ -15,7 +15,8 @@ interface Props {
 }
 
 export default async function AdminInventoryLocationPage({ params }: Props) {
-  await requireRole('owner');
+  const actor = await requireRole('storeManager');
+  const isOwner = actor.role === 'owner';
 
   const { locationId } = await params;
   const isHub = locationId === HUB_LOCATION_ID;
@@ -67,7 +68,12 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
           product for this location.
         </p>
       )}
-      <InventoryTable rows={rows} locationId={locationId} isHub={isHub} />
+      <InventoryTable
+        rows={rows}
+        locationId={locationId}
+        isHub={isHub}
+        isOwner={isOwner}
+      />
     </>
   );
 }

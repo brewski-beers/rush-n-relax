@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { Card } from '@/components/Card';
 import { CardGrid } from '@/components/CardGrid';
 import { ProductImage } from '@/components/ProductImage';
+import { AddToCartButton } from '@/components/AddToCartButton';
+import { formatCents } from '@/utils/currency';
 import type { Product, ProductSummary } from '@/types';
 
 export default function ProductDetailClient({
@@ -32,6 +34,19 @@ export default function ProductDetailClient({
             path={product.image}
           />
           <h1>{product.name}</h1>
+          {product.pricing && (
+            <p className="product-detail-price">
+              {product.pricing.compareAtPrice != null &&
+              product.pricing.compareAtPrice > product.pricing.price ? (
+                <>
+                  <s className="product-price-compare">
+                    {formatCents(product.pricing.compareAtPrice)}
+                  </s>{' '}
+                </>
+              ) : null}
+              {formatCents(product.pricing.price)}
+            </p>
+          )}
           <p className="lead">{product.description}</p>
         </div>
       </section>
@@ -95,16 +110,17 @@ export default function ProductDetailClient({
 
       <section className="product-cta asymmetry-section-stable">
         <div className="container">
-          <h2>Visit Us to Experience This Product</h2>
+          <h2>Ready to Add to Your Cart?</h2>
           <p>
-            Find our locations and explore the full RnR collection in person.
+            Select a quantity and add this product to your cart, or find us in
+            person at one of our locations.
           </p>
-          <Link
-            href="/locations"
-            className="btn btn-primary asymmetry-motion-anchor"
-          >
-            Find a Location
-          </Link>
+          <div className="product-cta-actions">
+            <AddToCartButton product={product} showQtySelector />
+            <Link href="/locations" className="btn btn-secondary">
+              Find a Location
+            </Link>
+          </div>
         </div>
       </section>
     </main>

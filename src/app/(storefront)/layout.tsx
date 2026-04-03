@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { Analytics } from '@vercel/analytics/next';
 import { hasAdminSession } from '@/lib/admin-auth';
 import { NavigationProvider } from '@/contexts/NavigationContext';
+import { CartProvider } from '@/contexts/CartContext';
 import { StorefrontContent } from './StorefrontContent';
 
 export default async function StorefrontLayout({
@@ -15,12 +16,14 @@ export default async function StorefrontLayout({
 
   return (
     <NavigationProvider>
-      <StorefrontContent
-        initiallyVerified={initiallyVerified}
-        isAdminAuthenticated={isAdminAuthenticated}
-      >
-        {children}
-      </StorefrontContent>
+      <CartProvider>
+        <StorefrontContent
+          initiallyVerified={initiallyVerified}
+          isAdminAuthenticated={isAdminAuthenticated}
+        >
+          {children}
+        </StorefrontContent>
+      </CartProvider>
       <Analytics />
     </NavigationProvider>
   );

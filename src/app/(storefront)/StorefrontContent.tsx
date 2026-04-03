@@ -7,6 +7,7 @@ import { useNavigation } from '@/contexts/useNavigation';
 import { AmbientOverlay } from '@/components/AmbientOverlay';
 import { AgeGate } from '@/components/AgeGate';
 import { Navigation } from '@/components/Navigation';
+import { CartDrawer, CartIconButton } from '@/components/CartDrawer';
 import { isRouteActive } from '@/utils/routeMatching';
 
 const NAV_LINKS = [
@@ -125,6 +126,7 @@ export function StorefrontContent({
   children,
 }: Props) {
   const [isAgeVerified, setIsAgeVerified] = useState(initiallyVerified);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -143,8 +145,15 @@ export function StorefrontContent({
         </div>
       ) : (
         <>
-          <Navigation isAdminAuthenticated={isAdminAuthenticated} />
+          <Navigation
+            isAdminAuthenticated={isAdminAuthenticated}
+            cartSlot={<CartIconButton onClick={() => setIsCartOpen(true)} />}
+          />
           <DesktopModal />
+          <CartDrawer
+            isOpen={isCartOpen}
+            onClose={() => setIsCartOpen(false)}
+          />
           <div className="content-wrapper">{children}</div>
         </>
       )}
