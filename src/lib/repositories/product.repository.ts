@@ -3,7 +3,7 @@
  * Server-side only (uses firebase-admin).
  */
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
-import type { Product, ProductSummary } from '@/types';
+import type { Product, ProductSummary, ProductPricing } from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -122,6 +122,7 @@ function docToProductSummary(
     images: Array.isArray(d.images) ? (d.images as string[]) : undefined,
     status: d.status,
     availableAt: d.availableAt ?? [],
+    pricing: docToPricing(d.pricing),
   } satisfies ProductSummary;
 }
 
@@ -139,8 +140,29 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     federalDeadlineRisk: d.federalDeadlineRisk ?? false,
     coaUrl: d.coaUrl ?? undefined,
     availableAt: d.availableAt ?? [],
+    pricing: docToPricing(d.pricing),
+    labResults: d.labResults ?? undefined,
+    vendorSlug: d.vendorSlug ?? undefined,
+    leaflyUrl: d.leaflyUrl ?? undefined,
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
+  };
+}
+
+function docToPricing(
+  d: FirebaseFirestore.DocumentData | undefined
+): ProductPricing | undefined {
+  if (!d || typeof d.price !== 'number') return undefined;
+  return {
+    price: d.price,
+    cost: typeof d.cost === 'number' ? d.cost : undefined,
+    compareAtPrice:
+      typeof d.compareAtPrice === 'number' ? d.compareAtPrice : undefined,
+    markupPercent:
+      typeof d.markupPercent === 'number' ? d.markupPercent : undefined,
+    taxable: d.taxable ?? true,
+    pricingTier: d.pricingTier ?? 'unit',
+    tieredPricing: d.tieredPricing ?? undefined,
   };
 }
 

@@ -8,13 +8,14 @@ import {
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
-import type { ProductStatus } from '@/types';
+import type { ProductStatus, LabResults } from '@/types';
 
 // compliance-hold is system-managed — admins cannot set it directly
 const SETTABLE_STATUSES: ProductStatus[] = [
   'active',
   'pending-reformulation',
   'archived',
+  'compliance-hold', // passthrough only — validated below
 ];
 
 export async function updateProduct(
@@ -34,6 +35,9 @@ export async function updateProduct(
   const status = formData.get('status')?.toString() as ProductStatus;
   const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
+  const vendorSlug = formData.get('vendorSlug')?.toString().trim() || undefined;
+  const leaflyUrl = formData.get('leaflyUrl')?.toString().trim() || undefined;
+  const coaUrl = formData.get('coaUrl')?.toString().trim() || undefined;
 
   if (!name || !category || !description || !details || !status) {
     return { error: 'All required fields must be filled.' };
@@ -44,8 +48,12 @@ export async function updateProduct(
     return { error: 'Invalid category.' };
   }
 
-  if (!SETTABLE_STATUSES.includes(status)) {
+  // compliance-hold can only pass through — cannot be set directly
+  if (status !== 'compliance-hold' && !SETTABLE_STATUSES.includes(status)) {
     return { error: 'Cannot set that status directly.' };
+  }
+  if (status === 'compliance-hold' && existing.status !== 'compliance-hold') {
+    return { error: 'Cannot set compliance-hold directly.' };
   }
 
   const featuredImagePath =
@@ -54,24 +62,52 @@ export async function updateProduct(
     .map(i => formData.get(`galleryImagePath_${i}`)?.toString() || undefined)
     .filter((p): p is string => p !== undefined);
 
-  const payload = {
-    slug: existing.slug,
-    name,
-    category,
-    description,
-    details,
-    image: featuredImagePath ?? existing.image,
-    images:
-      galleryImagePaths.length > 0 ? galleryImagePaths : existing.images,
-    status,
-    federalDeadlineRisk,
-    availableAt,
-  };
+  // Build optional lab results sub-object from wizard step 4 fields
+  const thcRaw = formData.get('labThcPercent')?.toString();
+  const cbdRaw = formData.get('labCbdPercent')?.toString();
+  const terpenesRaw = formData.get('labTerpenes')?.toString().trim();
+  const testDate = formData.get('labTestDate')?.toString().trim() || undefined;
+  const labNameVal = formData.get('labLabName')?.toString().trim() || undefined;
+
+  const labResults: LabResults | undefined =
+    thcRaw || cbdRaw || terpenesRaw || testDate || labNameVal
+      ? {
+          ...(thcRaw ? { thcPercent: parseFloat(thcRaw) } : {}),
+          ...(cbdRaw ? { cbdPercent: parseFloat(cbdRaw) } : {}),
+          ...(terpenesRaw
+            ? {
+                terpenes: terpenesRaw
+                  .split(',')
+                  .map(t => t.trim())
+                  .filter(Boolean),
+              }
+            : {}),
+          ...(testDate ? { testDate } : {}),
+          ...(labNameVal ? { labName: labNameVal } : {}),
+        }
+      : undefined;
 
   try {
     await upsertProduct({
-      ...payload,
-      ...(existing.coaUrl ? { coaUrl: existing.coaUrl } : {}),
+      slug: existing.slug,
+      name,
+      category,
+      description,
+      details,
+      image: featuredImagePath ?? existing.image,
+      images:
+        galleryImagePaths.length > 0 ? galleryImagePaths : existing.images,
+      status,
+      federalDeadlineRisk,
+      availableAt,
+      ...(vendorSlug ? { vendorSlug } : {}),
+      ...(leaflyUrl ? { leaflyUrl } : {}),
+      ...(coaUrl
+        ? { coaUrl }
+        : existing.coaUrl
+          ? { coaUrl: existing.coaUrl }
+          : {}),
+      ...(labResults ? { labResults } : {}),
     });
 
     revalidatePath('/admin/products');

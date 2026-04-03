@@ -65,3 +65,7 @@ export {
   restoreEmailTemplateRevision,
   upsertEmailTemplate,
 } from './email-template.repository';
+
+export { getOrder, createOrder, updateOrderStatus } from './order.repository';
+
+export { listAllVendors } from './vendor.repository';
