@@ -7,6 +7,10 @@ export type {
   Product,
   ProductSummary,
   ProductStatus,
+  ProductPricing,
+  LabResults,
+  PricingTier,
+  WeightTier,
 } from './product';
 export type { ProductCategoryConfig, ProductCategorySummary } from './category';
 export type { Promo, PromoSummary } from './promo';
@@ -44,3 +48,6 @@ export type {
   EmailTemplateTheme,
 } from './email';
 export type { GoogleReview } from './reviews';
+
+export type { VendorSummary } from './vendor';
+export type { Order, OrderItem, OrderStatus, FulfillmentType } from './order';
