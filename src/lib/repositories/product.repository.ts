@@ -3,7 +3,7 @@
  * Server-side only (uses firebase-admin).
  */
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
-import type { Product, ProductSummary } from '@/types';
+import type { Product, ProductSummary, LabResults } from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -125,12 +125,29 @@ function docToProductSummary(
   } satisfies ProductSummary;
 }
 
+function docToLabResults(
+  d: FirebaseFirestore.DocumentData
+): LabResults | undefined {
+  const lr = d.labResults;
+  if (!lr || typeof lr !== 'object') return undefined;
+  return {
+    thcPct: typeof lr.thcPct === 'number' ? lr.thcPct : undefined,
+    cbdPct: typeof lr.cbdPct === 'number' ? lr.cbdPct : undefined,
+    terpenes: Array.isArray(lr.terpenes)
+      ? (lr.terpenes as string[])
+      : undefined,
+    testDate: lr.testDate ? toDate(lr.testDate) : undefined,
+    labName: typeof lr.labName === 'string' ? lr.labName : undefined,
+  };
+}
+
 function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
   return {
     id,
     slug: d.slug,
     name: d.name,
     category: d.category ?? '',
+    vendorSlug: d.vendorSlug ?? undefined,
     description: d.description ?? '',
     details: d.details ?? '',
     image: d.image ?? undefined,
@@ -138,6 +155,8 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     status: d.status ?? 'active',
     federalDeadlineRisk: d.federalDeadlineRisk ?? false,
     coaUrl: d.coaUrl ?? undefined,
+    leaflyUrl: d.leaflyUrl ?? undefined,
+    labResults: docToLabResults(d),
     availableAt: d.availableAt ?? [],
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),

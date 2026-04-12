@@ -5,102 +5,353 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { createProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
-import type { LocationSummary, ProductCategorySummary } from '@/types';
+import type {
+  LocationSummary,
+  ProductCategorySummary,
+  VendorSummary,
+} from '@/types';
 
 interface Props {
   locations: LocationSummary[];
   categories: ProductCategorySummary[];
+  vendors: VendorSummary[];
 }
 
-export function ProductCreateForm({ locations, categories }: Props) {
+const TOTAL_STEPS = 6;
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+export function ProductCreateForm({ locations, categories, vendors }: Props) {
   const [state, formAction, pending] = useActionState(createProduct, null);
+  const [step, setStep] = useState(1);
+
+  // Step 1 — Vendor
+  const [vendorSlug, setVendorSlug] = useState('');
+  // Step 2 — Category & Name
+  const [category, setCategory] = useState('');
+  const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
+  const [slugManual, setSlugManual] = useState(false);
+  // Step 3 — Description
+  const [leaflyUrl, setLeaflyUrl] = useState('');
+  const [description, setDescription] = useState('');
+  const [details, setDetails] = useState('');
+  // Step 4 — Lab Results
+  const [thcPct, setThcPct] = useState('');
+  const [cbdPct, setCbdPct] = useState('');
+  const [terpenes, setTerpenes] = useState('');
+  const [testDate, setTestDate] = useState('');
+  const [labName, setLabName] = useState('');
+  // Step 5 — Availability & Compliance
+  const [availableAt, setAvailableAt] = useState<string[]>(
+    locations.map(l => l.slug)
+  );
+  const [federalDeadlineRisk, setFederalDeadlineRisk] = useState(false);
+
+  const selectedVendor = vendors.find(v => v.slug === vendorSlug);
+
+  function handleNameChange(value: string) {
+    setName(value);
+    if (!slugManual) setSlug(slugify(value));
+  }
+
+  function advance() {
+    setStep(s => Math.min(s + 1, TOTAL_STEPS));
+  }
+
+  function back() {
+    setStep(s => Math.max(s - 1, 1));
+  }
+
+  function toggleLocation(locSlug: string) {
+    setAvailableAt(prev =>
+      prev.includes(locSlug)
+        ? prev.filter(s => s !== locSlug)
+        : [...prev, locSlug]
+    );
+  }
+
+  const stepValid: Record<number, boolean> = {
+    1: vendorSlug !== '',
+    2: category !== '' && name.trim() !== '' && /^[a-z0-9-]+$/.test(slug),
+    3: description.trim() !== '' && details.trim() !== '',
+    4: true, // lab results are optional
+    5: true,
+    6: true,
+  };
 
   return (
-    <form action={formAction} className="admin-form">
-      {state?.error && <p className="admin-error">{state.error}</p>}
+    <div className="admin-wizard">
+      <p className="admin-wizard-step">
+        Step {step} of {TOTAL_STEPS}
+      </p>
 
-      <label>
-        Slug{' '}
-        <span className="admin-hint">
-          (URL identifier, e.g. flower — cannot be changed later)
-        </span>
+      <form action={formAction} className="admin-form">
+        {state?.error && <p className="admin-error">{state.error}</p>}
+
+        {/* Hidden fields carry all collected data to the server action */}
+        <input type="hidden" name="slug" value={slug} />
+        <input type="hidden" name="name" value={name} />
+        <input type="hidden" name="category" value={category} />
+        <input type="hidden" name="vendorSlug" value={vendorSlug} />
+        <input type="hidden" name="description" value={description} />
+        <input type="hidden" name="details" value={details} />
+        <input type="hidden" name="leaflyUrl" value={leaflyUrl} />
+        <input type="hidden" name="thcPct" value={thcPct} />
+        <input type="hidden" name="cbdPct" value={cbdPct} />
+        <input type="hidden" name="terpenes" value={terpenes} />
+        <input type="hidden" name="testDate" value={testDate} />
+        <input type="hidden" name="labName" value={labName} />
         <input
-          name="slug"
-          placeholder="flower"
-          pattern="[a-z0-9-]+"
-          required
-          value={slug}
-          onChange={e => setSlug(e.target.value.trim().toLowerCase())}
+          type="hidden"
+          name="federalDeadlineRisk"
+          value={federalDeadlineRisk ? 'true' : ''}
         />
-      </label>
-
-      <label>
-        Name
-        <input name="name" required />
-      </label>
-
-      <label>
-        Category
-        <select name="category" required>
-          <option value="">Select…</option>
-          {categories.map(cat => (
-            <option key={cat.slug} value={cat.slug}>
-              {cat.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label>
-        Description
-        <textarea name="description" rows={3} required />
-      </label>
-
-      <label>
-        Details
-        <textarea name="details" rows={5} required />
-      </label>
-
-      <fieldset className="admin-fieldset">
-        <legend>Available At</legend>
-        {locations.map(loc => (
-          <label key={loc.slug} className="admin-checkbox">
-            <input
-              type="checkbox"
-              name="availableAt"
-              value={loc.slug}
-              defaultChecked
-            />
-            {loc.name}
-          </label>
+        {availableAt.map(loc => (
+          <input key={loc} type="hidden" name="availableAt" value={loc} />
         ))}
-      </fieldset>
 
-      <label className="admin-checkbox">
-        <input type="checkbox" name="federalDeadlineRisk" value="true" />
-        Federal deadline risk{' '}
-        <span className="admin-hint">
-          (≤0.4mg total THC — affected by Nov 2026 rule)
-        </span>
-      </label>
+        {/* ── Step 1: Vendor ─────────────────────────────────────────────── */}
+        {step === 1 && (
+          <fieldset className="admin-fieldset">
+            <legend>Step 1 — Vendor</legend>
+            <label>
+              Vendor
+              <select
+                value={vendorSlug}
+                onChange={e => setVendorSlug(e.target.value)}
+                required
+              >
+                <option value="">Select a vendor…</option>
+                {vendors.map(v => (
+                  <option key={v.slug} value={v.slug}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {selectedVendor && (
+              <p className="admin-hint">
+                Description source:{' '}
+                <strong>{selectedVendor.descriptionSource}</strong>
+              </p>
+            )}
+          </fieldset>
+        )}
 
-      {slug && (
-        <fieldset className="admin-fieldset">
-          <legend>Featured Image</legend>
-          <span className="admin-hint">
-            Gallery images can be added after saving.
-          </span>
-          <ProductImageUpload slug={slug} />
-        </fieldset>
-      )}
+        {/* ── Step 2: Category & Name ────────────────────────────────────── */}
+        {step === 2 && (
+          <fieldset className="admin-fieldset">
+            <legend>Step 2 — Category &amp; Name</legend>
+            <label>
+              Category
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                required
+              >
+                <option value="">Select…</option>
+                {categories.map(cat => (
+                  <option key={cat.slug} value={cat.slug}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Name
+              <input
+                value={name}
+                onChange={e => handleNameChange(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Slug{' '}
+              <span className="admin-hint">
+                (auto-suggested from name — override if needed)
+              </span>
+              <input
+                value={slug}
+                pattern="[a-z0-9-]+"
+                onChange={e => {
+                  setSlug(e.target.value.trim().toLowerCase());
+                  setSlugManual(true);
+                }}
+                required
+              />
+            </label>
+          </fieldset>
+        )}
 
-      <div className="admin-form-actions">
-        <Link href="/admin/products">Cancel</Link>
-        <button type="submit" disabled={pending}>
-          {pending ? 'Creating…' : 'Create Product'}
-        </button>
-      </div>
-    </form>
+        {/* ── Step 3: Description ────────────────────────────────────────── */}
+        {step === 3 && (
+          <fieldset className="admin-fieldset">
+            <legend>Step 3 — Description</legend>
+            {selectedVendor?.descriptionSource === 'leafly' && (
+              <label>
+                Leafly URL{' '}
+                <span className="admin-hint">(optional — for reference)</span>
+                <input
+                  type="url"
+                  value={leaflyUrl}
+                  onChange={e => setLeaflyUrl(e.target.value)}
+                  placeholder="https://www.leafly.com/…"
+                />
+              </label>
+            )}
+            <label>
+              Description
+              <textarea
+                rows={3}
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Details
+              <textarea
+                rows={5}
+                value={details}
+                onChange={e => setDetails(e.target.value)}
+                required
+              />
+            </label>
+          </fieldset>
+        )}
+
+        {/* ── Step 4: Lab Results ────────────────────────────────────────── */}
+        {step === 4 && (
+          <fieldset className="admin-fieldset">
+            <legend>Step 4 — Lab Results</legend>
+            <span className="admin-hint">All fields optional.</span>
+            <label>
+              THC %
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.01}
+                value={thcPct}
+                onChange={e => setThcPct(e.target.value)}
+              />
+            </label>
+            <label>
+              CBD %
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.01}
+                value={cbdPct}
+                onChange={e => setCbdPct(e.target.value)}
+              />
+            </label>
+            <label>
+              Terpenes <span className="admin-hint">(comma-separated)</span>
+              <input
+                value={terpenes}
+                onChange={e => setTerpenes(e.target.value)}
+                placeholder="Myrcene, Limonene, Caryophyllene"
+              />
+            </label>
+            <label>
+              Test Date
+              <input
+                type="date"
+                value={testDate}
+                onChange={e => setTestDate(e.target.value)}
+              />
+            </label>
+            <label>
+              Lab Name
+              <input
+                value={labName}
+                onChange={e => setLabName(e.target.value)}
+                placeholder="ProVerde Laboratories"
+              />
+            </label>
+          </fieldset>
+        )}
+
+        {/* ── Step 5: Availability & Compliance ─────────────────────────── */}
+        {step === 5 && (
+          <fieldset className="admin-fieldset">
+            <legend>Step 5 — Availability &amp; Compliance</legend>
+            <fieldset className="admin-fieldset">
+              <legend>Available At</legend>
+              {locations.map(loc => (
+                <label key={loc.slug} className="admin-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={availableAt.includes(loc.slug)}
+                    onChange={() => toggleLocation(loc.slug)}
+                  />
+                  {loc.name}
+                </label>
+              ))}
+            </fieldset>
+            <label className="admin-checkbox">
+              <input
+                type="checkbox"
+                checked={federalDeadlineRisk}
+                onChange={e => setFederalDeadlineRisk(e.target.checked)}
+              />
+              Federal deadline risk{' '}
+              <span className="admin-hint">
+                (≤0.4mg total THC — affected by Nov 2026 rule)
+              </span>
+            </label>
+          </fieldset>
+        )}
+
+        {/* ── Step 6: Images ────────────────────────────────────────────── */}
+        {step === 6 && (
+          <fieldset className="admin-fieldset">
+            <legend>Step 6 — Images</legend>
+            {slug ? (
+              <>
+                <span className="admin-hint">
+                  Gallery images can be added after saving.
+                </span>
+                <ProductImageUpload slug={slug} />
+              </>
+            ) : (
+              <p className="admin-hint">
+                Enter a slug in Step 2 to upload images.
+              </p>
+            )}
+          </fieldset>
+        )}
+
+        {/* ── Navigation ────────────────────────────────────────────────── */}
+        <div className="admin-form-actions">
+          {step === 1 ? (
+            <Link href="/admin/products">Cancel</Link>
+          ) : (
+            <button type="button" onClick={back}>
+              Back
+            </button>
+          )}
+
+          {step < TOTAL_STEPS ? (
+            <button type="button" onClick={advance} disabled={!stepValid[step]}>
+              Next
+            </button>
+          ) : (
+            <button type="submit" disabled={pending}>
+              {pending ? 'Creating…' : 'Create Product'}
+            </button>
+          )}
+        </div>
+      </form>
+    </div>
   );
 }

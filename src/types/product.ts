@@ -5,6 +5,18 @@ export type ProductStatus =
   | 'compliance-hold';
 
 /**
+ * Lab test results for a product.
+ */
+export interface LabResults {
+  thcPct?: number;
+  cbdPct?: number;
+  /** Terpene names, e.g. ['Myrcene', 'Limonene'] */
+  terpenes?: string[];
+  testDate?: Date;
+  labName?: string;
+}
+
+/**
  * Firestore document shape for a product.
  * Lives at: products/{slug}
  *
@@ -17,11 +29,13 @@ export interface Product {
   slug: string;
   name: string;
   category: string;
+  /** Slug of the associated vendor — references vendors/{slug} */
+  vendorSlug?: string;
   description: string;
   details: string;
   /** Firebase Storage path, e.g. products/{slug}.jpg */
   image?: string;
-  /** Firebase Storage paths for the gallery (up to 5), e.g. products/{slug}/gallery/0.jpg */
+  /** Firebase Storage paths for the gallery (up to 5), e.g. products/{slug}/gallery/{n}.{ext} */
   images?: string[];
   status: ProductStatus;
   /**
@@ -32,6 +46,10 @@ export interface Product {
   federalDeadlineRisk: boolean;
   /** Link to Certificate of Analysis — required for compliance documentation */
   coaUrl?: string;
+  /** Leafly product page URL — used when descriptionSource === 'leafly' */
+  leaflyUrl?: string;
+  /** Lab test results */
+  labResults?: LabResults;
   /** Location slugs where this product is carried, e.g. ['oak-ridge', 'seymour'] */
   availableAt: string[];
   createdAt: Date;
