@@ -86,7 +86,7 @@ graph TB
     end
 
     subgraph GCP["Firebase — GCP"]
-        FS[("Firestore\nlocations · products · promos\nproduct-categories · inventory · location-reviews\ncontact-submissions\npending-user-invites · outbound-emails\nemail-templates · email-template-revisions · orders")]
+        FS[("Firestore\nlocations · products · promos\nproduct-categories · inventory · location-reviews\ncontact-submissions\npending-user-invites · outbound-emails\nemail-templates · email-template-revisions · vendors · orders")]
         GCS[("Firebase Storage\nrush-n-relax.firebasestorage.app\nproducts/{slug}/featured.{ext}\nproducts/{slug}/gallery/{n}.{ext}")]
         AUTH["Firebase Auth"]
         FN["Cloud Functions v2\nfetchLocationReviews"]
