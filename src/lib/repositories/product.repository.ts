@@ -3,7 +3,7 @@
  * Server-side only (uses firebase-admin).
  */
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
-import type { Product, ProductSummary } from '@/types';
+import type { Product, ProductSummary, LabResults } from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -122,6 +122,7 @@ function docToProductSummary(
     images: Array.isArray(d.images) ? (d.images as string[]) : undefined,
     status: d.status,
     availableAt: d.availableAt ?? [],
+    vendorSlug: d.vendorSlug ?? undefined,
   } satisfies ProductSummary;
 }
 
@@ -139,8 +140,26 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     federalDeadlineRisk: d.federalDeadlineRisk ?? false,
     coaUrl: d.coaUrl ?? undefined,
     availableAt: d.availableAt ?? [],
+    vendorSlug: d.vendorSlug ?? undefined,
+    labResults: docToLabResults(d.labResults),
+    descriptionSource: d.descriptionSource ?? undefined,
+    leaflyUrl: d.leaflyUrl ?? undefined,
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
+  };
+}
+
+function docToLabResults(
+  raw: FirebaseFirestore.DocumentData | undefined
+): LabResults | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  return {
+    thcPercent: typeof r.thcPercent === 'number' ? r.thcPercent : undefined,
+    cbdPercent: typeof r.cbdPercent === 'number' ? r.cbdPercent : undefined,
+    terpenes: Array.isArray(r.terpenes) ? (r.terpenes as string[]) : undefined,
+    testDate: typeof r.testDate === 'string' ? r.testDate : undefined,
+    labName: typeof r.labName === 'string' ? r.labName : undefined,
   };
 }
 

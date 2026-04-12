@@ -7,6 +7,7 @@ export type {
   Product,
   ProductSummary,
   ProductStatus,
+  LabResults,
 } from './product';
 export type { ProductCategoryConfig, ProductCategorySummary } from './category';
 export type { Promo, PromoSummary } from './promo';
@@ -44,3 +45,5 @@ export type {
   EmailTemplateTheme,
 } from './email';
 export type { GoogleReview } from './reviews';
+export type { Vendor, VendorSummary, DescriptionSource } from './vendor';
+export type { Order, OrderItem, OrderStatus, FulfillmentType } from './order';
