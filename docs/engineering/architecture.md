@@ -86,7 +86,7 @@ graph TB
     end
 
     subgraph GCP["Firebase — GCP"]
-        FS[("Firestore\nlocations · products · promos\nproduct-categories · inventory · location-reviews\ncontact-submissions\npending-user-invites · outbound-emails\nemail-templates · email-template-revisions")]
+        FS[("Firestore\nlocations · products · promos\nproduct-categories · inventory · location-reviews\ncontact-submissions\npending-user-invites · outbound-emails\nemail-templates · email-template-revisions · vendors")]
         GCS[("Firebase Storage\nrush-n-relax.firebasestorage.app\nproducts/{slug}/featured.{ext}\nproducts/{slug}/gallery/{n}.{ext}")]
         AUTH["Firebase Auth"]
         FN["Cloud Functions v2\nfetchLocationReviews"]
@@ -114,24 +114,24 @@ graph TB
 
 ### Legend
 
-| Abbrev | Meaning                                             |
-| ------ | --------------------------------------------------- |
-| CSK    | Client SDK — `src/firebase.ts`                      |
-| CC     | Client Components (React `'use client'`)            |
-| MW     | Next.js middleware                                  |
-| SF     | `(storefront)` Next.js route group                  |
-| ADM    | `(admin)` Next.js route group                       |
-| LIB    | `src/lib/` — server-only modules                    |
-| ENV    | `src/lib/firebase/env.ts` — emulator flag           |
-| ADMIN  | `src/lib/firebase/admin.ts` — Admin SDK singleton   |
-| REPO   | `src/lib/repositories/` — all Firestore access      |
-| SEO    | `src/lib/seo/` — metadata factory + schema builders |
-| COMP   | `src/lib/compliance/` — content validation          |
-| GCP    | Google Cloud Platform / Firebase                    |
-| FS     | Firestore database                                  |
+| Abbrev | Meaning                                               |
+| ------ | ----------------------------------------------------- |
+| CSK    | Client SDK — `src/firebase.ts`                        |
+| CC     | Client Components (React `'use client'`)              |
+| MW     | Next.js middleware                                    |
+| SF     | `(storefront)` Next.js route group                    |
+| ADM    | `(admin)` Next.js route group                         |
+| LIB    | `src/lib/` — server-only modules                      |
+| ENV    | `src/lib/firebase/env.ts` — emulator flag             |
+| ADMIN  | `src/lib/firebase/admin.ts` — Admin SDK singleton     |
+| REPO   | `src/lib/repositories/` — all Firestore access        |
+| SEO    | `src/lib/seo/` — metadata factory + schema builders   |
+| COMP   | `src/lib/compliance/` — content validation            |
+| GCP    | Google Cloud Platform / Firebase                      |
+| FS     | Firestore database                                    |
 | GCS    | Firebase Storage (`rush-n-relax.firebasestorage.app`) |
-| FN     | Cloud Functions v2                                  |
-| UPLOAD | Admin image upload/delete API routes                |
+| FN     | Cloud Functions v2                                    |
+| UPLOAD | Admin image upload/delete API routes                  |
 
 ### Schema Notes
 

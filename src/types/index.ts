@@ -3,11 +3,7 @@ export type {
   LocationSummary,
   LocationCoordinates,
 } from './location';
-export type {
-  Product,
-  ProductSummary,
-  ProductStatus,
-} from './product';
+export type { Product, ProductSummary, ProductStatus } from './product';
 export type { ProductCategoryConfig, ProductCategorySummary } from './category';
 export type { Promo, PromoSummary } from './promo';
 export type {
@@ -44,3 +40,5 @@ export type {
   EmailTemplateTheme,
 } from './email';
 export type { GoogleReview } from './reviews';
+export type { Vendor, VendorSummary } from './vendor';
+export type { Order, OrderItem, OrderStatus, FulfillmentType } from './order';
