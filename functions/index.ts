@@ -514,3 +514,6 @@ export const retryFailedOutboundEmails = onSchedule(
     }
   }
 );
+
+// Redde Payments — initiates a hosted payment transaction
+export { initiatePayment } from './initiatePayment';

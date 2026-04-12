@@ -12,5 +12,5 @@
     "forceConsistentCasingInFileNames": true
   },
   "compileOnSave": true,
-  "include": ["index.ts"]
+  "include": ["index.ts", "initiatePayment.ts"]
 }
