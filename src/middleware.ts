@@ -17,6 +17,7 @@ export const config = {
 
 /** Routes staff users are permitted to access under /admin */
 const STAFF_PERMITTED_PREFIXES = [
+  '/admin/dashboard',
   '/admin/products',
   '/admin/categories',
   '/admin/coa',

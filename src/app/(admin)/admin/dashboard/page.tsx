@@ -2,7 +2,7 @@ import { requireRole } from '@/lib/admin-auth';
 import { DashboardGrid } from './DashboardGrid';
 
 export default async function DashboardPage() {
-  await requireRole('owner');
+  await requireRole('staff');
 
   return (
     <>

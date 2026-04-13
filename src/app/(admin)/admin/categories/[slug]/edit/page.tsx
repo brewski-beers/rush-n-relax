@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default async function CategoryEditPage({ params }: Props) {
-  await requireRole('owner');
+  await requireRole('staff');
 
   const { slug } = await params;
   const category = await getCategoryBySlug(slug);

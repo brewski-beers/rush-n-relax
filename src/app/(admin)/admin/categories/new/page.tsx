@@ -4,7 +4,7 @@ import { requireRole } from '@/lib/admin-auth';
 import { CategoryCreateForm } from './CategoryCreateForm';
 
 export default async function NewCategoryPage() {
-  await requireRole('owner');
+  await requireRole('staff');
 
   return (
     <>

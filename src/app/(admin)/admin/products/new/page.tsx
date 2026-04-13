@@ -5,7 +5,7 @@ import { listLocations, listActiveCategories } from '@/lib/repositories';
 import { ProductCreateForm } from './ProductCreateForm';
 
 export default async function NewProductPage() {
-  await requireRole('owner');
+  await requireRole('staff');
 
   const [locations, categories] = await Promise.all([
     listLocations(),
