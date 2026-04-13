@@ -1044,6 +1044,24 @@
   font-size: 0.8rem;
 }
 
+.admin-input--inline {
+  flex: 1 1 160px;
+  min-width: 0;
+  margin: 0;
+}
+
+.admin-btn--sm {
+  padding: var(--admin-actions-button-padding);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.admin-label-optional {
+  color: var(--admin-text-subtle);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
 .admin-status-badge {
   display: inline-flex;
   align-items: center;
