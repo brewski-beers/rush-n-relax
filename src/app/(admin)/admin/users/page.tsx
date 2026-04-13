@@ -3,13 +3,40 @@ export const dynamic = 'force-dynamic';
 import { requireRole } from '@/lib/admin-auth';
 import { listManagedUsers } from '@/lib/admin/user-management';
 import { listPendingUserInvites } from '@/lib/repositories';
+import { getAdminAuth } from '@/lib/firebase/admin';
 import { UserRoleForm } from './UserRoleForm';
+import { StaffPhoneForm } from './StaffPhoneForm';
+
+async function listStaffPhoneUsers() {
+  const auth = getAdminAuth();
+  const results: { uid: string; phoneNumber: string }[] = [];
+  let pageToken: string | undefined;
+
+  while (true) {
+    const page = await auth.listUsers(1000, pageToken);
+    for (const user of page.users) {
+      const claims = user.customClaims as Record<string, unknown> | undefined;
+      if (
+        user.phoneNumber &&
+        !user.email && // phone-only users
+        claims?.role === 'staff'
+      ) {
+        results.push({ uid: user.uid, phoneNumber: user.phoneNumber });
+      }
+    }
+    if (!page.pageToken) break;
+    pageToken = page.pageToken;
+  }
+
+  return results;
+}
 
 export default async function AdminUsersPage() {
   await requireRole('owner');
-  const [users, pendingInvites] = await Promise.all([
+  const [users, pendingInvites, staffPhoneUsers] = await Promise.all([
     listManagedUsers(),
     listPendingUserInvites(),
+    listStaffPhoneUsers(),
   ]);
 
   return (
@@ -23,6 +50,8 @@ export default async function AdminUsersPage() {
       </p>
 
       <UserRoleForm />
+
+      <StaffPhoneForm staffPhoneUsers={staffPhoneUsers} />
 
       <div className="admin-table-wrap">
         <h2 className="admin-section-title">Pending Invites</h2>
