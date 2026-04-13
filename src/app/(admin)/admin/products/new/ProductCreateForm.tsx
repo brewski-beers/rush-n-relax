@@ -5,6 +5,7 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { createProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
+import { CoaSelector } from '@/components/admin/CoaSelector';
 import type { ProductCategorySummary } from '@/types';
 
 interface Props {
@@ -70,6 +71,11 @@ export function ProductCreateForm({ categories }: Props) {
           <ProductImageUpload slug={slug} />
         </fieldset>
       )}
+
+      <fieldset className="admin-fieldset">
+        <legend>Certificate of Analysis (COA)</legend>
+        <CoaSelector />
+      </fieldset>
 
       <fieldset className="admin-fieldset">
         <legend>Cannabis Profile</legend>

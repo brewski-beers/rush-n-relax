@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { updateProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
+import { CoaSelector } from '@/components/admin/CoaSelector';
 import type { Product, ProductCategorySummary } from '@/types';
 
 interface Props {
@@ -85,6 +86,11 @@ export function ProductEditForm({ product, categories }: Props) {
           initialFeaturedPath={product.image}
           initialGalleryPaths={product.images}
         />
+      </fieldset>
+
+      <fieldset className="admin-fieldset">
+        <legend>Certificate of Analysis (COA)</legend>
+        <CoaSelector currentCoaUrl={product.coaUrl} />
       </fieldset>
 
       <fieldset className="admin-fieldset">
