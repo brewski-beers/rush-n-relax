@@ -1025,13 +1025,14 @@
 
 .admin-inline-form {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--admin-inline-form-gap);
-  width: 100%;
+  width: auto;
+  align-items: center;
 }
 
 .admin-inline-form input {
-  flex: 1 1 220px;
+  flex: 0 1 140px;
   margin: 0;
 }
 
@@ -1045,8 +1046,9 @@
 }
 
 .admin-input--inline {
-  flex: 1 1 160px;
-  min-width: 0;
+  flex: 0 1 140px;
+  min-width: 80px;
+  max-width: 160px;
   margin: 0;
 }
 

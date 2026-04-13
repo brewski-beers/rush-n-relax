@@ -4,7 +4,6 @@ import { requireRole } from '@/lib/admin-auth';
 import { listManagedUsers } from '@/lib/admin/user-management';
 import { listPendingUserInvites } from '@/lib/repositories';
 import { getAdminAuth } from '@/lib/firebase/admin';
-import { UserRoleForm } from './UserRoleForm';
 import { StaffPhoneForm } from './StaffPhoneForm';
 
 async function listStaffPhoneUsers() {
@@ -49,13 +48,6 @@ export default async function AdminUsersPage() {
       <div className="admin-page-header">
         <h1>Users</h1>
       </div>
-      <p className="admin-section-desc">
-        Invite users by email and assign a role, or assign roles to existing
-        Firebase Auth users. Owner accounts remain immutable from this panel.
-      </p>
-
-      <UserRoleForm />
-
       <StaffPhoneForm staffPhoneUsers={staffPhoneUsers} />
 
       <div className="admin-table-wrap">
