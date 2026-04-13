@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { seoConfig } from '@/config/seo.config';
+import { decodeJwtPayload } from '@/lib/jwt';
 
 export const config = {
   matcher: [
@@ -13,6 +14,21 @@ export const config = {
     '/((?!_next/static|_next/image|favicon\\.ico|icons/|images/|og/|__firebaseapphosting/).*)',
   ],
 };
+
+/** Routes staff users are permitted to access under /admin */
+const STAFF_PERMITTED_PREFIXES = [
+  '/admin/products',
+  '/admin/categories',
+  '/admin/coa',
+  '/admin/login',
+] as const;
+
+function getSessionRole(sessionCookie: string): string | null {
+  const payload = decodeJwtPayload(sessionCookie);
+  if (typeof payload !== 'object' || payload === null) return null;
+  const role = (payload as Record<string, unknown>).role;
+  return typeof role === 'string' ? role : null;
+}
 
 export function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
@@ -29,6 +45,20 @@ export function middleware(request: NextRequest) {
     if (!sessionCookie) {
       url.pathname = '/admin/login';
       return NextResponse.redirect(url);
+    }
+
+    // Staff role guard — restrict staff to permitted routes only.
+    // No Firebase Admin SDK here (Edge Runtime). Payload decode only — no sig verify.
+    // Full verification still happens in requireRole() in every Server Action.
+    const role = getSessionRole(sessionCookie);
+    if (role === 'staff') {
+      const isPermitted = STAFF_PERMITTED_PREFIXES.some(prefix =>
+        pathname.startsWith(prefix)
+      );
+      if (!isPermitted) {
+        url.pathname = '/admin/products';
+        return NextResponse.redirect(url);
+      }
     }
   }
 
