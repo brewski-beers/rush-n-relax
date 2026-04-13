@@ -19,6 +19,7 @@ import {
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import type { UserRole } from '@/types';
 
 const STORAGE_KEY = 'admin-dashboard-order';
 
@@ -28,7 +29,7 @@ interface DashboardCard {
   href: string;
 }
 
-const DEFAULT_CARDS: DashboardCard[] = [
+const ALL_CARDS: DashboardCard[] = [
   { id: 'locations', label: 'Manage Locations', href: '/admin/locations' },
   { id: 'products', label: 'Manage Products', href: '/admin/products' },
   { id: 'categories', label: 'Manage Categories', href: '/admin/categories' },
@@ -47,6 +48,14 @@ const DEFAULT_CARDS: DashboardCard[] = [
   },
   { id: 'coa', label: 'Certificates of Analysis', href: '/admin/coa' },
 ];
+
+/** Card IDs available to the staff role — mirrors STAFF_LINKS in AdminNav. */
+const STAFF_CARD_IDS = new Set(['products', 'categories', 'coa']);
+
+function getDefaultCards(role: UserRole): DashboardCard[] {
+  if (role === 'staff') return ALL_CARDS.filter(c => STAFF_CARD_IDS.has(c.id));
+  return ALL_CARDS;
+}
 
 function loadOrder(): string[] | null {
   try {
@@ -118,15 +127,20 @@ function SortableCard({ card }: { card: DashboardCard }) {
   );
 }
 
-export function DashboardGrid() {
-  const [cards, setCards] = useState<DashboardCard[]>(DEFAULT_CARDS);
+interface DashboardGridProps {
+  role: UserRole;
+}
+
+export function DashboardGrid({ role }: DashboardGridProps) {
+  const defaultCards = getDefaultCards(role);
+  const [cards, setCards] = useState<DashboardCard[]>(defaultCards);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- client-mount guard; localStorage not available on server
     setMounted(true);
     const saved = loadOrder();
-    if (saved) setCards(applyOrder(DEFAULT_CARDS, saved));
+    if (saved) setCards(applyOrder(defaultCards, saved));
   }, []);
 
   const sensors = useSensors(

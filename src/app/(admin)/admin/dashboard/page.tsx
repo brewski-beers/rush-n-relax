@@ -2,7 +2,7 @@ import { requireRole } from '@/lib/admin-auth';
 import { DashboardGrid } from './DashboardGrid';
 
 export default async function DashboardPage() {
-  await requireRole('staff');
+  const { role } = await requireRole('staff');
 
   return (
     <>
@@ -13,7 +13,7 @@ export default async function DashboardPage() {
         Control locations, products, promos, and inventory from one workspace.
         Drag cards to arrange your preferred layout.
       </p>
-      <DashboardGrid />
+      <DashboardGrid role={role} />
     </>
   );
 }
