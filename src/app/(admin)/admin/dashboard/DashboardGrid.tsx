@@ -33,19 +33,8 @@ const ALL_CARDS: DashboardCard[] = [
   { id: 'locations', label: 'Manage Locations', href: '/admin/locations' },
   { id: 'products', label: 'Manage Products', href: '/admin/products' },
   { id: 'categories', label: 'Manage Categories', href: '/admin/categories' },
-  { id: 'promos', label: 'Manage Promos', href: '/admin/promos' },
   { id: 'inventory', label: 'Manage Inventory', href: '/admin/inventory' },
   { id: 'users', label: 'Manage Users', href: '/admin/users' },
-  {
-    id: 'email-templates',
-    label: 'Manage Email Templates',
-    href: '/admin/email-templates',
-  },
-  {
-    id: 'email-queue',
-    label: 'Monitor Email Queue',
-    href: '/admin/email-queue',
-  },
   { id: 'coa', label: 'Certificates of Analysis', href: '/admin/coa' },
 ];
 

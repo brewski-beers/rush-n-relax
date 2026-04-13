@@ -10,22 +10,16 @@ import type { UserRole } from '@/types';
 
 const LEAF_SRC = getAssetSrc(cannabisLeaf);
 
-const PINNED = [
-  { label: 'Inventory', href: '/admin/inventory' },
-  { label: 'Users', href: '/admin/users' },
-] as const;
+const PINNED = [{ label: 'RnR.com', href: '/' }] as const;
 
 const ALL_LINKS = [
   { label: 'Dashboard', href: '/admin/dashboard' },
   { label: 'Locations', href: '/admin/locations' },
   { label: 'Products', href: '/admin/products' },
   { label: 'Categories', href: '/admin/categories' },
-  { label: 'Promos', href: '/admin/promos' },
   { label: 'Inventory', href: '/admin/inventory' },
   { label: 'Users', href: '/admin/users' },
-  { label: 'Email Templates', href: '/admin/email-templates' },
-  { label: 'Email Queue', href: '/admin/email-queue' },
-  { label: '← Client Site', href: '/' },
+  { label: 'RnR.com', href: '/' },
 ] as const;
 
 /** Links available to staff role (and above via the full ALL_LINKS list). */
@@ -33,7 +27,7 @@ const STAFF_LINKS = [
   { label: 'Products', href: '/admin/products' },
   { label: 'Categories', href: '/admin/categories' },
   { label: 'COA', href: '/admin/coa' },
-  { label: '← Client Site', href: '/' },
+  { label: 'RnR.com', href: '/' },
 ] as const;
 
 interface AdminNavProps {

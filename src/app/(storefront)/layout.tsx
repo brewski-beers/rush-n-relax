@@ -11,7 +11,7 @@ export default async function StorefrontLayout({
 }) {
   const cookieStore = await cookies();
   const initiallyVerified = cookieStore.get('ageVerified')?.value === 'true';
-  const isAdminAuthenticated = await hasAdminSession();
+  const isAdminAuthenticated = await hasAdminSession('staff');
 
   return (
     <NavigationProvider>
