@@ -75,8 +75,8 @@ export async function listCoaDocuments(): Promise<CoaDocument[]> {
       })
     );
 
-    // Sort newest first
-    docs.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    // Sort alphabetically by label
+    docs.sort((a, b) => a.label.localeCompare(b.label));
 
     return docs;
   } catch {
