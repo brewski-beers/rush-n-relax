@@ -38,16 +38,6 @@ export function ProductEditForm({ product, categories }: Props) {
       </label>
 
       <label>
-        Description
-        <textarea
-          name="description"
-          defaultValue={product.description}
-          rows={3}
-          required
-        />
-      </label>
-
-      <label>
         Details
         <textarea
           name="details"

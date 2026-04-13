@@ -174,8 +174,6 @@ export default function ProductDetailClient({
               </TagGroup>
             )}
 
-            <p className="product-hero-description">{product.description}</p>
-
             <p className="product-try-in-store-nudge">
               <Link href="/locations" className="product-try-in-store-link">
                 Try in store — find a location near you →

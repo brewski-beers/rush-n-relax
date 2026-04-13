@@ -36,13 +36,12 @@ export async function updateProduct(
 
   const name = formData.get('name')?.toString().trim();
   const category = formData.get('category')?.toString();
-  const description = formData.get('description')?.toString().trim();
   const details = formData.get('details')?.toString().trim();
   const status = formData.get('status')?.toString() as ProductStatus;
   const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
-  if (!name || !category || !description || !details || !status) {
+  if (!name || !category || !details || !status) {
     return { error: 'All required fields must be filled.' };
   }
 
@@ -101,7 +100,6 @@ export async function updateProduct(
     slug: existing.slug,
     name,
     category,
-    description,
     details,
     image: featuredImagePath ?? existing.image,
     images: galleryImagePaths.length > 0 ? galleryImagePaths : existing.images,

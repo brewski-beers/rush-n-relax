@@ -97,7 +97,6 @@ export default async function HomePage() {
                     {product.category.toUpperCase()}
                   </div>
                   <h3>{product.name}</h3>
-                  <p className="product-description">{product.description}</p>
                   <div className="product-cta">Learn More →</div>
                 </div>
               </Card>

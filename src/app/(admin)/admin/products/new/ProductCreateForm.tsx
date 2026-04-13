@@ -54,11 +54,6 @@ export function ProductCreateForm({ categories }: Props) {
       </label>
 
       <label>
-        Description
-        <textarea name="description" rows={3} required />
-      </label>
-
-      <label>
         Details
         <textarea name="details" rows={5} required />
       </label>

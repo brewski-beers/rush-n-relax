@@ -26,12 +26,11 @@ export async function createProduct(
   const slug = formData.get('slug')?.toString().trim().toLowerCase();
   const name = formData.get('name')?.toString().trim();
   const category = formData.get('category')?.toString();
-  const description = formData.get('description')?.toString().trim();
   const details = formData.get('details')?.toString().trim();
   const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
-  if (!slug || !name || !category || !description || !details) {
+  if (!slug || !name || !category || !details) {
     return { error: 'All required fields must be filled.' };
   }
 
@@ -89,7 +88,6 @@ export async function createProduct(
     slug,
     name,
     category,
-    description,
     details,
     image: featuredImagePath,
     federalDeadlineRisk,

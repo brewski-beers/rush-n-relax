@@ -8,7 +8,6 @@ export interface Product {
   slug: string;
   name: string;
   category: string;
-  description: string;
   details: string;
   image: string;
 }
@@ -54,7 +53,6 @@ export const PRODUCTS: Product[] = PRODUCT_FIXTURES.map((product, index) => ({
   slug: product.slug,
   name: product.name,
   category: product.category,
-  description: product.description,
   details: product.details,
   image: product.image ?? '',
 }));
@@ -70,7 +68,7 @@ export function getProductsByCategory(category: string): Product[] {
 export function getProductSEO(product: Product) {
   return {
     title: `${product.name} | Rush N Relax Premium Cannabis`,
-    description: product.description,
+    description: product.details,
     keywords: `${product.name}, ${product.category}, cannabis, dispensary, Tennessee`,
     url: `${SITE_URL}/products/${product.slug}`,
   };

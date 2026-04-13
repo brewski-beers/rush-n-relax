@@ -1,5 +1,3 @@
-import type { DescriptionSource } from './vendor';
-
 export type ProductStatus =
   | 'active'
   | 'pending-reformulation'
@@ -39,7 +37,6 @@ export interface Product {
   slug: string;
   name: string;
   category: string;
-  description: string;
   details: string;
   /** Firebase Storage path, e.g. products/{slug}.jpg */
   image?: string;
@@ -60,8 +57,7 @@ export interface Product {
   vendorSlug?: string;
   /** RnR-owned lab result data (replaces generic coaUrl where available) */
   labResults?: LabResults;
-  descriptionSource?: DescriptionSource;
-  /** Leafly product page URL — used when descriptionSource === 'leafly' */
+  /** Leafly product page URL */
   leaflyUrl?: string;
   /** Cannabis strain type — powers strain badge on storefront */
   strain?: ProductStrain;
@@ -83,7 +79,6 @@ export type ProductSummary = Pick<
   | 'slug'
   | 'name'
   | 'category'
-  | 'description'
   | 'image'
   | 'images'
   | 'status'

@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props) {
 
   return buildMetadata('/products/[slug]', {
     title: `${product.name} — Premium Cannabis | Rush N Relax`,
-    description: product.description,
+    description: product.details ?? '',
     canonical: `${seoConfig.site.domain}/products/${slug}`,
     path: `/products/${slug}`,
   });

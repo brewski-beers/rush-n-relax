@@ -131,7 +131,6 @@ function docToProductSummary(
     slug: d.slug,
     name: d.name,
     category: d.category ?? '',
-    description: d.description ?? '',
     image: d.image ?? undefined,
     images: Array.isArray(d.images) ? (d.images as string[]) : undefined,
     status: d.status,
@@ -151,7 +150,6 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     slug: d.slug,
     name: d.name,
     category: d.category ?? '',
-    description: d.description ?? '',
     details: d.details ?? '',
     image: d.image ?? undefined,
     images: Array.isArray(d.images) ? (d.images as string[]) : undefined,
@@ -161,7 +159,6 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     availableAt: d.availableAt ?? [],
     vendorSlug: d.vendorSlug ?? undefined,
     labResults: docToLabResults(d.labResults),
-    descriptionSource: d.descriptionSource ?? undefined,
     leaflyUrl: d.leaflyUrl ?? undefined,
     strain:
       typeof d.strain === 'string' &&
