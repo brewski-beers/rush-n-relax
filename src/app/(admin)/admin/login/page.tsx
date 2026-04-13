@@ -13,9 +13,14 @@ import { initializeApp } from '@/firebase';
 
 const CLAIMS_UPDATED_RETRY_CODE = 'CLAIMS_UPDATED_RETRY';
 
-/** Basic E.164 format validation: +<country code><number>, 7–15 digits total */
-function isValidE164(phone: string): boolean {
-  return /^\+[1-9]\d{6,14}$/.test(phone);
+/** Validates a raw 10-digit US phone number */
+function isValidUsPhone(phone: string): boolean {
+  return /^\d{10}$/.test(phone);
+}
+
+/** Converts a 10-digit input to E.164 US format */
+function toE164(phone: string): string {
+  return `+1${phone}`;
 }
 
 async function exchangeTokenForSession(
@@ -97,10 +102,8 @@ export default function LoginPage() {
   }
 
   function handleSendOtp() {
-    if (!isValidE164(phone)) {
-      setError(
-        'Enter a valid phone number in E.164 format (e.g. +12345678900).'
-      );
+    if (!isValidUsPhone(phone)) {
+      setError('Enter a valid 10-digit US phone number (e.g. 6155550123).');
       return;
     }
     setError(null);
@@ -121,7 +124,7 @@ export default function LoginPage() {
 
         const result = await signInWithPhoneNumber(
           auth,
-          phone,
+          toE164(phone),
           recaptchaRef.current
         );
         confirmationRef.current = result;
@@ -226,22 +229,29 @@ export default function LoginPage() {
       {tab === 'phone' && !otpStep && (
         <div className="admin-phone-form">
           <label htmlFor="phone-input" className="admin-label">
-            Phone number (E.164 format)
+            Phone number
           </label>
-          <input
-            id="phone-input"
-            type="tel"
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-            placeholder="+12345678900"
-            className="admin-input"
-            disabled={isPending}
-            autoComplete="tel"
-          />
+          <div className="admin-input-prefix-wrap">
+            <span className="admin-input-prefix">+1</span>
+            <input
+              id="phone-input"
+              type="tel"
+              value={phone}
+              onChange={e =>
+                setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
+              }
+              placeholder="6155550123"
+              className="admin-input"
+              disabled={isPending}
+              autoComplete="tel-national"
+              maxLength={10}
+              inputMode="numeric"
+            />
+          </div>
           <button
             type="button"
             onClick={handleSendOtp}
-            disabled={isPending || phone.length === 0}
+            disabled={isPending || phone.length !== 10}
             className="admin-submit"
           >
             {isPending ? 'Sending…' : 'Send OTP'}
@@ -252,7 +262,7 @@ export default function LoginPage() {
       {tab === 'phone' && otpStep && (
         <div className="admin-phone-form">
           <p className="admin-label">
-            Enter the code sent to <strong>{phone}</strong>
+            Enter the code sent to <strong>+1 {phone}</strong>
           </p>
           <label htmlFor="otp-input" className="admin-label">
             One-time code

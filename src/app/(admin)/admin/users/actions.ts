@@ -99,8 +99,8 @@ export async function revokeInvite(
   return { success: `Invite revoked for ${email}.` };
 }
 
-// E.164: starts with +, followed by 7–15 digits
-const E164_PATTERN = /^\+[1-9]\d{6,14}$/;
+// Accepts 10-digit US numbers; +1 is prepended server-side
+const US_PHONE_PATTERN = /^\d{10}$/;
 
 export async function provisionStaffPhone(
   _prev: ActionState | null,
@@ -108,17 +108,19 @@ export async function provisionStaffPhone(
 ): Promise<ActionState> {
   await requireRole('owner');
 
-  const phoneNumber = formData.get('phoneNumber')?.toString().trim();
+  const raw = formData.get('phoneNumber')?.toString().trim() ?? '';
 
-  if (!phoneNumber) {
+  if (!raw) {
     return { error: 'Phone number is required.' };
   }
 
-  if (!E164_PATTERN.test(phoneNumber)) {
+  if (!US_PHONE_PATTERN.test(raw)) {
     return {
-      error: 'Phone number must be in E.164 format (e.g. +16155550123).',
+      error: 'Enter a valid 10-digit US phone number (e.g. 6155550123).',
     };
   }
+
+  const phoneNumber = `+1${raw}`;
 
   const { getAdminAuth } = await import('@/lib/firebase/admin');
   const auth = getAdminAuth();

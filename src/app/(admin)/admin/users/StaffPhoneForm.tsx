@@ -35,24 +35,29 @@ export function StaffPhoneForm({ staffPhoneUsers }: Props) {
     <div className="admin-table-wrap">
       <h2 className="admin-section-title">Staff Phone Access</h2>
       <p className="admin-section-desc">
-        Provision a staff role by phone number (E.164 format, e.g.{' '}
-        <code>+16155550123</code>). The user signs in via SMS OTP and receives
-        the <strong>staff</strong> role.
+        Provision a staff role by US phone number. The user signs in via SMS OTP
+        and receives the <strong>staff</strong> role.
       </p>
 
       <form action={provisionAction} className="admin-form">
         <div className="admin-form-row">
           <label htmlFor="phoneNumber" className="admin-label">
-            Phone Number (E.164)
+            Phone Number
           </label>
-          <input
-            id="phoneNumber"
-            name="phoneNumber"
-            type="tel"
-            placeholder="+16155550123"
-            className="admin-input"
-            required
-          />
+          <div className="admin-input-prefix-wrap">
+            <span className="admin-input-prefix">+1</span>
+            <input
+              id="phoneNumber"
+              name="phoneNumber"
+              type="tel"
+              placeholder="6155550123"
+              className="admin-input"
+              inputMode="numeric"
+              maxLength={10}
+              pattern="\d{10}"
+              required
+            />
+          </div>
           <button
             type="submit"
             className="admin-btn"
