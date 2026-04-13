@@ -313,6 +313,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  /* Tag groups and description use the base gap.
+     The pricing block gets extra top space via its own margin-top. */
 }
 
 .product-hero-name {
@@ -335,9 +337,10 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: var(--space-xs);
+  padding: calc(var(--space-xs) * 0.5) var(--space-sm);
   border-radius: 0.25rem;
   border: 1px solid;
+  line-height: 1.4;
 }
 
 .product-strain-badge--indica {
@@ -364,16 +367,17 @@
   border-color: var(--color-strain-cbd-border);
 }
 
-/* Flavor tags — inline with strain badge */
+/* Flavor tags */
 .product-flavor-tag {
   display: inline-block;
   font-size: 0.7rem;
-  padding: var(--space-xs);
+  font-weight: 500;
+  padding: calc(var(--space-xs) * 0.5) var(--space-sm);
   border-radius: 999px;
   background-color: var(--color-tag-bg);
   color: var(--color-text-muted);
   border: 1px solid var(--color-border);
-  font-weight: 500;
+  line-height: 1.4;
 }
 
 /* THC / effect pills */
@@ -384,40 +388,42 @@
 }
 
 .product-pill {
+  display: inline-block;
   font-size: 0.75rem;
-  padding: var(--space-xs);
-  border-radius: 999px;
   font-weight: 600;
+  padding: calc(var(--space-xs) * 0.5) var(--space-sm);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  line-height: 1.4;
 }
 
 .product-pill--thc {
   background-color: var(--color-pill-thc-bg);
   color: var(--color-accent-light);
-  border: 1px solid var(--color-pill-thc-border);
+  border-color: var(--color-pill-thc-border);
 }
 
 .product-pill--effect {
   background-color: var(--color-pill-effect-bg);
   color: var(--color-text-muted);
-  border: 1px solid var(--color-border);
+  border-color: var(--color-border);
 }
 
-/* Gold effect pills — matches THC yin-yang RnR tone */
 .product-pill--gold {
   background-color: var(--color-pill-thc-bg);
   color: var(--color-accent-light);
-  border: 1px solid var(--color-pill-thc-border);
+  border-color: var(--color-pill-thc-border);
 }
 
 /* Labeled tag group — label + pill row stacked */
 .product-hero-tag-group {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--space-xs) * 0.75);
+  gap: calc(var(--space-xs) * 0.5);
 }
 
 .product-hero-tag-label {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -430,10 +436,15 @@
   margin: 0;
 }
 
-/* "Try in store" inline link below description */
+/* "Try in store" — small gold italic nudge */
+.product-try-in-store-nudge {
+  margin: 0;
+}
+
 .product-try-in-store-link {
-  font-size: 0.825rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-style: italic;
+  font-weight: 500;
   color: var(--color-accent);
   text-decoration: none;
   letter-spacing: 0.01em;
@@ -450,6 +461,7 @@
   flex-direction: column;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
+  margin-top: var(--space-md);
   background: linear-gradient(
     135deg,
     rgba(213, 179, 106, 0.08) 0%,
@@ -459,37 +471,64 @@
   border-radius: 0.75rem;
 }
 
-.product-variant-row {
-  display: flex;
+/* Variant card grid */
+.product-variant-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--space-xs);
-  flex-wrap: wrap;
 }
 
-.product-variant-btn {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: calc(var(--space-xs) * 0.75) calc(var(--space-sm) * 0.875);
-  border-radius: 999px;
+.product-variant-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--space-xs) * 0.5);
+  padding: var(--space-xs) calc(var(--space-xs) * 0.75);
+  border-radius: 0.5rem;
   border: 1px solid var(--color-border-accent-medium);
   background: transparent;
-  color: var(--color-text-muted);
   cursor: pointer;
   transition:
     background 0.18s ease,
-    color 0.18s ease,
     border-color 0.18s ease;
+  text-align: center;
 }
 
-.product-variant-btn:hover {
+.product-variant-card:hover {
   border-color: var(--color-accent);
-  color: var(--color-accent-light);
   background: var(--color-surface-anchor-faint);
 }
 
-.product-variant-btn--active {
+.product-variant-card--active {
   background: var(--color-surface-anchor);
-  color: var(--color-accent-light);
   border-color: var(--color-accent);
+}
+
+.product-variant-card-weight {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+  transition: color 0.18s ease;
+}
+
+.product-variant-card--active .product-variant-card-weight {
+  color: var(--color-accent-light);
+}
+
+.product-variant-card:hover .product-variant-card-weight {
+  color: var(--color-accent-light);
+}
+
+.product-variant-card-price {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--color-text-subtle);
+  transition: color 0.18s ease;
+}
+
+.product-variant-card--active .product-variant-card-price {
+  color: var(--color-accent);
 }
 
 /* Price display — hidden until data is wired */
@@ -741,6 +780,10 @@
 
   .product-thumbnail-img {
     height: 56px;
+  }
+
+  .product-variant-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .effect-bar {

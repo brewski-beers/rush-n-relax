@@ -46,6 +46,21 @@ function EffectBar({ label, score }: { label: string; score: number }) {
   );
 }
 
+function TagGroup({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="product-hero-tag-group">
+      <span className="product-hero-tag-label">{label}</span>
+      <div className="product-hero-pills">{children}</div>
+    </div>
+  );
+}
+
 export default function ProductDetailClient({
   product,
   relatedProducts,
@@ -67,28 +82,34 @@ export default function ProductDetailClient({
     .map(slug => LOCATIONS.find(loc => loc.slug === slug)?.name)
     .filter((n): n is string => Boolean(n));
 
+  const effects = Array.isArray(product.effects)
+    ? product.effects.filter((e): e is string => Boolean(e))
+    : [];
+
+  const flavors = Array.isArray(product.flavors)
+    ? product.flavors.filter((f): f is string => Boolean(f))
+    : [];
+
+  const whatToExpect = Array.isArray(product.whatToExpect)
+    ? product.whatToExpect.filter((b): b is string => Boolean(b))
+    : [];
+
+  const terpenes = Array.isArray(product.labResults?.terpenes)
+    ? product.labResults.terpenes.filter((t): t is string => Boolean(t))
+    : [];
+
   const hasEffectScores =
     product.effectScores !== undefined &&
     Object.values(product.effectScores).some(v => v !== undefined);
-
-  const hasWhatToExpect =
-    Array.isArray(product.whatToExpect) && product.whatToExpect.length > 0;
-
-  const hasFlavors =
-    Array.isArray(product.flavors) && product.flavors.length > 0;
-
-  const hasEffects =
-    Array.isArray(product.effects) && product.effects.length > 0;
-
-  const hasTerpenes =
-    Array.isArray(product.labResults?.terpenes) &&
-    (product.labResults?.terpenes?.length ?? 0) > 0;
 
   const hasLabData =
     product.labResults?.thcPercent !== undefined ||
     product.labResults?.cbdPercent !== undefined ||
     product.labResults?.testDate !== undefined ||
     product.labResults?.labName !== undefined;
+
+  const showEffectsGroup =
+    product.labResults?.thcPercent !== undefined || effects.length > 0;
 
   return (
     <main className="product-detail-page">
@@ -139,80 +160,74 @@ export default function ProductDetailClient({
           <div className="product-hero-info">
             <h1 className="product-hero-name">{product.name}</h1>
 
-            {/* Strain badge row */}
+            {/* Strain */}
             {product.strain && (
-              <div className="product-hero-tag-group">
-                <span className="product-hero-tag-label">Strain</span>
-                <div className="product-hero-badges">
-                  <StrainBadge strain={product.strain} />
-                </div>
-              </div>
+              <TagGroup label="Strain">
+                <StrainBadge strain={product.strain} />
+              </TagGroup>
             )}
 
-            {/* THC + Effects row — all gold pills */}
-            {(product.labResults?.thcPercent !== undefined || hasEffects) && (
-              <div className="product-hero-tag-group">
-                <span className="product-hero-tag-label">Effects</span>
-                <div className="product-hero-pills">
-                  {product.labResults?.thcPercent !== undefined && (
-                    <span className="product-pill product-pill--thc">
-                      THC {product.labResults.thcPercent}%
-                    </span>
-                  )}
-                  {hasEffects &&
-                    product.effects!.map(effect => (
-                      <span
-                        key={effect}
-                        className="product-pill product-pill--gold"
-                      >
-                        {effect}
-                      </span>
-                    ))}
-                </div>
-              </div>
+            {/* THC + Effects */}
+            {showEffectsGroup && (
+              <TagGroup label="Effects">
+                {product.labResults?.thcPercent !== undefined && (
+                  <span className="product-pill product-pill--thc">
+                    THC {product.labResults.thcPercent}%
+                  </span>
+                )}
+                {effects.map(effect => (
+                  <span
+                    key={effect}
+                    className="product-pill product-pill--gold"
+                  >
+                    {effect}
+                  </span>
+                ))}
+              </TagGroup>
             )}
 
-            {/* Flavor tags */}
-            {hasFlavors && (
-              <div className="product-hero-tag-group">
-                <span className="product-hero-tag-label">Flavors</span>
-                <div className="product-hero-badges">
-                  {product.flavors!.map(flavor => (
-                    <span key={flavor} className="product-flavor-tag">
-                      {flavor}
-                    </span>
-                  ))}
-                </div>
-              </div>
+            {/* Flavors */}
+            {flavors.length > 0 && (
+              <TagGroup label="Flavors">
+                {flavors.map(flavor => (
+                  <span key={flavor} className="product-flavor-tag">
+                    {flavor}
+                  </span>
+                ))}
+              </TagGroup>
             )}
 
             <p className="product-hero-description">{product.description}</p>
 
-            {/* Try in store CTA — inline under description */}
-            <Link href="/locations" className="product-try-in-store-link">
-              Try in store — find a location near you →
-            </Link>
+            <p className="product-try-in-store-nudge">
+              <Link href="/locations" className="product-try-in-store-link">
+                Try in store — find a location near you →
+              </Link>
+            </p>
 
             {/* ── Pricing variants ─────────────────────────────────────── */}
             <div className="product-pricing-block">
-              <div className="product-variant-row">
+              <span className="product-hero-tag-label">Select Size</span>
+              <div className="product-variant-grid">
                 {PRICE_VARIANTS.map(v => (
                   <button
                     key={v.key}
                     type="button"
-                    className={`product-variant-btn${selectedVariant === v.key ? ' product-variant-btn--active' : ''}`}
+                    className={`product-variant-card${selectedVariant === v.key ? ' product-variant-card--active' : ''}`}
                     onClick={() => setSelectedVariant(v.key)}
+                    aria-pressed={selectedVariant === v.key}
                   >
-                    {v.label}
+                    <span className="product-variant-card-weight">
+                      {v.label}
+                    </span>
+                    <span className="product-variant-card-price">—</span>
                   </button>
                 ))}
               </div>
-              {/* Price hidden until we're ready — slot is wired */}
-              {/* <div className="product-price-display">$XX.XX</div> */}
             </div>
 
             {/* Info table — Terpenes + cannabinoid detail */}
-            {(hasTerpenes || hasLabData) && (
+            {(terpenes.length > 0 || hasLabData) && (
               <table className="product-info-table">
                 <tbody>
                   {product.labResults?.thcPercent !== undefined && (
@@ -227,10 +242,10 @@ export default function ProductDetailClient({
                       <td>{product.labResults.cbdPercent}%</td>
                     </tr>
                   )}
-                  {hasTerpenes && (
+                  {terpenes.length > 0 && (
                     <tr>
                       <th>Terpenes</th>
-                      <td>{product.labResults!.terpenes!.join(', ')}</td>
+                      <td>{terpenes.join(', ')}</td>
                     </tr>
                   )}
                   {product.labResults?.labName && (
@@ -251,10 +266,6 @@ export default function ProductDetailClient({
                 {locationNames.join(', ')}
               </div>
             )}
-
-            <Link href="/locations" className="btn btn-primary product-cta-btn">
-              Find a Location →
-            </Link>
           </div>
         </div>
       </section>
@@ -269,13 +280,13 @@ export default function ProductDetailClient({
       )}
 
       {/* ── What It Feels Like ───────────────────────────────────────────── */}
-      {(hasWhatToExpect || hasEffectScores) && (
+      {(whatToExpect.length > 0 || hasEffectScores) && (
         <section className="product-feels-section asymmetry-section-stable">
           <div className="container">
             <h2 className="product-section-heading">What It Feels Like</h2>
-            {hasWhatToExpect && (
+            {whatToExpect.length > 0 && (
               <ul className="product-what-to-expect">
-                {product.whatToExpect!.map((bullet, i) => (
+                {whatToExpect.map((bullet, i) => (
                   <li key={i}>{bullet}</li>
                 ))}
               </ul>
@@ -334,7 +345,7 @@ export default function ProductDetailClient({
               rel="noopener noreferrer"
               className="btn btn-secondary"
             >
-              📄 View Certificate of Analysis
+              View Certificate of Analysis
             </a>
           </div>
         </section>
