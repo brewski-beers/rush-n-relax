@@ -69,8 +69,7 @@ test.describe('Product Detail Page', () => {
     await page.waitForSelector('h1', { timeout: 8000 });
 
     await expect(page.locator('h1')).toBeVisible();
-    await expect(page.locator('.product-category-badge')).toBeVisible();
-    await expect(page.locator('.product-content')).toBeVisible();
+    await expect(page.locator('.product-hero-info')).toBeVisible();
   });
 
   test('should show explore more section with other products', async ({
@@ -80,7 +79,7 @@ test.describe('Product Detail Page', () => {
     await page.goto('/products/flower');
     await page.waitForSelector('.related-products', { timeout: 8000 });
 
-    const relatedCards = page.locator('.rnr-card--product-small');
+    const relatedCards = page.locator('.related-strip-card');
     const count = await relatedCards.count();
     expect(count).toBeGreaterThan(0);
   });
@@ -92,7 +91,7 @@ test.describe('Product Detail Page', () => {
     await page.goto('/products/flower');
     await page.waitForSelector('.related-products', { timeout: 8000 });
 
-    await page.locator('.rnr-card--product-small').first().click();
+    await page.locator('.related-strip-card').first().click();
     await expect(page).not.toHaveURL(/\/products\/flower$/);
     await expect(page.locator('h1')).toBeVisible();
   });
