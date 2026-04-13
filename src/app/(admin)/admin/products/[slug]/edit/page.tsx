@@ -2,11 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
-import {
-  getProductBySlug,
-  listLocations,
-  listActiveCategories,
-} from '@/lib/repositories';
+import { getProductBySlug, listActiveCategories } from '@/lib/repositories';
 import { ProductEditForm } from './ProductEditForm';
 
 interface Props {
@@ -17,9 +13,8 @@ export default async function ProductEditPage({ params }: Props) {
   await requireRole('staff');
 
   const { slug } = await params;
-  const [product, locations, categories] = await Promise.all([
+  const [product, categories] = await Promise.all([
     getProductBySlug(slug),
-    listLocations(),
     listActiveCategories(),
   ]);
   if (!product) notFound();
@@ -27,11 +22,7 @@ export default async function ProductEditPage({ params }: Props) {
   return (
     <>
       <h1>Edit Product — {product.name}</h1>
-      <ProductEditForm
-        product={product}
-        locations={locations}
-        categories={categories}
-      />
+      <ProductEditForm product={product} categories={categories} />
     </>
   );
 }
