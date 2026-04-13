@@ -75,3 +75,5 @@ export {
 } from './vendor.repository';
 
 export { createOrder, getOrder, updateOrderStatus } from './order.repository';
+
+export { listCoaDocuments } from './coa.repository';

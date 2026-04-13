@@ -1,9 +1,15 @@
 import Link from 'next/link';
 import { ContactForm } from '@/components/ContactForm';
-import { listLocations } from '@/lib/repositories';
+import { CoaSection } from '@/components/CoaSection';
+import { listLocations, listCoaDocuments } from '@/lib/repositories';
 import { buildMetadata } from '@/lib/seo/metadata.factory';
+import type { CoaDocument } from '@/types';
 
-export const revalidate = 86400;
+// Reduced from 86400 (24 hr) to 3600 (1 hr) to stay within signed URL TTL.
+// Signed URLs from Firebase Storage expire in 1 hour — serving a cached page
+// older than 1 hour would expose expired download links. Keeping revalidate
+// at or below the signed URL TTL ensures all links in the cached page are valid.
+export const revalidate = 3600;
 
 export const metadata = buildMetadata('/contact', {
   title: 'Contact Us — Rush N Relax Cannabis Dispensary',
@@ -16,6 +22,14 @@ export default async function ContactPage() {
   const locations = await listLocations();
   const activeLocations = locations.filter(loc => loc.hours !== 'Coming soon');
 
+  // Degrade gracefully if COA Storage fetch fails — page must never break.
+  let docs: CoaDocument[] = [];
+  try {
+    docs = await listCoaDocuments();
+  } catch {
+    // listCoaDocuments already swallows errors internally; belt-and-suspenders.
+  }
+
   return (
     <main className="contact-page">
       <section
@@ -25,8 +39,8 @@ export default async function ContactPage() {
         <div className="container">
           <h1>Get in Touch</h1>
           <p className="lead">
-            Whether it's a product question, a partnership inquiry, or just
-            saying hello — we'd love to hear from you.
+            Whether it’s a product question, a partnership inquiry, or just
+            saying hello — we’d love to hear from you.
           </p>
         </div>
       </section>
@@ -77,6 +91,8 @@ export default async function ContactPage() {
           </ul>
         </div>
       </section>
+
+      {docs.length > 0 && <CoaSection docs={docs} />}
     </main>
   );
 }

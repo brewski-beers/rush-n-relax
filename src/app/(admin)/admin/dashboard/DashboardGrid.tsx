@@ -35,8 +35,17 @@ const DEFAULT_CARDS: DashboardCard[] = [
   { id: 'promos', label: 'Manage Promos', href: '/admin/promos' },
   { id: 'inventory', label: 'Manage Inventory', href: '/admin/inventory' },
   { id: 'users', label: 'Manage Users', href: '/admin/users' },
-  { id: 'email-templates', label: 'Manage Email Templates', href: '/admin/email-templates' },
-  { id: 'email-queue', label: 'Monitor Email Queue', href: '/admin/email-queue' },
+  {
+    id: 'email-templates',
+    label: 'Manage Email Templates',
+    href: '/admin/email-templates',
+  },
+  {
+    id: 'email-queue',
+    label: 'Monitor Email Queue',
+    href: '/admin/email-queue',
+  },
+  { id: 'coa', label: 'Certificates of Analysis', href: '/admin/coa' },
 ];
 
 function loadOrder(): string[] | null {
@@ -64,8 +73,14 @@ function applyOrder(cards: DashboardCard[], order: string[]): DashboardCard[] {
 }
 
 function SortableCard({ card }: { card: DashboardCard }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: card.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: card.id });
 
   return (
     <div
@@ -81,7 +96,13 @@ function SortableCard({ card }: { card: DashboardCard }) {
         {...listeners}
         aria-label="Drag to reorder"
       >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="none"
+          aria-hidden="true"
+        >
           <circle cx="4" cy="3" r="1.5" fill="currentColor" />
           <circle cx="10" cy="3" r="1.5" fill="currentColor" />
           <circle cx="4" cy="7" r="1.5" fill="currentColor" />
@@ -142,8 +163,15 @@ export function DashboardGrid() {
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={cards.map(c => c.id)} strategy={rectSortingStrategy}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext
+        items={cards.map(c => c.id)}
+        strategy={rectSortingStrategy}
+      >
         <div className="dashboard-links">
           {cards.map(card => (
             <SortableCard key={card.id} card={card} />
