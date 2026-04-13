@@ -53,6 +53,14 @@ export async function uploadCoaDocument(
   return {};
 }
 
+function labelToFilename(label: string): string {
+  const sanitized = label
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return (sanitized || 'coa') + '.pdf';
+}
+
 export async function updateCoaLabel(
   _prev: { error?: string } | null,
   formData: FormData
@@ -67,14 +75,32 @@ export async function updateCoaLabel(
   }
 
   const bucket = getAdminStorage().bucket();
-  const storageFile = bucket.file(name);
+  const src = bucket.file(name);
 
-  const [exists] = await storageFile.exists();
+  const [exists] = await src.exists();
   if (!exists) return { error: 'Document not found.' };
 
-  await storageFile.setMetadata({
-    metadata: label ? { label } : { label: null },
-  });
+  const newFilename = labelToFilename(label);
+  const newObjectName = `${COA_PREFIX}${newFilename}`;
+  const metadata: Record<string, string | null> = label
+    ? { label }
+    : { label: null };
+
+  if (newObjectName !== name) {
+    // Copy to new path, update metadata on destination, then delete the original
+    const dest = bucket.file(newObjectName);
+    await src.copy(dest);
+    await dest.setMetadata({
+      contentType: 'application/pdf',
+      metadata,
+    });
+    await src.delete();
+  } else {
+    // Filename unchanged — just update the metadata
+    await src.setMetadata({
+      metadata: label ? { label } : { label: null },
+    });
+  }
 
   revalidatePath('/admin/coa');
   return {};
