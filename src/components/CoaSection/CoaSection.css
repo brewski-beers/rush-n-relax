@@ -1,0 +1,100 @@
+/* ============================================================
+   COA SECTION
+   Displays downloadable Certificate of Analysis PDF documents
+   on the storefront contact page.
+   ============================================================ */
+
+.coa-section {
+  padding: var(--space-2xl) 0;
+}
+
+.coa-section__heading {
+  font-size: 1.75rem;
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.coa-section__subtext {
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-xl) 0;
+  max-width: 48rem;
+}
+
+/* ─── Empty State ────────────────────────────────────────── */
+
+.coa-section__empty {
+  color: var(--color-text-soft);
+  font-size: 0.95rem;
+}
+
+/* ─── Document List ──────────────────────────────────────── */
+
+.coa-section__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.coa-section__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background-color: var(--color-surface-subtle);
+}
+
+.coa-section__icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.coa-section__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.coa-section__label {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.98rem;
+}
+
+.coa-section__size {
+  font-size: 0.84rem;
+  color: var(--color-text-faint);
+}
+
+.coa-section__download {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
+}
+
+.coa-section__download:hover {
+  color: var(--color-accent-light);
+}
+
+.coa-section__download:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+
+@media (min-width: 1024px) {
+  .coa-section__heading {
+    font-size: 2rem;
+  }
+}
