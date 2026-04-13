@@ -6,6 +6,16 @@ import { ProductImage } from '@/components/ProductImage';
 import { LOCATIONS } from '@/constants/locations';
 import type { Product, ProductSummary, ProductStrain } from '@/types';
 
+const PRICE_VARIANTS = [
+  { key: 'preroll', label: 'Preroll' },
+  { key: 'eighth', label: '1/8 oz' },
+  { key: 'quarter', label: '1/4 oz' },
+  { key: 'half', label: '1/2 oz' },
+  { key: 'ounce', label: '1 oz' },
+] as const;
+
+type PriceVariantKey = (typeof PRICE_VARIANTS)[number]['key'];
+
 const STRAIN_LABELS: Record<ProductStrain, string> = {
   indica: 'Indica',
   sativa: 'Sativa',
@@ -50,6 +60,8 @@ export default function ProductDetailClient({
   const [activeImage, setActiveImage] = useState<string | undefined>(
     galleryImages[0] ?? product.image
   );
+  const [selectedVariant, setSelectedVariant] =
+    useState<PriceVariantKey>('eighth');
 
   const locationNames = product.availableAt
     .map(slug => LOCATIONS.find(loc => loc.slug === slug)?.name)
@@ -127,40 +139,77 @@ export default function ProductDetailClient({
           <div className="product-hero-info">
             <h1 className="product-hero-name">{product.name}</h1>
 
-            {/* Strain badge + flavor tags — same row */}
-            {(product.strain || hasFlavors) && (
-              <div className="product-hero-badges">
-                {product.strain && <StrainBadge strain={product.strain} />}
-                {hasFlavors &&
-                  product.flavors!.map(flavor => (
+            {/* Strain badge row */}
+            {product.strain && (
+              <div className="product-hero-tag-group">
+                <span className="product-hero-tag-label">Strain</span>
+                <div className="product-hero-badges">
+                  <StrainBadge strain={product.strain} />
+                </div>
+              </div>
+            )}
+
+            {/* THC + Effects row — all gold pills */}
+            {(product.labResults?.thcPercent !== undefined || hasEffects) && (
+              <div className="product-hero-tag-group">
+                <span className="product-hero-tag-label">Effects</span>
+                <div className="product-hero-pills">
+                  {product.labResults?.thcPercent !== undefined && (
+                    <span className="product-pill product-pill--thc">
+                      THC {product.labResults.thcPercent}%
+                    </span>
+                  )}
+                  {hasEffects &&
+                    product.effects!.map(effect => (
+                      <span
+                        key={effect}
+                        className="product-pill product-pill--gold"
+                      >
+                        {effect}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Flavor tags */}
+            {hasFlavors && (
+              <div className="product-hero-tag-group">
+                <span className="product-hero-tag-label">Flavors</span>
+                <div className="product-hero-badges">
+                  {product.flavors!.map(flavor => (
                     <span key={flavor} className="product-flavor-tag">
                       {flavor}
                     </span>
                   ))}
-              </div>
-            )}
-
-            {/* THC pill + effect tags */}
-            {(product.labResults?.thcPercent !== undefined || hasEffects) && (
-              <div className="product-hero-pills">
-                {product.labResults?.thcPercent !== undefined && (
-                  <span className="product-pill product-pill--thc">
-                    THC {product.labResults.thcPercent}%
-                  </span>
-                )}
-                {hasEffects &&
-                  product.effects!.map(effect => (
-                    <span
-                      key={effect}
-                      className="product-pill product-pill--effect"
-                    >
-                      {effect}
-                    </span>
-                  ))}
+                </div>
               </div>
             )}
 
             <p className="product-hero-description">{product.description}</p>
+
+            {/* Try in store CTA — inline under description */}
+            <Link href="/locations" className="product-try-in-store-link">
+              Try in store — find a location near you →
+            </Link>
+
+            {/* ── Pricing variants ─────────────────────────────────────── */}
+            <div className="product-pricing-block">
+              <div className="product-variant-row">
+                {PRICE_VARIANTS.map(v => (
+                  <button
+                    key={v.key}
+                    type="button"
+                    className={`product-variant-btn${selectedVariant === v.key ? ' product-variant-btn--active' : ''}`}
+                    onClick={() => setSelectedVariant(v.key)}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+              {/* Price hidden until we're ready — slot is wired */}
+              {/* <div className="product-price-display">$XX.XX</div> */}
+            </div>
 
             {/* Info table — Terpenes + cannabinoid detail */}
             {(hasTerpenes || hasLabData) && (

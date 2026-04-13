@@ -402,10 +402,102 @@
   border: 1px solid var(--color-border);
 }
 
+/* Gold effect pills — matches THC yin-yang RnR tone */
+.product-pill--gold {
+  background-color: var(--color-pill-thc-bg);
+  color: var(--color-accent-light);
+  border: 1px solid var(--color-pill-thc-border);
+}
+
+/* Labeled tag group — label + pill row stacked */
+.product-hero-tag-group {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space-xs) * 0.75);
+}
+
+.product-hero-tag-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
 .product-hero-description {
   color: var(--color-text-muted);
   line-height: 1.6;
   margin: 0;
+}
+
+/* "Try in store" inline link below description */
+.product-try-in-store-link {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: color 0.2s ease;
+}
+
+.product-try-in-store-link:hover {
+  color: var(--color-accent-light);
+}
+
+/* ── Pricing variant selector ───────────────────────────────────────────── */
+.product-pricing-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: linear-gradient(
+    135deg,
+    rgba(213, 179, 106, 0.08) 0%,
+    rgba(213, 179, 106, 0.04) 100%
+  );
+  border: 1px solid var(--color-border-anchor-soft);
+  border-radius: 0.75rem;
+}
+
+.product-variant-row {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.product-variant-btn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: calc(var(--space-xs) * 0.75) calc(var(--space-sm) * 0.875);
+  border-radius: 999px;
+  border: 1px solid var(--color-border-accent-medium);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.product-variant-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent-light);
+  background: var(--color-surface-anchor-faint);
+}
+
+.product-variant-btn--active {
+  background: var(--color-surface-anchor);
+  color: var(--color-accent-light);
+  border-color: var(--color-accent);
+}
+
+/* Price display — hidden until data is wired */
+.product-price-display {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-accent-light);
+  letter-spacing: -0.01em;
 }
 
 /* Info table */
