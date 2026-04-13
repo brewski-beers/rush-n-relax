@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { updateProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { CoaSelector } from '@/components/admin/CoaSelector';
+import { TagInput } from '@/components/admin/TagInput';
 import type { Product, ProductCategorySummary } from '@/types';
 
 interface Props {
@@ -100,7 +101,7 @@ export function ProductEditForm({ product, categories }: Props) {
         <label>
           Strain
           <select name="strain" defaultValue={product.strain ?? ''}>
-            <option value="">Select…</option>
+            <option value="">— None —</option>
             <option value="indica">Indica</option>
             <option value="sativa">Sativa</option>
             <option value="hybrid">Hybrid</option>
@@ -108,40 +109,29 @@ export function ProductEditForm({ product, categories }: Props) {
           </select>
         </label>
 
-        <label>
-          Effects{' '}
-          <span className="admin-hint">
-            Comma-separated, e.g. &quot;Euphoria, Relaxed, Sedative&quot;
-          </span>
-          <input
-            name="effects"
-            defaultValue={product.effects?.join(', ') ?? ''}
-            placeholder="Euphoria, Relaxed, Sedative"
-          />
-        </label>
+        <TagInput
+          name="effects"
+          label="Effects"
+          hint="Press Enter or comma to add each one."
+          initialTags={product.effects ?? []}
+          placeholder="e.g. Euphoria"
+        />
 
-        <label>
-          Flavors{' '}
-          <span className="admin-hint">
-            Comma-separated, e.g. &quot;Citrus, Pine, Earthy&quot;
-          </span>
-          <input
-            name="flavors"
-            defaultValue={product.flavors?.join(', ') ?? ''}
-            placeholder="Citrus, Pine, Earthy"
-          />
-        </label>
+        <TagInput
+          name="flavors"
+          label="Flavors"
+          hint="Press Enter or comma to add each one."
+          initialTags={product.flavors ?? []}
+          placeholder="e.g. Earthy"
+        />
 
-        <label>
-          What to Expect{' '}
-          <span className="admin-hint">One bullet per line.</span>
-          <textarea
-            name="whatToExpect"
-            rows={4}
-            defaultValue={product.whatToExpect?.join('\n') ?? ''}
-            placeholder="Uplifting, creative energy&#10;Great for daytime use"
-          />
-        </label>
+        <TagInput
+          name="whatToExpect"
+          label="What to Expect"
+          hint="Each entry becomes a bullet on the product page."
+          initialTags={product.whatToExpect ?? []}
+          placeholder="e.g. Calm euphoria settles the mind"
+        />
 
         <fieldset className="admin-fieldset">
           <legend>Effect Scores (0–100)</legend>

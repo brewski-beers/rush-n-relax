@@ -364,6 +364,18 @@
   border-color: var(--color-strain-cbd-border);
 }
 
+/* Flavor tags — inline with strain badge */
+.product-flavor-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: var(--space-xs);
+  border-radius: 999px;
+  background-color: var(--color-tag-bg);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  font-weight: 500;
+}
+
 /* THC / effect pills */
 .product-hero-pills {
   display: flex;
@@ -437,65 +449,29 @@
   margin-top: var(--space-xs);
 }
 
-/* ── Accordions ──────────────────────────────────────────────────────────── */
+/* ── Flat below-hero sections ────────────────────────────────────────────── */
 
-.product-accordions-section {
+.product-details-section,
+.product-feels-section,
+.product-coa-section {
   padding: var(--space-lg) 0;
 }
 
-.product-accordions-section .container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
+.product-details-body {
+  color: var(--color-text-muted);
+  line-height: 1.7;
+  max-width: 72ch;
+  margin: 0;
+  font-size: 1rem;
 }
 
-.product-accordion {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
-  overflow: hidden;
-}
-
-.product-accordion-summary {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  cursor: pointer;
-  list-style: none;
-  font-weight: 600;
-  color: var(--color-text);
-  transition: background 0.15s ease;
-}
-
-.product-accordion-summary::-webkit-details-marker {
-  display: none;
-}
-
-.product-accordion-summary:hover {
-  background-color: var(--color-surface-hover-faint);
-}
-
-.product-accordion-icon {
+.product-section-heading {
   font-size: 1.1rem;
-  flex-shrink: 0;
-}
-
-.product-accordion-chevron {
-  margin-left: auto;
-  font-size: 1.2rem;
-  color: var(--color-text-muted);
-  transition: transform 0.2s ease;
-}
-
-.product-accordion[open] .product-accordion-chevron {
-  transform: rotate(90deg);
-}
-
-.product-accordion-body {
-  padding: var(--space-sm) var(--space-md) var(--space-md);
-  color: var(--color-text-muted);
-  line-height: 1.6;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 var(--space-md);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .product-what-to-expect {

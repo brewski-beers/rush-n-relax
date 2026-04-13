@@ -43,6 +43,33 @@
   --admin-actions-hover-border: rgba(213, 179, 106, 0.65);
   --admin-qty-col-width: 132px;
   --admin-qty-input-width: 5.5rem;
+
+  /* TagInput */
+  --admin-tag-wrap-gap: var(--admin-form-label-gap);
+  --admin-tag-field-gap: 0.4rem;
+  --admin-tag-field-padding: 0.4rem 0.6rem;
+  --admin-tag-field-focus-outline: 2px solid;
+  --admin-tag-field-focus-outline-color: rgba(213, 179, 106, 0.2);
+  --admin-chip-gap: 0.3rem;
+  --admin-chip-padding: 0.2rem 0.55rem;
+  --admin-chip-bg: rgba(213, 179, 106, 0.15);
+  --admin-chip-border: 1px solid rgba(213, 179, 106, 0.35);
+  --admin-placeholder: rgba(255, 255, 255, 0.3);
+
+  /* COA upload */
+  --admin-coa-wrap-gap: var(--space-xs);
+  --admin-coa-zone-gap: var(--space-xs);
+  --admin-coa-zone-hover-bg: rgba(213, 179, 106, 0.06);
+  --admin-coa-result-gap: 0.6rem;
+  --admin-coa-result-padding: 0.6rem 0.8rem;
+  --admin-coa-result-bg: rgba(213, 179, 106, 0.08);
+  --admin-coa-result-border: 1px solid rgba(213, 179, 106, 0.25);
+  --admin-coa-remove-padding: 0 0.2rem;
+
+  /* Shared field tokens (used by TagInput / CoaSelector field wrapper) */
+  --admin-input-bg: var(--admin-field-bg);
+  --admin-input-border: var(--admin-border-strong);
+  --admin-input-radius: 10px;
   --admin-qty-input-height: 2.2rem;
   --admin-form-label-gap: 0.45rem;
   --admin-form-label-margin-bottom: 1rem;
@@ -1291,4 +1318,162 @@
   .admin-nav-pinned {
     display: none;
   }
+}
+
+/* ── TagInput ─────────────────────────────────────────────────────────────── */
+
+.tag-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-tag-wrap-gap);
+}
+
+.tag-input-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-tag-field-gap);
+  min-height: 2.5rem;
+  padding: var(--admin-tag-field-padding);
+  background: var(--admin-input-bg);
+  border: 1px solid var(--admin-input-border);
+  border-radius: var(--admin-input-radius);
+  cursor: text;
+  transition: border-color 0.15s ease;
+}
+
+.tag-input-field:focus-within {
+  border-color: var(--admin-accent);
+  outline: var(--admin-tag-field-focus-outline)
+    var(--admin-tag-field-focus-outline-color);
+  outline-offset: 0;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-chip-gap);
+  padding: var(--admin-chip-padding);
+  background: var(--admin-chip-bg);
+  border: var(--admin-chip-border);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--admin-accent-strong);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tag-chip-remove {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--admin-accent);
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.tag-chip-remove:hover {
+  opacity: 1;
+}
+
+.tag-input-inner {
+  flex: 1;
+  min-width: 120px;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+  color: var(--admin-text);
+  padding: 0;
+}
+
+.tag-input-inner::placeholder {
+  color: var(--admin-placeholder);
+}
+
+/* ── COA upload zone ─────────────────────────────────────────────────────── */
+
+.coa-upload-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-coa-wrap-gap);
+}
+
+.coa-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-coa-zone-gap);
+  min-height: 100px;
+  padding: var(--space-md);
+  border: 2px dashed var(--admin-input-border);
+  border-radius: var(--admin-radius);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.coa-upload-zone:hover,
+.coa-upload-zone--dragover {
+  border-color: var(--admin-accent);
+  background-color: var(--admin-coa-zone-hover-bg);
+}
+
+.coa-upload-zone--uploading {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.coa-upload-hint {
+  color: var(--admin-text-subtle);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.coa-upload-hint small {
+  color: var(--admin-text-subtle);
+}
+
+.coa-upload-icon {
+  font-size: 1.5rem;
+}
+
+.coa-upload-result {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-coa-result-gap);
+  padding: var(--admin-coa-result-padding);
+  background-color: var(--admin-coa-result-bg);
+  border: var(--admin-coa-result-border);
+  border-radius: var(--admin-input-radius);
+}
+
+.coa-upload-filename {
+  flex: 1;
+  font-size: 0.875rem;
+  color: var(--admin-accent-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coa-upload-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--admin-text-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: var(--admin-coa-remove-padding);
+  transition: color 0.15s ease;
+}
+
+.coa-upload-remove:hover {
+  color: var(--admin-error);
 }

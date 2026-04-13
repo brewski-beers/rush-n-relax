@@ -86,7 +86,7 @@ export async function updateProduct(
   const whatToExpectRaw = formData.get('whatToExpect')?.toString() ?? '';
   const whatToExpect = whatToExpectRaw
     ? whatToExpectRaw
-        .split('\n')
+        .split(',')
         .map(s => s.trim())
         .filter(Boolean)
     : undefined;
