@@ -53,6 +53,33 @@ export async function uploadCoaDocument(
   return {};
 }
 
+export async function updateCoaLabel(
+  _prev: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string }> {
+  await requireRole('staff');
+
+  const name = formData.get('name')?.toString();
+  const label = formData.get('label')?.toString().trim() || '';
+
+  if (!name || !name.startsWith(COA_PREFIX)) {
+    return { error: 'Invalid document name.' };
+  }
+
+  const bucket = getAdminStorage().bucket();
+  const storageFile = bucket.file(name);
+
+  const [exists] = await storageFile.exists();
+  if (!exists) return { error: 'Document not found.' };
+
+  await storageFile.setMetadata({
+    metadata: label ? { label } : { label: null },
+  });
+
+  revalidatePath('/admin/coa');
+  return {};
+}
+
 export async function deleteCoaDocument(formData: FormData): Promise<void> {
   await requireRole('owner');
 

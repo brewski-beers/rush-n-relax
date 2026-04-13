@@ -56,8 +56,6 @@ export default async function ContactPage() {
         </div>
       </section>
 
-      {docs.length > 0 && <CoaSection docs={docs} />}
-
       <section
         id="location-contact"
         className="location-contact asymmetry-section-stable"
@@ -93,6 +91,8 @@ export default async function ContactPage() {
           </ul>
         </div>
       </section>
+
+      {docs.length > 0 && <CoaSection docs={docs} />}
     </main>
   );
 }
