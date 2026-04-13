@@ -6,6 +6,8 @@ export type ProductStatus =
   | 'archived'
   | 'compliance-hold';
 
+export type ProductStrain = 'indica' | 'sativa' | 'hybrid' | 'cbd';
+
 export interface LabResults {
   thcPercent?: number;
   cbdPercent?: number;
@@ -13,6 +15,15 @@ export interface LabResults {
   /** ISO date string, e.g. "2025-01-15" */
   testDate?: string;
   labName?: string;
+}
+
+export interface EffectScores {
+  relaxation?: number;
+  energy?: number;
+  creativity?: number;
+  euphoria?: number;
+  focus?: number;
+  painRelief?: number;
 }
 
 /**
@@ -52,6 +63,16 @@ export interface Product {
   descriptionSource?: DescriptionSource;
   /** Leafly product page URL — used when descriptionSource === 'leafly' */
   leaflyUrl?: string;
+  /** Cannabis strain type — powers strain badge on storefront */
+  strain?: ProductStrain;
+  /** Consumer-facing effect descriptors, e.g. ['Euphoria', 'Relaxed', 'Sedative'] */
+  effects?: string[];
+  /** Flavor descriptors, e.g. ['Citrus', 'Pine', 'Earthy'] */
+  flavors?: string[];
+  /** Short bullet-style sentences describing the experience */
+  whatToExpect?: string[];
+  /** Numeric effect scores 0–100 for Spotify-style effect bars */
+  effectScores?: EffectScores;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,4 +89,5 @@ export type ProductSummary = Pick<
   | 'status'
   | 'availableAt'
   | 'vendorSlug'
+  | 'strain'
 >;

@@ -3,7 +3,13 @@
  * Server-side only (uses firebase-admin).
  */
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
-import type { Product, ProductSummary, LabResults } from '@/types';
+import type {
+  Product,
+  ProductSummary,
+  LabResults,
+  EffectScores,
+  ProductStrain,
+} from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -108,6 +114,14 @@ export async function setProductStatus(
 
 // ── Private helpers ───────────────────────────────────────────────────────
 
+/** Valid strain values for defensive mapping */
+const VALID_STRAINS = new Set<ProductStrain>([
+  'indica',
+  'sativa',
+  'hybrid',
+  'cbd',
+]);
+
 function docToProductSummary(
   id: string,
   d: FirebaseFirestore.DocumentData
@@ -123,6 +137,11 @@ function docToProductSummary(
     status: d.status,
     availableAt: d.availableAt ?? [],
     vendorSlug: d.vendorSlug ?? undefined,
+    strain:
+      typeof d.strain === 'string' &&
+      VALID_STRAINS.has(d.strain as ProductStrain)
+        ? (d.strain as ProductStrain)
+        : undefined,
   } satisfies ProductSummary;
 }
 
@@ -144,9 +163,20 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     labResults: docToLabResults(d.labResults),
     descriptionSource: d.descriptionSource ?? undefined,
     leaflyUrl: d.leaflyUrl ?? undefined,
+    strain:
+      typeof d.strain === 'string' &&
+      VALID_STRAINS.has(d.strain as ProductStrain)
+        ? (d.strain as ProductStrain)
+        : undefined,
+    effects: Array.isArray(d.effects) ? (d.effects as string[]) : undefined,
+    flavors: Array.isArray(d.flavors) ? (d.flavors as string[]) : undefined,
+    whatToExpect: Array.isArray(d.whatToExpect)
+      ? (d.whatToExpect as string[])
+      : undefined,
+    effectScores: docToEffectScores(d.effectScores),
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
-  };
+  } satisfies Product;
 }
 
 function docToLabResults(
@@ -161,6 +191,24 @@ function docToLabResults(
     testDate: typeof r.testDate === 'string' ? r.testDate : undefined,
     labName: typeof r.labName === 'string' ? r.labName : undefined,
   };
+}
+
+function docToEffectScores(
+  raw: FirebaseFirestore.DocumentData | undefined
+): EffectScores | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  const scores: EffectScores = {
+    relaxation: typeof r.relaxation === 'number' ? r.relaxation : undefined,
+    energy: typeof r.energy === 'number' ? r.energy : undefined,
+    creativity: typeof r.creativity === 'number' ? r.creativity : undefined,
+    euphoria: typeof r.euphoria === 'number' ? r.euphoria : undefined,
+    focus: typeof r.focus === 'number' ? r.focus : undefined,
+    painRelief: typeof r.painRelief === 'number' ? r.painRelief : undefined,
+  };
+  // Return undefined if all scores are absent
+  const hasAnyScore = Object.values(scores).some(v => v !== undefined);
+  return hasAnyScore ? scores : undefined;
 }
 
 function stripUndefinedFields<T extends Record<string, unknown>>(
