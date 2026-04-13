@@ -7,7 +7,7 @@ import { ConfirmButton } from '@/components/admin/ConfirmButton';
 import { toggleCategoryStatus } from './actions';
 
 export default async function AdminCategoriesPage() {
-  await requireRole('owner');
+  await requireRole('staff');
 
   const categories = await listAllCategories();
 
@@ -45,7 +45,9 @@ export default async function AdminCategoriesPage() {
                 <td>
                   <span
                     className={
-                      cat.isActive ? 'admin-badge-active' : 'admin-badge-inactive'
+                      cat.isActive
+                        ? 'admin-badge-active'
+                        : 'admin-badge-inactive'
                     }
                   >
                     {cat.isActive ? 'Active' : 'Inactive'}

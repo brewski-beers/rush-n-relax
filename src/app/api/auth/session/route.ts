@@ -4,11 +4,12 @@ import {
   markPendingUserInviteAccepted,
   normalizeInviteEmail,
 } from '@/lib/repositories';
+import type { UserRole } from '@/types';
 
 const SESSION_DURATION_MS = 60 * 60 * 24 * 5 * 1000; // 5 days
 const SESSION_MAX_AGE_S = 60 * 60 * 24 * 5; // 5 days in seconds
 
-const OWNER_ROLE = 'owner';
+const OWNER_ROLE: UserRole = 'owner';
 const CLAIMS_UPDATED_RETRY_CODE = 'CLAIMS_UPDATED_RETRY';
 
 function getRoleClaim(payload: unknown): unknown {
@@ -17,6 +18,20 @@ function getRoleClaim(payload: unknown): unknown {
   }
 
   return (payload as Record<string, unknown>).role;
+}
+
+function isUserRole(value: unknown): value is UserRole {
+  return (
+    value === 'customer' ||
+    value === 'staff' ||
+    value === 'storeOwner' ||
+    value === 'storeManager' ||
+    value === 'owner'
+  );
+}
+
+function isStaffOrAbove(role: UserRole): boolean {
+  return role !== 'customer';
 }
 
 function parseOwnerAllowlist(): Set<string> {
@@ -32,6 +47,9 @@ function parseOwnerAllowlist(): Set<string> {
  * POST /api/auth/session
  * Exchange a Firebase ID token for a server-side session cookie.
  * Body: { idToken: string }
+ *
+ * Session cookie is issued only when the user holds a recognized, non-customer role.
+ * Gate: isUserRole(roleClaim) && roleClaim !== 'customer'
  */
 export async function POST(request: Request): Promise<Response> {
   let idToken: string;
@@ -61,7 +79,29 @@ export async function POST(request: Request): Promise<Response> {
       ? normalizeInviteEmail(decoded.email)
       : undefined;
 
-    if (roleClaim !== OWNER_ROLE) {
+    // Owner allowlist bootstrap: elevate the user to owner then ask client to retry.
+    if (roleClaim !== OWNER_ROLE && normalizedEmail) {
+      const isAllowlisted = parseOwnerAllowlist().has(normalizedEmail);
+
+      if (isAllowlisted) {
+        const userRecord = await adminAuth.getUser(decoded.uid);
+        await adminAuth.setCustomUserClaims(decoded.uid, {
+          ...(userRecord.customClaims ?? {}),
+          role: OWNER_ROLE,
+        });
+
+        return Response.json(
+          {
+            error: 'Owner claim applied. Refreshing token required.',
+            code: CLAIMS_UPDATED_RETRY_CODE,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Email invite flow: apply the pending role then ask client to retry.
+    if (!isUserRole(roleClaim) || !isStaffOrAbove(roleClaim)) {
       if (normalizedEmail) {
         const pendingInvite =
           await getPendingUserInviteByEmail(normalizedEmail);
@@ -92,26 +132,7 @@ export async function POST(request: Request): Promise<Response> {
         }
       }
 
-      const isAllowlisted = Boolean(
-        normalizedEmail && parseOwnerAllowlist().has(normalizedEmail)
-      );
-
-      if (isAllowlisted) {
-        const userRecord = await adminAuth.getUser(decoded.uid);
-        await adminAuth.setCustomUserClaims(decoded.uid, {
-          ...(userRecord.customClaims ?? {}),
-          role: OWNER_ROLE,
-        });
-
-        return Response.json(
-          {
-            error: 'Owner claim applied. Refreshing token required.',
-            code: CLAIMS_UPDATED_RETRY_CODE,
-          },
-          { status: 409 }
-        );
-      }
-
+      // No valid staff-or-above role and no pending invite — reject.
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 

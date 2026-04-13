@@ -7,7 +7,7 @@ import { ConfirmButton } from '@/components/admin/ConfirmButton';
 import { archiveProduct, restoreProduct } from './actions';
 
 export default async function AdminProductsPage() {
-  await requireRole('owner');
+  await requireRole('staff');
 
   const products = await listAllProducts();
 

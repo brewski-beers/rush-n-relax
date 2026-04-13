@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default async function ProductEditPage({ params }: Props) {
-  await requireRole('owner');
+  await requireRole('staff');
 
   const { slug } = await params;
   const [product, locations, categories] = await Promise.all([

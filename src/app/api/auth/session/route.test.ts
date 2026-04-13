@@ -67,6 +67,74 @@ describe('auth session route', () => {
     );
   });
 
+  it('creates a session for staff role', async () => {
+    // Given a valid ID token with role: 'staff'
+    verifyIdTokenMock.mockResolvedValue({
+      uid: 'staff-uid',
+      email: 'staff@rushnrelax.com',
+      role: 'staff',
+    });
+    createSessionCookieMock.mockResolvedValue('staff-session-cookie');
+
+    // When the session endpoint is called
+    const response = await POST(createPostRequest('staff-token'));
+
+    // Then a session cookie is set (200)
+    expect(response.status).toBe(200);
+    expect(createSessionCookieMock).toHaveBeenCalledWith('staff-token', {
+      expiresIn: 432000000,
+    });
+    expect(response.headers.get('Set-Cookie')).toContain(
+      '__session=staff-session-cookie'
+    );
+  });
+
+  it('creates a session for staff role with phone auth (no email)', async () => {
+    // Given a phone-auth staff user — no email field
+    verifyIdTokenMock.mockResolvedValue({
+      uid: 'phone-staff-uid',
+      phone_number: '+12345678900',
+      role: 'staff',
+    });
+    createSessionCookieMock.mockResolvedValue('phone-staff-cookie');
+
+    const response = await POST(createPostRequest('phone-staff-token'));
+
+    expect(response.status).toBe(200);
+    expect(createSessionCookieMock).toHaveBeenCalled();
+  });
+
+  it('returns 403 for customer role', async () => {
+    // Given a valid ID token with role: 'customer'
+    verifyIdTokenMock.mockResolvedValue({
+      uid: 'customer-uid',
+      email: 'customer@example.com',
+      role: 'customer',
+    });
+
+    // When the session endpoint is called
+    const response = await POST(createPostRequest('customer-token'));
+
+    // Then 403 is returned
+    expect(response.status).toBe(403);
+    expect(createSessionCookieMock).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 when no role claim is present', async () => {
+    // Given a valid ID token with no role claim
+    verifyIdTokenMock.mockResolvedValue({
+      uid: 'no-role-uid',
+      email: 'unknown@example.com',
+    });
+
+    // When the session endpoint is called
+    const response = await POST(createPostRequest('no-role-token'));
+
+    // Then 403 is returned
+    expect(response.status).toBe(403);
+    expect(createSessionCookieMock).not.toHaveBeenCalled();
+  });
+
   it('bootstraps owner claim for allowlisted user and asks client to retry', async () => {
     process.env.ADMIN_OWNER_ALLOWLIST = 'owner@rushnrelax.com';
     verifyIdTokenMock.mockResolvedValue({
@@ -88,6 +156,7 @@ describe('auth session route', () => {
   });
 
   it('applies pending invite role and asks client to retry token', async () => {
+    // Given the email invite flow (pending invite exists)
     verifyIdTokenMock.mockResolvedValue({
       uid: 'invitee-uid',
       email: 'new.staff@rushnrelax.com',
@@ -100,9 +169,11 @@ describe('auth session route', () => {
     });
     getUserMock.mockResolvedValue({ customClaims: { betaFlag: true } });
 
+    // When the session endpoint is called
     const response = await POST(createPostRequest('invite-token'));
     const body = (await response.json()) as { code?: string };
 
+    // Then 409 CLAIMS_UPDATED_RETRY fires
     expect(response.status).toBe(409);
     expect(body.code).toBe('CLAIMS_UPDATED_RETRY');
     expect(setCustomUserClaimsMock).toHaveBeenCalledWith('invitee-uid', {
@@ -114,20 +185,6 @@ describe('auth session route', () => {
       acceptedByUid: 'invitee-uid',
     });
     expect(createSessionCookieMock).not.toHaveBeenCalled();
-  });
-
-  it('returns forbidden when user is not owner and not allowlisted', async () => {
-    verifyIdTokenMock.mockResolvedValue({
-      uid: 'staff-uid',
-      email: 'staff@rushnrelax.com',
-      role: 'staff',
-    });
-
-    const response = await POST(createPostRequest('staff-token'));
-
-    expect(response.status).toBe(403);
-    expect(createSessionCookieMock).not.toHaveBeenCalled();
-    expect(setCustomUserClaimsMock).not.toHaveBeenCalled();
   });
 
   it('clears the session cookie on delete', () => {

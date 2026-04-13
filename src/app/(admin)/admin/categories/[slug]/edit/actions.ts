@@ -10,7 +10,7 @@ export async function updateCategory(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await requireRole('owner');
+  await requireRole('staff');
 
   const existing = await getCategoryBySlug(slug);
   if (!existing) return { error: 'Category not found.' };

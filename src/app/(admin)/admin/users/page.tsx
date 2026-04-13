@@ -9,7 +9,8 @@ import { StaffPhoneForm } from './StaffPhoneForm';
 
 async function listStaffPhoneUsers() {
   const auth = getAdminAuth();
-  const results: { uid: string; phoneNumber: string }[] = [];
+  const results: { uid: string; phoneNumber: string; displayName: string }[] =
+    [];
   let pageToken: string | undefined;
 
   while (true) {
@@ -21,7 +22,11 @@ async function listStaffPhoneUsers() {
         !user.email && // phone-only users
         claims?.role === 'staff'
       ) {
-        results.push({ uid: user.uid, phoneNumber: user.phoneNumber });
+        results.push({
+          uid: user.uid,
+          phoneNumber: user.phoneNumber,
+          displayName: user.displayName ?? '',
+        });
       }
     }
     if (!page.pageToken) break;

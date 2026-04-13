@@ -9,7 +9,7 @@ export async function createCategory(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await requireRole('owner');
+  await requireRole('staff');
 
   const slug = formData.get('slug')?.toString().trim().toLowerCase();
   const label = formData.get('label')?.toString().trim();

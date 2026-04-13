@@ -1,11 +1,16 @@
 'use client';
 
 import { useActionState } from 'react';
-import { provisionStaffPhone, revokeStaffPhone } from './actions';
+import {
+  provisionStaffPhone,
+  revokeStaffPhone,
+  setStaffDisplayName,
+} from './actions';
 
 interface StaffPhoneUser {
   uid: string;
   phoneNumber: string;
+  displayName: string;
 }
 
 interface Props {
@@ -19,6 +24,40 @@ function maskPhone(phone: string): string {
   const last2 = digits.slice(-2);
   const areaCode = digits.slice(-10, -7);
   return `+1 (${areaCode}) ***-**${last2}`;
+}
+
+function DisplayNameCell({ user }: { user: StaffPhoneUser }) {
+  const [state, action, pending] = useActionState(setStaffDisplayName, null);
+
+  return (
+    <td>
+      <form action={action} className="admin-inline-form">
+        <input type="hidden" name="uid" value={user.uid} />
+        <input
+          name="displayName"
+          type="text"
+          defaultValue={user.displayName}
+          placeholder="Add name…"
+          className="admin-input admin-input--inline"
+          disabled={pending}
+          aria-label={`Display name for ${maskPhone(user.phoneNumber)}`}
+        />
+        <button
+          type="submit"
+          className="admin-btn admin-btn--sm"
+          disabled={pending}
+        >
+          {pending ? '…' : 'Save'}
+        </button>
+        {state?.error && (
+          <span className="admin-inline-error">{state.error}</span>
+        )}
+        {state?.success && (
+          <span className="admin-inline-success">{state.success}</span>
+        )}
+      </form>
+    </td>
+  );
 }
 
 export function StaffPhoneForm({ staffPhoneUsers }: Props) {
@@ -35,23 +74,38 @@ export function StaffPhoneForm({ staffPhoneUsers }: Props) {
     <div className="admin-table-wrap">
       <h2 className="admin-section-title">Staff Phone Access</h2>
       <p className="admin-section-desc">
-        Provision a staff role by phone number (E.164 format, e.g.{' '}
-        <code>+16155550123</code>). The user signs in via SMS OTP and receives
-        the <strong>staff</strong> role.
+        Provision a staff role by US phone number. The user signs in via SMS OTP
+        and receives the <strong>staff</strong> role.
       </p>
 
       <form action={provisionAction} className="admin-form">
         <div className="admin-form-row">
           <label htmlFor="phoneNumber" className="admin-label">
-            Phone Number (E.164)
+            Phone Number
+          </label>
+          <div className="admin-input-prefix-wrap">
+            <span className="admin-input-prefix">+1</span>
+            <input
+              id="phoneNumber"
+              name="phoneNumber"
+              type="tel"
+              placeholder="6155550123"
+              className="admin-input"
+              inputMode="numeric"
+              maxLength={10}
+              pattern="\d{10}"
+              required
+            />
+          </div>
+          <label htmlFor="displayName" className="admin-label">
+            Name <span className="admin-label-optional">(optional)</span>
           </label>
           <input
-            id="phoneNumber"
-            name="phoneNumber"
-            type="tel"
-            placeholder="+16155550123"
+            id="displayName"
+            name="displayName"
+            type="text"
+            placeholder="e.g. Jamie"
             className="admin-input"
-            required
           />
           <button
             type="submit"
@@ -73,6 +127,7 @@ export function StaffPhoneForm({ staffPhoneUsers }: Props) {
         <thead>
           <tr>
             <th>Phone (masked)</th>
+            <th>Name</th>
             <th>UID</th>
             <th>Action</th>
           </tr>
@@ -81,6 +136,7 @@ export function StaffPhoneForm({ staffPhoneUsers }: Props) {
           {staffPhoneUsers.map(user => (
             <tr key={user.uid}>
               <td>{maskPhone(user.phoneNumber)}</td>
+              <DisplayNameCell user={user} />
               <td>{user.uid}</td>
               <td>
                 <form action={revokeAction}>
@@ -98,7 +154,7 @@ export function StaffPhoneForm({ staffPhoneUsers }: Props) {
           ))}
           {staffPhoneUsers.length === 0 && (
             <tr>
-              <td colSpan={3} className="admin-empty">
+              <td colSpan={4} className="admin-empty">
                 No staff phone users provisioned.
               </td>
             </tr>

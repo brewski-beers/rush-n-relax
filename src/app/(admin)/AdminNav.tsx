@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import cannabisLeaf from '@/assets/icons/cannabis-leaf.svg';
 import { getAssetSrc } from '@/utils/assetSrc';
 import LogoutButton from './admin/LogoutButton';
+import type { UserRole } from '@/types';
 
 const LEAF_SRC = getAssetSrc(cannabisLeaf);
 
@@ -27,7 +28,19 @@ const ALL_LINKS = [
   { label: '← Client Site', href: '/' },
 ] as const;
 
-export function AdminNav() {
+/** Links available to staff role (and above via the full ALL_LINKS list). */
+const STAFF_LINKS = [
+  { label: 'Products', href: '/admin/products' },
+  { label: 'Categories', href: '/admin/categories' },
+  { label: 'COA', href: '/admin/coa' },
+  { label: '← Client Site', href: '/' },
+] as const;
+
+interface AdminNavProps {
+  role: UserRole | null;
+}
+
+export function AdminNav({ role }: AdminNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
@@ -40,19 +53,24 @@ export function AdminNav() {
     }
   }, [isOpen]);
 
+  const isStaffOnly = role === 'staff';
+  const drawerLinks = isStaffOnly ? STAFF_LINKS : ALL_LINKS;
+
   return (
     <div className="admin-nav">
-      <div className="admin-nav-pinned" aria-label="Pinned admin links">
-        {PINNED.map(link => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`admin-nav-pinned-link${pathname.startsWith(link.href) ? ' admin-nav-pinned-link--active' : ''}`}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </div>
+      {!isStaffOnly && (
+        <div className="admin-nav-pinned" aria-label="Pinned admin links">
+          {PINNED.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`admin-nav-pinned-link${pathname.startsWith(link.href) ? ' admin-nav-pinned-link--active' : ''}`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      )}
 
       <button
         type="button"
@@ -83,7 +101,7 @@ export function AdminNav() {
         aria-label="Full admin navigation"
       >
         <ul className="admin-nav-drawer-list">
-          {ALL_LINKS.map(link => (
+          {drawerLinks.map(link => (
             <li key={link.href}>
               <Link
                 href={link.href}

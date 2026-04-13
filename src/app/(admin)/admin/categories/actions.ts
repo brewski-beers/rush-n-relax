@@ -8,7 +8,7 @@ export async function toggleCategoryStatus(
   slug: string,
   currentIsActive: boolean
 ): Promise<void> {
-  await requireRole('owner');
+  await requireRole('staff');
   await setCategoryStatus(slug, !currentIsActive);
   revalidatePath('/admin/categories');
   revalidatePath('/products');

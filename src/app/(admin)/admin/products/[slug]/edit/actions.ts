@@ -22,7 +22,7 @@ export async function updateProduct(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await requireRole('owner');
+  await requireRole('staff');
 
   const existing = await getProductBySlug(slug);
   if (!existing) return { error: 'Product not found.' };
@@ -61,8 +61,7 @@ export async function updateProduct(
     description,
     details,
     image: featuredImagePath ?? existing.image,
-    images:
-      galleryImagePaths.length > 0 ? galleryImagePaths : existing.images,
+    images: galleryImagePaths.length > 0 ? galleryImagePaths : existing.images,
     status,
     federalDeadlineRisk,
     availableAt,
