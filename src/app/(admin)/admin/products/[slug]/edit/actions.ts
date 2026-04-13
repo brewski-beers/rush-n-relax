@@ -8,7 +8,7 @@ import {
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
-import type { ProductStatus } from '@/types';
+import type { ProductStatus, ProductStrain, EffectScores } from '@/types';
 
 // compliance-hold is system-managed — admins cannot set it directly
 const SETTABLE_STATUSES: ProductStatus[] = [
@@ -16,6 +16,13 @@ const SETTABLE_STATUSES: ProductStatus[] = [
   'pending-reformulation',
   'archived',
 ];
+
+const VALID_STRAINS = new Set<ProductStrain>([
+  'indica',
+  'sativa',
+  'hybrid',
+  'cbd',
+]);
 
 export async function updateProduct(
   slug: string,
@@ -54,6 +61,42 @@ export async function updateProduct(
     .map(i => formData.get(`galleryImagePath_${i}`)?.toString() || undefined)
     .filter((p): p is string => p !== undefined);
 
+  // ── Cannabis profile fields ────────────────────────────────────────────
+  const strainRaw = formData.get('strain')?.toString() ?? '';
+  const strain = VALID_STRAINS.has(strainRaw as ProductStrain)
+    ? (strainRaw as ProductStrain)
+    : undefined;
+
+  const effectsRaw = formData.get('effects')?.toString() ?? '';
+  const effects = effectsRaw
+    ? effectsRaw
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : undefined;
+
+  const flavorsRaw = formData.get('flavors')?.toString() ?? '';
+  const flavors = flavorsRaw
+    ? flavorsRaw
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : undefined;
+
+  const whatToExpectRaw = formData.get('whatToExpect')?.toString() ?? '';
+  const whatToExpect = whatToExpectRaw
+    ? whatToExpectRaw
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : undefined;
+
+  const effectScores = parseEffectScores(formData);
+
+  // ── COA URL ────────────────────────────────────────────────────────────
+  const coaUrlRaw = formData.get('coaUrl')?.toString() ?? '';
+  const coaUrl = coaUrlRaw || existing.coaUrl;
+
   const payload = {
     slug: existing.slug,
     name,
@@ -65,13 +108,16 @@ export async function updateProduct(
     status,
     federalDeadlineRisk,
     availableAt,
+    ...(coaUrl ? { coaUrl } : {}),
+    ...(strain !== undefined ? { strain } : {}),
+    ...(effects !== undefined ? { effects } : {}),
+    ...(flavors !== undefined ? { flavors } : {}),
+    ...(whatToExpect !== undefined ? { whatToExpect } : {}),
+    ...(effectScores !== undefined ? { effectScores } : {}),
   };
 
   try {
-    await upsertProduct({
-      ...payload,
-      ...(existing.coaUrl ? { coaUrl: existing.coaUrl } : {}),
-    });
+    await upsertProduct(payload);
 
     revalidatePath('/admin/products');
     revalidatePath('/products');
@@ -82,4 +128,26 @@ export async function updateProduct(
     if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
     return { error: 'Failed to save. Please try again.' };
   }
+}
+
+/** Parse effect score fields from FormData. Returns undefined if all blank. */
+function parseEffectScores(formData: FormData): EffectScores | undefined {
+  const parse = (key: string): number | undefined => {
+    const raw = formData.get(key)?.toString() ?? '';
+    if (raw === '') return undefined;
+    const n = Number(raw);
+    return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : undefined;
+  };
+
+  const scores: EffectScores = {
+    relaxation: parse('effectScores_relaxation'),
+    energy: parse('effectScores_energy'),
+    creativity: parse('effectScores_creativity'),
+    euphoria: parse('effectScores_euphoria'),
+    focus: parse('effectScores_focus'),
+    painRelief: parse('effectScores_painRelief'),
+  };
+
+  const hasAny = Object.values(scores).some(v => v !== undefined);
+  return hasAny ? scores : undefined;
 }

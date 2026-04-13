@@ -5,14 +5,13 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { createProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
-import type { LocationSummary, ProductCategorySummary } from '@/types';
+import type { ProductCategorySummary } from '@/types';
 
 interface Props {
-  locations: LocationSummary[];
   categories: ProductCategorySummary[];
 }
 
-export function ProductCreateForm({ locations, categories }: Props) {
+export function ProductCreateForm({ categories }: Props) {
   const [state, formAction, pending] = useActionState(createProduct, null);
   const [slug, setSlug] = useState('');
 
@@ -62,29 +61,6 @@ export function ProductCreateForm({ locations, categories }: Props) {
         <textarea name="details" rows={5} required />
       </label>
 
-      <fieldset className="admin-fieldset">
-        <legend>Available At</legend>
-        {locations.map(loc => (
-          <label key={loc.slug} className="admin-checkbox">
-            <input
-              type="checkbox"
-              name="availableAt"
-              value={loc.slug}
-              defaultChecked
-            />
-            {loc.name}
-          </label>
-        ))}
-      </fieldset>
-
-      <label className="admin-checkbox">
-        <input type="checkbox" name="federalDeadlineRisk" value="true" />
-        Federal deadline risk{' '}
-        <span className="admin-hint">
-          (≤0.4mg total THC — affected by Nov 2026 rule)
-        </span>
-      </label>
-
       {slug && (
         <fieldset className="admin-fieldset">
           <legend>Featured Image</legend>
@@ -94,6 +70,99 @@ export function ProductCreateForm({ locations, categories }: Props) {
           <ProductImageUpload slug={slug} />
         </fieldset>
       )}
+
+      <fieldset className="admin-fieldset">
+        <legend>Cannabis Profile</legend>
+        <span className="admin-hint">All fields are optional.</span>
+
+        <label>
+          Strain
+          <select name="strain">
+            <option value="">Select…</option>
+            <option value="indica">Indica</option>
+            <option value="sativa">Sativa</option>
+            <option value="hybrid">Hybrid</option>
+            <option value="cbd">CBD</option>
+          </select>
+        </label>
+
+        <label>
+          Effects{' '}
+          <span className="admin-hint">
+            Comma-separated, e.g. &quot;Euphoria, Relaxed, Sedative&quot;
+          </span>
+          <input name="effects" placeholder="Euphoria, Relaxed, Sedative" />
+        </label>
+
+        <label>
+          Flavors{' '}
+          <span className="admin-hint">
+            Comma-separated, e.g. &quot;Citrus, Pine, Earthy&quot;
+          </span>
+          <input name="flavors" placeholder="Citrus, Pine, Earthy" />
+        </label>
+
+        <label>
+          What to Expect{' '}
+          <span className="admin-hint">One bullet per line.</span>
+          <textarea
+            name="whatToExpect"
+            rows={4}
+            placeholder="Uplifting, creative energy&#10;Great for daytime use"
+          />
+        </label>
+
+        <fieldset className="admin-fieldset">
+          <legend>Effect Scores (0–100)</legend>
+          <span className="admin-hint">
+            Leave blank to omit from storefront.
+          </span>
+          <label>
+            Relaxation
+            <input
+              name="effectScores_relaxation"
+              type="number"
+              min={0}
+              max={100}
+            />
+          </label>
+          <label>
+            Energy
+            <input name="effectScores_energy" type="number" min={0} max={100} />
+          </label>
+          <label>
+            Creativity
+            <input
+              name="effectScores_creativity"
+              type="number"
+              min={0}
+              max={100}
+            />
+          </label>
+          <label>
+            Euphoria
+            <input
+              name="effectScores_euphoria"
+              type="number"
+              min={0}
+              max={100}
+            />
+          </label>
+          <label>
+            Focus
+            <input name="effectScores_focus" type="number" min={0} max={100} />
+          </label>
+          <label>
+            Pain Relief
+            <input
+              name="effectScores_painRelief"
+              type="number"
+              min={0}
+              max={100}
+            />
+          </label>
+        </fieldset>
+      </fieldset>
 
       <div className="admin-form-actions">
         <Link href="/admin/products">Cancel</Link>
