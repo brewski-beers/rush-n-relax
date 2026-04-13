@@ -46,6 +46,7 @@ export interface AdminActorContext {
   uid: string;
   email: string;
   role: UserRole;
+  phone?: string;
 }
 
 async function resolveActorFromSessionCookie(
@@ -73,6 +74,7 @@ async function resolveActorFromSessionCookie(
     uid: decoded.uid,
     email: decoded.email ?? '',
     role,
+    phone: decoded.phone_number ?? undefined,
   };
 }
 
@@ -107,4 +109,31 @@ export async function requireRole(
   }
 
   return actor;
+}
+
+/**
+ * Decode the role from the session cookie without full verification.
+ * Used in server-rendered layouts where we only need the role for UI filtering.
+ * Full verification still happens in requireRole() in every Server Action.
+ */
+export async function getAdminRole(): Promise<UserRole | null> {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('__session')?.value;
+  if (!sessionCookie) return null;
+
+  // Session cookies are structured as JWTs: header.payload.signature
+  // We only base64-decode the payload — no signature verification here.
+  // requireRole() in every Server Action performs full cryptographic verification.
+  try {
+    const parts = sessionCookie.split('.');
+    if (parts.length < 2) return null;
+    // base64url → standard base64
+    const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(padded);
+    const payload: unknown = JSON.parse(json);
+    const role = getRoleClaim(payload);
+    return isUserRole(role) ? role : null;
+  } catch {
+    return null;
+  }
 }
