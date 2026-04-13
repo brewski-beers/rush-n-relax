@@ -107,7 +107,7 @@ export async function updateCoaLabel(
 }
 
 export async function deleteCoaDocument(formData: FormData): Promise<void> {
-  await requireRole('owner');
+  await requireRole('staff');
 
   const name = formData.get('name')?.toString();
   if (!name || !name.startsWith(COA_PREFIX)) return;
