@@ -15,15 +15,6 @@ export interface LabResults {
   labName?: string;
 }
 
-export interface EffectScores {
-  relaxation?: number;
-  energy?: number;
-  creativity?: number;
-  euphoria?: number;
-  focus?: number;
-  painRelief?: number;
-}
-
 /**
  * Firestore document shape for a product.
  * Lives at: products/{slug}
@@ -65,10 +56,6 @@ export interface Product {
   effects?: string[];
   /** Flavor descriptors, e.g. ['Citrus', 'Pine', 'Earthy'] */
   flavors?: string[];
-  /** Short bullet-style sentences describing the experience */
-  whatToExpect?: string[];
-  /** Numeric effect scores 0–100 for Spotify-style effect bars */
-  effectScores?: EffectScores;
   createdAt: Date;
   updatedAt: Date;
 }

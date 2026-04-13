@@ -7,7 +7,6 @@ import type {
   Product,
   ProductSummary,
   LabResults,
-  EffectScores,
   ProductStrain,
 } from '@/types';
 
@@ -167,10 +166,6 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
         : undefined,
     effects: Array.isArray(d.effects) ? (d.effects as string[]) : undefined,
     flavors: Array.isArray(d.flavors) ? (d.flavors as string[]) : undefined,
-    whatToExpect: Array.isArray(d.whatToExpect)
-      ? (d.whatToExpect as string[])
-      : undefined,
-    effectScores: docToEffectScores(d.effectScores),
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
   } satisfies Product;
@@ -188,24 +183,6 @@ function docToLabResults(
     testDate: typeof r.testDate === 'string' ? r.testDate : undefined,
     labName: typeof r.labName === 'string' ? r.labName : undefined,
   };
-}
-
-function docToEffectScores(
-  raw: FirebaseFirestore.DocumentData | undefined
-): EffectScores | undefined {
-  if (!raw || typeof raw !== 'object') return undefined;
-  const r = raw as Record<string, unknown>;
-  const scores: EffectScores = {
-    relaxation: typeof r.relaxation === 'number' ? r.relaxation : undefined,
-    energy: typeof r.energy === 'number' ? r.energy : undefined,
-    creativity: typeof r.creativity === 'number' ? r.creativity : undefined,
-    euphoria: typeof r.euphoria === 'number' ? r.euphoria : undefined,
-    focus: typeof r.focus === 'number' ? r.focus : undefined,
-    painRelief: typeof r.painRelief === 'number' ? r.painRelief : undefined,
-  };
-  // Return undefined if all scores are absent
-  const hasAnyScore = Object.values(scores).some(v => v !== undefined);
-  return hasAnyScore ? scores : undefined;
 }
 
 function stripUndefinedFields<T extends Record<string, unknown>>(

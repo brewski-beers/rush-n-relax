@@ -102,60 +102,50 @@ export function ProductCreateForm({ categories }: Props) {
           placeholder="e.g. Earthy"
         />
 
-        <TagInput
-          name="whatToExpect"
-          label="What to Expect"
-          hint="Each entry becomes a bullet on the product page."
-          placeholder="e.g. Calm euphoria settles the mind"
-        />
-
         <fieldset className="admin-fieldset">
-          <legend>Effect Scores (0–100)</legend>
-          <span className="admin-hint">
-            Leave blank to omit from storefront.
-          </span>
+          <legend>Lab Results</legend>
+          <span className="admin-hint">All fields are optional.</span>
+
           <label>
-            Relaxation
+            THC %
             <input
-              name="effectScores_relaxation"
+              name="labResults_thcPercent"
               type="number"
               min={0}
               max={100}
+              step={0.01}
             />
           </label>
+
           <label>
-            Energy
-            <input name="effectScores_energy" type="number" min={0} max={100} />
-          </label>
-          <label>
-            Creativity
+            CBD %
             <input
-              name="effectScores_creativity"
+              name="labResults_cbdPercent"
               type="number"
               min={0}
               max={100}
+              step={0.01}
             />
           </label>
+
+          <TagInput
+            name="terpenes"
+            label="Terpenes"
+            hint="Press Enter or comma to add each one."
+            placeholder="e.g. Myrcene"
+          />
+
           <label>
-            Euphoria
-            <input
-              name="effectScores_euphoria"
-              type="number"
-              min={0}
-              max={100}
-            />
+            Test Date
+            <input name="labResults_testDate" type="date" />
           </label>
+
           <label>
-            Focus
-            <input name="effectScores_focus" type="number" min={0} max={100} />
-          </label>
-          <label>
-            Pain Relief
+            Lab Name
             <input
-              name="effectScores_painRelief"
-              type="number"
-              min={0}
-              max={100}
+              name="labResults_labName"
+              type="text"
+              placeholder="e.g. Confident Cannabis"
             />
           </label>
         </fieldset>

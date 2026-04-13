@@ -115,77 +115,58 @@ export function ProductEditForm({ product, categories }: Props) {
           placeholder="e.g. Earthy"
         />
 
-        <TagInput
-          name="whatToExpect"
-          label="What to Expect"
-          hint="Each entry becomes a bullet on the product page."
-          initialTags={product.whatToExpect ?? []}
-          placeholder="e.g. Calm euphoria settles the mind"
-        />
-
         <fieldset className="admin-fieldset">
-          <legend>Effect Scores (0–100)</legend>
-          <span className="admin-hint">
-            Leave blank to omit from storefront.
-          </span>
+          <legend>Lab Results</legend>
+          <span className="admin-hint">All fields are optional.</span>
+
           <label>
-            Relaxation
+            THC %
             <input
-              name="effectScores_relaxation"
+              name="labResults_thcPercent"
               type="number"
               min={0}
               max={100}
-              defaultValue={product.effectScores?.relaxation ?? ''}
+              step={0.01}
+              defaultValue={product.labResults?.thcPercent ?? ''}
             />
           </label>
+
           <label>
-            Energy
+            CBD %
             <input
-              name="effectScores_energy"
+              name="labResults_cbdPercent"
               type="number"
               min={0}
               max={100}
-              defaultValue={product.effectScores?.energy ?? ''}
+              step={0.01}
+              defaultValue={product.labResults?.cbdPercent ?? ''}
             />
           </label>
+
+          <TagInput
+            name="terpenes"
+            label="Terpenes"
+            hint="Press Enter or comma to add each one."
+            initialTags={product.labResults?.terpenes ?? []}
+            placeholder="e.g. Myrcene"
+          />
+
           <label>
-            Creativity
+            Test Date
             <input
-              name="effectScores_creativity"
-              type="number"
-              min={0}
-              max={100}
-              defaultValue={product.effectScores?.creativity ?? ''}
+              name="labResults_testDate"
+              type="date"
+              defaultValue={product.labResults?.testDate ?? ''}
             />
           </label>
+
           <label>
-            Euphoria
+            Lab Name
             <input
-              name="effectScores_euphoria"
-              type="number"
-              min={0}
-              max={100}
-              defaultValue={product.effectScores?.euphoria ?? ''}
-            />
-          </label>
-          <label>
-            Focus
-            <input
-              name="effectScores_focus"
-              type="number"
-              min={0}
-              max={100}
-              defaultValue={product.effectScores?.focus ?? ''}
-            />
-          </label>
-          <label>
-            Pain Relief
-            <input
-              name="effectScores_painRelief"
-              type="number"
-              min={0}
-              max={100}
-              defaultValue={product.effectScores?.painRelief ?? ''}
+              name="labResults_labName"
+              type="text"
+              defaultValue={product.labResults?.labName ?? ''}
+              placeholder="e.g. Confident Cannabis"
             />
           </label>
         </fieldset>

@@ -435,7 +435,7 @@ describe('getProductBySlug — cannabis profile fields', () => {
   });
 
   describe('given a product with all new profile fields present', () => {
-    it('maps strain, effects, flavors, whatToExpect, and effectScores', async () => {
+    it('maps strain, effects, and flavors', async () => {
       docGetMock.mockResolvedValue(
         makeDocSnapshot('blue-dream', {
           slug: 'blue-dream',
@@ -443,15 +443,6 @@ describe('getProductBySlug — cannabis profile fields', () => {
           strain: 'sativa',
           effects: ['Euphoria', 'Relaxed'],
           flavors: ['Citrus', 'Pine'],
-          whatToExpect: ['Uplifting experience', 'Great for daytime use'],
-          effectScores: {
-            relaxation: 60,
-            energy: 80,
-            creativity: 90,
-            euphoria: 75,
-            focus: 70,
-            painRelief: 40,
-          },
           createdAt: new Date('2024-01-01').toISOString(),
           updatedAt: new Date('2024-06-01').toISOString(),
         })
@@ -463,16 +454,6 @@ describe('getProductBySlug — cannabis profile fields', () => {
       expect(result!.strain).toBe('sativa');
       expect(result!.effects).toEqual(['Euphoria', 'Relaxed']);
       expect(result!.flavors).toEqual(['Citrus', 'Pine']);
-      expect(result!.whatToExpect).toEqual([
-        'Uplifting experience',
-        'Great for daytime use',
-      ]);
-      expect(result!.effectScores?.relaxation).toBe(60);
-      expect(result!.effectScores?.energy).toBe(80);
-      expect(result!.effectScores?.creativity).toBe(90);
-      expect(result!.effectScores?.euphoria).toBe(75);
-      expect(result!.effectScores?.focus).toBe(70);
-      expect(result!.effectScores?.painRelief).toBe(40);
     });
   });
 
@@ -499,8 +480,6 @@ describe('getProductBySlug — cannabis profile fields', () => {
       expect(result!.strain).toBeUndefined();
       expect(result!.effects).toBeUndefined();
       expect(result!.flavors).toBeUndefined();
-      expect(result!.whatToExpect).toBeUndefined();
-      expect(result!.effectScores).toBeUndefined();
     });
   });
 
@@ -519,24 +498,6 @@ describe('getProductBySlug — cannabis profile fields', () => {
       const result = await getProductBySlug('blue-dream');
 
       expect(result!.strain).toBeUndefined();
-    });
-  });
-
-  describe('given effectScores with all values absent', () => {
-    it('returns undefined for effectScores when no numeric values present', async () => {
-      docGetMock.mockResolvedValue(
-        makeDocSnapshot('blue-dream', {
-          slug: 'blue-dream',
-          name: 'Blue Dream',
-          effectScores: {}, // empty object — no numeric scores
-          createdAt: new Date('2024-01-01').toISOString(),
-          updatedAt: new Date('2024-06-01').toISOString(),
-        })
-      );
-
-      const result = await getProductBySlug('blue-dream');
-
-      expect(result!.effectScores).toBeUndefined();
     });
   });
 });

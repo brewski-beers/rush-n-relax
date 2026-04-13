@@ -8,7 +8,6 @@ export type {
   ProductSummary,
   ProductStatus,
   LabResults,
-  EffectScores,
   ProductStrain,
 } from './product';
 export type { ProductCategoryConfig, ProductCategorySummary } from './category';

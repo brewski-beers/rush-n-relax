@@ -8,7 +8,7 @@ import {
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
-import type { ProductStrain, EffectScores } from '@/types';
+import type { ProductStrain } from '@/types';
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
@@ -74,15 +74,44 @@ export async function createProduct(
         .filter(Boolean)
     : undefined;
 
-  const whatToExpectRaw = formData.get('whatToExpect')?.toString() ?? '';
-  const whatToExpect = whatToExpectRaw
-    ? whatToExpectRaw
+  // ── Lab results ────────────────────────────────────────────────────────
+  const labThc = formData.get('labResults_thcPercent')?.toString() ?? '';
+  const labCbd = formData.get('labResults_cbdPercent')?.toString() ?? '';
+  const terpenesRaw = formData.get('terpenes')?.toString() ?? '';
+  const testDate =
+    formData.get('labResults_testDate')?.toString().trim() || undefined;
+  const labName =
+    formData.get('labResults_labName')?.toString().trim() || undefined;
+
+  const thcPercent =
+    labThc !== '' && Number.isFinite(Number(labThc))
+      ? Number(labThc)
+      : undefined;
+  const cbdPercent =
+    labCbd !== '' && Number.isFinite(Number(labCbd))
+      ? Number(labCbd)
+      : undefined;
+  const terpenes = terpenesRaw
+    ? terpenesRaw
         .split(',')
         .map(s => s.trim())
         .filter(Boolean)
     : undefined;
 
-  const effectScores = parseEffectScores(formData);
+  const labResults =
+    thcPercent !== undefined ||
+    cbdPercent !== undefined ||
+    terpenes !== undefined ||
+    testDate ||
+    labName
+      ? {
+          ...(thcPercent !== undefined && { thcPercent }),
+          ...(cbdPercent !== undefined && { cbdPercent }),
+          ...(terpenes !== undefined && { terpenes }),
+          ...(testDate && { testDate }),
+          ...(labName && { labName }),
+        }
+      : undefined;
 
   await upsertProduct({
     slug,
@@ -96,8 +125,7 @@ export async function createProduct(
     ...(strain !== undefined ? { strain } : {}),
     ...(effects !== undefined ? { effects } : {}),
     ...(flavors !== undefined ? { flavors } : {}),
-    ...(whatToExpect !== undefined ? { whatToExpect } : {}),
-    ...(effectScores !== undefined ? { effectScores } : {}),
+    ...(labResults !== undefined ? { labResults } : {}),
   });
 
   revalidatePath('/admin/products');
@@ -105,26 +133,4 @@ export async function createProduct(
   revalidatePath(`/products/${slug}`);
 
   redirect('/admin/products');
-}
-
-/** Parse effect score fields from FormData. Returns undefined if all blank. */
-function parseEffectScores(formData: FormData): EffectScores | undefined {
-  const parse = (key: string): number | undefined => {
-    const raw = formData.get(key)?.toString() ?? '';
-    if (raw === '') return undefined;
-    const n = Number(raw);
-    return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : undefined;
-  };
-
-  const scores: EffectScores = {
-    relaxation: parse('effectScores_relaxation'),
-    energy: parse('effectScores_energy'),
-    creativity: parse('effectScores_creativity'),
-    euphoria: parse('effectScores_euphoria'),
-    focus: parse('effectScores_focus'),
-    painRelief: parse('effectScores_painRelief'),
-  };
-
-  const hasAny = Object.values(scores).some(v => v !== undefined);
-  return hasAny ? scores : undefined;
 }
