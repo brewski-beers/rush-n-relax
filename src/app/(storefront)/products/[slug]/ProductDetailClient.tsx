@@ -31,21 +31,6 @@ function StrainBadge({ strain }: { strain: ProductStrain }) {
   );
 }
 
-function EffectBar({ label, score }: { label: string; score: number }) {
-  return (
-    <div className="effect-bar">
-      <div className="effect-bar-label">{label}</div>
-      <progress
-        className="effect-bar-progress"
-        value={score}
-        max={100}
-        aria-label={`${label}: ${score}%`}
-      />
-      <div className="effect-bar-pct">{score}%</div>
-    </div>
-  );
-}
-
 function TagGroup({
   label,
   children,
@@ -90,17 +75,9 @@ export default function ProductDetailClient({
     ? product.flavors.filter((f): f is string => Boolean(f))
     : [];
 
-  const whatToExpect = Array.isArray(product.whatToExpect)
-    ? product.whatToExpect.filter((b): b is string => Boolean(b))
-    : [];
-
   const terpenes = Array.isArray(product.labResults?.terpenes)
     ? product.labResults.terpenes.filter((t): t is string => Boolean(t))
     : [];
-
-  const hasEffectScores =
-    product.effectScores !== undefined &&
-    Object.values(product.effectScores).some(v => v !== undefined);
 
   const hasLabData =
     product.labResults?.thcPercent !== undefined ||
@@ -275,62 +252,6 @@ export default function ProductDetailClient({
         <section className="product-details-section asymmetry-section-stable">
           <div className="container">
             <p className="product-details-body">{product.details}</p>
-          </div>
-        </section>
-      )}
-
-      {/* ── What It Feels Like ───────────────────────────────────────────── */}
-      {(whatToExpect.length > 0 || hasEffectScores) && (
-        <section className="product-feels-section asymmetry-section-stable">
-          <div className="container">
-            <h2 className="product-section-heading">What It Feels Like</h2>
-            {whatToExpect.length > 0 && (
-              <ul className="product-what-to-expect">
-                {whatToExpect.map((bullet, i) => (
-                  <li key={i}>{bullet}</li>
-                ))}
-              </ul>
-            )}
-            {hasEffectScores && (
-              <div className="effect-bars">
-                {product.effectScores!.relaxation !== undefined && (
-                  <EffectBar
-                    label="Relaxation"
-                    score={product.effectScores!.relaxation}
-                  />
-                )}
-                {product.effectScores!.energy !== undefined && (
-                  <EffectBar
-                    label="Energy"
-                    score={product.effectScores!.energy}
-                  />
-                )}
-                {product.effectScores!.creativity !== undefined && (
-                  <EffectBar
-                    label="Creativity"
-                    score={product.effectScores!.creativity}
-                  />
-                )}
-                {product.effectScores!.euphoria !== undefined && (
-                  <EffectBar
-                    label="Euphoria"
-                    score={product.effectScores!.euphoria}
-                  />
-                )}
-                {product.effectScores!.focus !== undefined && (
-                  <EffectBar
-                    label="Focus"
-                    score={product.effectScores!.focus}
-                  />
-                )}
-                {product.effectScores!.painRelief !== undefined && (
-                  <EffectBar
-                    label="Pain Relief"
-                    score={product.effectScores!.painRelief}
-                  />
-                )}
-              </div>
-            )}
           </div>
         </section>
       )}

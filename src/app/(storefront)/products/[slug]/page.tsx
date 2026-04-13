@@ -6,6 +6,7 @@ import { buildProductSchema } from '@/lib/seo/schemas/product';
 import { buildBreadcrumbSchema } from '@/lib/seo/schemas/breadcrumb';
 import { JsonLd } from '@/components/JsonLd';
 import { seoConfig } from '@/config/seo.config';
+import '@/styles/products.css';
 import ProductDetailClient from './ProductDetailClient';
 
 interface Props {
