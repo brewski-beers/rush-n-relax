@@ -504,7 +504,7 @@
   border-color: var(--color-accent);
 }
 
-.product-variant-card-weight {
+.product-variant-card-size {
   font-size: 0.7rem;
   font-weight: 700;
   color: var(--color-text-muted);
@@ -512,11 +512,11 @@
   transition: color 0.18s ease;
 }
 
-.product-variant-card--active .product-variant-card-weight {
+.product-variant-card--active .product-variant-card-size {
   color: var(--color-accent-light);
 }
 
-.product-variant-card:hover .product-variant-card-weight {
+.product-variant-card:hover .product-variant-card-size {
   color: var(--color-accent-light);
 }
 

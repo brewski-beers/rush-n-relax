@@ -4,17 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ProductImage } from '@/components/ProductImage';
 import { LOCATIONS } from '@/constants/locations';
+import {
+  getVariantsForCategory,
+  getSizeLabelForCategory,
+} from '@/constants/product-variants';
 import type { Product, ProductSummary, ProductStrain } from '@/types';
-
-const PRICE_VARIANTS = [
-  { key: 'preroll', label: 'Preroll' },
-  { key: 'eighth', label: '1/8 oz' },
-  { key: 'quarter', label: '1/4 oz' },
-  { key: 'half', label: '1/2 oz' },
-  { key: 'ounce', label: '1 oz' },
-] as const;
-
-type PriceVariantKey = (typeof PRICE_VARIANTS)[number]['key'];
 
 const STRAIN_LABELS: Record<ProductStrain, string> = {
   indica: 'Indica',
@@ -55,13 +49,17 @@ export default function ProductDetailClient({
   relatedProducts: ProductSummary[];
   coaSignedUrl?: string;
 }) {
+  const variants = getVariantsForCategory(product.category);
+  const sizeLabel = getSizeLabelForCategory(product.category);
+
   const galleryImages =
     product.images && product.images.length > 0 ? product.images : [];
   const [activeImage, setActiveImage] = useState<string | undefined>(
     galleryImages[0] ?? product.image
   );
-  const [selectedVariant, setSelectedVariant] =
-    useState<PriceVariantKey>('eighth');
+  const [selectedVariant, setSelectedVariant] = useState<string>(
+    variants[0]?.key ?? ''
+  );
 
   const locationNames = product.availableAt
     .map(slug => LOCATIONS.find(loc => loc.slug === slug)?.name)
@@ -182,9 +180,9 @@ export default function ProductDetailClient({
 
             {/* ── Pricing variants ─────────────────────────────────────── */}
             <div className="product-pricing-block">
-              <span className="product-hero-tag-label">Select Size</span>
+              <span className="product-hero-tag-label">{sizeLabel}</span>
               <div className="product-variant-grid">
-                {PRICE_VARIANTS.map(v => (
+                {variants.map(v => (
                   <button
                     key={v.key}
                     type="button"
@@ -192,9 +190,7 @@ export default function ProductDetailClient({
                     onClick={() => setSelectedVariant(v.key)}
                     aria-pressed={selectedVariant === v.key}
                   >
-                    <span className="product-variant-card-weight">
-                      {v.label}
-                    </span>
+                    <span className="product-variant-card-size">{v.label}</span>
                     <span className="product-variant-card-price">—</span>
                   </button>
                 ))}
