@@ -52,10 +52,13 @@ export default function ProductDetailClient({
   const variants = getVariantsForCategory(product.category);
   const sizeLabel = getSizeLabelForCategory(product.category);
 
-  const galleryImages =
-    product.images && product.images.length > 0 ? product.images : [];
+  // Featured image is always first; gallery images follow in order.
+  const allImages: string[] = [
+    ...(product.image ? [product.image] : []),
+    ...(product.images ?? []),
+  ];
   const [activeImage, setActiveImage] = useState<string | undefined>(
-    galleryImages[0] ?? product.image
+    allImages[0]
   );
   const [selectedVariant, setSelectedVariant] = useState<string>(
     variants[0]?.key ?? ''
@@ -101,9 +104,9 @@ export default function ProductDetailClient({
         <div className="container product-hero-grid">
           {/* Left: thumbnail strip + main image */}
           <div className="product-hero-media">
-            {galleryImages.length > 1 && (
+            {allImages.length > 1 && (
               <div className="product-thumbnail-strip">
-                {galleryImages.map((path, i) => (
+                {allImages.map((path, i) => (
                   <button
                     key={path}
                     type="button"
