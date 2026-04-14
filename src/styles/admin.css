@@ -32,6 +32,7 @@
   --admin-card-padding: 1rem 1.1rem;
   --admin-card-hover-border: rgba(213, 179, 106, 0.45);
   --admin-hub-border: rgba(213, 179, 106, 0.55);
+  --admin-login-btn-padding: 0.875rem 2rem;
   --admin-card-sub-gap: 0.45rem;
   --admin-table-cell-padding: 0.92rem 0.95rem;
   --admin-table-head-bg: rgba(255, 255, 255, 0.05);
@@ -852,10 +853,198 @@
   margin: var(--admin-section-title-margin);
 }
 
+/* ── Login page ─────────────────────────────────────────────────────────── */
+
 .admin-login-wrap {
   margin: var(--space-2xl) auto;
-  max-width: 460px;
-  padding: var(--space-lg);
+  max-width: 420px;
+  padding: var(--space-xl) var(--space-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle gold shimmer strip across the top */
+.admin-login-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-accent) 40%,
+    var(--color-accent-light) 60%,
+    transparent 100%
+  );
+  opacity: 0.6;
+}
+
+.admin-login-wrap h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text);
+  margin: 0 0 var(--space-lg);
+  text-align: center;
+}
+
+/* Two-button method selector */
+.admin-login-methods {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.admin-login-methods .admin-submit {
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: var(--admin-login-btn-padding);
+}
+
+/* Gold accent on the Google button (first child) */
+.admin-login-methods .admin-submit:first-child {
+  background: linear-gradient(
+    135deg,
+    rgba(213, 179, 106, 0.18) 0%,
+    rgba(213, 179, 106, 0.08) 100%
+  );
+  border-color: var(--color-border-accent);
+  color: var(--color-accent-soft);
+}
+
+.admin-login-methods .admin-submit:first-child:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(213, 179, 106, 0.26) 0%,
+    rgba(213, 179, 106, 0.14) 100%
+  );
+  border-color: var(--admin-hub-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 8px 24px rgba(213, 179, 106, 0.18);
+}
+
+/* Phone form */
+.admin-phone-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.admin-phone-form .admin-label {
+  color: var(--admin-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: calc(var(--space-xs) * -0.5);
+}
+
+.admin-phone-form .admin-submit {
+  width: 100%;
+  margin-top: calc(var(--space-xs) * 0.5);
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  padding: var(--admin-login-btn-padding);
+}
+
+.admin-input-prefix-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--admin-field-bg);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 10px;
+  overflow: hidden;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.admin-input-prefix-wrap:focus-within {
+  border-color: var(--admin-focus-border);
+  box-shadow: 0 0 0 2px rgba(213, 179, 106, 0.25);
+}
+
+.admin-input-prefix {
+  color: var(--admin-text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0 var(--space-sm);
+  border-right: 1px solid var(--admin-border-strong);
+  line-height: 44px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.admin-input-prefix + .admin-input {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-input-prefix + .admin-input:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+/* Standalone input (OTP field) */
+.admin-phone-form > .admin-input {
+  background: var(--admin-field-bg);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 10px;
+  color: var(--admin-text);
+  font-family: inherit;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  min-height: 44px;
+  padding: var(--admin-field-padding);
+  text-align: center;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-phone-form > .admin-input:focus {
+  outline: none;
+  border-color: var(--admin-focus-border);
+  box-shadow: 0 0 0 2px rgba(213, 179, 106, 0.25);
+}
+
+/* "Back" link button */
+.admin-link-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--admin-text-subtle);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  padding: var(--space-xs) 0;
+  text-align: center;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  width: 100%;
+}
+
+.admin-link-btn:hover {
+  color: var(--color-accent);
+}
+
+.admin-link-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .admin-form label {
