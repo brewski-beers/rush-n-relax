@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
 import {
   upsertProduct,
+  clearProductFields,
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
@@ -54,11 +55,24 @@ export async function updateProduct(
     return { error: 'Cannot set that status directly.' };
   }
 
-  const featuredImagePath =
-    formData.get('featuredImagePath')?.toString() || undefined;
-  const galleryImagePaths = ([0, 1, 2, 3, 4] as const)
-    .map(i => formData.get(`galleryImagePath_${i}`)?.toString() || undefined)
-    .filter((p): p is string => p !== undefined);
+  // Empty string means the user explicitly cleared the slot.
+  // Non-empty string is the storage path to save.
+  // We must NOT fall back to existing.image when empty — that would
+  // silently ignore removals. Instead, we track fields to delete from Firestore.
+  const rawFeaturedPath = formData.get('featuredImagePath')?.toString() ?? '';
+  const rawGalleryPaths = ([0, 1, 2, 3, 4] as const).map(
+    i => formData.get(`galleryImagePath_${i}`)?.toString() ?? ''
+  );
+
+  const featuredImagePath = rawFeaturedPath || undefined;
+  const featuredCleared =
+    rawFeaturedPath === '' && existing.image !== undefined;
+
+  const galleryImagePaths = rawGalleryPaths.filter(Boolean);
+  const galleryCleared =
+    galleryImagePaths.length === 0 &&
+    existing.images !== undefined &&
+    existing.images.length > 0;
 
   // ── Cannabis profile fields ────────────────────────────────────────────
   const strainRaw = formData.get('strain')?.toString() ?? '';
@@ -132,8 +146,18 @@ export async function updateProduct(
     name,
     category,
     details,
-    image: featuredImagePath ?? existing.image,
-    images: galleryImagePaths.length > 0 ? galleryImagePaths : existing.images,
+    // Only include image/images when they have a value — cleared fields are
+    // handled separately via clearProductFields (FieldValue.delete) below,
+    // because set({ merge: true }) does NOT remove fields set to undefined.
+    ...(featuredImagePath !== undefined ? { image: featuredImagePath } : {}),
+    ...(galleryImagePaths.length > 0 ? { images: galleryImagePaths } : {}),
+    // Preserve existing values when neither cleared nor updated
+    ...(featuredImagePath === undefined && !featuredCleared
+      ? { image: existing.image }
+      : {}),
+    ...(galleryImagePaths.length === 0 && !galleryCleared
+      ? { images: existing.images }
+      : {}),
     status,
     federalDeadlineRisk,
     availableAt,
@@ -146,6 +170,13 @@ export async function updateProduct(
 
   try {
     await upsertProduct(payload);
+
+    // Explicitly remove cleared image fields — upsertProduct uses set({ merge: true })
+    // which ignores undefined, so we need FieldValue.delete() for actual removal.
+    const toClear: ('image' | 'images')[] = [];
+    if (featuredCleared) toClear.push('image');
+    if (galleryCleared) toClear.push('images');
+    if (toClear.length > 0) await clearProductFields(existing.slug, toClear);
 
     revalidatePath('/admin/products');
     revalidatePath('/products');

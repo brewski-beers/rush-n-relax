@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useState, useActionState } from 'react';
 import Link from 'next/link';
 import { updateProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
@@ -16,6 +16,7 @@ interface Props {
 export function ProductEditForm({ product, categories }: Props) {
   const boundAction = updateProduct.bind(null, product.slug);
   const [state, formAction, pending] = useActionState(boundAction, null);
+  const [imageUploading, setImageUploading] = useState(false);
 
   return (
     <form action={formAction} className="admin-form">
@@ -76,6 +77,7 @@ export function ProductEditForm({ product, categories }: Props) {
           slug={product.slug}
           initialFeaturedPath={product.image}
           initialGalleryPaths={product.images}
+          onUploadingChange={setImageUploading}
         />
       </fieldset>
 
@@ -194,8 +196,8 @@ export function ProductEditForm({ product, categories }: Props) {
 
       <div className="admin-form-actions">
         <Link href="/admin/products">Cancel</Link>
-        <button type="submit" disabled={pending}>
-          {pending ? 'Saving…' : 'Save'}
+        <button type="submit" disabled={pending || imageUploading}>
+          {imageUploading ? 'Uploading image…' : pending ? 'Saving…' : 'Save'}
         </button>
       </div>
     </form>

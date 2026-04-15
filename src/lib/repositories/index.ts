@@ -12,6 +12,7 @@ export {
   listProductsByCategory,
   getProductBySlug,
   upsertProduct,
+  clearProductFields,
   setProductStatus,
 } from './product.repository';
 

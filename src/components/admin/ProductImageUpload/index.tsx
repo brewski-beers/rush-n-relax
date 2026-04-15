@@ -1,6 +1,12 @@
 'use client';
 
-import { useState, useOptimistic, useTransition, useEffect } from 'react';
+import {
+  useState,
+  useOptimistic,
+  useTransition,
+  useEffect,
+  useCallback,
+} from 'react';
 import { useFormStatus } from 'react-dom';
 import { getDownloadURL, ref } from 'firebase/storage';
 import { initializeApp, getStorage$ } from '../../../firebase';
@@ -51,6 +57,7 @@ interface Props {
   slug: string;
   initialFeaturedPath?: string;
   initialGalleryPaths?: string[];
+  onUploadingChange?: (uploading: boolean) => void;
 }
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -76,6 +83,7 @@ interface InnerProps extends Props {
   setGalleryPaths: (
     updater: (prev: (string | null)[]) => (string | null)[]
   ) => void;
+  onUploadingChange?: (uploading: boolean) => void;
 }
 
 function ProductImageUploadInner({
@@ -84,6 +92,7 @@ function ProductImageUploadInner({
   setFeaturedPath,
   galleryPaths,
   setGalleryPaths,
+  onUploadingChange,
 }: InnerProps) {
   const { pending: formPending } = useFormStatus();
 
@@ -117,6 +126,16 @@ function ProductImageUploadInner({
   >(new Set());
 
   const [errors, setErrors] = useState<Record<string | number, string>>({});
+
+  // Notify parent when any upload is in flight so the submit button can be disabled.
+  const isAnyUploading = isUploadingFeatured || uploadingGallerySlots.size > 0;
+  const stableOnUploadingChange = useCallback(
+    (v: boolean) => onUploadingChange?.(v),
+    [onUploadingChange]
+  );
+  useEffect(() => {
+    stableOnUploadingChange(isAnyUploading);
+  }, [isAnyUploading, stableOnUploadingChange]);
 
   function clearError(slot: 'featured' | number) {
     setErrors(prev => {
@@ -315,6 +334,7 @@ export function ProductImageUpload({
   slug,
   initialFeaturedPath,
   initialGalleryPaths,
+  onUploadingChange,
 }: Props) {
   const [featuredPath, setFeaturedPath] = useState<string | null>(
     initialFeaturedPath ?? null
@@ -332,6 +352,7 @@ export function ProductImageUpload({
       setFeaturedPath={setFeaturedPath}
       galleryPaths={galleryPaths}
       setGalleryPaths={setGalleryPaths}
+      onUploadingChange={onUploadingChange}
     />
   );
 }

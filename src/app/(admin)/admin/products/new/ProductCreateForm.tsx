@@ -16,6 +16,7 @@ interface Props {
 export function ProductCreateForm({ categories }: Props) {
   const [state, formAction, pending] = useActionState(createProduct, null);
   const [slug, setSlug] = useState('');
+  const [imageUploading, setImageUploading] = useState(false);
 
   return (
     <form action={formAction} className="admin-form">
@@ -64,7 +65,10 @@ export function ProductCreateForm({ categories }: Props) {
           <span className="admin-hint">
             Gallery images can be added after saving.
           </span>
-          <ProductImageUpload slug={slug} />
+          <ProductImageUpload
+            slug={slug}
+            onUploadingChange={setImageUploading}
+          />
         </fieldset>
       )}
 
@@ -167,8 +171,12 @@ export function ProductCreateForm({ categories }: Props) {
 
       <div className="admin-form-actions">
         <Link href="/admin/products">Cancel</Link>
-        <button type="submit" disabled={pending}>
-          {pending ? 'Creating…' : 'Create Product'}
+        <button type="submit" disabled={pending || imageUploading}>
+          {imageUploading
+            ? 'Uploading image…'
+            : pending
+              ? 'Creating…'
+              : 'Create Product'}
         </button>
       </div>
     </form>
