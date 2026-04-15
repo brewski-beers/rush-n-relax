@@ -44,10 +44,18 @@ export default function ProductDetailClient({
   product,
   relatedProducts,
   coaSignedUrl,
+  heroImageUrl,
 }: {
   product: Product;
   relatedProducts: ProductSummary[];
   coaSignedUrl?: string;
+  /**
+   * Server-resolved public Firebase Storage URL for the hero image.
+   * When provided, the hero <img> is rendered directly (no client-side
+   * getDownloadURL call) so the browser can see the src at SSR time and
+   * preload it — fixing the LCP regression.
+   */
+  heroImageUrl?: string;
 }) {
   const variants = getVariantsForCategory(product.category);
   const sizeLabel = getSizeLabelForCategory(product.category);
@@ -89,6 +97,11 @@ export default function ProductDetailClient({
   const showEffectsGroup =
     product.labResults?.thcPercent !== undefined || effects.length > 0;
 
+  // When the user clicks a thumbnail, we may need to show the server-resolved
+  // hero URL (for the primary image) or fall back to ProductImage (for gallery
+  // images whose URLs were not pre-resolved).
+  const isActiveImagePrimary = activeImage === product.image;
+
   return (
     <main className="product-detail-page">
       <section className="back-to-products">
@@ -125,12 +138,29 @@ export default function ProductDetailClient({
               </div>
             )}
             <div className="product-main-image-wrap">
-              <ProductImage
-                slug={product.slug}
-                path={activeImage ?? product.image}
-                alt={product.name}
-                className="product-main-img"
-              />
+              {/* Render the hero image directly when the server-resolved URL is
+                  available and the primary image is active — this lets the browser
+                  see the src at SSR time and start loading immediately (LCP fix).
+                  For gallery images (non-primary), fall back to ProductImage. */}
+              {heroImageUrl && isActiveImagePrimary ? (
+                <div className="product-card-img product-main-img">
+                  <img
+                    src={heroImageUrl}
+                    alt={product.name}
+                    className="product-image product-image-loaded"
+                    fetchPriority="high"
+                    loading="eager"
+                    decoding="async"
+                  />
+                </div>
+              ) : (
+                <ProductImage
+                  slug={product.slug}
+                  path={activeImage ?? product.image}
+                  alt={product.name}
+                  className="product-main-img"
+                />
+              )}
             </div>
           </div>
 
