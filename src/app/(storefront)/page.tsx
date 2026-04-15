@@ -97,9 +97,7 @@ export default async function HomePage() {
                   path={product.image || undefined}
                 />
                 <div className="product-card-content">
-                  <div className="product-category">
-                    {product.category.toUpperCase()}
-                  </div>
+                  <div className="product-category">{product.category}</div>
                   <h3>{product.name}</h3>
                   <div className="product-cta">Learn More →</div>
                 </div>
