@@ -194,11 +194,19 @@ export default function ProductDetailClient({
                     aria-pressed={selectedVariant === v.key}
                   >
                     <span className="product-variant-card-size">{v.label}</span>
-                    <span className="product-variant-card-price">—</span>
+                    <span className="product-variant-card-price">See in store</span>
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Primary CTA — above the fold */}
+            <Link
+              href="/locations"
+              className="btn btn-primary"
+            >
+              Find a Location Near You
+            </Link>
 
             {/* Info table — Terpenes + cannabinoid detail */}
             {(terpenes.length > 0 || hasLabData) && (
@@ -248,6 +256,7 @@ export default function ProductDetailClient({
       {product.details && (
         <section className="product-details-section asymmetry-section-stable">
           <div className="container">
+            <h2 className="product-section-heading">Description</h2>
             <p className="product-details-body">{product.details}</p>
           </div>
         </section>
@@ -257,6 +266,7 @@ export default function ProductDetailClient({
       {coaSignedUrl && (
         <section className="product-coa-section asymmetry-section-stable">
           <div className="container">
+            <p className="product-coa-context">Third-party lab tested — view the full certificate of analysis</p>
             <a
               href={coaSignedUrl}
               target="_blank"
@@ -317,7 +327,7 @@ export default function ProductDetailClient({
           </p>
           <Link
             href="/locations"
-            className="btn btn-primary asymmetry-motion-anchor"
+            className="btn btn-secondary asymmetry-motion-anchor"
           >
             Find a Location
           </Link>
