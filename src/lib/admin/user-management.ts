@@ -8,6 +8,8 @@ export interface ManagedUserSummary {
   email: string;
   displayName: string;
   role: UserRole | 'unassigned';
+  providers: string[];
+  phoneNumber?: string;
 }
 
 function isUserRole(value: unknown): value is UserRole {
@@ -80,6 +82,8 @@ export async function listManagedUsers(
         email: user.email ?? '(no email)',
         displayName: user.displayName ?? '-',
         role: role ?? 'unassigned',
+        providers: user.providerData.map(p => p.providerId),
+        phoneNumber: user.phoneNumber ?? undefined,
       });
 
       if (summaries.length >= limit) {

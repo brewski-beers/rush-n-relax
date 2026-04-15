@@ -98,6 +98,22 @@ export async function upsertProduct(
   return data.slug;
 }
 
+/**
+ * Explicitly delete top-level fields from a product document.
+ * Used when a field must be removed entirely (e.g. featured image cleared).
+ * `set({ merge: true })` with undefined values does NOT remove fields —
+ * this function uses FieldValue.delete() to handle that case.
+ */
+export async function clearProductFields(
+  slug: string,
+  fields: ('image' | 'images')[]
+): Promise<void> {
+  if (fields.length === 0) return;
+  const { FieldValue } = await import('firebase-admin/firestore');
+  const update = Object.fromEntries(fields.map(f => [f, FieldValue.delete()]));
+  await productsCol().doc(slug).update(update);
+}
+
 export async function setProductStatus(
   slug: string,
   status: Product['status']

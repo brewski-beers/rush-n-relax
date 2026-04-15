@@ -1065,6 +1065,15 @@
   cursor: not-allowed;
 }
 
+.admin-link-btn--spaced {
+  margin-top: var(--space-sm);
+}
+
+.admin-uid-cell {
+  font-family: monospace;
+  font-size: 0.85em;
+}
+
 .admin-form label {
   color: var(--admin-text);
   display: flex;

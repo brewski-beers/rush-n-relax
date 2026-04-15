@@ -5,6 +5,7 @@ import { listManagedUsers } from '@/lib/admin/user-management';
 import { listPendingUserInvites } from '@/lib/repositories';
 import { getAdminAuth } from '@/lib/firebase/admin';
 import { StaffPhoneForm } from './StaffPhoneForm';
+import { UserListTable } from './UserListTable';
 
 async function listStaffPhoneUsers() {
   const auth = getAdminAuth();
@@ -81,36 +82,7 @@ export default async function AdminUsersPage() {
         </table>
       </div>
 
-      <div className="admin-table-wrap">
-        <h2 className="admin-section-title">Firebase Auth Users</h2>
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Display Name</th>
-              <th>UID</th>
-              <th>Role</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(user => (
-              <tr key={user.uid}>
-                <td>{user.email}</td>
-                <td>{user.displayName}</td>
-                <td>{user.uid}</td>
-                <td>{user.role}</td>
-              </tr>
-            ))}
-            {users.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="admin-empty">
-                  No users found yet.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+      <UserListTable users={users} />
     </>
   );
 }
