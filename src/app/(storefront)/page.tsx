@@ -91,7 +91,11 @@ export default async function HomePage() {
                 elevation={index === 1 ? 'soft' : 'none'}
                 motion={index === 1}
               >
-                <ProductImage slug={product.slug} alt={product.name} />
+                <ProductImage
+                  slug={product.slug}
+                  alt={product.name}
+                  path={product.image || undefined}
+                />
                 <div className="product-card-content">
                   <div className="product-category">{product.category}</div>
                   <h3>{product.name}</h3>
