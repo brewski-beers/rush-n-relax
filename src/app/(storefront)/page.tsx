@@ -93,9 +93,7 @@ export default async function HomePage() {
               >
                 <ProductImage slug={product.slug} alt={product.name} />
                 <div className="product-card-content">
-                  <div className="product-category">
-                    {product.category.toUpperCase()}
-                  </div>
+                  <div className="product-category">{product.category}</div>
                   <h3>{product.name}</h3>
                   <div className="product-cta">Learn More →</div>
                 </div>
