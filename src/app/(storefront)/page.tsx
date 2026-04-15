@@ -94,7 +94,7 @@ export default async function HomePage() {
                 <ProductImage
                   slug={product.slug}
                   alt={product.name}
-                  src={product.image || undefined}
+                  path={product.image || undefined}
                 />
                 <div className="product-card-content">
                   <div className="product-category">
