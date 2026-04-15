@@ -4,6 +4,8 @@ export type ProductStatus =
   | 'archived'
   | 'compliance-hold';
 
+export type ProductStrain = 'indica' | 'sativa' | 'hybrid' | 'cbd';
+
 /**
  * Firestore document shape for a product.
  * Lives at: products/{slug}
@@ -37,6 +39,12 @@ export interface Product {
   labResults?: LabResults;
   vendorSlug?: string;
   leaflyUrl?: string;
+  /** Cannabis strain type — powers strain badge on storefront */
+  strain?: ProductStrain;
+  /** Consumer-facing effect descriptors, e.g. ['Euphoria', 'Relaxed', 'Sedative'] */
+  effects?: string[];
+  /** Flavor descriptors, e.g. ['Citrus', 'Pine', 'Earthy'] */
+  flavors?: string[];
   pricing?: ProductPricing;
   createdAt: Date;
   updatedAt: Date;
@@ -54,6 +62,7 @@ export type ProductSummary = Pick<
   | 'status'
   | 'availableAt'
   | 'pricing'
+  | 'strain'
 >;
 
 export interface LabResults {

@@ -7,6 +7,7 @@ export type {
   Product,
   ProductSummary,
   ProductStatus,
+  ProductStrain,
   ProductPricing,
   PricingTier,
   WeightTier,

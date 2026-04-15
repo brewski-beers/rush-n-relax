@@ -8,6 +8,15 @@
 }
 
 /* ── Cart Drawer Panel ────────────────────────────────────────────────── */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 .cart-drawer {
   position: fixed;
   top: 0;
@@ -20,6 +29,7 @@
   flex-direction: column;
   box-shadow: -4px 0 24px var(--color-surface-backdrop);
   overflow: hidden;
+  animation: slideInFromRight 0.25s ease-out;
 }
 
 /* ── Header ──────────────────────────────────────────────────────────── */
@@ -163,7 +173,8 @@
 }
 
 .cart-icon {
-  font-size: 1.25rem;
+  display: block;
+  flex-shrink: 0;
 }
 
 .cart-badge {

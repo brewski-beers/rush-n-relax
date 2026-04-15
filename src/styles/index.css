@@ -26,3 +26,6 @@
 
 /* Accessibility patterns and high contrast support */
 @import './accessibility.css';
+
+/* Cart page, order confirmation, and AddToCartButton */
+@import './cart.css';

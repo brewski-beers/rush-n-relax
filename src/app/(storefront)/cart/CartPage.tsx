@@ -4,25 +4,17 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/hooks/useCart';
 import { formatCents } from '@/utils/currency';
+import { LOCATIONS } from '@/constants/locations';
 
 type FulfillmentType = 'pickup' | 'ship';
-
-const PICKUP_LOCATIONS = [
-  { id: 'oak-ridge', name: 'Oak Ridge' },
-  { id: 'maryville', name: 'Maryville' },
-  { id: 'seymour', name: 'Seymour' },
-] as const;
 
 export default function CartPage() {
   const { items, removeItem, updateQty, total, clearCart } = useCart();
   const [fulfillment, setFulfillment] = useState<FulfillmentType | null>(null);
   const [pickupLocation, setPickupLocation] = useState<string>('');
 
-  const hasOnlineItems = items.some(
-    // Items were added from products with availableOnline pricing — we allow shipping CTA
-    () => true
-  );
-
+  // CartItem does not carry availableOnline — always show both fulfillment options
+  // so customers can choose pickup or shipping regardless of product.
   const canCheckout =
     fulfillment === 'ship' ||
     (fulfillment === 'pickup' && pickupLocation !== '');
@@ -151,18 +143,16 @@ export default function CartPage() {
                 />
                 Pickup
               </label>
-              {hasOnlineItems && (
-                <label className="cart-fulfillment-option">
-                  <input
-                    type="radio"
-                    name="fulfillment"
-                    value="ship"
-                    checked={fulfillment === 'ship'}
-                    onChange={() => setFulfillment('ship')}
-                  />
-                  Ship to me
-                </label>
-              )}
+              <label className="cart-fulfillment-option">
+                <input
+                  type="radio"
+                  name="fulfillment"
+                  value="ship"
+                  checked={fulfillment === 'ship'}
+                  onChange={() => setFulfillment('ship')}
+                />
+                Ship to me
+              </label>
             </fieldset>
 
             {fulfillment === 'pickup' && (
@@ -174,8 +164,8 @@ export default function CartPage() {
                   onChange={e => setPickupLocation(e.target.value)}
                 >
                   <option value="">— Choose a location —</option>
-                  {PICKUP_LOCATIONS.map(loc => (
-                    <option key={loc.id} value={loc.id}>
+                  {LOCATIONS.map(loc => (
+                    <option key={loc.slug} value={loc.slug}>
                       {loc.name}
                     </option>
                   ))}
