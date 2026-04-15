@@ -194,7 +194,9 @@ export default function ProductDetailClient({
                     aria-pressed={selectedVariant === v.key}
                   >
                     <span className="product-variant-card-size">{v.label}</span>
-                    <span className="product-variant-card-price">—</span>
+                    <span className="product-variant-card-price">
+                      See in store
+                    </span>
                   </button>
                 ))}
               </div>
@@ -255,7 +257,7 @@ export default function ProductDetailClient({
                   ) : null}
                   {formatCents(product.pricing.price)}
                 </p>
-                <AddToCartButton product={product} showQtySelector />
+                <AddToCartButton product={product} />
               </div>
             ) : (
               <p className="product-try-in-store-nudge">
@@ -343,7 +345,7 @@ export default function ProductDetailClient({
                 in person at one of our locations.
               </p>
               <div className="product-cta-actions">
-                <AddToCartButton product={product} showQtySelector />
+                <AddToCartButton product={product} />
                 <Link href="/locations" className="btn btn-secondary">
                   Find a Location
                 </Link>
