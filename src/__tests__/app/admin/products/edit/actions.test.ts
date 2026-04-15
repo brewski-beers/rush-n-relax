@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   requireRoleMock,
   upsertProductMock,
+  clearProductFieldsMock,
   getProductBySlugMock,
   listActiveCategoriesMock,
   revalidatePathMock,
@@ -12,6 +13,7 @@ const {
 } = vi.hoisted(() => ({
   requireRoleMock: vi.fn(),
   upsertProductMock: vi.fn().mockResolvedValue('test-product'),
+  clearProductFieldsMock: vi.fn().mockResolvedValue(undefined),
   getProductBySlugMock: vi.fn(),
   listActiveCategoriesMock: vi.fn().mockResolvedValue([]),
   revalidatePathMock: vi.fn(),
@@ -24,6 +26,7 @@ vi.mock('@/lib/admin-auth', () => ({
 
 vi.mock('@/lib/repositories', () => ({
   upsertProduct: upsertProductMock,
+  clearProductFields: clearProductFieldsMock,
   getProductBySlug: getProductBySlugMock,
   listActiveCategories: listActiveCategoriesMock,
 }));

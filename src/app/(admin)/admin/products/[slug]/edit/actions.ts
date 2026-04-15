@@ -55,21 +55,32 @@ export async function updateProduct(
     return { error: 'Cannot set that status directly.' };
   }
 
-  // Empty string means the user explicitly cleared the slot.
-  // Non-empty string is the storage path to save.
-  // We must NOT fall back to existing.image when empty — that would
-  // silently ignore removals. Instead, we track fields to delete from Firestore.
-  const rawFeaturedPath = formData.get('featuredImagePath')?.toString() ?? '';
-  const rawGalleryPaths = ([0, 1, 2, 3, 4] as const).map(
-    i => formData.get(`galleryImagePath_${i}`)?.toString() ?? ''
+  // formData.get() returns:
+  //   null   — field not in form (ProductImageUpload not rendered)
+  //   ''     — hidden input rendered but image was cleared by the user
+  //   'path' — storage path (image unchanged or newly uploaded)
+  //
+  // Only '' (explicitly cleared) should trigger FieldValue.delete().
+  // null means the widget wasn't rendered — fall back to existing value.
+  const rawFeaturedPath = formData.get('featuredImagePath'); // null | string
+  const rawGalleryPaths = ([0, 1, 2, 3, 4] as const).map(i =>
+    formData.get(`galleryImagePath_${i}`)
+  ); // (null | string)[]
+
+  const featuredImagePath =
+    typeof rawFeaturedPath === 'string' && rawFeaturedPath !== ''
+      ? rawFeaturedPath
+      : undefined;
+  const featuredCleared = rawFeaturedPath === ''; // '' = explicitly removed
+  const featuredFromForm = rawFeaturedPath !== null; // null = widget not rendered
+
+  const galleryImagePaths = rawGalleryPaths.filter(
+    (p): p is string => typeof p === 'string' && p !== ''
   );
-
-  const featuredImagePath = rawFeaturedPath || undefined;
-  const featuredCleared =
-    rawFeaturedPath === '' && existing.image !== undefined;
-
-  const galleryImagePaths = rawGalleryPaths.filter(Boolean);
+  // Gallery is "cleared" only when ALL slots were rendered (non-null) and all empty
+  const galleryRendered = rawGalleryPaths.every(p => p !== null);
   const galleryCleared =
+    galleryRendered &&
     galleryImagePaths.length === 0 &&
     existing.images !== undefined &&
     existing.images.length > 0;
@@ -146,18 +157,20 @@ export async function updateProduct(
     name,
     category,
     details,
-    // Only include image/images when they have a value — cleared fields are
-    // handled separately via clearProductFields (FieldValue.delete) below,
-    // because set({ merge: true }) does NOT remove fields set to undefined.
-    ...(featuredImagePath !== undefined ? { image: featuredImagePath } : {}),
-    ...(galleryImagePaths.length > 0 ? { images: galleryImagePaths } : {}),
-    // Preserve existing values when neither cleared nor updated
-    ...(featuredImagePath === undefined && !featuredCleared
-      ? { image: existing.image }
-      : {}),
-    ...(galleryImagePaths.length === 0 && !galleryCleared
-      ? { images: existing.images }
-      : {}),
+    // image: use new path if provided, fall back to existing if widget not
+    // rendered (null), or omit entirely if explicitly cleared (handled below
+    // via clearProductFields). set({ merge: true }) won't remove fields, so
+    // we must NOT include the key when clearing — FieldValue.delete() does it.
+    ...(featuredImagePath !== undefined
+      ? { image: featuredImagePath }
+      : !featuredCleared
+        ? { image: existing.image }
+        : {}),
+    ...(galleryImagePaths.length > 0
+      ? { images: galleryImagePaths }
+      : !galleryCleared
+        ? { images: existing.images }
+        : {}),
     status,
     federalDeadlineRisk,
     availableAt,
