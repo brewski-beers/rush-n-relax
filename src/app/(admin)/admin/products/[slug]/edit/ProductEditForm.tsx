@@ -4,15 +4,16 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { updateProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
-import type { Product, LocationSummary, ProductCategorySummary } from '@/types';
+import { CoaSelector } from '@/components/admin/CoaSelector';
+import { TagInput } from '@/components/admin/TagInput';
+import type { Product, ProductCategorySummary } from '@/types';
 
 interface Props {
   product: Product;
-  locations: LocationSummary[];
   categories: ProductCategorySummary[];
 }
 
-export function ProductEditForm({ product, locations, categories }: Props) {
+export function ProductEditForm({ product, categories }: Props) {
   const boundAction = updateProduct.bind(null, product.slug);
   const [state, formAction, pending] = useActionState(boundAction, null);
 
@@ -34,16 +35,6 @@ export function ProductEditForm({ product, locations, categories }: Props) {
             </option>
           ))}
         </select>
-      </label>
-
-      <label>
-        Description
-        <textarea
-          name="description"
-          defaultValue={product.description}
-          rows={3}
-          required
-        />
       </label>
 
       <label>
@@ -80,40 +71,105 @@ export function ProductEditForm({ product, locations, categories }: Props) {
       </label>
 
       <fieldset className="admin-fieldset">
-        <legend>Available At</legend>
-        {locations.map(loc => (
-          <label key={loc.slug} className="admin-checkbox">
-            <input
-              type="checkbox"
-              name="availableAt"
-              value={loc.slug}
-              defaultChecked={product.availableAt.includes(loc.slug)}
-            />
-            {loc.name}
-          </label>
-        ))}
-      </fieldset>
-
-      <label className="admin-checkbox">
-        <input
-          type="checkbox"
-          name="federalDeadlineRisk"
-          value="true"
-          defaultChecked={product.federalDeadlineRisk}
-        />
-        Federal deadline risk{' '}
-        <span className="admin-hint">
-          (≤0.4mg total THC — affected by Nov 2026 rule)
-        </span>
-      </label>
-
-      <fieldset className="admin-fieldset">
         <legend>Images</legend>
         <ProductImageUpload
           slug={product.slug}
           initialFeaturedPath={product.image}
           initialGalleryPaths={product.images}
         />
+      </fieldset>
+
+      <fieldset className="admin-fieldset">
+        <legend>Certificate of Analysis (COA)</legend>
+        <CoaSelector currentCoaUrl={product.coaUrl} />
+      </fieldset>
+
+      <fieldset className="admin-fieldset">
+        <legend>Cannabis Profile</legend>
+        <span className="admin-hint">All fields are optional.</span>
+
+        <label>
+          Strain
+          <select name="strain" defaultValue={product.strain ?? ''}>
+            <option value="">— None —</option>
+            <option value="indica">Indica</option>
+            <option value="sativa">Sativa</option>
+            <option value="hybrid">Hybrid</option>
+            <option value="cbd">CBD</option>
+          </select>
+        </label>
+
+        <TagInput
+          name="effects"
+          label="Effects"
+          hint="Press Enter or comma to add each one."
+          initialTags={product.effects ?? []}
+          placeholder="e.g. Euphoria"
+        />
+
+        <TagInput
+          name="flavors"
+          label="Flavors"
+          hint="Press Enter or comma to add each one."
+          initialTags={product.flavors ?? []}
+          placeholder="e.g. Earthy"
+        />
+
+        <fieldset className="admin-fieldset">
+          <legend>Lab Results</legend>
+          <span className="admin-hint">All fields are optional.</span>
+
+          <label>
+            THC %
+            <input
+              name="labResults_thcPercent"
+              type="number"
+              min={0}
+              max={100}
+              step={0.01}
+              defaultValue={product.labResults?.thcPercent ?? ''}
+            />
+          </label>
+
+          <label>
+            CBD %
+            <input
+              name="labResults_cbdPercent"
+              type="number"
+              min={0}
+              max={100}
+              step={0.01}
+              defaultValue={product.labResults?.cbdPercent ?? ''}
+            />
+          </label>
+
+          <TagInput
+            name="terpenes"
+            label="Terpenes"
+            hint="Press Enter or comma to add each one."
+            initialTags={product.labResults?.terpenes ?? []}
+            placeholder="e.g. Myrcene"
+          />
+
+          <label>
+            Test Date
+            <input
+              name="labResults_testDate"
+              type="date"
+              defaultValue={product.labResults?.testDate ?? ''}
+            />
+          </label>
+
+          <label>
+            Lab Name
+            <input
+              name="labResults_labName"
+              type="text"
+              defaultValue={product.labResults?.labName ?? ''}
+              placeholder="e.g. Confident Cannabis"
+            />
+          </label>
+        </fieldset>
       </fieldset>
 
       <div className="admin-form-actions">

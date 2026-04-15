@@ -115,7 +115,6 @@ export function buildStorefrontSeedArtifact(): FirestoreSeedArtifact {
         slug: product.slug,
         name: product.name,
         category: product.category,
-        description: product.description,
         details: product.details,
         image: product.image,
         status: product.status,

@@ -32,6 +32,7 @@
   --admin-card-padding: 1rem 1.1rem;
   --admin-card-hover-border: rgba(213, 179, 106, 0.45);
   --admin-hub-border: rgba(213, 179, 106, 0.55);
+  --admin-login-btn-padding: 0.875rem 2rem;
   --admin-card-sub-gap: 0.45rem;
   --admin-table-cell-padding: 0.92rem 0.95rem;
   --admin-table-head-bg: rgba(255, 255, 255, 0.05);
@@ -43,6 +44,33 @@
   --admin-actions-hover-border: rgba(213, 179, 106, 0.65);
   --admin-qty-col-width: 132px;
   --admin-qty-input-width: 5.5rem;
+
+  /* TagInput */
+  --admin-tag-wrap-gap: var(--admin-form-label-gap);
+  --admin-tag-field-gap: 0.4rem;
+  --admin-tag-field-padding: 0.4rem 0.6rem;
+  --admin-tag-field-focus-outline: 2px solid;
+  --admin-tag-field-focus-outline-color: rgba(213, 179, 106, 0.2);
+  --admin-chip-gap: 0.3rem;
+  --admin-chip-padding: 0.2rem 0.55rem;
+  --admin-chip-bg: rgba(213, 179, 106, 0.15);
+  --admin-chip-border: 1px solid rgba(213, 179, 106, 0.35);
+  --admin-placeholder: rgba(255, 255, 255, 0.3);
+
+  /* COA upload */
+  --admin-coa-wrap-gap: var(--space-xs);
+  --admin-coa-zone-gap: var(--space-xs);
+  --admin-coa-zone-hover-bg: rgba(213, 179, 106, 0.06);
+  --admin-coa-result-gap: 0.6rem;
+  --admin-coa-result-padding: 0.6rem 0.8rem;
+  --admin-coa-result-bg: rgba(213, 179, 106, 0.08);
+  --admin-coa-result-border: 1px solid rgba(213, 179, 106, 0.25);
+  --admin-coa-remove-padding: 0 0.2rem;
+
+  /* Shared field tokens (used by TagInput / CoaSelector field wrapper) */
+  --admin-input-bg: var(--admin-field-bg);
+  --admin-input-border: var(--admin-border-strong);
+  --admin-input-radius: 10px;
   --admin-qty-input-height: 2.2rem;
   --admin-form-label-gap: 0.45rem;
   --admin-form-label-margin-bottom: 1rem;
@@ -825,10 +853,198 @@
   margin: var(--admin-section-title-margin);
 }
 
+/* ── Login page ─────────────────────────────────────────────────────────── */
+
 .admin-login-wrap {
   margin: var(--space-2xl) auto;
-  max-width: 460px;
-  padding: var(--space-lg);
+  max-width: 420px;
+  padding: var(--space-xl) var(--space-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle gold shimmer strip across the top */
+.admin-login-wrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-accent) 40%,
+    var(--color-accent-light) 60%,
+    transparent 100%
+  );
+  opacity: 0.6;
+}
+
+.admin-login-wrap h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-text);
+  margin: 0 0 var(--space-lg);
+  text-align: center;
+}
+
+/* Two-button method selector */
+.admin-login-methods {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.admin-login-methods .admin-submit {
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: var(--admin-login-btn-padding);
+}
+
+/* Gold accent on the Google button (first child) */
+.admin-login-methods .admin-submit:first-child {
+  background: linear-gradient(
+    135deg,
+    rgba(213, 179, 106, 0.18) 0%,
+    rgba(213, 179, 106, 0.08) 100%
+  );
+  border-color: var(--color-border-accent);
+  color: var(--color-accent-soft);
+}
+
+.admin-login-methods .admin-submit:first-child:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(213, 179, 106, 0.26) 0%,
+    rgba(213, 179, 106, 0.14) 100%
+  );
+  border-color: var(--admin-hub-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 8px 24px rgba(213, 179, 106, 0.18);
+}
+
+/* Phone form */
+.admin-phone-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.admin-phone-form .admin-label {
+  color: var(--admin-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: calc(var(--space-xs) * -0.5);
+}
+
+.admin-phone-form .admin-submit {
+  width: 100%;
+  margin-top: calc(var(--space-xs) * 0.5);
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  padding: var(--admin-login-btn-padding);
+}
+
+.admin-input-prefix-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--admin-field-bg);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 10px;
+  overflow: hidden;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.admin-input-prefix-wrap:focus-within {
+  border-color: var(--admin-focus-border);
+  box-shadow: 0 0 0 2px rgba(213, 179, 106, 0.25);
+}
+
+.admin-input-prefix {
+  color: var(--admin-text-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0 var(--space-sm);
+  border-right: 1px solid var(--admin-border-strong);
+  line-height: 44px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.admin-input-prefix + .admin-input {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-input-prefix + .admin-input:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+/* Standalone input (OTP field) */
+.admin-phone-form > .admin-input {
+  background: var(--admin-field-bg);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 10px;
+  color: var(--admin-text);
+  font-family: inherit;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  min-height: 44px;
+  padding: var(--admin-field-padding);
+  text-align: center;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-phone-form > .admin-input:focus {
+  outline: none;
+  border-color: var(--admin-focus-border);
+  box-shadow: 0 0 0 2px rgba(213, 179, 106, 0.25);
+}
+
+/* "Back" link button */
+.admin-link-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--admin-text-subtle);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  padding: var(--space-xs) 0;
+  text-align: center;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  width: 100%;
+}
+
+.admin-link-btn:hover {
+  color: var(--color-accent);
+}
+
+.admin-link-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .admin-form label {
@@ -1291,4 +1507,162 @@
   .admin-nav-pinned {
     display: none;
   }
+}
+
+/* ── TagInput ─────────────────────────────────────────────────────────────── */
+
+.tag-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-tag-wrap-gap);
+}
+
+.tag-input-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-tag-field-gap);
+  min-height: 2.5rem;
+  padding: var(--admin-tag-field-padding);
+  background: var(--admin-input-bg);
+  border: 1px solid var(--admin-input-border);
+  border-radius: var(--admin-input-radius);
+  cursor: text;
+  transition: border-color 0.15s ease;
+}
+
+.tag-input-field:focus-within {
+  border-color: var(--admin-accent);
+  outline: var(--admin-tag-field-focus-outline)
+    var(--admin-tag-field-focus-outline-color);
+  outline-offset: 0;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-chip-gap);
+  padding: var(--admin-chip-padding);
+  background: var(--admin-chip-bg);
+  border: var(--admin-chip-border);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--admin-accent-strong);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tag-chip-remove {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--admin-accent);
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.tag-chip-remove:hover {
+  opacity: 1;
+}
+
+.tag-input-inner {
+  flex: 1;
+  min-width: 120px;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+  color: var(--admin-text);
+  padding: 0;
+}
+
+.tag-input-inner::placeholder {
+  color: var(--admin-placeholder);
+}
+
+/* ── COA upload zone ─────────────────────────────────────────────────────── */
+
+.coa-upload-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-coa-wrap-gap);
+}
+
+.coa-upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-coa-zone-gap);
+  min-height: 100px;
+  padding: var(--space-md);
+  border: 2px dashed var(--admin-input-border);
+  border-radius: var(--admin-radius);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.coa-upload-zone:hover,
+.coa-upload-zone--dragover {
+  border-color: var(--admin-accent);
+  background-color: var(--admin-coa-zone-hover-bg);
+}
+
+.coa-upload-zone--uploading {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.coa-upload-hint {
+  color: var(--admin-text-subtle);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.coa-upload-hint small {
+  color: var(--admin-text-subtle);
+}
+
+.coa-upload-icon {
+  font-size: 1.5rem;
+}
+
+.coa-upload-result {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-coa-result-gap);
+  padding: var(--admin-coa-result-padding);
+  background-color: var(--admin-coa-result-bg);
+  border: var(--admin-coa-result-border);
+  border-radius: var(--admin-input-radius);
+}
+
+.coa-upload-filename {
+  flex: 1;
+  font-size: 0.875rem;
+  color: var(--admin-accent-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coa-upload-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--admin-text-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: var(--admin-coa-remove-padding);
+  transition: color 0.15s ease;
+}
+
+.coa-upload-remove:hover {
+  color: var(--admin-error);
 }

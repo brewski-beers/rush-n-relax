@@ -11,7 +11,7 @@ export function buildProductSchema(product: Product) {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
-    description: product.description,
+    description: product.details,
     url: `${seoConfig.site.domain}/products/${product.slug}`,
     ...(product.image && {
       image: product.image.startsWith('http')

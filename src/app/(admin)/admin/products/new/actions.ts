@@ -8,6 +8,14 @@ import {
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
+import type { ProductStrain } from '@/types';
+
+const VALID_STRAINS = new Set<ProductStrain>([
+  'indica',
+  'sativa',
+  'hybrid',
+  'cbd',
+]);
 
 export async function createProduct(
   _prev: { error?: string } | null,
@@ -18,12 +26,11 @@ export async function createProduct(
   const slug = formData.get('slug')?.toString().trim().toLowerCase();
   const name = formData.get('name')?.toString().trim();
   const category = formData.get('category')?.toString();
-  const description = formData.get('description')?.toString().trim();
   const details = formData.get('details')?.toString().trim();
   const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
-  if (!slug || !name || !category || !description || !details) {
+  if (!slug || !name || !category || !details) {
     return { error: 'All required fields must be filled.' };
   }
 
@@ -45,16 +52,80 @@ export async function createProduct(
   const featuredImagePath =
     formData.get('featuredImagePath')?.toString() || undefined;
 
+  // ── Cannabis profile fields ────────────────────────────────────────────
+  const strainRaw = formData.get('strain')?.toString() ?? '';
+  const strain = VALID_STRAINS.has(strainRaw as ProductStrain)
+    ? (strainRaw as ProductStrain)
+    : undefined;
+
+  const effectsRaw = formData.get('effects')?.toString() ?? '';
+  const effects = effectsRaw
+    ? effectsRaw
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : undefined;
+
+  const flavorsRaw = formData.get('flavors')?.toString() ?? '';
+  const flavors = flavorsRaw
+    ? flavorsRaw
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : undefined;
+
+  // ── Lab results ────────────────────────────────────────────────────────
+  const labThc = formData.get('labResults_thcPercent')?.toString() ?? '';
+  const labCbd = formData.get('labResults_cbdPercent')?.toString() ?? '';
+  const terpenesRaw = formData.get('terpenes')?.toString() ?? '';
+  const testDate =
+    formData.get('labResults_testDate')?.toString().trim() || undefined;
+  const labName =
+    formData.get('labResults_labName')?.toString().trim() || undefined;
+
+  const thcPercent =
+    labThc !== '' && Number.isFinite(Number(labThc))
+      ? Number(labThc)
+      : undefined;
+  const cbdPercent =
+    labCbd !== '' && Number.isFinite(Number(labCbd))
+      ? Number(labCbd)
+      : undefined;
+  const terpenes = terpenesRaw
+    ? terpenesRaw
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : undefined;
+
+  const labResults =
+    thcPercent !== undefined ||
+    cbdPercent !== undefined ||
+    terpenes !== undefined ||
+    testDate ||
+    labName
+      ? {
+          ...(thcPercent !== undefined && { thcPercent }),
+          ...(cbdPercent !== undefined && { cbdPercent }),
+          ...(terpenes !== undefined && { terpenes }),
+          ...(testDate && { testDate }),
+          ...(labName && { labName }),
+        }
+      : undefined;
+
   await upsertProduct({
     slug,
     name,
     category,
-    description,
     details,
     image: featuredImagePath,
     federalDeadlineRisk,
     availableAt,
     status: 'active',
+    ...(strain !== undefined ? { strain } : {}),
+    ...(effects !== undefined ? { effects } : {}),
+    ...(flavors !== undefined ? { flavors } : {}),
+    ...(labResults !== undefined ? { labResults } : {}),
   });
 
   revalidatePath('/admin/products');

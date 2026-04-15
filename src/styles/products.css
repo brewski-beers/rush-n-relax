@@ -223,3 +223,574 @@
   height: 2.5rem;
   margin-bottom: var(--space-lg);
 }
+
+/* ── Strain color tokens (defined here to allow rgba in var definitions) ── */
+
+:root {
+  --color-strain-indica-bg: rgba(130, 80, 210, 0.18);
+  --color-strain-indica-text: #c4a0ff;
+  --color-strain-indica-border: rgba(130, 80, 210, 0.4);
+  --color-strain-sativa-bg: rgba(213, 179, 106, 0.18);
+  --color-strain-sativa-border: rgba(213, 179, 106, 0.4);
+  --color-strain-hybrid-bg: rgba(80, 170, 130, 0.18);
+  --color-strain-hybrid-text: #80d4b0;
+  --color-strain-hybrid-border: rgba(80, 170, 130, 0.4);
+  --color-strain-cbd-bg: rgba(80, 140, 200, 0.18);
+  --color-strain-cbd-text: #90c0f0;
+  --color-strain-cbd-border: rgba(80, 140, 200, 0.4);
+  --color-pill-thc-bg: rgba(213, 179, 106, 0.2);
+  --color-pill-thc-border: rgba(213, 179, 106, 0.4);
+  --color-pill-effect-bg: rgba(255, 255, 255, 0.08);
+  --color-surface-hover-faint: rgba(255, 255, 255, 0.04);
+  --color-bar-track: rgba(255, 255, 255, 0.1);
+  --color-tag-bg: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Spotify-style Product Detail — Hero 2-column ────────────────────────── */
+
+.product-hero-section {
+  padding: var(--space-lg) 0;
+}
+
+.product-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+/* Left: media column */
+.product-hero-media {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.product-thumbnail-strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 72px;
+  flex-shrink: 0;
+}
+
+.product-thumbnail-btn {
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.product-thumbnail-btn--active {
+  border-color: var(--color-accent);
+}
+
+.product-thumbnail-img {
+  width: 100%;
+  height: 64px;
+  object-fit: cover;
+  display: block;
+  border-radius: 0.35rem;
+}
+
+.product-main-image-wrap {
+  flex: 1;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.product-main-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+}
+
+/* Right: info column */
+.product-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  /* Tag groups and description use the base gap.
+     The pricing block gets extra top space via its own margin-top. */
+}
+
+.product-hero-name {
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  line-height: 1.15;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.product-hero-badges {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+/* Strain badge */
+.product-strain-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: calc(var(--space-xs) * 0.5) var(--space-sm);
+  border-radius: 0.25rem;
+  border: 1px solid;
+  line-height: 1.4;
+}
+
+.product-strain-badge--indica {
+  background-color: var(--color-strain-indica-bg);
+  color: var(--color-strain-indica-text);
+  border-color: var(--color-strain-indica-border);
+}
+
+.product-strain-badge--sativa {
+  background-color: var(--color-strain-sativa-bg);
+  color: var(--color-accent-light);
+  border-color: var(--color-strain-sativa-border);
+}
+
+.product-strain-badge--hybrid {
+  background-color: var(--color-strain-hybrid-bg);
+  color: var(--color-strain-hybrid-text);
+  border-color: var(--color-strain-hybrid-border);
+}
+
+.product-strain-badge--cbd {
+  background-color: var(--color-strain-cbd-bg);
+  color: var(--color-strain-cbd-text);
+  border-color: var(--color-strain-cbd-border);
+}
+
+/* Flavor tags */
+.product-flavor-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: calc(var(--space-xs) * 0.5) var(--space-sm);
+  border-radius: 999px;
+  background-color: var(--color-tag-bg);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  line-height: 1.4;
+}
+
+/* THC / effect pills */
+.product-hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.product-pill {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: calc(var(--space-xs) * 0.5) var(--space-sm);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  line-height: 1.4;
+}
+
+.product-pill--thc {
+  background-color: var(--color-pill-thc-bg);
+  color: var(--color-accent-light);
+  border-color: var(--color-pill-thc-border);
+}
+
+.product-pill--effect {
+  background-color: var(--color-pill-effect-bg);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+}
+
+.product-pill--gold {
+  background-color: var(--color-pill-thc-bg);
+  color: var(--color-accent-light);
+  border-color: var(--color-pill-thc-border);
+}
+
+/* Labeled tag group — label + pill row stacked */
+.product-hero-tag-group {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space-xs) * 0.5);
+}
+
+.product-hero-tag-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
+
+.product-hero-description {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* "Try in store" — small gold italic nudge */
+.product-try-in-store-nudge {
+  margin: 0;
+}
+
+.product-try-in-store-link {
+  font-size: 0.8rem;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--color-accent);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: color 0.2s ease;
+}
+
+.product-try-in-store-link:hover {
+  color: var(--color-accent-light);
+}
+
+/* ── Pricing variant selector ───────────────────────────────────────────── */
+.product-pricing-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  margin-top: var(--space-md);
+  background: linear-gradient(
+    135deg,
+    rgba(213, 179, 106, 0.08) 0%,
+    rgba(213, 179, 106, 0.04) 100%
+  );
+  border: 1px solid var(--color-border-anchor-soft);
+  border-radius: 0.75rem;
+}
+
+/* Variant card grid */
+.product-variant-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-xs);
+}
+
+.product-variant-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--space-xs) * 0.5);
+  padding: var(--space-xs) calc(var(--space-xs) * 0.75);
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border-accent-medium);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+  text-align: center;
+}
+
+.product-variant-card:hover {
+  border-color: var(--color-accent);
+  background: var(--color-surface-anchor-faint);
+}
+
+.product-variant-card--active {
+  background: var(--color-surface-anchor);
+  border-color: var(--color-accent);
+}
+
+.product-variant-card-size {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+  transition: color 0.18s ease;
+}
+
+.product-variant-card--active .product-variant-card-size {
+  color: var(--color-accent-light);
+}
+
+.product-variant-card:hover .product-variant-card-size {
+  color: var(--color-accent-light);
+}
+
+.product-variant-card-price {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--color-text-subtle);
+  transition: color 0.18s ease;
+}
+
+.product-variant-card--active .product-variant-card-price {
+  color: var(--color-accent);
+}
+
+/* Price display — hidden until data is wired */
+.product-price-display {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-accent-light);
+  letter-spacing: -0.01em;
+}
+
+/* Info table */
+.product-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.product-info-table th,
+.product-info-table td {
+  padding: var(--space-xs) var(--space-sm);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.product-info-table th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  width: 30%;
+  white-space: nowrap;
+}
+
+.product-info-table td {
+  color: var(--color-text);
+}
+
+.product-available-at {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.product-available-at-label {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.product-cta-btn {
+  align-self: flex-start;
+  margin-top: var(--space-xs);
+}
+
+/* ── Flat below-hero sections ────────────────────────────────────────────── */
+
+.product-details-section,
+.product-feels-section,
+.product-coa-section {
+  padding: var(--space-lg) 0;
+}
+
+.product-details-body {
+  color: var(--color-text-muted);
+  line-height: 1.7;
+  max-width: 72ch;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.product-section-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 var(--space-md);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.product-what-to-expect {
+  padding-left: var(--space-md);
+  margin: 0;
+}
+
+.product-what-to-expect li {
+  margin-bottom: var(--space-xs);
+}
+
+/* Effect bars */
+.effect-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.effect-bar {
+  display: grid;
+  grid-template-columns: 120px 1fr 40px;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.875rem;
+}
+
+.effect-bar-label {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.effect-bar-progress {
+  height: 8px;
+  width: 100%;
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  background-color: var(--color-bar-track);
+  overflow: hidden;
+}
+
+.effect-bar-progress::-webkit-progress-bar {
+  background-color: var(--color-bar-track);
+  border-radius: 999px;
+}
+
+.effect-bar-progress::-webkit-progress-value {
+  background: linear-gradient(
+    90deg,
+    var(--color-accent),
+    var(--color-accent-light)
+  );
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.effect-bar-progress::-moz-progress-bar {
+  background: linear-gradient(
+    90deg,
+    var(--color-accent),
+    var(--color-accent-light)
+  );
+  border-radius: 999px;
+}
+
+.effect-bar-pct {
+  text-align: right;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+/* Tag groups */
+.product-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.product-tag {
+  font-size: 0.8rem;
+  padding: var(--space-xs);
+  border-radius: 999px;
+  background-color: var(--color-tag-bg);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+/* ── Related products — horizontal scroll strip ───────────────────────── */
+
+.related-strip {
+  display: flex;
+  gap: var(--space-md);
+  overflow-x: auto;
+  padding-bottom: var(--space-sm);
+  /* Smooth momentum scroll on iOS */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.related-strip-card {
+  flex: 0 0 220px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.related-strip-card:hover {
+  border-color: var(--color-border-accent-medium);
+  transform: translateY(-2px);
+}
+
+.related-strip-img-wrap {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+
+.related-strip-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.related-strip-strain-badge {
+  position: absolute;
+  top: var(--space-xs);
+  left: var(--space-xs);
+  z-index: 1;
+}
+
+.related-strip-info {
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.related-strip-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .product-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-hero-media {
+    flex-direction: column-reverse;
+  }
+
+  .product-thumbnail-strip {
+    flex-direction: row;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .product-thumbnail-btn {
+    flex: 0 0 56px;
+  }
+
+  .product-thumbnail-img {
+    height: 56px;
+  }
+
+  .product-variant-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .effect-bar {
+    grid-template-columns: 90px 1fr 36px;
+  }
+
+  .related-strip-card {
+    flex: 0 0 170px;
+  }
+}

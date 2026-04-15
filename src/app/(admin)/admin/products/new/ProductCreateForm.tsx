@@ -5,14 +5,15 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { createProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
-import type { LocationSummary, ProductCategorySummary } from '@/types';
+import { CoaSelector } from '@/components/admin/CoaSelector';
+import { TagInput } from '@/components/admin/TagInput';
+import type { ProductCategorySummary } from '@/types';
 
 interface Props {
-  locations: LocationSummary[];
   categories: ProductCategorySummary[];
 }
 
-export function ProductCreateForm({ locations, categories }: Props) {
+export function ProductCreateForm({ categories }: Props) {
   const [state, formAction, pending] = useActionState(createProduct, null);
   const [slug, setSlug] = useState('');
 
@@ -53,36 +54,8 @@ export function ProductCreateForm({ locations, categories }: Props) {
       </label>
 
       <label>
-        Description
-        <textarea name="description" rows={3} required />
-      </label>
-
-      <label>
         Details
         <textarea name="details" rows={5} required />
-      </label>
-
-      <fieldset className="admin-fieldset">
-        <legend>Available At</legend>
-        {locations.map(loc => (
-          <label key={loc.slug} className="admin-checkbox">
-            <input
-              type="checkbox"
-              name="availableAt"
-              value={loc.slug}
-              defaultChecked
-            />
-            {loc.name}
-          </label>
-        ))}
-      </fieldset>
-
-      <label className="admin-checkbox">
-        <input type="checkbox" name="federalDeadlineRisk" value="true" />
-        Federal deadline risk{' '}
-        <span className="admin-hint">
-          (≤0.4mg total THC — affected by Nov 2026 rule)
-        </span>
       </label>
 
       {slug && (
@@ -94,6 +67,89 @@ export function ProductCreateForm({ locations, categories }: Props) {
           <ProductImageUpload slug={slug} />
         </fieldset>
       )}
+
+      <fieldset className="admin-fieldset">
+        <legend>Certificate of Analysis (COA)</legend>
+        <CoaSelector />
+      </fieldset>
+
+      <fieldset className="admin-fieldset">
+        <legend>Cannabis Profile</legend>
+        <span className="admin-hint">All fields are optional.</span>
+
+        <label>
+          Strain
+          <select name="strain">
+            <option value="">— None —</option>
+            <option value="indica">Indica</option>
+            <option value="sativa">Sativa</option>
+            <option value="hybrid">Hybrid</option>
+            <option value="cbd">CBD</option>
+          </select>
+        </label>
+
+        <TagInput
+          name="effects"
+          label="Effects"
+          hint="Press Enter or comma to add each one."
+          placeholder="e.g. Euphoria"
+        />
+
+        <TagInput
+          name="flavors"
+          label="Flavors"
+          hint="Press Enter or comma to add each one."
+          placeholder="e.g. Earthy"
+        />
+
+        <fieldset className="admin-fieldset">
+          <legend>Lab Results</legend>
+          <span className="admin-hint">All fields are optional.</span>
+
+          <label>
+            THC %
+            <input
+              name="labResults_thcPercent"
+              type="number"
+              min={0}
+              max={100}
+              step={0.01}
+            />
+          </label>
+
+          <label>
+            CBD %
+            <input
+              name="labResults_cbdPercent"
+              type="number"
+              min={0}
+              max={100}
+              step={0.01}
+            />
+          </label>
+
+          <TagInput
+            name="terpenes"
+            label="Terpenes"
+            hint="Press Enter or comma to add each one."
+            placeholder="e.g. Myrcene"
+          />
+
+          <label>
+            Test Date
+            <input name="labResults_testDate" type="date" />
+          </label>
+
+          <label>
+            Lab Name
+            <input
+              name="labResults_labName"
+              type="text"
+              placeholder="e.g. Confident Cannabis"
+            />
+          </label>
+        </fieldset>
+      </fieldset>
 
       <div className="admin-form-actions">
         <Link href="/admin/products">Cancel</Link>

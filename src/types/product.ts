@@ -1,10 +1,10 @@
-import type { DescriptionSource } from './vendor';
-
 export type ProductStatus =
   | 'active'
   | 'pending-reformulation'
   | 'archived'
   | 'compliance-hold';
+
+export type ProductStrain = 'indica' | 'sativa' | 'hybrid' | 'cbd';
 
 export interface LabResults {
   thcPercent?: number;
@@ -28,7 +28,6 @@ export interface Product {
   slug: string;
   name: string;
   category: string;
-  description: string;
   details: string;
   /** Firebase Storage path, e.g. products/{slug}.jpg */
   image?: string;
@@ -49,9 +48,14 @@ export interface Product {
   vendorSlug?: string;
   /** RnR-owned lab result data (replaces generic coaUrl where available) */
   labResults?: LabResults;
-  descriptionSource?: DescriptionSource;
-  /** Leafly product page URL — used when descriptionSource === 'leafly' */
+  /** Leafly product page URL */
   leaflyUrl?: string;
+  /** Cannabis strain type — powers strain badge on storefront */
+  strain?: ProductStrain;
+  /** Consumer-facing effect descriptors, e.g. ['Euphoria', 'Relaxed', 'Sedative'] */
+  effects?: string[];
+  /** Flavor descriptors, e.g. ['Citrus', 'Pine', 'Earthy'] */
+  flavors?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,10 +66,10 @@ export type ProductSummary = Pick<
   | 'slug'
   | 'name'
   | 'category'
-  | 'description'
   | 'image'
   | 'images'
   | 'status'
   | 'availableAt'
   | 'vendorSlug'
+  | 'strain'
 >;

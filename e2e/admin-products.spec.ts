@@ -112,11 +112,8 @@ test.describe('Admin Products', () => {
     await page.locator('select[name="category"]').selectOption('flower');
 
     await page
-      .locator('textarea[name="description"]')
-      .fill('A product created by E2E tests.');
-    await page
       .locator('textarea[name="details"]')
-      .fill('Detailed description for E2E test product.');
+      .fill('A product created by E2E tests.');
 
     // When: user submits the form
     await page.locator('button[type="submit"]').click();
@@ -172,11 +169,9 @@ test.describe('Admin Products', () => {
     const nameValue = await page.locator('input[name="name"]').inputValue();
     expect(nameValue.length).toBeGreaterThan(0);
 
-    // Then: description textarea is populated
-    const description = await page
-      .locator('textarea[name="description"]')
-      .inputValue();
-    expect(description.length).toBeGreaterThan(0);
+    // Then: details textarea is populated
+    const details = await page.locator('textarea[name="details"]').inputValue();
+    expect(details.length).toBeGreaterThan(0);
   });
 
   // ─── Archive / Restore ───────────────────────────────────────────────────
@@ -199,11 +194,8 @@ test.describe('Admin Products', () => {
     await page.locator('input[name="name"]').fill(name);
     await page.locator('select[name="category"]').selectOption('flower');
     await page
-      .locator('textarea[name="description"]')
-      .fill('Archive test product.');
-    await page
       .locator('textarea[name="details"]')
-      .fill('Archive test details.');
+      .fill('Archive test product.');
     await page.locator('button[type="submit"]').click();
     await expect(page).toHaveURL(/\/admin\/products$/, { timeout: 10000 });
 
@@ -239,11 +231,8 @@ test.describe('Admin Products', () => {
     await page.locator('input[name="name"]').fill(name);
     await page.locator('select[name="category"]').selectOption('flower');
     await page
-      .locator('textarea[name="description"]')
-      .fill('Restore test product.');
-    await page
       .locator('textarea[name="details"]')
-      .fill('Restore test details.');
+      .fill('Restore test product.');
     await page.locator('button[type="submit"]').click();
     await expect(page).toHaveURL(/\/admin\/products$/, { timeout: 10000 });
 

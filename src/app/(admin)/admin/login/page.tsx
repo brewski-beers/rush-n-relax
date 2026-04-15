@@ -49,7 +49,7 @@ async function exchangeTokenForSession(
 }
 
 export default function LoginPage() {
-  const [tab, setTab] = useState<'google' | 'phone'>('google');
+  const [tab, setTab] = useState<'google' | 'phone' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -182,48 +182,30 @@ export default function LoginPage() {
     <div className="admin-login-wrap">
       <h1>Admin Login</h1>
 
-      <div className="admin-login-tabs" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'google'}
-          onClick={() => {
-            setTab('google');
-            setError(null);
-          }}
-          className={`admin-login-tab${tab === 'google' ? ' active' : ''}`}
-        >
-          Google
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'phone'}
-          onClick={() => {
-            setTab('phone');
-            setError(null);
-          }}
-          className={`admin-login-tab${tab === 'phone' ? ' active' : ''}`}
-        >
-          Phone
-        </button>
-      </div>
-
       {error && (
         <p role="alert" className="admin-error">
           {error}
         </p>
       )}
 
-      {tab === 'google' && (
-        <button
-          type="button"
-          onClick={handleGoogleSignIn}
-          disabled={isPending}
-          className="admin-submit"
-        >
-          {isPending ? 'Signing in…' : 'Sign in with Google'}
-        </button>
+      {tab === null && (
+        <div className="admin-login-methods">
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isPending}
+            className="admin-submit"
+          >
+            {isPending ? 'Signing in…' : 'Sign in with Google'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('phone')}
+            className="admin-submit"
+          >
+            Sign in with Phone
+          </button>
+        </div>
       )}
 
       {tab === 'phone' && !otpStep && (
@@ -255,6 +237,18 @@ export default function LoginPage() {
             className="admin-submit"
           >
             {isPending ? 'Sending…' : 'Send OTP'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setTab(null);
+              setPhone('');
+              setError(null);
+            }}
+            className="admin-link-btn"
+            disabled={isPending}
+          >
+            Back
           </button>
         </div>
       )}
@@ -289,6 +283,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => {
+              setTab(null);
               setOtpStep(false);
               setOtp('');
               setError(null);

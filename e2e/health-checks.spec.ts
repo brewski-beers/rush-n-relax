@@ -107,7 +107,7 @@ test.describe('Website Health Checks - Production Readiness', () => {
       const menuToggle = page.locator('.nav-toggle');
       if (await menuToggle.isVisible()) {
         await menuToggle.click();
-        await page.getByRole('link', { name: /about/i }).click();
+        await page.getByRole('link', { name: /^about$/i }).click();
         await expect(page).toHaveURL(/\/about/);
       }
     });
@@ -282,7 +282,7 @@ test.describe('Website Health Checks - Production Readiness', () => {
         page.getByRole('link', { name: /^contact$/i })
       ).toBeVisible();
 
-      await page.getByRole('link', { name: /about/i }).click();
+      await page.getByRole('link', { name: /^about$/i }).click();
       await expect(page).toHaveURL(/\/about/);
     });
 
@@ -361,7 +361,7 @@ test.describe('Website Health Checks - Production Readiness', () => {
   // ─── Page Structure (Auto-generated from routes.ts) ─────────────────
   test.describe('Page Structure', () => {
     for (const route of STATIC_ROUTES) {
-      const sections = ROUTE_SECTIONS[route as RoutePath];
+      const sections = ROUTE_SECTIONS[route];
 
       test(`${route} has required sections: ${sections.join(', ')}`, async ({
         page,

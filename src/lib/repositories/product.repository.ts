@@ -3,7 +3,12 @@
  * Server-side only (uses firebase-admin).
  */
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
-import type { Product, ProductSummary, LabResults } from '@/types';
+import type {
+  Product,
+  ProductSummary,
+  LabResults,
+  ProductStrain,
+} from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -108,6 +113,14 @@ export async function setProductStatus(
 
 // ── Private helpers ───────────────────────────────────────────────────────
 
+/** Valid strain values for defensive mapping */
+const VALID_STRAINS = new Set<ProductStrain>([
+  'indica',
+  'sativa',
+  'hybrid',
+  'cbd',
+]);
+
 function docToProductSummary(
   id: string,
   d: FirebaseFirestore.DocumentData
@@ -117,12 +130,16 @@ function docToProductSummary(
     slug: d.slug,
     name: d.name,
     category: d.category ?? '',
-    description: d.description ?? '',
     image: d.image ?? undefined,
     images: Array.isArray(d.images) ? (d.images as string[]) : undefined,
     status: d.status,
     availableAt: d.availableAt ?? [],
     vendorSlug: d.vendorSlug ?? undefined,
+    strain:
+      typeof d.strain === 'string' &&
+      VALID_STRAINS.has(d.strain as ProductStrain)
+        ? (d.strain as ProductStrain)
+        : undefined,
   } satisfies ProductSummary;
 }
 
@@ -132,7 +149,6 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     slug: d.slug,
     name: d.name,
     category: d.category ?? '',
-    description: d.description ?? '',
     details: d.details ?? '',
     image: d.image ?? undefined,
     images: Array.isArray(d.images) ? (d.images as string[]) : undefined,
@@ -142,11 +158,17 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     availableAt: d.availableAt ?? [],
     vendorSlug: d.vendorSlug ?? undefined,
     labResults: docToLabResults(d.labResults),
-    descriptionSource: d.descriptionSource ?? undefined,
     leaflyUrl: d.leaflyUrl ?? undefined,
+    strain:
+      typeof d.strain === 'string' &&
+      VALID_STRAINS.has(d.strain as ProductStrain)
+        ? (d.strain as ProductStrain)
+        : undefined,
+    effects: Array.isArray(d.effects) ? (d.effects as string[]) : undefined,
+    flavors: Array.isArray(d.flavors) ? (d.flavors as string[]) : undefined,
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
-  };
+  } satisfies Product;
 }
 
 function docToLabResults(

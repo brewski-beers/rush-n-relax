@@ -112,7 +112,6 @@ async function upsertProducts(): Promise<number> {
           slug: product.slug,
           name: product.name,
           category: product.category,
-          description: product.description,
           details: product.details,
           image: product.image,
           status: product.status,
@@ -167,32 +166,59 @@ async function upsertPromos(): Promise<number> {
 }
 
 const CATEGORY_FIXTURES = [
-  { slug: 'flower', label: 'Flower', description: 'Hand-selected THCa flower strains', order: 1, isActive: true },
-  { slug: 'concentrates', label: 'Concentrates', description: 'Refined, potent extracts', order: 2, isActive: true },
-  { slug: 'drinks', label: 'Drinks', description: 'THCa-infused beverages', order: 3, isActive: true },
-  { slug: 'edibles', label: 'Edibles', description: 'Gourmet edibles and treats', order: 4, isActive: true },
-  { slug: 'vapes', label: 'Vapes', description: 'Discreet vape hardware', order: 5, isActive: true },
+  {
+    slug: 'flower',
+    label: 'Flower',
+    description: 'Hand-selected THCa flower strains',
+    order: 1,
+    isActive: true,
+  },
+  {
+    slug: 'concentrates',
+    label: 'Concentrates',
+    description: 'Refined, potent extracts',
+    order: 2,
+    isActive: true,
+  },
+  {
+    slug: 'drinks',
+    label: 'Drinks',
+    description: 'THCa-infused beverages',
+    order: 3,
+    isActive: true,
+  },
+  {
+    slug: 'edibles',
+    label: 'Edibles',
+    description: 'Gourmet edibles and treats',
+    order: 4,
+    isActive: true,
+  },
+  {
+    slug: 'vapes',
+    label: 'Vapes',
+    description: 'Discreet vape hardware',
+    order: 5,
+    isActive: true,
+  },
 ] as const;
 
 async function upsertCategories(): Promise<number> {
   let written = 0;
 
   for (const category of CATEGORY_FIXTURES) {
-    await db
-      .collection('product-categories')
-      .doc(category.slug)
-      .set(
-        {
-          slug: category.slug,
-          label: category.label,
-          description: category.description,
-          order: category.order,
-          isActive: category.isActive,
-          createdAt: now,
-          updatedAt: now,
-        },
-        { merge: true }
-      );
+    await db.collection('product-categories').doc(category.slug).set(
+      {
+        slug: category.slug,
+        label: category.label,
+        description: category.description,
+        order: category.order,
+        isActive: category.isActive,
+        createdAt: now,
+        updatedAt: now,
+      },
+      { merge: true }
+    );
 
     written += 1;
   }
@@ -231,13 +257,14 @@ async function main(): Promise<void> {
   console.log('[prod-upsert-content] Starting upsert...');
   console.log(`[prod-upsert-content] Project: ${projectId}`);
 
-  const [locations, products, promos, hubInventory, categories] = await Promise.all([
-    upsertLocations(),
-    upsertProducts(),
-    upsertPromos(),
-    upsertHubInventory(),
-    upsertCategories(),
-  ]);
+  const [locations, products, promos, hubInventory, categories] =
+    await Promise.all([
+      upsertLocations(),
+      upsertProducts(),
+      upsertPromos(),
+      upsertHubInventory(),
+      upsertCategories(),
+    ]);
 
   console.log(
     `[prod-upsert-content] Done: locations=${locations}, products=${products}, promos=${promos}, hubInventory=${hubInventory}, categories=${categories}`

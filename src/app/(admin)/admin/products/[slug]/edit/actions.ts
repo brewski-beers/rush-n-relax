@@ -8,7 +8,7 @@ import {
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
-import type { ProductStatus } from '@/types';
+import type { ProductStatus, ProductStrain } from '@/types';
 
 // compliance-hold is system-managed — admins cannot set it directly
 const SETTABLE_STATUSES: ProductStatus[] = [
@@ -16,6 +16,13 @@ const SETTABLE_STATUSES: ProductStatus[] = [
   'pending-reformulation',
   'archived',
 ];
+
+const VALID_STRAINS = new Set<ProductStrain>([
+  'indica',
+  'sativa',
+  'hybrid',
+  'cbd',
+]);
 
 export async function updateProduct(
   slug: string,
@@ -29,13 +36,12 @@ export async function updateProduct(
 
   const name = formData.get('name')?.toString().trim();
   const category = formData.get('category')?.toString();
-  const description = formData.get('description')?.toString().trim();
   const details = formData.get('details')?.toString().trim();
   const status = formData.get('status')?.toString() as ProductStatus;
   const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
-  if (!name || !category || !description || !details || !status) {
+  if (!name || !category || !details || !status) {
     return { error: 'All required fields must be filled.' };
   }
 
@@ -54,24 +60,92 @@ export async function updateProduct(
     .map(i => formData.get(`galleryImagePath_${i}`)?.toString() || undefined)
     .filter((p): p is string => p !== undefined);
 
+  // ── Cannabis profile fields ────────────────────────────────────────────
+  const strainRaw = formData.get('strain')?.toString() ?? '';
+  const strain = VALID_STRAINS.has(strainRaw as ProductStrain)
+    ? (strainRaw as ProductStrain)
+    : undefined;
+
+  const effectsRaw = formData.get('effects')?.toString() ?? '';
+  const effects = effectsRaw
+    ? effectsRaw
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : undefined;
+
+  const flavorsRaw = formData.get('flavors')?.toString() ?? '';
+  const flavors = flavorsRaw
+    ? flavorsRaw
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : undefined;
+
+  // ── Lab results ────────────────────────────────────────────────────────
+  const labThc = formData.get('labResults_thcPercent')?.toString() ?? '';
+  const labCbd = formData.get('labResults_cbdPercent')?.toString() ?? '';
+  const terpenesRaw = formData.get('terpenes')?.toString() ?? '';
+  const testDate =
+    formData.get('labResults_testDate')?.toString().trim() || undefined;
+  const labName =
+    formData.get('labResults_labName')?.toString().trim() || undefined;
+
+  const thcPercent =
+    labThc !== '' && Number.isFinite(Number(labThc))
+      ? Number(labThc)
+      : undefined;
+  const cbdPercent =
+    labCbd !== '' && Number.isFinite(Number(labCbd))
+      ? Number(labCbd)
+      : undefined;
+  const terpenes = terpenesRaw
+    ? terpenesRaw
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : undefined;
+
+  const labResultsFromForm =
+    thcPercent !== undefined ||
+    cbdPercent !== undefined ||
+    terpenes !== undefined ||
+    testDate ||
+    labName
+      ? {
+          ...(thcPercent !== undefined && { thcPercent }),
+          ...(cbdPercent !== undefined && { cbdPercent }),
+          ...(terpenes !== undefined && { terpenes }),
+          ...(testDate && { testDate }),
+          ...(labName && { labName }),
+        }
+      : undefined;
+
+  const labResults = labResultsFromForm ?? existing.labResults;
+
+  // ── COA URL ────────────────────────────────────────────────────────────
+  const coaUrlRaw = formData.get('coaUrl')?.toString() ?? '';
+  const coaUrl = coaUrlRaw || existing.coaUrl;
+
   const payload = {
     slug: existing.slug,
     name,
     category,
-    description,
     details,
     image: featuredImagePath ?? existing.image,
     images: galleryImagePaths.length > 0 ? galleryImagePaths : existing.images,
     status,
     federalDeadlineRisk,
     availableAt,
+    ...(coaUrl ? { coaUrl } : {}),
+    ...(strain !== undefined ? { strain } : {}),
+    ...(effects !== undefined ? { effects } : {}),
+    ...(flavors !== undefined ? { flavors } : {}),
+    ...(labResults !== undefined ? { labResults } : {}),
   };
 
   try {
-    await upsertProduct({
-      ...payload,
-      ...(existing.coaUrl ? { coaUrl: existing.coaUrl } : {}),
-    });
+    await upsertProduct(payload);
 
     revalidatePath('/admin/products');
     revalidatePath('/products');

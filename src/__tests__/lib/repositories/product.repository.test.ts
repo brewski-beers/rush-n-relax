@@ -213,7 +213,6 @@ describe('upsertProduct', () => {
         slug: 'blue-dream',
         name: 'Blue Dream',
         category: 'flower',
-        description: 'A classic sativa',
         details: 'Smooth and uplifting',
         status: 'active',
         federalDeadlineRisk: false,
@@ -237,7 +236,6 @@ describe('upsertProduct', () => {
         slug: 'blue-dream',
         name: 'Blue Dream',
         category: 'flower',
-        description: 'Classic',
         details: 'Details',
         status: 'active',
         federalDeadlineRisk: false,
@@ -425,6 +423,131 @@ describe('listProductsByCategory', () => {
       const result = await listProductsByCategory('nonexistent');
 
       expect(result).toEqual([]);
+    });
+  });
+});
+
+// ── new cannabis profile fields (#111) ────────────────────────────────────
+
+describe('getProductBySlug — cannabis profile fields', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given a product with all new profile fields present', () => {
+    it('maps strain, effects, and flavors', async () => {
+      docGetMock.mockResolvedValue(
+        makeDocSnapshot('blue-dream', {
+          slug: 'blue-dream',
+          name: 'Blue Dream',
+          strain: 'sativa',
+          effects: ['Euphoria', 'Relaxed'],
+          flavors: ['Citrus', 'Pine'],
+          createdAt: new Date('2024-01-01').toISOString(),
+          updatedAt: new Date('2024-06-01').toISOString(),
+        })
+      );
+
+      const result = await getProductBySlug('blue-dream');
+
+      expect(result).not.toBeNull();
+      expect(result!.strain).toBe('sativa');
+      expect(result!.effects).toEqual(['Euphoria', 'Relaxed']);
+      expect(result!.flavors).toEqual(['Citrus', 'Pine']);
+    });
+  });
+
+  describe('given a product with no new profile fields (legacy product)', () => {
+    it('returns undefined for all new optional fields without error', async () => {
+      docGetMock.mockResolvedValue(
+        makeDocSnapshot('blue-dream', {
+          slug: 'blue-dream',
+          name: 'Blue Dream',
+          category: 'flower',
+          description: 'Classic',
+          details: 'Smooth',
+          status: 'active',
+          federalDeadlineRisk: false,
+          availableAt: [],
+          createdAt: new Date('2024-01-01').toISOString(),
+          updatedAt: new Date('2024-06-01').toISOString(),
+        })
+      );
+
+      const result = await getProductBySlug('blue-dream');
+
+      expect(result).not.toBeNull();
+      expect(result!.strain).toBeUndefined();
+      expect(result!.effects).toBeUndefined();
+      expect(result!.flavors).toBeUndefined();
+    });
+  });
+
+  describe('given a product with an invalid strain value', () => {
+    it('maps strain to undefined when value is not a valid ProductStrain', async () => {
+      docGetMock.mockResolvedValue(
+        makeDocSnapshot('blue-dream', {
+          slug: 'blue-dream',
+          name: 'Blue Dream',
+          strain: 'unknown-type', // invalid
+          createdAt: new Date('2024-01-01').toISOString(),
+          updatedAt: new Date('2024-06-01').toISOString(),
+        })
+      );
+
+      const result = await getProductBySlug('blue-dream');
+
+      expect(result!.strain).toBeUndefined();
+    });
+  });
+});
+
+describe('listProducts — strain field on ProductSummary', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given an active product with a strain', () => {
+    it('includes strain on the returned summary', async () => {
+      colGetMock.mockResolvedValue({
+        docs: [
+          makeDocSnapshot('blue-dream', {
+            slug: 'blue-dream',
+            name: 'Blue Dream',
+            category: 'flower',
+            description: 'Classic',
+            status: 'active',
+            strain: 'sativa',
+            availableAt: [],
+          }),
+        ],
+      });
+
+      const result = await listProducts();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].strain).toBe('sativa');
+    });
+  });
+
+  describe('given an active product without a strain', () => {
+    it('returns undefined for strain on the summary', async () => {
+      colGetMock.mockResolvedValue({
+        docs: [
+          makeDocSnapshot('blue-dream', {
+            slug: 'blue-dream',
+            name: 'Blue Dream',
+            category: 'flower',
+            description: 'Classic',
+            status: 'active',
+            availableAt: [],
+          }),
+        ],
+      });
+
+      const result = await listProducts();
+
+      expect(result[0].strain).toBeUndefined();
     });
   });
 });
