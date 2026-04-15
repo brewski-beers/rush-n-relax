@@ -103,16 +103,14 @@ describe('Navigation Component', () => {
     render(<NavigationWrapped />);
 
     expect(
-      screen.getByText(/home/i) || screen.getByRole('link', { name: /home/i })
-    ).toBeInTheDocument();
+      screen.getAllByRole('link', { name: /home/i }).length
+    ).toBeGreaterThan(0);
     expect(
-      screen.getByText(/products/i) ||
-        screen.getByRole('link', { name: /products/i })
-    ).toBeInTheDocument();
+      screen.getAllByRole('link', { name: /products/i }).length
+    ).toBeGreaterThan(0);
     expect(
-      screen.getByText(/locations/i) ||
-        screen.getByRole('link', { name: /locations/i })
-    ).toBeInTheDocument();
+      screen.getAllByRole('link', { name: /locations/i }).length
+    ).toBeGreaterThan(0);
   });
 
   it('does not render tech credit in mobile menu', () => {
@@ -133,36 +131,42 @@ describe('Navigation Component', () => {
   it('home link navigates to root path', () => {
     render(<NavigationWrapped />);
 
-    const homeLink = screen.getByRole('link', { name: /home/i });
-    expect(homeLink).toHaveAttribute('href', '/');
+    const homeLinks = screen.getAllByRole('link', { name: /home/i });
+    homeLinks.forEach(link => expect(link).toHaveAttribute('href', '/'));
   });
 
   it('products link navigates to products path', () => {
     render(<NavigationWrapped />);
 
-    const productsLink = screen.getByRole('link', { name: /products/i });
-    expect(productsLink).toHaveAttribute('href', '/products');
+    const productsLinks = screen.getAllByRole('link', { name: /products/i });
+    productsLinks.forEach(link =>
+      expect(link).toHaveAttribute('href', '/products')
+    );
   });
 
   it('locations link navigates to locations path', () => {
     render(<NavigationWrapped />);
 
-    const locationsLink = screen.getByRole('link', { name: /locations/i });
-    expect(locationsLink).toHaveAttribute('href', '/locations');
+    const locationsLinks = screen.getAllByRole('link', { name: /locations/i });
+    locationsLinks.forEach(link =>
+      expect(link).toHaveAttribute('href', '/locations')
+    );
   });
 
   it('about link navigates to about path', () => {
     render(<NavigationWrapped />);
 
-    const aboutLink = screen.getByRole('link', { name: /about/i });
-    expect(aboutLink).toHaveAttribute('href', '/about');
+    const aboutLinks = screen.getAllByRole('link', { name: /about/i });
+    aboutLinks.forEach(link => expect(link).toHaveAttribute('href', '/about'));
   });
 
   it('contact link navigates to contact path', () => {
     render(<NavigationWrapped />);
 
-    const contactLink = screen.getByRole('link', { name: /contact/i });
-    expect(contactLink).toHaveAttribute('href', '/contact');
+    const contactLinks = screen.getAllByRole('link', { name: /contact/i });
+    contactLinks.forEach(link =>
+      expect(link).toHaveAttribute('href', '/contact')
+    );
   });
 
   it('renders logo or logo placeholder', () => {
@@ -185,24 +189,28 @@ describe('Navigation Component', () => {
       fireEvent.click(menuButton);
 
       // Menu should become visible or drawer should open
-      const mobileMenu = screen.queryByRole('navigation', { hidden: false });
-      expect(mobileMenu).toBeTruthy();
+      const mobileMenus = screen.queryAllByRole('navigation', {
+        hidden: false,
+      });
+      expect(mobileMenus.length).toBeGreaterThan(0);
     }
   });
 
   it('marks current page link with aria-current', () => {
     render(<NavigationWrapped />);
 
-    // On home page (pathname = '/'), home link should have aria-current="page"
-    const homeLink = screen.getByRole('link', { name: /home/i });
-    expect(homeLink).toHaveAttribute('aria-current');
+    // On home page (pathname = '/'), home links should have aria-current="page"
+    const homeLinks = screen.getAllByRole('link', { name: /home/i });
+    expect(homeLinks.some(link => link.hasAttribute('aria-current'))).toBe(
+      true
+    );
   });
 
   it('has proper semantic structure', () => {
     render(<NavigationWrapped />);
 
-    const nav = screen.getByRole('navigation') || screen.getByRole('banner');
-    expect(nav).toBeInTheDocument();
+    const navs = screen.getAllByRole('navigation');
+    expect(navs.length).toBeGreaterThan(0);
 
     const links = screen.getAllByRole('link');
     expect(links.length).toBeGreaterThan(2);
