@@ -16,6 +16,12 @@ interface ProductImageProps {
    * Provide when the exact storage path is already known (e.g. after upload).
    */
   path?: string;
+  /**
+   * Optional pre-resolved public URL. When provided, skips all async
+   * resolution and renders the image directly. Use when the URL is already
+   * available (e.g. from Firestore product.image field).
+   */
+  src?: string;
 }
 
 async function resolvePathUrl(storagePath: string): Promise<string | null> {
@@ -34,12 +40,21 @@ async function resolvePathUrl(storagePath: string): Promise<string | null> {
  * Otherwise falls back to the slug-based extension-probing lookup.
  * Shows a shimmer placeholder while loading, and a fallback if unavailable.
  */
-export function ProductImage({ slug, alt, className, path }: ProductImageProps) {
-  const [src, setSrc] = useState<string | null>(null);
+export function ProductImage({
+  slug,
+  alt,
+  className,
+  path,
+  src: srcProp,
+}: ProductImageProps) {
+  const [src, setSrc] = useState<string | null>(srcProp ?? null);
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    // If a direct URL was provided, state is already initialized — skip resolution.
+    if (srcProp) return;
+
     let cancelled = false;
 
     const resolve = path
@@ -59,7 +74,7 @@ export function ProductImage({ slug, alt, className, path }: ProductImageProps) 
     return () => {
       cancelled = true;
     };
-  }, [slug, path]);
+  }, [slug, path, srcProp]);
 
   const content =
     failed || (!src && !loaded) ? (
