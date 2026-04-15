@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/admin-auth';
 import { assignNonOwnerRole } from '@/lib/admin/user-management';
 import { isManageableRole } from '@/lib/admin/roles';
+import type { UserRole } from '@/types';
 import {
   createOrUpdatePendingUserInvite,
   revokePendingUserInvite,
@@ -97,6 +98,97 @@ export async function revokeInvite(
 
   revalidatePath('/admin/users');
   return { success: `Invite revoked for ${email}.` };
+}
+
+const ALL_ROLES: UserRole[] = [
+  'owner',
+  'storeOwner',
+  'storeManager',
+  'staff',
+  'customer',
+];
+
+function isAnyRole(value: unknown): value is UserRole {
+  return ALL_ROLES.includes(value as UserRole);
+}
+
+/**
+ * Update any user's role — including promotion to 'owner'.
+ * Caller must be an owner (enforced by requireRole).
+ */
+export async function updateUserRole(
+  _prev: ActionState | null,
+  formData: FormData
+): Promise<ActionState> {
+  await requireRole('owner');
+
+  const uid = formData.get('uid')?.toString().trim();
+  const selectedRole = formData.get('role')?.toString().trim();
+
+  if (!uid || !selectedRole) {
+    return { error: 'UID and role are required.' };
+  }
+
+  if (!isAnyRole(selectedRole)) {
+    return { error: 'Invalid role.' };
+  }
+
+  const { getAdminAuth } = await import('@/lib/firebase/admin');
+  const auth = getAdminAuth();
+
+  try {
+    const user = await auth.getUser(uid);
+    await auth.setCustomUserClaims(uid, {
+      ...(user.customClaims ?? {}),
+      role: selectedRole,
+    });
+  } catch (err: unknown) {
+    if (err instanceof Error) return { error: err.message };
+    return { error: 'Failed to update role.' };
+  }
+
+  revalidatePath('/admin/users');
+  return { success: `Role updated to ${selectedRole}.` };
+}
+
+const EMAIL_PATTERN_SIMPLE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Link a Google email to an existing user (e.g. phone-only staff).
+ * Sets email + emailVerified:true so Firebase one-account-per-email
+ * will merge the Google sign-in to this record.
+ */
+export async function addGoogleEmail(
+  _prev: ActionState | null,
+  formData: FormData
+): Promise<ActionState> {
+  await requireRole('owner');
+
+  const uid = formData.get('uid')?.toString().trim();
+  const email = formData.get('email')?.toString().trim().toLowerCase();
+
+  if (!uid || !email) {
+    return { error: 'UID and email are required.' };
+  }
+
+  if (!EMAIL_PATTERN_SIMPLE.test(email)) {
+    return { error: 'Enter a valid email address.' };
+  }
+
+  const { getAdminAuth } = await import('@/lib/firebase/admin');
+  const auth = getAdminAuth();
+
+  try {
+    await auth.updateUser(uid, { email, emailVerified: true });
+  } catch (err: unknown) {
+    if (err instanceof Error) return { error: err.message };
+    return { error: 'Failed to link Google email.' };
+  }
+
+  revalidatePath('/admin/users');
+  return {
+    success: `Google email ${email} linked. User can now sign in with Google.`,
+  };
 }
 
 // Accepts 10-digit US numbers; +1 is prepended server-side
