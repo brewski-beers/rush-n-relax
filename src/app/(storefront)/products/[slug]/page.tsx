@@ -15,6 +15,18 @@ interface Props {
 
 export const revalidate = 3600;
 
+const STORAGE_BUCKET = 'rush-n-relax.firebasestorage.app';
+
+/**
+ * Build a public (no-auth) Firebase Storage download URL from a storage path.
+ * This avoids a client-side getDownloadURL round-trip for the hero image,
+ * which was causing a 1–3s LCP penalty.
+ */
+function buildPublicStorageUrl(storagePath: string): string {
+  const encodedPath = encodeURIComponent(storagePath);
+  return `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET}/o/${encodedPath}?alt=media`;
+}
+
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
@@ -39,6 +51,12 @@ export default async function ProductDetailPage({ params }: Props) {
   const relatedProducts = activeProducts
     .filter(candidate => candidate.slug !== product.slug)
     .slice(0, 6);
+
+  // Resolve hero image URL server-side to avoid client-side Firebase Storage
+  // getDownloadURL round-trip, which blocks LCP by 1–3s.
+  const heroImageUrl = product.image
+    ? buildPublicStorageUrl(product.image)
+    : undefined;
 
   // Generate a fresh signed URL for the COA PDF if one is stored.
   // Page revalidates every hour so the 1-hour signed URL stays valid.
@@ -79,6 +97,7 @@ export default async function ProductDetailPage({ params }: Props) {
         product={product}
         relatedProducts={relatedProducts}
         coaSignedUrl={coaSignedUrl}
+        heroImageUrl={heroImageUrl}
       />
     </>
   );
