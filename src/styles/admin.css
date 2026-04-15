@@ -52,6 +52,7 @@
   --admin-tag-field-focus-outline: 2px solid;
   --admin-tag-field-focus-outline-color: rgba(213, 179, 106, 0.2);
   --admin-chip-gap: 0.3rem;
+  --admin-toggle-cell-gap: 0.25rem;
   --admin-chip-padding: 0.2rem 0.55rem;
   --admin-chip-bg: rgba(213, 179, 106, 0.15);
   --admin-chip-border: 1px solid rgba(213, 179, 106, 0.35);
@@ -815,6 +816,23 @@
 .admin-toggle:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.admin-toggle-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-toggle-cell-gap);
+}
+
+.admin-toggle-success {
+  color: var(--admin-accent);
+  font-size: 0.85rem;
+  opacity: 0;
+  transition: opacity 1.5s ease-out;
+}
+
+.admin-toggle-success--visible {
+  opacity: 1;
 }
 
 .admin-row-pending td {

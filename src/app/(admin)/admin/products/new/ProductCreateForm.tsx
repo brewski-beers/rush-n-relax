@@ -111,9 +111,16 @@ export function ProductCreateForm({ categories }: Props) {
             <input
               name="labResults_thcPercent"
               type="number"
-              min={0}
-              max={100}
-              step={0.01}
+              min="0"
+              max="100"
+              step="0.1"
+              aria-describedby="thcPercent-error"
+            />
+            <p
+              id="thcPercent-error"
+              className="admin-field-error"
+              aria-live="polite"
+              hidden
             />
           </label>
 
@@ -122,9 +129,16 @@ export function ProductCreateForm({ categories }: Props) {
             <input
               name="labResults_cbdPercent"
               type="number"
-              min={0}
-              max={100}
-              step={0.01}
+              min="0"
+              max="100"
+              step="0.1"
+              aria-describedby="cbdPercent-error"
+            />
+            <p
+              id="cbdPercent-error"
+              className="admin-field-error"
+              aria-live="polite"
+              hidden
             />
           </label>
 

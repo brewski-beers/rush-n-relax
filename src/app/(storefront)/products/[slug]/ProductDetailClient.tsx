@@ -61,8 +61,10 @@ export default function ProductDetailClient({
   const sizeLabel = getSizeLabelForCategory(product.category);
 
   // Featured image is always first; gallery images follow in order.
+  // heroImageUrl is a pre-resolved public URL (server-side) for faster LCP.
+  const featuredUrl = heroImageUrl ?? product.image;
   const allImages: string[] = [
-    ...(product.image ? [product.image] : []),
+    ...(featuredUrl ? [featuredUrl] : []),
     ...(product.images ?? []),
   ];
   const [activeImage, setActiveImage] = useState<string | undefined>(

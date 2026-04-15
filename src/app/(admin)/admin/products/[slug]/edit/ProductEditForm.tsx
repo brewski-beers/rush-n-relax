@@ -124,10 +124,17 @@ export function ProductEditForm({ product, categories }: Props) {
             <input
               name="labResults_thcPercent"
               type="number"
-              min={0}
-              max={100}
-              step={0.01}
+              min="0"
+              max="100"
+              step="0.1"
               defaultValue={product.labResults?.thcPercent ?? ''}
+              aria-describedby="thcPercent-error"
+            />
+            <p
+              id="thcPercent-error"
+              className="admin-field-error"
+              aria-live="polite"
+              hidden
             />
           </label>
 
@@ -136,10 +143,17 @@ export function ProductEditForm({ product, categories }: Props) {
             <input
               name="labResults_cbdPercent"
               type="number"
-              min={0}
-              max={100}
-              step={0.01}
+              min="0"
+              max="100"
+              step="0.1"
               defaultValue={product.labResults?.cbdPercent ?? ''}
+              aria-describedby="cbdPercent-error"
+            />
+            <p
+              id="cbdPercent-error"
+              className="admin-field-error"
+              aria-live="polite"
+              hidden
             />
           </label>
 
@@ -171,6 +185,12 @@ export function ProductEditForm({ product, categories }: Props) {
           </label>
         </fieldset>
       </fieldset>
+
+      <p className="admin-hint">
+        Location availability is managed per-location. Go to{' '}
+        <Link href="/admin/inventory">Inventory</Link> to set which locations
+        carry this product.
+      </p>
 
       <div className="admin-form-actions">
         <Link href="/admin/products">Cancel</Link>
