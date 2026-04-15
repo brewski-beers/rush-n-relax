@@ -491,3 +491,52 @@
     padding: 0 var(--space-lg);
   }
 }
+
+/* ========== DESKTOP HORIZONTAL NAV ========== */
+/* Hide desktop nav on mobile; it will appear at 768px+ */
+.desktop-nav {
+  display: none;
+}
+
+.desktop-nav-links {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-xs);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.desktop-nav-links .nav-link {
+  padding: var(--space-xs) var(--space-sm);
+  min-height: unset;
+  font-size: 0.875rem;
+  border-radius: 0.375rem;
+  transform: none;
+}
+
+.desktop-nav-links .nav-link:hover {
+  transform: none;
+  background-color: var(--color-surface-anchor);
+}
+
+.desktop-nav-links .nav-link[aria-current='page'] {
+  border-left: none;
+  padding-left: var(--space-sm);
+}
+
+@media (min-width: 768px) {
+  .desktop-nav {
+    display: block;
+  }
+
+  /* Push desktop nav to fill available space */
+  .header-content {
+    gap: var(--space-md);
+  }
+
+  .nav-toggle {
+    display: none;
+  }
+}

@@ -298,7 +298,7 @@ export default function ProductDetailClient({
                   </div>
                   <div className="related-strip-info">
                     <div className="product-category-badge">
-                      {related.category.toUpperCase()}
+                      {related.category}
                     </div>
                     <h3 className="related-strip-name">{related.name}</h3>
                   </div>

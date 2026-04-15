@@ -57,9 +57,7 @@ export async function ProductsGrid({ category, rawPage }: ProductsGridProps) {
               path={product.image}
             />
             <div className="product-card-content">
-              <div className="product-category">
-                {product.category.toUpperCase()}
-              </div>
+              <div className="product-category">{product.category}</div>
               <h2>{product.name}</h2>
               <div className="product-card-cta">View Details →</div>
             </div>
