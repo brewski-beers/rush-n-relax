@@ -205,7 +205,7 @@
 
 .back-to-products {
   padding: var(--space-sm);
-  text-align: center;
+  text-align: left;
 }
 
 .back-to-products .link-button {
@@ -423,7 +423,7 @@
 }
 
 .product-hero-tag-label {
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -521,7 +521,7 @@
 }
 
 .product-variant-card-price {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--color-text-subtle);
   transition: color 0.18s ease;
@@ -793,4 +793,21 @@
   .related-strip-card {
     flex: 0 0 170px;
   }
+}
+
+/* ── Product detail copy helpers ────────────────────────────────────────── */
+
+.product-section-heading {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+  margin-bottom: var(--space-sm);
+}
+
+.product-coa-context {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
 }
