@@ -76,6 +76,7 @@ function InventoryRow({
   const [availablePickup, setAvailablePickup] = useState(row.availablePickup);
   const [featured, setFeatured] = useState(row.featured);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const quantity = normalizeQuantityInput(quantityInput);
   const inStock = quantity > 0;
@@ -83,12 +84,22 @@ function InventoryRow({
   // Hub: featured requires availableOnline; retail: featured requires inStock
   const featuredEnabled = isHub ? availableOnline : inStock;
 
+  function triggerSuccess() {
+    setShowSuccess(true);
+    setTimeout(() => setShowSuccess(false), 1500);
+  }
+
   function handleToggle(
     field: 'inStock' | 'availableOnline' | 'availablePickup' | 'featured',
     value: boolean
   ) {
     setUpdateError(null);
-    const previous = { quantityInput, availableOnline, availablePickup, featured };
+    const previous = {
+      quantityInput,
+      availableOnline,
+      availablePickup,
+      featured,
+    };
 
     if (field === 'inStock') {
       const nextQuantity = value ? Math.max(quantity, 1) : 0;
@@ -117,7 +128,13 @@ function InventoryRow({
       field === 'inStock'
         ? {
             quantity: value ? Math.max(quantity, 1) : 0,
-            ...(value ? {} : { availableOnline: false, availablePickup: false, featured: false }),
+            ...(value
+              ? {}
+              : {
+                  availableOnline: false,
+                  availablePickup: false,
+                  featured: false,
+                }),
           }
         : field === 'availableOnline'
           ? { availableOnline: value, ...(!value ? { featured: false } : {}) }
@@ -129,6 +146,7 @@ function InventoryRow({
       try {
         await updateInventoryItem(locationId, row.id, nextPatch);
         setUpdateError(null);
+        triggerSuccess();
         router.refresh();
       } catch {
         setQuantityInput(previous.quantityInput);
@@ -176,6 +194,7 @@ function InventoryRow({
           ...(nextFeatured !== featured ? { featured: nextFeatured } : {}),
         });
         setUpdateError(null);
+        triggerSuccess();
         router.refresh();
       } catch {
         setQuantityInput(previous.quantityInput);
@@ -188,12 +207,7 @@ function InventoryRow({
 
   return (
     <tr className={isPending ? 'admin-row-pending' : undefined}>
-      <td>
-        {row.name}
-        {updateError && (
-          <span className="admin-inline-error">{updateError}</span>
-        )}
-      </td>
+      <td>{row.name}</td>
       <td>{row.category}</td>
       <td className="admin-qty-cell">
         <input
@@ -215,14 +229,29 @@ function InventoryRow({
         />
       </td>
       <td className="admin-col-toggle">
-        <input
-          type="checkbox"
-          className="admin-toggle"
-          checked={inStock}
-          disabled={isPending}
-          onChange={e => handleToggle('inStock', e.target.checked)}
-          aria-label={`In stock for ${row.name}`}
-        />
+        <span className="admin-toggle-cell">
+          <input
+            type="checkbox"
+            className="admin-toggle"
+            checked={inStock}
+            disabled={isPending}
+            onChange={e => handleToggle('inStock', e.target.checked)}
+            aria-label={`In stock for ${row.name}`}
+          />
+          {updateError && (
+            <span className="admin-inline-error">{updateError}</span>
+          )}
+          <span
+            className={
+              showSuccess
+                ? 'admin-toggle-success admin-toggle-success--visible'
+                : 'admin-toggle-success'
+            }
+            aria-hidden="true"
+          >
+            ✓
+          </span>
+        </span>
       </td>
       {isHub && (
         <td className="admin-col-toggle">
