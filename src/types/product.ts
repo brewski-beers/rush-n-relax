@@ -16,11 +16,25 @@ export interface LabResults {
 }
 
 /**
+ * A single purchasable variant of a product (e.g. "1/8 oz", "10mg gummy").
+ * Variants are authored at the product level and priced at the inventory level
+ * via InventoryItem.variantPricing.
+ */
+export interface ProductVariant {
+  variantId: string;
+  label: string;
+  weight?: { value: number; unit: 'g' | 'oz' };
+  quantity?: number;
+  dose?: { value: number; unit: 'mg' | 'mcg' };
+}
+
+/**
  * Firestore document shape for a product.
  * Lives at: products/{slug}
  *
  * Visibility and featuring are controlled at the inventory level
  * (inventory/{locationId}/items/{productId}.featured), not here.
+ * Pricing is controlled at the inventory level via InventoryItem.variantPricing.
  */
 export interface Product {
   /** Firestore document ID (same as slug) */
@@ -56,6 +70,11 @@ export interface Product {
   effects?: string[];
   /** Flavor descriptors, e.g. ['Citrus', 'Pine', 'Earthy'] */
   flavors?: string[];
+  /**
+   * Purchasable size/dose variants for this product.
+   * Priced per-variant at the inventory level via InventoryItem.variantPricing.
+   */
+  variants?: ProductVariant[];
   createdAt: Date;
   updatedAt: Date;
 }
