@@ -45,6 +45,8 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
       availableOnline: inv?.availableOnline ?? false,
       availablePickup: inv?.availablePickup ?? false,
       featured: inv?.featured ?? false,
+      variantPricing: inv?.variantPricing,
+      variants: product.variants,
     };
   });
 

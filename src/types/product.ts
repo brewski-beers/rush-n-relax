@@ -91,4 +91,5 @@ export type ProductSummary = Pick<
   | 'availableAt'
   | 'vendorSlug'
   | 'strain'
+  | 'variants'
 >;
