@@ -175,20 +175,36 @@
   box-shadow: 0 0 16px rgba(213, 179, 106, 0.5);
 }
 
-.cannabis-leaf-icon {
-  width: 1.5rem;
-  height: 1.5rem;
+.nav-toggle-icon {
   display: block;
   color: var(--color-white);
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
-.nav-toggle:hover .cannabis-leaf-icon {
-  transform: scale(1.2);
+.nav-toggle:hover .nav-toggle-icon {
+  transform: scale(1.15);
 }
 
-.nav-toggle.active .cannabis-leaf-icon {
-  transform: rotate(90deg) scale(1.2);
+.nav-toggle.active .nav-toggle-icon {
+  transform: scale(1.15);
+}
+
+.nav-toggle-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  background: var(--color-bg);
+  color: var(--color-accent);
+  border: 1.5px solid var(--color-accent);
+  border-radius: 9999px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  min-width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 /* Mobile drawer menu */
@@ -363,12 +379,12 @@
   background: var(--color-surface-backdrop);
   border: 1px solid var(--color-border-accent-medium);
   border-radius: 1.5rem;
-  padding: var(--space-2xl) var(--space-lg);
+  padding: var(--space-lg);
   box-shadow: 0 8px 48px rgba(0, 0, 0, 0.5);
   z-index: 102;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
   pointer-events: auto;
   overflow: hidden;
 }
@@ -392,6 +408,71 @@
 .modal-content[role='dialog'] {
   /* Ensure dialog role styling is applied */
   outline: none;
+}
+
+/* ── Modal cart section — sits atop the nav links ───────────────────── */
+.modal-cart {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  background: var(--color-surface-anchor-faint);
+  border: 1px solid var(--color-border-accent-medium);
+  border-radius: 0.875rem;
+  text-decoration: none;
+  color: var(--color-accent);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.modal-cart:hover {
+  background: var(--color-surface-anchor);
+  border-color: var(--color-accent);
+}
+
+.modal-cart-icon {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: var(--color-accent);
+  border-radius: 50%;
+  color: var(--color-bg);
+}
+
+.modal-cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--color-bg);
+  color: var(--color-accent);
+  border: 1.5px solid var(--color-accent);
+  border-radius: 9999px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  min-width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-cart-label {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.modal-cart-arrow {
+  font-size: 1rem;
+  color: var(--color-accent);
+  flex-shrink: 0;
 }
 
 .modal-menu-items {

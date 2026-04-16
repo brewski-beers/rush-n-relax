@@ -7,8 +7,9 @@ import { useNavigation } from '@/contexts/useNavigation';
 import { AmbientOverlay } from '@/components/AmbientOverlay';
 import { AgeGate } from '@/components/AgeGate';
 import { Navigation } from '@/components/Navigation';
-import { CartDrawer, CartIconButton } from '@/components/CartDrawer';
 import { CartProvider } from '@/contexts/CartContext';
+import { useCart } from '@/hooks/useCart';
+import { formatCents } from '@/utils/currency';
 import { isRouteActive } from '@/utils/routeMatching';
 
 const NAV_LINKS = [
@@ -18,6 +19,39 @@ const NAV_LINKS = [
   { label: 'Products', path: '/products' },
   { label: 'Contact', path: '/contact' },
 ] as const;
+
+function ModalCartSection({ onClose }: { onClose: () => void }) {
+  const { itemCount, total } = useCart();
+  return (
+    <Link href="/cart" className="modal-cart" onClick={onClose}>
+      <div className="modal-cart-icon" aria-hidden="true">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="9" cy="21" r="1" />
+          <circle cx="20" cy="21" r="1" />
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+        </svg>
+        {itemCount > 0 && <span className="modal-cart-badge">{itemCount}</span>}
+      </div>
+      <span className="modal-cart-label">
+        {itemCount === 0
+          ? 'Your cart is empty'
+          : `${itemCount} item${itemCount !== 1 ? 's' : ''} · ${formatCents(total)}`}
+      </span>
+      <span className="modal-cart-arrow" aria-hidden="true">
+        →
+      </span>
+    </Link>
+  );
+}
 
 function DesktopModal() {
   const { isMenuOpen, setIsMenuOpen } = useNavigation();
@@ -95,6 +129,7 @@ function DesktopModal() {
         <h2 id="modal-title" className="sr-only">
           Navigation Menu
         </h2>
+        <ModalCartSection onClose={() => setIsMenuOpen(false)} />
         <nav className="modal-menu-items" aria-label="Main navigation">
           {NAV_LINKS.map((link, index) => (
             <Link
@@ -127,7 +162,6 @@ export function StorefrontContent({
   children,
 }: Props) {
   const [isAgeVerified, setIsAgeVerified] = useState(initiallyVerified);
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -147,16 +181,9 @@ export function StorefrontContent({
           </div>
         ) : (
           <>
-            <Navigation
-              isAdminAuthenticated={isAdminAuthenticated}
-              cartSlot={<CartIconButton onClick={() => setIsCartOpen(true)} />}
-            />
+            <Navigation isAdminAuthenticated={isAdminAuthenticated} />
             <DesktopModal />
             <div className="content-wrapper">{children}</div>
-            <CartDrawer
-              isOpen={isCartOpen}
-              onClose={() => setIsCartOpen(false)}
-            />
           </>
         )}
       </div>

@@ -2,13 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import {
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-  type ReactNode,
-} from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { useCart } from '@/hooks/useCart';
 import { signOut } from 'firebase/auth';
 import { initializeApp } from '@/firebase';
 import { useNavigation } from '../../contexts/useNavigation';
@@ -17,12 +12,9 @@ import {
   BrandSurface,
   resolvePreferredLogoUrlForSurface,
 } from '../../constants/branding';
-import { getAssetSrc } from '../../utils/assetSrc';
 import { isRouteActive } from '../../utils/routeMatching';
-import cannabisLeaf from '../../assets/icons/cannabis-leaf.svg';
 import './Navigation.css';
 
-const CANNABIS_LEAF_ICON_SRC = getAssetSrc(cannabisLeaf);
 const ADMIN_ENTRY_HOLD_MS = 4200;
 
 const NAV_LINKS = [
@@ -35,14 +27,11 @@ const NAV_LINKS = [
 
 interface NavigationProps {
   isAdminAuthenticated?: boolean;
-  cartSlot?: ReactNode;
 }
 
-export function Navigation({
-  isAdminAuthenticated = false,
-  cartSlot,
-}: NavigationProps) {
+export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
   const { isMenuOpen, toggleMenu } = useNavigation();
+  const { itemCount } = useCart();
   const pathname = usePathname();
   const router = useRouter();
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
@@ -165,8 +154,6 @@ export function Navigation({
           </div>
         ) : null}
 
-        {cartSlot ?? null}
-
         <button
           className={`nav-toggle ${isMenuOpen ? 'active' : ''}`}
           onClick={handleToggleClick}
@@ -174,19 +161,33 @@ export function Navigation({
           onPointerUp={handlePressEnd}
           onPointerCancel={handlePressEnd}
           onPointerLeave={handlePressEnd}
-          aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+          aria-label={
+            isMenuOpen
+              ? 'Close menu'
+              : `Open menu${itemCount > 0 ? `, ${itemCount} items in cart` : ''}`
+          }
           aria-expanded={isMenuOpen}
           aria-controls="nav-menu"
         >
-          {CANNABIS_LEAF_ICON_SRC ? (
-            <img
-              src={CANNABIS_LEAF_ICON_SRC}
-              alt=""
-              className="cannabis-leaf-icon"
-            />
-          ) : (
-            <span className="cannabis-leaf-icon" aria-hidden="true">
-              🌿
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="nav-toggle-icon"
+            aria-hidden="true"
+          >
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+          </svg>
+          {itemCount > 0 && (
+            <span className="nav-toggle-badge" aria-hidden="true">
+              {itemCount}
             </span>
           )}
         </button>
