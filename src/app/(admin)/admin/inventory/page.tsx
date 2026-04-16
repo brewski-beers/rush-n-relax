@@ -24,8 +24,8 @@ export default async function AdminInventoryPage() {
           href={`/admin/inventory/${HUB_LOCATION_ID}`}
           className="dashboard-card admin-hub-card"
         >
-          RnR Hub
-          <span className="admin-card-sub">Warehouse · Online Store</span>
+          RnR Online Store
+          <span className="admin-card-sub">Online</span>
         </Link>
         {locations.map(loc => (
           <Link

@@ -27,7 +27,7 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
   ]);
 
   const location = isHub
-    ? { name: 'RnR Hub', city: 'Warehouse', state: '' }
+    ? { name: 'RnR Online Store', city: 'Online', state: '' }
     : locations.find(l => l.id === locationId);
 
   if (!location) notFound();
@@ -48,7 +48,7 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
     };
   });
 
-  const locationLabel = isHub ? 'RnR Hub' : `${location.name}`;
+  const locationLabel = isHub ? 'RnR Online Store' : `${location.name}`;
 
   return (
     <>
@@ -57,9 +57,9 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
       </div>
       {isHub ? (
         <p className="admin-section-desc">
-          Hub inventory. Toggle <strong>Available Online</strong> to list a
-          product on the store, and <strong>Featured</strong> to spotlight it on
-          the homepage.
+          Online Store inventory. Toggle <strong>Available Online</strong> to
+          list a product on the store, and <strong>Featured</strong> to
+          spotlight it on the homepage.
         </p>
       ) : (
         <p className="admin-section-desc">
