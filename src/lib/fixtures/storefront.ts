@@ -8,7 +8,7 @@ import type {
   Promo,
 } from '@/types';
 import type { InventoryItem } from '@/types/inventory';
-import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
+import { ONLINE_LOCATION_ID } from '@/constants/location-ids';
 
 export const FIXTURE_DATASET_VERSION = '2026-03-14';
 export const FIXTURE_TIMESTAMP = '2026-03-14T00:00:00.000Z';
