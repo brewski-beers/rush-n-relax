@@ -5,6 +5,7 @@ export type {
 } from './location';
 export type {
   Product,
+  ProductVariant,
   ProductSummary,
   ProductStatus,
   LabResults,

@@ -32,6 +32,18 @@ export interface InventoryItem {
   featured: boolean;
   /** Optional unit count — for future staff-facing stock level display */
   quantity?: number;
+  /**
+   * Per-variant pricing for this product at this location.
+   * Keys are variantId values from Product.variants.
+   * Missing variantId means no price has been set for that variant.
+   */
+  variantPricing?: {
+    [variantId: string]: {
+      price: number;
+      compareAtPrice?: number;
+      inStock?: boolean;
+    };
+  };
   /** Admin freetext — e.g. "waiting on restock", "holds only" */
   notes?: string;
   updatedAt: Date;
@@ -48,6 +60,7 @@ export type InventoryItemSummary = Pick<
   | 'availablePickup'
   | 'featured'
   | 'quantity'
+  | 'variantPricing'
 >;
 
 export type InventoryAdjustmentReason =
@@ -57,7 +70,8 @@ export type InventoryAdjustmentReason =
   | 'toggle-pickup'
   | 'toggle-featured'
   | 'system-sync'
-  | 'correction';
+  | 'correction'
+  | 'price-update';
 
 export type InventoryAdjustmentSource = 'admin-ui' | 'system' | 'api';
 
@@ -78,6 +92,7 @@ export interface InventoryAdjustment {
     | 'availablePickup'
     | 'featured'
     | 'notes'
+    | 'variantPricing'
   >;
   previousQuantity: number;
   nextQuantity: number;
