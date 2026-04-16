@@ -79,18 +79,26 @@
     width: 100%;
   }
 
+  /*  Card layout — 3 columns:
+      [name .............. name   × ]
+      [price   qty-stepper   total  ] */
   .cart-table tbody tr {
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
+    background: color-mix(
+      in srgb,
+      var(--color-accent) 4%,
+      var(--color-surface)
+    );
+    border: 1px solid var(--color-border-accent-medium);
+    border-radius: 10px;
     padding: var(--space-sm);
     margin-bottom: var(--space-sm);
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto 1fr auto;
     grid-template-areas:
-      'name    remove'
-      'price   qty'
-      '.       total';
+      'name  name    remove'
+      'price qty     total';
     gap: var(--space-xs) var(--space-sm);
+    align-items: center;
   }
 
   .cart-table tbody tr:last-child {
@@ -104,39 +112,37 @@
 
   .cart-table td:nth-child(1) {
     grid-area: name;
+    font-weight: 600;
+    font-size: 0.9375rem;
   }
+
   .cart-table td:nth-child(2) {
     grid-area: price;
-    align-self: center;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
   }
+
   .cart-table td:nth-child(3) {
     grid-area: qty;
-    justify-self: end;
-    align-self: center;
+    justify-self: center;
   }
+
   .cart-table td:nth-child(4) {
     grid-area: total;
     justify-self: end;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.9375rem;
     color: var(--color-accent-light);
   }
+
   .cart-table td:nth-child(5) {
     grid-area: remove;
     justify-self: end;
+    align-self: start;
   }
 
+  /* Hide data-label pseudo-labels — layout is self-evident */
   .cart-table td[data-label]::before {
-    content: attr(data-label) ' ';
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    display: block;
-    margin-bottom: var(--space-2xs, var(--space-xs));
-  }
-
-  /* suppress label on remove col */
-  .cart-table td:nth-child(5)::before {
     display: none;
   }
 }
