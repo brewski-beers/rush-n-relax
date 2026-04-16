@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { requireRole } from '@/lib/admin-auth';
 import { listLocations } from '@/lib/repositories';
-import { HUB_LOCATION_ID } from '@/lib/firebase/admin';
+import { HUB_LOCATION_ID, ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 
 export default async function AdminInventoryPage() {
   await requireRole('owner');
@@ -25,7 +25,14 @@ export default async function AdminInventoryPage() {
           className="dashboard-card admin-hub-card"
         >
           RnR Hub
-          <span className="admin-card-sub">Warehouse · Online Store</span>
+          <span className="admin-card-sub">Warehouse</span>
+        </Link>
+        <Link
+          href={`/admin/inventory/${ONLINE_LOCATION_ID}`}
+          className="dashboard-card admin-hub-card"
+        >
+          Online Store
+          <span className="admin-card-sub">Storefront · Variant Pricing</span>
         </Link>
         {locations.map(loc => (
           <Link
