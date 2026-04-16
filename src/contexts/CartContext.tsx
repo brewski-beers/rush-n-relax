@@ -13,7 +13,7 @@
 import React, {
   createContext,
   useContext,
-  useState,
+  useReducer,
   useEffect,
   useCallback,
 } from 'react';
@@ -77,62 +77,109 @@ function saveCart(items: CartItem[]): void {
   }
 }
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
-  // Initialize from localStorage synchronously to avoid hydration flicker.
-  // We read localStorage in a lazy initializer so the initial render always
-  // has the persisted cart even before the first effect fires.
-  const [items, setItems] = useState<CartItem[]>(loadCart);
+// ── Reducer ───────────────────────────────────────────────────────────────
 
-  // Persist to localStorage whenever items change
-  useEffect(() => {
-    saveCart(items);
-  }, [items]);
+type CartAction =
+  | { type: 'HYDRATE'; items: CartItem[] }
+  | { type: 'ADD'; item: Omit<CartItem, 'quantity'> }
+  | { type: 'REMOVE'; productId: string; variantId: string }
+  | { type: 'UPDATE_QTY'; productId: string; variantId: string; qty: number }
+  | { type: 'CLEAR' };
 
-  const addItem = useCallback((incoming: Omit<CartItem, 'quantity'>) => {
-    setItems(prev => {
-      const key = compositeKey(incoming.productId, incoming.variantId);
-      const existing = prev.find(
+interface CartState {
+  items: CartItem[];
+  hydrated: boolean;
+}
+
+function cartReducer(state: CartState, action: CartAction): CartState {
+  switch (action.type) {
+    case 'HYDRATE':
+      return { items: action.items, hydrated: true };
+    case 'ADD': {
+      const key = compositeKey(action.item.productId, action.item.variantId);
+      const existing = state.items.find(
         i => compositeKey(i.productId, i.variantId) === key
       );
-      if (existing) {
-        return prev.map(i =>
-          compositeKey(i.productId, i.variantId) === key
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
-        );
-      }
-      return [...prev, { ...incoming, quantity: 1 }];
-    });
-  }, []);
-
-  const removeItem = useCallback((productId: string, variantId: string) => {
-    const key = compositeKey(productId, variantId);
-    setItems(prev =>
-      prev.filter(i => compositeKey(i.productId, i.variantId) !== key)
-    );
-  }, []);
-
-  const updateQty = useCallback(
-    (productId: string, variantId: string, qty: number) => {
-      const key = compositeKey(productId, variantId);
-      if (qty <= 0) {
-        setItems(prev =>
-          prev.filter(i => compositeKey(i.productId, i.variantId) !== key)
-        );
-      } else {
-        setItems(prev =>
-          prev.map(i =>
+      const items = existing
+        ? state.items.map(i =>
             compositeKey(i.productId, i.variantId) === key
-              ? { ...i, quantity: qty }
+              ? { ...i, quantity: i.quantity + 1 }
               : i
           )
-        );
+        : [...state.items, { ...action.item, quantity: 1 }];
+      return { ...state, items };
+    }
+    case 'REMOVE': {
+      const key = compositeKey(action.productId, action.variantId);
+      return {
+        ...state,
+        items: state.items.filter(
+          i => compositeKey(i.productId, i.variantId) !== key
+        ),
+      };
+    }
+    case 'UPDATE_QTY': {
+      const key = compositeKey(action.productId, action.variantId);
+      if (action.qty <= 0) {
+        return {
+          ...state,
+          items: state.items.filter(
+            i => compositeKey(i.productId, i.variantId) !== key
+          ),
+        };
       }
-    },
+      return {
+        ...state,
+        items: state.items.map(i =>
+          compositeKey(i.productId, i.variantId) === key
+            ? { ...i, quantity: action.qty }
+            : i
+        ),
+      };
+    }
+    case 'CLEAR':
+      return { ...state, items: [] };
+    default:
+      return state;
+  }
+}
+
+// ── Provider ──────────────────────────────────────────────────────────────
+
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  const [{ items, hydrated }, dispatch] = useReducer(cartReducer, {
+    items: [],
+    hydrated: false,
+  });
+
+  // Hydrate from localStorage after mount (client-only, avoids hydration mismatch)
+  useEffect(() => {
+    dispatch({ type: 'HYDRATE', items: loadCart() });
+  }, []);
+
+  // Persist whenever items change (skip the pre-hydration empty state)
+  useEffect(() => {
+    if (hydrated) saveCart(items);
+  }, [items, hydrated]);
+
+  const addItem = useCallback(
+    (item: Omit<CartItem, 'quantity'>) => dispatch({ type: 'ADD', item }),
     []
   );
 
-  const clearCart = useCallback(() => setItems([]), []);
+  const removeItem = useCallback(
+    (productId: string, variantId: string) =>
+      dispatch({ type: 'REMOVE', productId, variantId }),
+    []
+  );
+
+  const updateQty = useCallback(
+    (productId: string, variantId: string, qty: number) =>
+      dispatch({ type: 'UPDATE_QTY', productId, variantId, qty }),
+    []
+  );
+
+  const clearCart = useCallback(() => dispatch({ type: 'CLEAR' }), []);
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
