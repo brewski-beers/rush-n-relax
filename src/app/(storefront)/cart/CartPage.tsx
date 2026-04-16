@@ -119,7 +119,7 @@ export default function CartPage() {
                     />
                   )}
 
-                  {/* Details */}
+                  {/* Details — name + variant + unit price */}
                   <div className="cart-item-details">
                     <p className="cart-item-name">{item.name}</p>
                     {item.variantLabel && (
@@ -128,8 +128,13 @@ export default function CartPage() {
                     <p className="cart-item-unit-price">
                       {formatCents(item.unitPrice)} each
                     </p>
+                  </div>
 
-                    {/* Stepper */}
+                  {/* Right column — line total + stepper */}
+                  <div className="cart-item-right">
+                    <p className="cart-item-total">
+                      {formatCents(item.unitPrice * item.quantity)}
+                    </p>
                     <div className="cart-qty-controls">
                       <button
                         type="button"
@@ -149,41 +154,7 @@ export default function CartPage() {
                               )
                         }
                       >
-                        {item.quantity === 1 ? (
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 13 13"
-                            aria-hidden="true"
-                            className="cart-trash-icon"
-                          >
-                            {/* lid */}
-                            <rect
-                              x="1"
-                              y="2"
-                              width="11"
-                              height="1.5"
-                              rx="0.75"
-                              fill="currentColor"
-                            />
-                            {/* handle */}
-                            <rect
-                              x="4.5"
-                              y="0.25"
-                              width="4"
-                              height="1.5"
-                              rx="0.75"
-                              fill="currentColor"
-                            />
-                            {/* body */}
-                            <path
-                              d="M2.5 4.5l.6 7c.05.55.5.97 1.05.97h4.7c.55 0 1-.42 1.05-.97l.6-7H2.5z"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        ) : (
-                          '−'
-                        )}
+                        {item.quantity === 1 ? '✕' : '−'}
                       </button>
                       <span className="cart-item-qty">{item.quantity}</span>
                       <button
@@ -202,11 +173,6 @@ export default function CartPage() {
                       </button>
                     </div>
                   </div>
-
-                  {/* Line total */}
-                  <p className="cart-item-total">
-                    {formatCents(item.unitPrice * item.quantity)}
-                  </p>
                 </li>
               ))}
             </ul>
