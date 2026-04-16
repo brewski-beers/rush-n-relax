@@ -43,88 +43,103 @@ export default function CartPage() {
         <h1>Your Cart</h1>
 
         <div className="cart-layout">
-          {/* ── Cart Table ──────────────────────────────────────── */}
+          {/* ── Cart Items ──────────────────────────────────────── */}
           <section
             className="cart-items-section cart-items-card"
             aria-label="Cart items"
           >
-            <table className="cart-table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Price</th>
-                  <th>Qty</th>
-                  <th>Total</th>
-                  <th>
-                    <span className="sr-only">Remove</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map(item => (
-                  <tr key={`${item.productId}::${item.variantId}`}>
-                    <td data-label="Product">
-                      <span>{item.name}</span>
-                      {item.variantLabel && (
-                        <span className="cart-item-variant">
-                          {' '}
-                          — {item.variantLabel}
-                        </span>
-                      )}
-                    </td>
-                    <td data-label="Price">{formatCents(item.unitPrice)}</td>
-                    <td data-label="Qty">
-                      <div className="cart-qty-controls">
-                        <button
-                          type="button"
-                          className="cart-qty-btn"
-                          aria-label={`Decrease quantity of ${item.name}`}
-                          onClick={() =>
-                            updateQty(
-                              item.productId,
-                              item.variantId,
-                              item.quantity - 1
-                            )
-                          }
-                        >
-                          −
-                        </button>
-                        <span>{item.quantity}</span>
-                        <button
-                          type="button"
-                          className="cart-qty-btn"
-                          aria-label={`Increase quantity of ${item.name}`}
-                          onClick={() =>
-                            updateQty(
-                              item.productId,
-                              item.variantId,
-                              item.quantity + 1
-                            )
-                          }
-                        >
-                          +
-                        </button>
-                      </div>
-                    </td>
-                    <td data-label="Total">
-                      {formatCents(item.unitPrice * item.quantity)}
-                    </td>
-                    <td>
+            <ul className="cart-item-list">
+              {items.map(item => (
+                <li
+                  key={`${item.productId}::${item.variantId}`}
+                  className="cart-item"
+                >
+                  {/* Thumbnail */}
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="cart-item-image"
+                    />
+                  )}
+
+                  {/* Details */}
+                  <div className="cart-item-details">
+                    <p className="cart-item-name">{item.name}</p>
+                    {item.variantLabel && (
+                      <p className="cart-item-variant">{item.variantLabel}</p>
+                    )}
+                    <p className="cart-item-unit-price">
+                      {formatCents(item.unitPrice)} each
+                    </p>
+
+                    {/* Stepper */}
+                    <div className="cart-qty-controls">
                       <button
                         type="button"
-                        className="cart-remove-btn"
-                        aria-label={`Remove ${item.name}`}
+                        className="cart-qty-btn"
+                        aria-label={
+                          item.quantity === 1
+                            ? `Remove ${item.name}`
+                            : `Decrease quantity of ${item.name}`
+                        }
                         onClick={() =>
-                          removeItem(item.productId, item.variantId)
+                          item.quantity === 1
+                            ? removeItem(item.productId, item.variantId)
+                            : updateQty(
+                                item.productId,
+                                item.variantId,
+                                item.quantity - 1
+                              )
                         }
                       >
-                        ×
+                        {item.quantity === 1 ? (
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                          </svg>
+                        ) : (
+                          '−'
+                        )}
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <span className="cart-item-qty">{item.quantity}</span>
+                      <button
+                        type="button"
+                        className="cart-qty-btn"
+                        aria-label={`Increase quantity of ${item.name}`}
+                        onClick={() =>
+                          updateQty(
+                            item.productId,
+                            item.variantId,
+                            item.quantity + 1
+                          )
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Line total */}
+                  <p className="cart-item-total">
+                    {formatCents(item.unitPrice * item.quantity)}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </section>
 
           {/* ── Order Summary + Fulfillment ──────────────────────── */}
