@@ -151,13 +151,13 @@ describe('getOrder', () => {
       expect(result!.createdAt).toBeInstanceOf(Date);
     });
 
-    it('maps optional reddeTxnId when present', async () => {
+    it('maps optional customerEmail when present', async () => {
       const now = new Date().toISOString();
       docGetMock.mockResolvedValue(
         makeDocSnapshot('order-xyz', {
           ...baseOrderData,
           status: 'paid',
-          reddeTxnId: 'txn-999',
+          customerEmail: 'customer@example.com',
           createdAt: now,
           updatedAt: now,
         })
@@ -165,10 +165,10 @@ describe('getOrder', () => {
 
       const result = await getOrder('order-xyz');
 
-      expect(result!.reddeTxnId).toBe('txn-999');
+      expect(result!.customerEmail).toBe('customer@example.com');
     });
 
-    it('returns undefined for optional reddeTxnId when absent', async () => {
+    it('returns undefined for optional customerEmail when absent', async () => {
       const now = new Date().toISOString();
       docGetMock.mockResolvedValue(
         makeDocSnapshot('order-xyz', {
@@ -180,7 +180,27 @@ describe('getOrder', () => {
 
       const result = await getOrder('order-xyz');
 
-      expect(result!.reddeTxnId).toBeUndefined();
+      expect(result!.customerEmail).toBeUndefined();
+    });
+
+    it('uses safe defaults for missing numeric fields', async () => {
+      const now = new Date().toISOString();
+      docGetMock.mockResolvedValue(
+        makeDocSnapshot('order-defaults', {
+          items: [],
+          locationId: 'oak-ridge',
+          fulfillmentType: 'pickup',
+          status: 'pending',
+          createdAt: now,
+          updatedAt: now,
+        })
+      );
+
+      const result = await getOrder('order-defaults');
+
+      expect(result!.subtotal).toBe(0);
+      expect(result!.tax).toBe(0);
+      expect(result!.total).toBe(0);
     });
   });
 });
@@ -192,7 +212,7 @@ describe('updateOrderStatus', () => {
     vi.clearAllMocks();
   });
 
-  describe('given a status update without reddeTxnId', () => {
+  describe('given a status update', () => {
     it('calls update with the new status and a fresh updatedAt', async () => {
       await updateOrderStatus('order-abc', 'paid');
 
@@ -202,20 +222,16 @@ describe('updateOrderStatus', () => {
       ];
       expect(payload.status).toBe('paid');
       expect(payload.updatedAt).toBeInstanceOf(Date);
-      expect('reddeTxnId' in payload).toBe(false);
     });
-  });
 
-  describe('given a status update with reddeTxnId', () => {
-    it('includes reddeTxnId in the update payload', async () => {
-      await updateOrderStatus('order-abc', 'paid', 'txn-999');
+    it('does not include any payment-processor-specific fields', async () => {
+      await updateOrderStatus('order-abc', 'paid');
 
       const [payload] = docUpdateMock.mock.calls[0] as [
         Record<string, unknown>,
       ];
-      expect(payload.status).toBe('paid');
-      expect(payload.reddeTxnId).toBe('txn-999');
-      expect(payload.updatedAt).toBeInstanceOf(Date);
+      // Only status and updatedAt — no internal payment fields
+      expect(Object.keys(payload).sort()).toEqual(['status', 'updatedAt']);
     });
   });
 });
