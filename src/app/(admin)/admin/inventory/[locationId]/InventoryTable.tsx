@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { updateInventoryItem } from './actions';
-import type { ProductSummary } from '@/types';
+import { updateInventoryItem, updateVariantPricing } from './actions';
+import type { ProductSummary, ProductVariant } from '@/types';
+import type { InventoryItem } from '@/types/inventory';
 
 export interface InventoryRow extends ProductSummary {
   quantity: number;
@@ -11,6 +12,9 @@ export interface InventoryRow extends ProductSummary {
   availableOnline: boolean;
   availablePickup: boolean;
   featured: boolean;
+  variantPricing?: InventoryItem['variantPricing'];
+  /** Product variants — for variant pricing panel */
+  variants?: ProductVariant[];
 }
 
 interface Props {
@@ -77,6 +81,7 @@ function InventoryRow({
   const [featured, setFeatured] = useState(row.featured);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
 
   const quantity = normalizeQuantityInput(quantityInput);
   const inStock = quantity > 0;
@@ -206,88 +211,272 @@ function InventoryRow({
   }
 
   return (
-    <tr className={isPending ? 'admin-row-pending' : undefined}>
-      <td>{row.name}</td>
-      <td>{row.category}</td>
-      <td className="admin-qty-cell">
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          className="admin-qty-input"
-          value={quantityInput}
-          disabled={isPending}
-          onChange={e => handleQuantityInput(e.target.value)}
-          onBlur={commitQuantity}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              commitQuantity();
-            }
-          }}
-          aria-label={`Quantity for ${row.name}`}
-        />
-      </td>
-      <td className="admin-col-toggle">
-        <span className="admin-toggle-cell">
+    <>
+      <tr className={isPending ? 'admin-row-pending' : undefined}>
+        <td>{row.name}</td>
+        <td>{row.category}</td>
+        <td className="admin-qty-cell">
           <input
-            type="checkbox"
-            className="admin-toggle"
-            checked={inStock}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            className="admin-qty-input"
+            value={quantityInput}
             disabled={isPending}
-            onChange={e => handleToggle('inStock', e.target.checked)}
-            aria-label={`In stock for ${row.name}`}
+            onChange={e => handleQuantityInput(e.target.value)}
+            onBlur={commitQuantity}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                commitQuantity();
+              }
+            }}
+            aria-label={`Quantity for ${row.name}`}
           />
-          {updateError && (
-            <span className="admin-inline-error">{updateError}</span>
-          )}
-          <span
-            className={
-              showSuccess
-                ? 'admin-toggle-success admin-toggle-success--visible'
-                : 'admin-toggle-success'
-            }
-            aria-hidden="true"
-          >
-            ✓
+        </td>
+        <td className="admin-col-toggle">
+          <span className="admin-toggle-cell">
+            <input
+              type="checkbox"
+              className="admin-toggle"
+              checked={inStock}
+              disabled={isPending}
+              onChange={e => handleToggle('inStock', e.target.checked)}
+              aria-label={`In stock for ${row.name}`}
+            />
+            {updateError && (
+              <span className="admin-inline-error">{updateError}</span>
+            )}
+            <span
+              className={
+                showSuccess
+                  ? 'admin-toggle-success admin-toggle-success--visible'
+                  : 'admin-toggle-success'
+              }
+              aria-hidden="true"
+            >
+              ✓
+            </span>
           </span>
-        </span>
-      </td>
-      {isHub && (
+        </td>
+        {isHub && (
+          <td className="admin-col-toggle">
+            <input
+              type="checkbox"
+              className="admin-toggle"
+              checked={availableOnline}
+              disabled={isPending || !inStock}
+              onChange={e => handleToggle('availableOnline', e.target.checked)}
+              aria-label={`Available online for ${row.name}`}
+            />
+          </td>
+        )}
+        {!isHub && (
+          <td className="admin-col-toggle">
+            <input
+              type="checkbox"
+              className="admin-toggle"
+              checked={availablePickup}
+              disabled={isPending || !inStock}
+              onChange={e => handleToggle('availablePickup', e.target.checked)}
+              aria-label={`Available pickup for ${row.name}`}
+            />
+          </td>
+        )}
         <td className="admin-col-toggle">
           <input
             type="checkbox"
             className="admin-toggle"
-            checked={availableOnline}
-            disabled={isPending || !inStock}
-            onChange={e => handleToggle('availableOnline', e.target.checked)}
-            aria-label={`Available online for ${row.name}`}
+            checked={featured}
+            disabled={isPending || !featuredEnabled}
+            onChange={e => handleToggle('featured', e.target.checked)}
+            aria-label={`Featured for ${row.name}`}
           />
         </td>
+      </tr>
+      {showPricing && row.variants && row.variants.length > 0 && (
+        <tr className="variant-pricing-panel-row">
+          <td colSpan={6}>
+            <VariantPricingPanel
+              productId={row.id}
+              locationId={locationId}
+              variants={row.variants}
+              variantPricing={row.variantPricing}
+              onSaved={() => router.refresh()}
+            />
+          </td>
+        </tr>
       )}
-      {!isHub && (
-        <td className="admin-col-toggle">
-          <input
-            type="checkbox"
-            className="admin-toggle"
-            checked={availablePickup}
-            disabled={isPending || !inStock}
-            onChange={e => handleToggle('availablePickup', e.target.checked)}
-            aria-label={`Available pickup for ${row.name}`}
-          />
-        </td>
+      {row.variants && row.variants.length > 0 && (
+        <tr className="variant-pricing-toggle-row">
+          <td colSpan={6} className="variant-pricing-toggle-cell">
+            <button
+              type="button"
+              className="admin-link-btn"
+              onClick={() => setShowPricing(p => !p)}
+            >
+              {showPricing ? 'Hide Pricing' : 'Set Variant Pricing'}
+            </button>
+          </td>
+        </tr>
       )}
-      <td className="admin-col-toggle">
-        <input
-          type="checkbox"
-          className="admin-toggle"
-          checked={featured}
-          disabled={isPending || !featuredEnabled}
-          onChange={e => handleToggle('featured', e.target.checked)}
-          aria-label={`Featured for ${row.name}`}
-        />
-      </td>
-    </tr>
+    </>
+  );
+}
+
+// ── Variant Pricing Panel ─────────────────────────────────────────────────
+
+interface VariantPricingPanelProps {
+  productId: string;
+  locationId: string;
+  variants: ProductVariant[];
+  variantPricing?: InventoryItem['variantPricing'];
+  onSaved: () => void;
+}
+
+function VariantPricingPanel({
+  productId,
+  locationId,
+  variants,
+  variantPricing,
+  onSaved,
+}: VariantPricingPanelProps) {
+  // Local state: dollars.cents string for each variant
+  const [prices, setPrices] = useState<Record<string, string>>(
+    Object.fromEntries(
+      variants.map(v => [
+        v.variantId,
+        variantPricing?.[v.variantId]?.price !== undefined
+          ? (variantPricing[v.variantId].price / 100).toFixed(2)
+          : '',
+      ])
+    )
+  );
+  const [compareAtPrices, setCompareAtPrices] = useState<
+    Record<string, string>
+  >(
+    Object.fromEntries(
+      variants.map(v => [
+        v.variantId,
+        variantPricing?.[v.variantId]?.compareAtPrice !== undefined
+          ? (variantPricing[v.variantId].compareAtPrice! / 100).toFixed(2)
+          : '',
+      ])
+    )
+  );
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const newPricing: NonNullable<InventoryItem['variantPricing']> = {};
+      for (const v of variants) {
+        const rawPrice = prices[v.variantId]?.trim();
+        if (!rawPrice) continue; // empty = no price set — exclude from storefront
+        const priceCents = Math.round(parseFloat(rawPrice) * 100);
+        if (!Number.isFinite(priceCents) || priceCents < 0) continue;
+        const rawCompare = compareAtPrices[v.variantId]?.trim();
+        const compareCents =
+          rawCompare && rawCompare !== ''
+            ? Math.round(parseFloat(rawCompare) * 100)
+            : undefined;
+        newPricing[v.variantId] = {
+          price: priceCents,
+          ...(compareCents !== undefined && compareCents > 0
+            ? { compareAtPrice: compareCents }
+            : {}),
+        };
+      }
+      await updateVariantPricing(locationId, productId, newPricing);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 1500);
+      onSaved();
+    } catch {
+      setSaveError('Failed to save pricing. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="variant-pricing-panel">
+      <h4 className="variant-pricing-panel-title">Variant Pricing</h4>
+      <span className="admin-hint">
+        Enter price in dollars (e.g. 28.00). Leave blank to hide variant from
+        storefront. Compare-at is the original price shown as strikethrough.
+      </span>
+      <table className="variant-pricing-table">
+        <thead>
+          <tr>
+            <th>Variant</th>
+            <th>Price ($)</th>
+            <th>Compare-at ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {variants.map(v => (
+            <tr key={v.variantId}>
+              <td>{v.label}</td>
+              <td>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="admin-price-input"
+                  value={prices[v.variantId] ?? ''}
+                  onChange={e =>
+                    setPrices(prev => ({
+                      ...prev,
+                      [v.variantId]: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g. 28.00"
+                  aria-label={`Price for ${v.label}`}
+                />
+              </td>
+              <td>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="admin-price-input"
+                  value={compareAtPrices[v.variantId] ?? ''}
+                  onChange={e =>
+                    setCompareAtPrices(prev => ({
+                      ...prev,
+                      [v.variantId]: e.target.value,
+                    }))
+                  }
+                  placeholder="optional"
+                  aria-label={`Compare-at price for ${v.label}`}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="variant-pricing-panel-actions">
+        {saveError && <span className="admin-inline-error">{saveError}</span>}
+        {saveSuccess && (
+          <span className="admin-toggle-success admin-toggle-success--visible">
+            Saved ✓
+          </span>
+        )}
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => {
+            void handleSave();
+          }}
+          disabled={saving}
+        >
+          {saving ? 'Saving…' : 'Save Pricing'}
+        </button>
+      </div>
+    </div>
   );
 }
 

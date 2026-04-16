@@ -1,6 +1,6 @@
 # Products — Engineering Reference
 
-> Last updated: 2026-04-13
+> Last updated: 2026-04-15
 > Covers: schema, repository mappings, storefront data flow, COA lifecycle
 
 ---
@@ -174,3 +174,32 @@ The product detail page renders the "Lab Results / COA" accordion section only w
 | `listProductsByCategory(cat)`    | `ProductSummary[]` | Category-filtered storefront pages                    |
 | `upsertProduct(data)`            | `string` (slug)    | Create or update a product (merge semantics)          |
 | `setProductStatus(slug, status)` | `void`             | Compliance/admin status changes                       |
+
+---
+
+## `ProductVariant` Interface
+
+Defined in `src/types/product.ts`. Variants are authored at the product level and represent purchasable size/dose options (e.g. "1/8 oz", "10mg gummy"). Pricing is managed at the inventory level via `InventoryItem.variantPricing`.
+
+| Field       | Type                                      | Required | Purpose                      |
+| ----------- | ----------------------------------------- | -------- | ---------------------------- |
+| `variantId` | `string`                                  | Yes      | Unique within the product    |
+| `label`     | `string`                                  | Yes      | Display text, e.g. "1/8 oz"  |
+| `weight`    | `{ value: number; unit: 'g' \| 'oz' }?`   | No       | Physical weight              |
+| `quantity`  | `number?`                                 | No       | Unit count (e.g. 10 gummies) |
+| `dose`      | `{ value: number; unit: 'mg' \| 'mcg' }?` | No       | Per-serving dose             |
+
+`docToVariants()` maps the `variants` array defensively — entries missing `variantId` or `label` are silently skipped. Returns `undefined` (not `[]`) when no valid entries are found.
+
+> Note: `src/constants/product-variants.ts` exports `CategoryVariant` (formerly `ProductVariant`), which represents UI-level display options for the storefront variant selector. These are separate from `ProductVariant` in `src/types/product.ts`.
+
+---
+
+## Online Inventory Location
+
+Storefront pricing is read from the `inventory/online` virtual location (constant: `ONLINE_LOCATION_ID = 'online'`). This replaces the legacy hub-based `availableOnline` flag pattern for storefront purposes.
+
+- `listOnlineAvailableInventory()` queries `inventory/online/items` filtered by `inStock = true`.
+- Each item's `variantPricing` map drives the variant selector on the product detail page via `resolveVariantPricing()`.
+- Firestore rules allow public reads from `inventory/online/items/{productId}`.
+- Hub inventory (`inventory/hub`) is unaffected — still used for hub-specific features.

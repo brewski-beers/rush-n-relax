@@ -1,83 +1,76 @@
 'use client';
 
-import { useState } from 'react';
-import { useCart } from '@/hooks/useCart';
-import type { Product, ProductSummary } from '@/types';
+/**
+ * AddToCartButton — triggers cart addItem for a specific variant.
+ *
+ * The parent (ProductDetailClient) is responsible for:
+ * - resolving the selected DisplayVariant via resolveVariantPricing
+ * - passing the variant down as a prop
+ *
+ * This component does NOT derive pricing or availability internally.
+ */
+
+import { useCart } from '@/contexts/CartContext';
+import type { DisplayVariant } from '@/lib/storefront/resolveVariantPricing';
 
 interface AddToCartButtonProps {
-  product: Pick<Product | ProductSummary, 'id' | 'slug' | 'name' | 'image'> & {
-    pricing?: Product['pricing'];
-    availableOnline?: boolean;
-    availablePickup?: boolean;
-  };
-  /** Show an inline quantity selector (for detail page). Default: false */
+  productId: string;
+  productName: string;
+  productImage?: string;
+  selectedVariant?: DisplayVariant;
+  /**
+   * When true, a quantity input is shown alongside the button.
+   * Set to true on the product detail page; false on grid cards.
+   */
   showQtySelector?: boolean;
   className?: string;
 }
 
-const CONFIRM_DURATION_MS = 2000;
-
 export function AddToCartButton({
-  product,
+  productId,
+  productName,
+  productImage,
+  selectedVariant,
   showQtySelector = false,
   className,
 }: AddToCartButtonProps) {
   const { addItem } = useCart();
-  const [qty, setQty] = useState(1);
-  const [confirmed, setConfirmed] = useState(false);
 
-  const isAvailable =
-    product.pricing != null &&
-    (product.availableOnline === true || product.availablePickup === true);
+  const disabled = !selectedVariant || !selectedVariant.inStock;
 
-  const handleAdd = () => {
-    if (!product.pricing) return;
-    for (let i = 0; i < qty; i++) {
-      addItem({
-        productId: product.id,
-        productName: product.name,
-        productSlug: product.slug,
-        image: product.image,
-        unitPrice: product.pricing.price,
-      });
-    }
-    setConfirmed(true);
-    setTimeout(() => setConfirmed(false), CONFIRM_DURATION_MS);
-  };
+  function handleAdd() {
+    if (!selectedVariant) return;
+    addItem({
+      productId,
+      variantId: selectedVariant.variantId,
+      variantLabel: selectedVariant.label,
+      name: productName,
+      unitPrice: selectedVariant.price,
+      image: productImage,
+    });
+  }
 
   return (
-    <div className={`add-to-cart-wrapper${className ? ` ${className}` : ''}`}>
-      {showQtySelector && (
-        <div className="add-to-cart-qty">
-          <button
-            type="button"
-            className="cart-qty-btn"
-            aria-label="Decrease quantity"
-            disabled={qty <= 1 || !isAvailable}
-            onClick={() => setQty(q => Math.max(1, q - 1))}
-          >
-            −
-          </button>
-          <span aria-label="Quantity">{qty}</span>
-          <button
-            type="button"
-            className="cart-qty-btn"
-            aria-label="Increase quantity"
-            disabled={qty >= 10 || !isAvailable}
-            onClick={() => setQty(q => Math.min(10, q + 1))}
-          >
-            +
-          </button>
-        </div>
-      )}
+    <div
+      className={`add-to-cart-wrap${showQtySelector ? ' add-to-cart-wrap--with-qty' : ''}`}
+    >
       <button
         type="button"
-        className="btn btn-primary add-to-cart-btn"
-        disabled={!isAvailable}
-        aria-disabled={!isAvailable}
+        className={`btn btn-primary add-to-cart-btn${className ? ` ${className}` : ''}`}
         onClick={handleAdd}
+        disabled={disabled}
+        aria-disabled={disabled}
+        aria-label={
+          selectedVariant
+            ? `Add ${productName} — ${selectedVariant.label} to cart`
+            : 'Select a variant to add to cart'
+        }
       >
-        {confirmed ? 'Added ✓' : 'Add to Cart'}
+        {!selectedVariant
+          ? 'Select a variant'
+          : !selectedVariant.inStock
+            ? 'Out of Stock'
+            : 'Add to Cart'}
       </button>
     </div>
   );

@@ -1,94 +1,103 @@
 'use client';
 
-import {
-  createContext,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
+/**
+ * CartContext — client-side cart state for the storefront.
+ *
+ * Cart items are keyed on a composite `productId + variantId` so that the
+ * same product in different weights/sizes creates separate line items.
+ *
+ * localStorage migration: if stored cart items lack `variantId` the cart is
+ * cleared on load (cart is ephemeral — no data loss risk).
+ */
 
-// ── Types ─────────────────────────────────────────────────────────────────
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
 
 export interface CartItem {
   productId: string;
-  productName: string;
-  productSlug: string;
-  image?: string;
-  /** Retail price in cents, snapshotted at add time */
+  variantId: string;
+  variantLabel: string;
+  name: string;
   unitPrice: number;
   quantity: number;
+  image?: string;
 }
 
 export interface CartContextValue {
   items: CartItem[];
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
-  removeItem: (productId: string) => void;
-  updateQty: (productId: string, quantity: number) => void;
+  removeItem: (productId: string, variantId: string) => void;
+  updateQty: (productId: string, variantId: string, qty: number) => void;
   clearCart: () => void;
-  itemCount: number;
-  total: number;
+  totalItems: number;
+  subtotal: number;
 }
-
-// ── Context ───────────────────────────────────────────────────────────────
 
 export const CartContext = createContext<CartContextValue | null>(null);
 
-// ── Constants ─────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'rnr_cart_v2';
 
-const STORAGE_KEY = 'rnr-cart';
-const MAX_QTY = 10;
+function compositeKey(productId: string, variantId: string): string {
+  return `${productId}::${variantId}`;
+}
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-
-function loadFromStorage(): CartItem[] {
+function loadCart(): CartItem[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    // Basic shape validation — cast justified: we validate each field below
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (item): item is CartItem =>
-        typeof item === 'object' &&
-        item !== null &&
-        typeof (item as Record<string, unknown>).productId === 'string' &&
-        typeof (item as Record<string, unknown>).quantity === 'number'
-    );
+    // Migration guard: any item missing variantId clears the whole cart
+    if (
+      parsed.some(
+        item => !item || typeof item !== 'object' || !('variantId' in item)
+      )
+    ) {
+      localStorage.removeItem(STORAGE_KEY);
+      return [];
+    }
+    return parsed as CartItem[];
   } catch {
     return [];
   }
 }
 
-function saveToStorage(items: CartItem[]): void {
+function saveCart(items: CartItem[]): void {
   if (typeof window === 'undefined') return;
-  if (items.length === 0) {
-    window.localStorage.removeItem(STORAGE_KEY);
-  } else {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // storage quota exceeded — silently ignore
   }
 }
 
-// ── Provider ──────────────────────────────────────────────────────────────
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  // Initialize from localStorage synchronously to avoid hydration flicker.
+  // We read localStorage in a lazy initializer so the initial render always
+  // has the persisted cart even before the first effect fires.
+  const [items, setItems] = useState<CartItem[]>(loadCart);
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  // Lazy initializer — runs only on client (window available); returns [] during SSR
-  const [items, setItems] = useState<CartItem[]>(loadFromStorage);
-
-  // Persist on every change
+  // Persist to localStorage whenever items change
   useEffect(() => {
-    saveToStorage(items);
+    saveCart(items);
   }, [items]);
 
   const addItem = useCallback((incoming: Omit<CartItem, 'quantity'>) => {
     setItems(prev => {
-      const existing = prev.find(i => i.productId === incoming.productId);
+      const key = compositeKey(incoming.productId, incoming.variantId);
+      const existing = prev.find(
+        i => compositeKey(i.productId, i.variantId) === key
+      );
       if (existing) {
         return prev.map(i =>
-          i.productId === incoming.productId
-            ? { ...i, quantity: Math.min(i.quantity + 1, MAX_QTY) }
+          compositeKey(i.productId, i.variantId) === key
+            ? { ...i, quantity: i.quantity + 1 }
             : i
         );
       }
@@ -96,53 +105,59 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const removeItem = useCallback((productId: string) => {
-    setItems(prev => prev.filter(i => i.productId !== productId));
+  const removeItem = useCallback((productId: string, variantId: string) => {
+    const key = compositeKey(productId, variantId);
+    setItems(prev =>
+      prev.filter(i => compositeKey(i.productId, i.variantId) !== key)
+    );
   }, []);
 
   const updateQty = useCallback(
-    (productId: string, quantity: number) => {
-      if (quantity <= 0) {
-        removeItem(productId);
-        return;
+    (productId: string, variantId: string, qty: number) => {
+      const key = compositeKey(productId, variantId);
+      if (qty <= 0) {
+        setItems(prev =>
+          prev.filter(i => compositeKey(i.productId, i.variantId) !== key)
+        );
+      } else {
+        setItems(prev =>
+          prev.map(i =>
+            compositeKey(i.productId, i.variantId) === key
+              ? { ...i, quantity: qty }
+              : i
+          )
+        );
       }
-      setItems(prev =>
-        prev.map(i =>
-          i.productId === productId
-            ? { ...i, quantity: Math.min(quantity, MAX_QTY) }
-            : i
-        )
-      );
     },
-    [removeItem]
+    []
   );
 
-  const clearCart = useCallback(() => {
-    setItems([]);
-  }, []);
+  const clearCart = useCallback(() => setItems([]), []);
 
-  const itemCount = useMemo(
-    () => items.reduce((sum, i) => sum + i.quantity, 0),
-    [items]
+  const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
+  const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+
+  return (
+    <CartContext.Provider
+      value={{
+        items,
+        addItem,
+        removeItem,
+        updateQty,
+        clearCart,
+        totalItems,
+        subtotal,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
   );
+}
 
-  const total = useMemo(
-    () => items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0),
-    [items]
-  );
-
-  const value = useMemo<CartContextValue>(
-    () => ({
-      items,
-      addItem,
-      removeItem,
-      updateQty,
-      clearCart,
-      itemCount,
-      total,
-    }),
-    [items, addItem, removeItem, updateQty, clearCart, itemCount, total]
-  );
-
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+export function useCart(): CartContextValue {
+  const ctx = useContext(CartContext);
+  if (!ctx) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return ctx;
 }

@@ -23,6 +23,7 @@ import {
   getAdminFirestore,
   toDate,
   HUB_LOCATION_ID,
+  ONLINE_LOCATION_ID,
 } from '@/lib/firebase/admin';
 import type {
   InventoryItem,
@@ -67,14 +68,15 @@ export async function getInventoryItem(
 }
 
 /**
- * List all hub inventory items that are flagged as available online.
- * Used by the storefront to show products available for purchase on /products.
+ * List all online inventory items that are in stock.
+ * Reads from inventory/online (ONLINE_LOCATION_ID) — the canonical path
+ * for storefront pricing. Each item's variantPricing map drives the
+ * variant selector on the product detail page.
  */
 export async function listOnlineAvailableInventory(): Promise<
   InventoryItemSummary[]
 > {
-  const snap = await inventoryItemsCol(HUB_LOCATION_ID)
-    .where('availableOnline', '==', true)
+  const snap = await inventoryItemsCol(ONLINE_LOCATION_ID)
     .where('inStock', '==', true)
     .get();
 
@@ -82,12 +84,13 @@ export async function listOnlineAvailableInventory(): Promise<
     const d = doc.data();
     return {
       productId: doc.id,
-      locationId: HUB_LOCATION_ID,
+      locationId: ONLINE_LOCATION_ID,
       inStock: d.inStock ?? false,
       availableOnline: d.availableOnline ?? false,
       availablePickup: false,
       featured: d.featured ?? false,
       quantity: d.quantity ?? undefined,
+      variantPricing: docToVariantPricing(d.variantPricing),
     } satisfies InventoryItemSummary;
   });
 }
@@ -118,6 +121,7 @@ export async function listFeaturedInventory(
       availablePickup: d.availablePickup ?? false,
       featured: true,
       quantity: d.quantity ?? undefined,
+      variantPricing: docToVariantPricing(d.variantPricing),
     } satisfies InventoryItemSummary;
   });
 }
@@ -147,6 +151,8 @@ export async function setInventoryItem(
     quantity?: number;
     notes?: string;
     updatedBy?: string;
+    /** Partial variantPricing update — merged with existing pricing at the Firestore level */
+    variantPricing?: InventoryItem['variantPricing'];
   },
   adjustment?: {
     reason: InventoryAdjustmentReason;
@@ -218,6 +224,9 @@ export async function setInventoryItem(
     availablePickup: nextAvailablePickup,
     featured: nextFeatured,
     ...(patch.notes !== undefined && { notes: patch.notes }),
+    ...(patch.variantPricing !== undefined && {
+      variantPricing: patch.variantPricing,
+    }),
     ...(effectiveUpdatedBy !== undefined && { updatedBy: effectiveUpdatedBy }),
     updatedAt: now,
   };
@@ -237,6 +246,8 @@ export async function setInventoryItem(
       patch.notes !== (current?.notes ?? undefined)
     )
       changedFields.push('notes');
+    if (patch.variantPricing !== undefined)
+      changedFields.push('variantPricing');
 
     // Atomic write: item update + immutable audit log entry in one batch.
     const logRef = itemRef.collection('adjustments').doc();
@@ -291,10 +302,39 @@ function docToInventoryItem(
     // featured requires inStock; for hub it also requires availableOnline
     featured: inStock ? (d.featured ?? false) : false,
     quantity,
+    variantPricing: docToVariantPricing(d.variantPricing),
     notes: d.notes ?? undefined,
     updatedAt: toDate(d.updatedAt),
     updatedBy: d.updatedBy ?? undefined,
   };
+}
+
+/**
+ * Defensively maps variantPricing from Firestore.
+ * Entries with non-numeric price are silently skipped.
+ * Returns undefined if the field is absent or contains no valid entries.
+ */
+function docToVariantPricing(
+  raw: unknown
+): InventoryItem['variantPricing'] | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const result: NonNullable<InventoryItem['variantPricing']> = {};
+  let hasEntry = false;
+  for (const [variantId, entry] of Object.entries(
+    raw as Record<string, unknown>
+  )) {
+    if (!entry || typeof entry !== 'object') continue;
+    const e = entry as Record<string, unknown>;
+    if (typeof e.price !== 'number') continue;
+    result[variantId] = {
+      price: e.price,
+      compareAtPrice:
+        typeof e.compareAtPrice === 'number' ? e.compareAtPrice : undefined,
+      inStock: typeof e.inStock === 'boolean' ? e.inStock : undefined,
+    };
+    hasEntry = true;
+  }
+  return hasEntry ? result : undefined;
 }
 
 function normalizeQuantity(value: unknown, fallbackInStock: boolean): number {

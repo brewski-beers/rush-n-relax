@@ -9,12 +9,10 @@ import { LOCATIONS } from '@/constants/locations';
 type FulfillmentType = 'pickup' | 'ship';
 
 export default function CartPage() {
-  const { items, removeItem, updateQty, total, clearCart } = useCart();
+  const { items, removeItem, updateQty, subtotal, clearCart } = useCart();
   const [fulfillment, setFulfillment] = useState<FulfillmentType | null>(null);
   const [pickupLocation, setPickupLocation] = useState<string>('');
 
-  // CartItem does not carry availableOnline — always show both fulfillment options
-  // so customers can choose pickup or shipping regardless of product.
   const canCheckout =
     fulfillment === 'ship' ||
     (fulfillment === 'pickup' && pickupLocation !== '');
@@ -37,7 +35,7 @@ export default function CartPage() {
 
   // Tax placeholder — real computation is server-side at checkout
   const TAX_RATE = 0.0925;
-  const taxEstimate = Math.round(total * TAX_RATE);
+  const taxEstimate = Math.round(subtotal * TAX_RATE);
 
   return (
     <main className="cart-page">
@@ -61,11 +59,15 @@ export default function CartPage() {
               </thead>
               <tbody>
                 {items.map(item => (
-                  <tr key={item.productId}>
+                  <tr key={`${item.productId}::${item.variantId}`}>
                     <td>
-                      <Link href={`/products/${item.productSlug}`}>
-                        {item.productName}
-                      </Link>
+                      <span>{item.name}</span>
+                      {item.variantLabel && (
+                        <span className="cart-item-variant">
+                          {' '}
+                          — {item.variantLabel}
+                        </span>
+                      )}
                     </td>
                     <td>{formatCents(item.unitPrice)}</td>
                     <td>
@@ -73,11 +75,13 @@ export default function CartPage() {
                         <button
                           type="button"
                           className="cart-qty-btn"
-                          aria-label={`Decrease quantity of ${item.productName}`}
+                          aria-label={`Decrease quantity of ${item.name}`}
                           onClick={() =>
-                            item.quantity === 1
-                              ? removeItem(item.productId)
-                              : updateQty(item.productId, item.quantity - 1)
+                            updateQty(
+                              item.productId,
+                              item.variantId,
+                              item.quantity - 1
+                            )
                           }
                         >
                           −
@@ -86,9 +90,13 @@ export default function CartPage() {
                         <button
                           type="button"
                           className="cart-qty-btn"
-                          aria-label={`Increase quantity of ${item.productName}`}
+                          aria-label={`Increase quantity of ${item.name}`}
                           onClick={() =>
-                            updateQty(item.productId, item.quantity + 1)
+                            updateQty(
+                              item.productId,
+                              item.variantId,
+                              item.quantity + 1
+                            )
                           }
                         >
                           +
@@ -100,8 +108,10 @@ export default function CartPage() {
                       <button
                         type="button"
                         className="cart-remove-btn"
-                        aria-label={`Remove ${item.productName}`}
-                        onClick={() => removeItem(item.productId)}
+                        aria-label={`Remove ${item.name}`}
+                        onClick={() =>
+                          removeItem(item.productId, item.variantId)
+                        }
                       >
                         ×
                       </button>
@@ -118,7 +128,7 @@ export default function CartPage() {
             <dl className="cart-summary-lines">
               <div className="cart-summary-row">
                 <dt>Subtotal</dt>
-                <dd>{formatCents(total)}</dd>
+                <dd>{formatCents(subtotal)}</dd>
               </div>
               <div className="cart-summary-row">
                 <dt>Estimated Tax</dt>
@@ -126,7 +136,7 @@ export default function CartPage() {
               </div>
               <div className="cart-summary-row cart-summary-total">
                 <dt>Estimated Total</dt>
-                <dd>{formatCents(total + taxEstimate)}</dd>
+                <dd>{formatCents(subtotal + taxEstimate)}</dd>
               </div>
             </dl>
 

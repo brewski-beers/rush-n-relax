@@ -35,7 +35,7 @@ interface NavigationProps {
 
 export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
   const { isMenuOpen, toggleMenu } = useNavigation();
-  const { itemCount } = useCart();
+  const { totalItems: itemCount } = useCart();
   const pathname = usePathname();
   const router = useRouter();
   const [logoSrc, setLogoSrc] = useState<string | null>(null);

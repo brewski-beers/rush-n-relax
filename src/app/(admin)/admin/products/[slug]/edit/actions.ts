@@ -9,7 +9,7 @@ import {
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
-import type { ProductStatus, ProductStrain } from '@/types';
+import type { ProductStatus, ProductStrain, ProductVariant } from '@/types';
 
 // compliance-hold is system-managed — admins cannot set it directly
 const SETTABLE_STATUSES: ProductStatus[] = [
@@ -152,6 +152,26 @@ export async function updateProduct(
   const coaUrlRaw = formData.get('coaUrl')?.toString() ?? '';
   const coaUrl = coaUrlRaw || existing.coaUrl;
 
+  // ── Variants ──────────────────────────────────────────────────────────────
+  const variantsRaw = formData.get('variants')?.toString() ?? '';
+  let variants: ProductVariant[] | undefined;
+  if (variantsRaw) {
+    try {
+      const parsed: unknown = JSON.parse(variantsRaw);
+      if (Array.isArray(parsed)) {
+        variants = parsed.filter(
+          (v): v is ProductVariant =>
+            v !== null &&
+            typeof v === 'object' &&
+            typeof (v as Record<string, unknown>).variantId === 'string' &&
+            typeof (v as Record<string, unknown>).label === 'string'
+        );
+      }
+    } catch {
+      // malformed JSON — ignore, keep existing variants
+    }
+  }
+
   const payload = {
     slug: existing.slug,
     name,
@@ -179,6 +199,7 @@ export async function updateProduct(
     ...(effects !== undefined ? { effects } : {}),
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
+    ...(variants !== undefined ? { variants } : {}),
   };
 
   try {

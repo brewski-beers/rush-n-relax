@@ -12,7 +12,7 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
-  const { items, removeItem, updateQty, total, itemCount } = useCart();
+  const { items, removeItem, updateQty, subtotal, totalItems } = useCart();
   const drawerRef = useRef<HTMLDivElement>(null);
 
   // Focus trap + Escape key handler
@@ -91,7 +91,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
       >
         <div className="cart-drawer-header">
           <h2 className="cart-drawer-title">
-            Your Cart{itemCount > 0 ? ` (${itemCount})` : ''}
+            Your Cart{totalItems > 0 ? ` (${totalItems})` : ''}
           </h2>
           <button
             type="button"
@@ -118,9 +118,20 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           <>
             <ul className="cart-drawer-items" aria-label="Cart items">
               {items.map(item => (
-                <li key={item.productId} className="cart-item">
+                <li
+                  key={`${item.productId}::${item.variantId}`}
+                  className="cart-item"
+                >
                   <div className="cart-item-info">
-                    <span className="cart-item-name">{item.productName}</span>
+                    <span className="cart-item-name">
+                      {item.name}
+                      {item.variantLabel && (
+                        <span className="cart-item-variant">
+                          {' '}
+                          — {item.variantLabel}
+                        </span>
+                      )}
+                    </span>
                     <span className="cart-item-price">
                       {formatCents(item.unitPrice)}
                     </span>
@@ -130,11 +141,13 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       type="button"
                       className="cart-qty-btn"
                       onClick={() =>
-                        item.quantity === 1
-                          ? removeItem(item.productId)
-                          : updateQty(item.productId, item.quantity - 1)
+                        updateQty(
+                          item.productId,
+                          item.variantId,
+                          item.quantity - 1
+                        )
                       }
-                      aria-label={`Decrease quantity of ${item.productName}`}
+                      aria-label={`Decrease quantity of ${item.name}`}
                     >
                       −
                     </button>
@@ -145,17 +158,21 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       type="button"
                       className="cart-qty-btn"
                       onClick={() =>
-                        updateQty(item.productId, item.quantity + 1)
+                        updateQty(
+                          item.productId,
+                          item.variantId,
+                          item.quantity + 1
+                        )
                       }
-                      aria-label={`Increase quantity of ${item.productName}`}
+                      aria-label={`Increase quantity of ${item.name}`}
                     >
                       +
                     </button>
                     <button
                       type="button"
                       className="cart-item-remove"
-                      onClick={() => removeItem(item.productId)}
-                      aria-label={`Remove ${item.productName}`}
+                      onClick={() => removeItem(item.productId, item.variantId)}
+                      aria-label={`Remove ${item.name}`}
                     >
                       ×
                     </button>
@@ -167,7 +184,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             <div className="cart-drawer-footer">
               <div className="cart-subtotal">
                 <span>Subtotal</span>
-                <span>{formatCents(total)}</span>
+                <span>{formatCents(subtotal)}</span>
               </div>
               <Link
                 href="/cart"
@@ -195,14 +212,14 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
  * Cart icon button with item count badge — intended for use in Navigation.
  */
 export function CartIconButton({ onClick }: { onClick: () => void }) {
-  const { itemCount } = useCart();
+  const { totalItems } = useCart();
 
   return (
     <button
       type="button"
       className="cart-icon-button"
       onClick={onClick}
-      aria-label={`Open cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
+      aria-label={`Open cart${totalItems > 0 ? `, ${totalItems} items` : ''}`}
     >
       <svg
         width="22"
@@ -220,9 +237,9 @@ export function CartIconButton({ onClick }: { onClick: () => void }) {
         <circle cx="20" cy="21" r="1" />
         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
       </svg>
-      {itemCount > 0 && (
+      {totalItems > 0 && (
         <span className="cart-badge" aria-hidden="true">
-          {itemCount}
+          {totalItems}
         </span>
       )}
     </button>

@@ -7,13 +7,15 @@ import { createProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { CoaSelector } from '@/components/admin/CoaSelector';
 import { TagInput } from '@/components/admin/TagInput';
-import type { ProductCategorySummary } from '@/types';
+import { VariantEditor } from '@/components/admin/VariantEditor';
+import type { ProductCategorySummary, VariantTemplate } from '@/types';
 
 interface Props {
   categories: ProductCategorySummary[];
+  variantTemplates: VariantTemplate[];
 }
 
-export function ProductCreateForm({ categories }: Props) {
+export function ProductCreateForm({ categories, variantTemplates }: Props) {
   const [state, formAction, pending] = useActionState(createProduct, null);
   const [slug, setSlug] = useState('');
   const [imageUploading, setImageUploading] = useState(false);
@@ -76,6 +78,8 @@ export function ProductCreateForm({ categories }: Props) {
         <legend>Certificate of Analysis (COA)</legend>
         <CoaSelector />
       </fieldset>
+
+      <VariantEditor variantTemplates={variantTemplates} />
 
       <fieldset className="admin-fieldset">
         <legend>Cannabis Profile</legend>

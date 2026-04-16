@@ -21,7 +21,7 @@ const NAV_LINKS = [
 ] as const;
 
 function ModalCartSection({ onClose }: { onClose: () => void }) {
-  const { itemCount, total } = useCart();
+  const { totalItems: itemCount, subtotal: total } = useCart();
   return (
     <Link href="/cart" className="modal-cart" onClick={onClose}>
       <div className="modal-cart-icon" aria-hidden="true">

@@ -5,6 +5,7 @@
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type {
   Product,
+  ProductVariant,
   ProductSummary,
   LabResults,
   ProductStrain,
@@ -156,6 +157,7 @@ function docToProductSummary(
       VALID_STRAINS.has(d.strain as ProductStrain)
         ? (d.strain as ProductStrain)
         : undefined,
+    variants: docToVariants(d.variants),
   } satisfies ProductSummary;
 }
 
@@ -182,6 +184,7 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
         : undefined,
     effects: Array.isArray(d.effects) ? (d.effects as string[]) : undefined,
     flavors: Array.isArray(d.flavors) ? (d.flavors as string[]) : undefined,
+    variants: docToVariants(d.variants),
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
   } satisfies Product;
@@ -199,6 +202,45 @@ function docToLabResults(
     testDate: typeof r.testDate === 'string' ? r.testDate : undefined,
     labName: typeof r.labName === 'string' ? r.labName : undefined,
   };
+}
+
+/**
+ * Defensively maps the variants array from Firestore.
+ * Entries missing required fields (variantId, label) are silently skipped.
+ */
+function docToVariants(raw: unknown): ProductVariant[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const valid: ProductVariant[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const v = item as Record<string, unknown>;
+    if (typeof v.variantId !== 'string' || typeof v.label !== 'string')
+      continue;
+    const variant: ProductVariant = {
+      variantId: v.variantId,
+      label: v.label,
+    };
+    if (v.weight && typeof v.weight === 'object') {
+      const w = v.weight as Record<string, unknown>;
+      if (typeof w.value === 'number' && (w.unit === 'g' || w.unit === 'oz')) {
+        variant.weight = { value: w.value, unit: w.unit };
+      }
+    }
+    if (typeof v.quantity === 'number') {
+      variant.quantity = v.quantity;
+    }
+    if (v.dose && typeof v.dose === 'object') {
+      const dose = v.dose as Record<string, unknown>;
+      if (
+        typeof dose.value === 'number' &&
+        (dose.unit === 'mg' || dose.unit === 'mcg')
+      ) {
+        variant.dose = { value: dose.value, unit: dose.unit };
+      }
+    }
+    valid.push(variant);
+  }
+  return valid.length > 0 ? valid : undefined;
 }
 
 function stripUndefinedFields<T extends Record<string, unknown>>(

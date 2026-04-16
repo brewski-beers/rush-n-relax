@@ -5,6 +5,7 @@ export type {
 } from './location';
 export type {
   Product,
+  ProductVariant,
   ProductSummary,
   ProductStatus,
   LabResults,
@@ -49,3 +50,4 @@ export type { GoogleReview } from './reviews';
 export type { Vendor, VendorSummary, DescriptionSource } from './vendor';
 export type { Order, OrderItem, OrderStatus, FulfillmentType } from './order';
 export type { CoaDocument } from './coa';
+export type { VariantTemplate } from './variant-template';

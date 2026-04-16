@@ -174,3 +174,6 @@ flowchart LR
 - Inventory writes now append an immutable adjustment log at
   `inventory/{locationId}/items/{productId}/adjustments/{adjustmentId}` in the same batch as the item write.
 - Adjustment payload includes before/after snapshots (`previous*`/`next*`), computed delta (`deltaQuantity`), `changedFields`, `reason`, `source`, `updatedBy`, and `createdAt`.
+- `InventoryItem.variantPricing` is a map of `variantId → { price, compareAtPrice?, inStock? }`. Keys correspond to `ProductVariant.variantId` values from `Product.variants`. Pricing is per-location — the same product can have different prices at hub vs. retail.
+- `setInventoryItem` accepts `variantPricing` in the patch object. When present, it is merged atomically with the item write and `'variantPricing'` is added to `changedFields` in the audit record.
+- The `'price-update'` reason is available in `InventoryAdjustmentReason` for pricing-only audit records.

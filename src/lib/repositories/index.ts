@@ -78,3 +78,9 @@ export {
 export { createOrder, getOrder, updateOrderStatus } from './order.repository';
 
 export { listCoaDocuments } from './coa.repository';
+
+export {
+  listVariantTemplates,
+  upsertVariantTemplate,
+  deleteVariantTemplate,
+} from './variant-template.repository';
