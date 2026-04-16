@@ -147,25 +147,6 @@ export function Navigation({
           21+ only
         </p>
 
-        {/* Desktop Navigation Links — hidden on mobile via CSS */}
-        <nav className="desktop-nav" aria-label="Main navigation">
-          <ul className="desktop-nav-links">
-            {NAV_LINKS.map(link => (
-              <li key={link.path}>
-                <Link
-                  href={link.path}
-                  className="nav-link"
-                  aria-current={
-                    isRouteActive(pathname, link.path) ? 'page' : undefined
-                  }
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
         {isAdminAuthenticated ? (
           <div className="admin-shortcuts" aria-label="Admin shortcuts">
             <Link href="/admin/dashboard" className="admin-shortcut-link">
