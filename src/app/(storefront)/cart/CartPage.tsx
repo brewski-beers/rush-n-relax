@@ -44,7 +44,10 @@ export default function CartPage() {
 
         <div className="cart-layout">
           {/* ── Cart Table ──────────────────────────────────────── */}
-          <section className="cart-items-section" aria-label="Cart items">
+          <section
+            className="cart-items-section cart-items-card"
+            aria-label="Cart items"
+          >
             <table className="cart-table">
               <thead>
                 <tr>
@@ -60,7 +63,7 @@ export default function CartPage() {
               <tbody>
                 {items.map(item => (
                   <tr key={`${item.productId}::${item.variantId}`}>
-                    <td>
+                    <td data-label="Product">
                       <span>{item.name}</span>
                       {item.variantLabel && (
                         <span className="cart-item-variant">
@@ -69,8 +72,8 @@ export default function CartPage() {
                         </span>
                       )}
                     </td>
-                    <td>{formatCents(item.unitPrice)}</td>
-                    <td>
+                    <td data-label="Price">{formatCents(item.unitPrice)}</td>
+                    <td data-label="Qty">
                       <div className="cart-qty-controls">
                         <button
                           type="button"
@@ -103,7 +106,9 @@ export default function CartPage() {
                         </button>
                       </div>
                     </td>
-                    <td>{formatCents(item.unitPrice * item.quantity)}</td>
+                    <td data-label="Total">
+                      {formatCents(item.unitPrice * item.quantity)}
+                    </td>
                     <td>
                       <button
                         type="button"
@@ -143,26 +148,32 @@ export default function CartPage() {
             {/* Fulfillment Selector */}
             <fieldset className="cart-fulfillment">
               <legend>How would you like your order?</legend>
-              <label className="cart-fulfillment-option">
-                <input
-                  type="radio"
-                  name="fulfillment"
-                  value="pickup"
-                  checked={fulfillment === 'pickup'}
-                  onChange={() => setFulfillment('pickup')}
-                />
-                Pickup
-              </label>
-              <label className="cart-fulfillment-option">
-                <input
-                  type="radio"
-                  name="fulfillment"
-                  value="ship"
-                  checked={fulfillment === 'ship'}
-                  onChange={() => setFulfillment('ship')}
-                />
-                Ship to me
-              </label>
+              <div className="cart-fulfillment-options">
+                <button
+                  type="button"
+                  className={`cart-fulfillment-card${fulfillment === 'pickup' ? ' cart-fulfillment-card--active' : ''}`}
+                  aria-pressed={fulfillment === 'pickup'}
+                  onClick={() => setFulfillment('pickup')}
+                >
+                  <span className="cart-fulfillment-icon" aria-hidden="true">
+                    🏪
+                  </span>
+                  <span className="cart-fulfillment-label">Pick Up</span>
+                  <span className="cart-fulfillment-sub">In-store</span>
+                </button>
+                <button
+                  type="button"
+                  className={`cart-fulfillment-card${fulfillment === 'ship' ? ' cart-fulfillment-card--active' : ''}`}
+                  aria-pressed={fulfillment === 'ship'}
+                  onClick={() => setFulfillment('ship')}
+                >
+                  <span className="cart-fulfillment-icon" aria-hidden="true">
+                    📦
+                  </span>
+                  <span className="cart-fulfillment-label">Ship to Me</span>
+                  <span className="cart-fulfillment-sub">Delivery</span>
+                </button>
+              </div>
             </fieldset>
 
             {fulfillment === 'pickup' && (

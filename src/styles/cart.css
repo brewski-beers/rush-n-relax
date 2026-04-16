@@ -20,6 +20,21 @@
   }
 }
 
+/* ── Cart Items Card ──────────────────────────────────────────────────── */
+
+.cart-items-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-sm) var(--space-md);
+}
+
+@media (max-width: 599px) {
+  .cart-items-card {
+    padding: var(--space-sm);
+  }
+}
+
 /* ── Cart Table ───────────────────────────────────────────────────────── */
 
 .cart-table {
@@ -47,6 +62,83 @@
 
 .cart-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* ── Mobile: reflow table as cards ───────────────────────────────────── */
+
+@media (max-width: 599px) {
+  .cart-table thead {
+    display: none;
+  }
+
+  .cart-table,
+  .cart-table tbody,
+  .cart-table tr,
+  .cart-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .cart-table tbody tr {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'name    remove'
+      'price   qty'
+      '.       total';
+    gap: var(--space-xs) var(--space-sm);
+  }
+
+  .cart-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .cart-table td {
+    padding: 0;
+    border: none;
+  }
+
+  .cart-table td:nth-child(1) {
+    grid-area: name;
+  }
+  .cart-table td:nth-child(2) {
+    grid-area: price;
+    align-self: center;
+  }
+  .cart-table td:nth-child(3) {
+    grid-area: qty;
+    justify-self: end;
+    align-self: center;
+  }
+  .cart-table td:nth-child(4) {
+    grid-area: total;
+    justify-self: end;
+    font-weight: 600;
+    color: var(--color-accent-light);
+  }
+  .cart-table td:nth-child(5) {
+    grid-area: remove;
+    justify-self: end;
+  }
+
+  .cart-table td[data-label]::before {
+    content: attr(data-label) ' ';
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: block;
+    margin-bottom: var(--space-2xs, var(--space-xs));
+  }
+
+  /* suppress label on remove col */
+  .cart-table td:nth-child(5)::before {
+    display: none;
+  }
 }
 
 /* ── Qty Controls ─────────────────────────────────────────────────────── */
@@ -150,34 +242,72 @@
 /* ── Fulfillment Selector ─────────────────────────────────────────────── */
 
 .cart-fulfillment {
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: var(--space-sm);
+  border: none;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
 }
 
 .cart-fulfillment legend {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-muted);
-  padding: 0 var(--space-xs);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-xs);
 }
 
-.cart-fulfillment-option {
+.cart-fulfillment-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.cart-fulfillment-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-xs);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-accent-medium);
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9375rem;
-  padding: var(--space-xs) 0;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+  text-align: center;
 }
 
-.cart-fulfillment-option input[type='radio'] {
-  accent-color: var(--color-accent);
+.cart-fulfillment-card:hover {
+  border-color: var(--color-accent);
+}
+
+.cart-fulfillment-card--active {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
+}
+
+.cart-fulfillment-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.cart-fulfillment-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.cart-fulfillment-card--active .cart-fulfillment-label {
+  color: var(--color-accent-light);
+}
+
+.cart-fulfillment-sub {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.03em;
 }
 
 /* ── Pickup Location Select ───────────────────────────────────────────── */
