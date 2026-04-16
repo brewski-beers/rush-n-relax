@@ -302,7 +302,7 @@ export default function ProductDetailClient({
               <AddToCartButton
                 productId={product.id}
                 productName={product.name}
-                productImage={product.image}
+                productImage={heroImageUrl ?? product.image}
                 selectedVariant={selectedVariant}
                 showQtySelector
               />
