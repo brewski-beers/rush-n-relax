@@ -12,8 +12,12 @@ import {
   BrandSurface,
   resolvePreferredLogoUrlForSurface,
 } from '../../constants/branding';
+import { getAssetSrc } from '../../utils/assetSrc';
 import { isRouteActive } from '../../utils/routeMatching';
+import cannabisLeaf from '../../assets/icons/cannabis-leaf.svg';
 import './Navigation.css';
+
+const CANNABIS_LEAF_ICON_SRC = getAssetSrc(cannabisLeaf);
 
 const ADMIN_ENTRY_HOLD_MS = 4200;
 
@@ -169,25 +173,37 @@ export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
           aria-expanded={isMenuOpen}
           aria-controls="nav-menu"
         >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="nav-toggle-icon"
-            aria-hidden="true"
-          >
-            <circle cx="9" cy="21" r="1" />
-            <circle cx="20" cy="21" r="1" />
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-          </svg>
-          {itemCount > 0 && (
-            <span className="nav-toggle-badge" aria-hidden="true">
-              {itemCount}
+          {itemCount > 0 ? (
+            <>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="nav-toggle-icon"
+                aria-hidden="true"
+              >
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+              <span className="nav-toggle-badge" aria-hidden="true">
+                {itemCount}
+              </span>
+            </>
+          ) : CANNABIS_LEAF_ICON_SRC ? (
+            <img
+              src={CANNABIS_LEAF_ICON_SRC}
+              alt=""
+              className="nav-toggle-icon"
+            />
+          ) : (
+            <span className="nav-toggle-icon" aria-hidden="true">
+              🌿
             </span>
           )}
         </button>
