@@ -8,7 +8,7 @@ import {
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
-import type { ProductStrain } from '@/types';
+import type { ProductStrain, ProductVariant } from '@/types';
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
@@ -113,6 +113,26 @@ export async function createProduct(
         }
       : undefined;
 
+  // ── Variants ──────────────────────────────────────────────────────────────
+  const variantsRaw = formData.get('variants')?.toString() ?? '';
+  let variants: ProductVariant[] | undefined;
+  if (variantsRaw) {
+    try {
+      const parsed: unknown = JSON.parse(variantsRaw);
+      if (Array.isArray(parsed)) {
+        variants = parsed.filter(
+          (v): v is ProductVariant =>
+            v !== null &&
+            typeof v === 'object' &&
+            typeof (v as Record<string, unknown>).variantId === 'string' &&
+            typeof (v as Record<string, unknown>).label === 'string'
+        );
+      }
+    } catch {
+      // malformed JSON — ignore variants
+    }
+  }
+
   await upsertProduct({
     slug,
     name,
@@ -126,6 +146,7 @@ export async function createProduct(
     ...(effects !== undefined ? { effects } : {}),
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
+    ...(variants !== undefined ? { variants } : {}),
   });
 
   revalidatePath('/admin/products');

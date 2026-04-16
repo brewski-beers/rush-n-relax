@@ -23,6 +23,7 @@ import {
   getAdminFirestore,
   toDate,
   HUB_LOCATION_ID,
+  ONLINE_LOCATION_ID,
 } from '@/lib/firebase/admin';
 import type {
   InventoryItem,
@@ -67,14 +68,15 @@ export async function getInventoryItem(
 }
 
 /**
- * List all hub inventory items that are flagged as available online.
- * Used by the storefront to show products available for purchase on /products.
+ * List all online inventory items that are in stock.
+ * Reads from inventory/online (ONLINE_LOCATION_ID) — the canonical path
+ * for storefront pricing. Each item's variantPricing map drives the
+ * variant selector on the product detail page.
  */
 export async function listOnlineAvailableInventory(): Promise<
   InventoryItemSummary[]
 > {
-  const snap = await inventoryItemsCol(HUB_LOCATION_ID)
-    .where('availableOnline', '==', true)
+  const snap = await inventoryItemsCol(ONLINE_LOCATION_ID)
     .where('inStock', '==', true)
     .get();
 
@@ -82,7 +84,7 @@ export async function listOnlineAvailableInventory(): Promise<
     const d = doc.data();
     return {
       productId: doc.id,
-      locationId: HUB_LOCATION_ID,
+      locationId: ONLINE_LOCATION_ID,
       inStock: d.inStock ?? false,
       availableOnline: d.availableOnline ?? false,
       availablePickup: false,

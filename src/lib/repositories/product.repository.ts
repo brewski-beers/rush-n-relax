@@ -157,6 +157,7 @@ function docToProductSummary(
       VALID_STRAINS.has(d.strain as ProductStrain)
         ? (d.strain as ProductStrain)
         : undefined,
+    variants: docToVariants(d.variants),
   } satisfies ProductSummary;
 }
 

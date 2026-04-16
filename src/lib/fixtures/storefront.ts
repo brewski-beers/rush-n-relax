@@ -8,6 +8,8 @@ import type {
   Promo,
 } from '@/types';
 import type { InventoryItem } from '@/types/inventory';
+import type { VariantTemplate } from '@/types/variant-template';
+import { ONLINE_LOCATION_ID } from '@/constants/location-ids';
 
 export const FIXTURE_DATASET_VERSION = '2026-03-14';
 export const FIXTURE_TIMESTAMP = '2026-03-14T00:00:00.000Z';
@@ -51,6 +53,7 @@ export interface InventoryItemFixture {
   availablePickup: boolean;
   featured: boolean;
   quantity: number;
+  variantPricing?: InventoryItem['variantPricing'];
 }
 
 export interface PromoFixture {
@@ -240,6 +243,80 @@ export const HUB_INVENTORY_FIXTURES: readonly InventoryItemFixture[] =
     featured: true,
     quantity: 99,
   }));
+
+/** Online virtual location inventory — canonical source for storefront variant pricing. */
+export const ONLINE_INVENTORY_FIXTURES: readonly InventoryItemFixture[] = [
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'flower',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: true,
+    quantity: 99,
+    variantPricing: {
+      '1g': { price: 1000 },
+      '3-5g': { price: 2800 },
+      '7g': { price: 5000 },
+      '14g': { price: 9000, compareAtPrice: 10000 },
+      '28g': { price: 16000, compareAtPrice: 18000 },
+    },
+  },
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'concentrates',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: true,
+    quantity: 99,
+    variantPricing: {
+      '0-5g': { price: 2500 },
+      '1g': { price: 4500, compareAtPrice: 5000 },
+    },
+  },
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'drinks',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: false,
+    quantity: 99,
+    variantPricing: {
+      'single-can': { price: 800 },
+      '2-pack': { price: 1400 },
+    },
+  },
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'edibles',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: false,
+    quantity: 99,
+    variantPricing: {
+      '10mg': { price: 500 },
+      '25mg': { price: 1000 },
+      '50mg': { price: 1800, compareAtPrice: 2000 },
+    },
+  },
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'vapes',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: false,
+    quantity: 99,
+    variantPricing: {
+      '0-5g-cart': { price: 2000 },
+      '1g-cart': { price: 3500 },
+      'disposable-1g': { price: 4000, compareAtPrice: 4500 },
+    },
+  },
+];
 
 export const PROMO_FIXTURES: readonly PromoFixture[] = [
   {
@@ -484,6 +561,22 @@ export function buildHubInventoryDocuments(
   }));
 }
 
+export function buildOnlineInventoryDocuments(
+  date: Date = fixtureDate
+): InventoryItem[] {
+  return ONLINE_INVENTORY_FIXTURES.map(item => ({
+    productId: item.productId,
+    locationId: item.locationId,
+    inStock: item.inStock,
+    availableOnline: item.availableOnline,
+    availablePickup: item.availablePickup,
+    featured: item.featured,
+    quantity: item.quantity,
+    variantPricing: item.variantPricing,
+    updatedAt: date,
+  }));
+}
+
 export function buildPromoDocuments(date: Date = fixtureDate): Promo[] {
   return PROMO_FIXTURES.map(promo => ({
     id: promo.slug,
@@ -502,6 +595,93 @@ export function buildPromoDocuments(date: Date = fixtureDate): Promo[] {
     endDate: promo.endDate,
     createdAt: date,
     updatedAt: date,
+  }));
+}
+
+export const VARIANT_TEMPLATE_FIXTURES: readonly Omit<
+  VariantTemplate,
+  'id' | 'createdAt' | 'updatedAt'
+>[] = [
+  {
+    key: 'flower',
+    label: 'Flower (weight)',
+    rows: [
+      { label: '1g', weight: { value: 1, unit: 'g' } },
+      { label: '3.5g', weight: { value: 3.5, unit: 'g' } },
+      { label: '7g', weight: { value: 7, unit: 'g' } },
+      { label: '14g', weight: { value: 14, unit: 'g' } },
+      { label: '28g', weight: { value: 28, unit: 'g' } },
+    ],
+  },
+  {
+    key: 'preroll-qty',
+    label: 'Preroll (qty)',
+    rows: [
+      { label: '1-pack', quantity: 1 },
+      { label: '2-pack', quantity: 2 },
+      { label: '5-pack', quantity: 5 },
+    ],
+  },
+  {
+    key: 'preroll-weight',
+    label: 'Preroll (weight)',
+    rows: [
+      { label: '0.5g', weight: { value: 0.5, unit: 'g' } },
+      { label: '0.75g', weight: { value: 0.75, unit: 'g' } },
+      { label: '1g', weight: { value: 1, unit: 'g' } },
+      { label: '1.5g', weight: { value: 1.5, unit: 'g' } },
+    ],
+  },
+  {
+    key: 'concentrate',
+    label: 'Concentrate',
+    rows: [
+      { label: '0.5g', weight: { value: 0.5, unit: 'g' } },
+      { label: '1g', weight: { value: 1, unit: 'g' } },
+    ],
+  },
+  {
+    key: 'edible',
+    label: 'Edible (free-form)',
+    rows: [{ label: '' }],
+  },
+  {
+    key: 'vape',
+    label: 'Vape',
+    rows: [
+      { label: '0.5g cart', weight: { value: 0.5, unit: 'g' } },
+      { label: '1g cart', weight: { value: 1, unit: 'g' } },
+      { label: 'Disposable 1g', weight: { value: 1, unit: 'g' } },
+    ],
+  },
+  {
+    key: 'drink',
+    label: 'Drink',
+    rows: [
+      { label: 'Single Can', quantity: 1 },
+      { label: '2-pack', quantity: 2 },
+    ],
+  },
+  {
+    key: 'single',
+    label: 'Single / 1-pack',
+    rows: [{ label: '1-pack', quantity: 1 }],
+  },
+  {
+    key: 'custom',
+    label: 'Custom',
+    rows: [{ label: '' }],
+  },
+];
+
+export function buildVariantTemplateDocuments(
+  fixtureDate: Date
+): VariantTemplate[] {
+  return VARIANT_TEMPLATE_FIXTURES.map(t => ({
+    ...t,
+    id: t.key,
+    createdAt: fixtureDate,
+    updatedAt: fixtureDate,
   }));
 }
 

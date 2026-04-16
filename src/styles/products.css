@@ -473,8 +473,8 @@
 
 /* Variant card grid */
 .product-variant-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-xs);
 }
 
@@ -507,6 +507,7 @@
 .product-variant-card-size {
   font-size: 0.7rem;
   font-weight: 700;
+  white-space: nowrap;
   color: var(--color-text-muted);
   letter-spacing: 0.02em;
   transition: color 0.18s ease;
@@ -521,10 +522,21 @@
 }
 
 .product-variant-card-price {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--color-text-subtle);
   transition: color 0.18s ease;
+}
+
+.product-variant-card-compare-at {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  opacity: 0.7;
 }
 
 .product-variant-card--active .product-variant-card-price {

@@ -6,7 +6,9 @@ import {
   buildLocationDocuments,
   buildProductDocuments,
   buildHubInventoryDocuments,
+  buildOnlineInventoryDocuments,
   buildCategoryDocuments,
+  buildVariantTemplateDocuments,
 } from '../../src/lib/fixtures';
 
 export type FirestoreValue =
@@ -145,6 +147,24 @@ export function buildStorefrontSeedArtifact(): FirestoreSeedArtifact {
     });
   }
 
+  for (const item of buildOnlineInventoryDocuments(fixtureDate)) {
+    documents.push({
+      collection: `inventory/${item.locationId}/items`,
+      docId: item.productId,
+      fields: toFirestoreFields({
+        productId: item.productId,
+        locationId: item.locationId,
+        inStock: item.inStock,
+        availableOnline: item.availableOnline,
+        availablePickup: item.availablePickup,
+        featured: item.featured,
+        quantity: item.quantity,
+        variantPricing: item.variantPricing,
+        updatedAt: item.updatedAt,
+      }),
+    });
+  }
+
   for (const promo of PROMO_FIXTURES) {
     documents.push({
       collection: 'promos',
@@ -193,6 +213,20 @@ export function buildStorefrontSeedArtifact(): FirestoreSeedArtifact {
       fields: toFirestoreFields(
         reviewDoc as unknown as Record<string, unknown>
       ),
+    });
+  }
+
+  for (const tpl of buildVariantTemplateDocuments(fixtureDate)) {
+    documents.push({
+      collection: 'variant-templates',
+      docId: tpl.id,
+      fields: toFirestoreFields({
+        key: tpl.key,
+        label: tpl.label,
+        rows: tpl.rows,
+        createdAt: tpl.createdAt,
+        updatedAt: tpl.updatedAt,
+      }),
     });
   }
 

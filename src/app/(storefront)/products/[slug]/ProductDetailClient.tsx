@@ -4,11 +4,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ProductImage } from '@/components/ProductImage';
 import { LOCATIONS } from '@/constants/locations';
-import {
-  getVariantsForCategory,
-  getSizeLabelForCategory,
-} from '@/constants/product-variants';
 import type { Product, ProductSummary, ProductStrain } from '@/types';
+import type { InventoryItem } from '@/types/inventory';
+import {
+  resolveVariantPricing,
+  type DisplayVariant,
+} from '@/lib/storefront/resolveVariantPricing';
+import { AddToCartButton } from '@/components/AddToCartButton';
 
 const STRAIN_LABELS: Record<ProductStrain, string> = {
   indica: 'Indica',
@@ -45,6 +47,8 @@ export default function ProductDetailClient({
   relatedProducts,
   coaSignedUrl,
   heroImageUrl,
+  variantPricing,
+  itemInStock = false,
 }: {
   product: Product;
   relatedProducts: ProductSummary[];
@@ -56,9 +60,18 @@ export default function ProductDetailClient({
    * preload it — fixing the LCP regression.
    */
   heroImageUrl?: string;
+  /** variantPricing from inventory/online/items/{slug} — drives variant selector */
+  variantPricing?: InventoryItem['variantPricing'];
+  /** Item-level inStock from inventory/online — fallback when variant-level flag absent */
+  itemInStock?: boolean;
 }) {
-  const variants = getVariantsForCategory(product.category);
-  const sizeLabel = getSizeLabelForCategory(product.category);
+  // Resolve display variants from product definition + online inventory pricing
+  const displayVariants: DisplayVariant[] = resolveVariantPricing(
+    product.variants,
+    variantPricing,
+    itemInStock
+  );
+  const hasOnlinePricing = displayVariants.length > 0;
 
   // Featured image is always first; gallery images follow in order.
   // heroImageUrl is a pre-resolved public URL (server-side) for faster LCP.
@@ -70,8 +83,12 @@ export default function ProductDetailClient({
   const [activeImage, setActiveImage] = useState<string | undefined>(
     allImages[0]
   );
-  const [selectedVariant, setSelectedVariant] = useState<string>(
-    variants[0]?.key ?? ''
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(
+    displayVariants[0]?.variantId ?? ''
+  );
+
+  const selectedVariant: DisplayVariant | undefined = displayVariants.find(
+    v => v.variantId === selectedVariantId
   );
 
   const locationNames = product.availableAt
@@ -213,32 +230,87 @@ export default function ProductDetailClient({
               </Link>
             </p>
 
-            {/* ── Pricing variants ─────────────────────────────────────── */}
-            <div className="product-pricing-block">
-              <span className="product-hero-tag-label">{sizeLabel}</span>
-              <div className="product-variant-grid">
-                {variants.map(v => (
-                  <button
-                    key={v.key}
-                    type="button"
-                    className={`product-variant-card${selectedVariant === v.key ? ' product-variant-card--active' : ''}`}
-                    onClick={() => setSelectedVariant(v.key)}
-                    aria-pressed={selectedVariant === v.key}
-                  >
-                    <span className="product-variant-card-size">{v.label}</span>
-                    <span className="product-variant-card-price">See in store</span>
-                  </button>
-                ))}
+            {/* ── Pricing variants ───────────────────────────────────────────── */}
+            {hasOnlinePricing ? (
+              <div className="product-pricing-block">
+                <span className="product-hero-tag-label">Select Size</span>
+                <div className="product-variant-grid">
+                  {displayVariants.map(v => (
+                    <button
+                      key={v.variantId}
+                      type="button"
+                      className={[
+                        'product-variant-card',
+                        selectedVariantId === v.variantId
+                          ? 'product-variant-card--active'
+                          : '',
+                        !v.inStock ? 'product-variant-card--oos' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      onClick={() => setSelectedVariantId(v.variantId)}
+                      aria-pressed={selectedVariantId === v.variantId}
+                      disabled={!v.inStock}
+                    >
+                      <span className="product-variant-card-size">
+                        {v.label}
+                      </span>
+                      <span className="product-variant-card-price">
+                        {v.inStock ? (
+                          <>
+                            ${(v.price / 100).toFixed(2)}
+                            {v.compareAtPrice !== undefined && (
+                              <span className="product-variant-card-compare-at">
+                                ${(v.compareAtPrice / 100).toFixed(2)}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          'Out of stock'
+                        )}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              product.variants &&
+              product.variants.length > 0 && (
+                <div className="product-pricing-block">
+                  <span className="product-hero-tag-label">Sizes</span>
+                  <div className="product-variant-grid">
+                    {product.variants.map(v => (
+                      <div
+                        key={v.variantId}
+                        className="product-variant-card product-variant-card--static"
+                      >
+                        <span className="product-variant-card-size">
+                          {v.label}
+                        </span>
+                        <span className="product-variant-card-price">
+                          See in store
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            )}
 
             {/* Primary CTA — above the fold */}
-            <Link
-              href="/locations"
-              className="btn btn-primary"
-            >
-              Find a Location Near You
-            </Link>
+            {hasOnlinePricing ? (
+              <AddToCartButton
+                productId={product.id}
+                productName={product.name}
+                productImage={product.image}
+                selectedVariant={selectedVariant}
+                showQtySelector
+              />
+            ) : (
+              <Link href="/locations" className="btn btn-primary">
+                Find a Location Near You
+              </Link>
+            )}
 
             {/* Info table — Terpenes + cannabinoid detail */}
             {(terpenes.length > 0 || hasLabData) && (
@@ -298,7 +370,9 @@ export default function ProductDetailClient({
       {coaSignedUrl && (
         <section className="product-coa-section asymmetry-section-stable">
           <div className="container">
-            <p className="product-coa-context">Third-party lab tested — view the full certificate of analysis</p>
+            <p className="product-coa-context">
+              Third-party lab tested — view the full certificate of analysis
+            </p>
             <a
               href={coaSignedUrl}
               target="_blank"

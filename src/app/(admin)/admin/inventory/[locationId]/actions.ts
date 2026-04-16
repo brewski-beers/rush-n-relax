@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/admin-auth';
 import { setInventoryItem } from '@/lib/repositories';
+import type { InventoryItem } from '@/types/inventory';
 
 export async function updateInventoryItem(
   locationId: string,
@@ -52,5 +53,28 @@ export async function updateInventoryItem(
   revalidatePath(`/admin/inventory/${locationId}`);
   revalidatePath('/admin/inventory');
   revalidatePath('/');
+  revalidatePath('/products');
+}
+
+export async function updateVariantPricing(
+  locationId: string,
+  productId: string,
+  variantPricing: NonNullable<InventoryItem['variantPricing']>
+): Promise<void> {
+  const actor = await requireRole('owner');
+
+  await setInventoryItem(
+    locationId,
+    productId,
+    { variantPricing, updatedBy: actor.email },
+    {
+      reason: 'price-update',
+      source: 'admin-ui',
+      updatedBy: actor.email,
+    }
+  );
+
+  revalidatePath(`/admin/inventory/${locationId}`);
+  revalidatePath('/admin/inventory');
   revalidatePath('/products');
 }

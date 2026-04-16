@@ -6,14 +6,18 @@ export {
   LOCATION_SLUGS,
   PRODUCT_FIXTURES,
   HUB_INVENTORY_FIXTURES,
+  ONLINE_INVENTORY_FIXTURES,
   PROMO_FIXTURES,
   CATEGORY_FIXTURES,
   buildLocationDocuments,
   buildLocationSummaries,
   buildProductDocuments,
   buildHubInventoryDocuments,
+  buildOnlineInventoryDocuments,
   buildPromoDocuments,
   buildCategoryDocuments,
+  VARIANT_TEMPLATE_FIXTURES,
+  buildVariantTemplateDocuments,
 } from './storefront';
 
 export { AUTH_USER_FIXTURES } from './auth';

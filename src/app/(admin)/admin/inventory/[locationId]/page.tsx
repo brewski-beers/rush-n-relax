@@ -7,7 +7,7 @@ import {
   listProducts,
   listInventoryForLocation,
 } from '@/lib/repositories';
-import { HUB_LOCATION_ID } from '@/lib/firebase/admin';
+import { HUB_LOCATION_ID, ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 import InventoryTable, { type InventoryRow } from './InventoryTable';
 
 interface Props {
@@ -19,6 +19,7 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
 
   const { locationId } = await params;
   const isHub = locationId === HUB_LOCATION_ID;
+  const isOnline = locationId === ONLINE_LOCATION_ID;
 
   const [locations, products, inventoryItems] = await Promise.all([
     listLocations(),
@@ -28,7 +29,9 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
 
   const location = isHub
     ? { name: 'RnR Hub', city: 'Warehouse', state: '' }
-    : locations.find(l => l.id === locationId);
+    : isOnline
+      ? { name: 'Online Store', city: 'Storefront', state: '' }
+      : locations.find(l => l.id === locationId);
 
   if (!location) notFound();
 
@@ -45,10 +48,16 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
       availableOnline: inv?.availableOnline ?? false,
       availablePickup: inv?.availablePickup ?? false,
       featured: inv?.featured ?? false,
+      variantPricing: inv?.variantPricing,
+      variants: product.variants,
     };
   });
 
-  const locationLabel = isHub ? 'RnR Hub' : `${location.name}`;
+  const locationLabel = isHub
+    ? 'RnR Hub'
+    : isOnline
+      ? 'Online Store'
+      : location.name;
 
   return (
     <>
@@ -60,6 +69,11 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
           Hub inventory. Toggle <strong>Available Online</strong> to list a
           product on the store, and <strong>Featured</strong> to spotlight it on
           the homepage.
+        </p>
+      ) : isOnline ? (
+        <p className="admin-section-desc">
+          Online storefront inventory. Set <strong>Variant Pricing</strong> here
+          to show prices and the Add to Cart button on the product page.
         </p>
       ) : (
         <p className="admin-section-desc">

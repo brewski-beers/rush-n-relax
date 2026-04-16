@@ -79,9 +79,5 @@ export function toDate(value: Timestamp | Date | string | undefined): Date {
   return new Date(value);
 }
 
-/**
- * Reserved inventory location ID for the RnR Hub (warehouse/non-physical).
- * Hub items can be flagged availableOnline: true to promote to the storefront.
- * No Firestore Location document exists for this ID — it is a code constant only.
- */
-export const HUB_LOCATION_ID = 'hub';
+// Re-exported here for backward compatibility — canonical source is src/constants/location-ids.ts
+export { HUB_LOCATION_ID, ONLINE_LOCATION_ID } from '@/constants/location-ids';
