@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/hooks/useCart';
 import { formatCents } from '@/utils/currency';
@@ -8,10 +8,66 @@ import { LOCATIONS } from '@/constants/locations';
 
 type FulfillmentType = 'pickup' | 'ship';
 
+interface LocationAvailability {
+  available: boolean;
+  unavailableItems: string[];
+}
+
+interface AvailabilityResult {
+  locations: Record<string, LocationAvailability>;
+}
+
+// Retail-only slugs from LOCATIONS (excludes hub/online virtuals)
+const RETAIL_LOCATION_SLUGS = new Set(LOCATIONS.map(l => l.slug));
+
 export default function CartPage() {
   const { items, removeItem, updateQty, subtotal, clearCart } = useCart();
   const [fulfillment, setFulfillment] = useState<FulfillmentType | null>(null);
   const [pickupLocation, setPickupLocation] = useState<string>('');
+
+  // Pickup availability state
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availability, setAvailability] = useState<AvailabilityResult | null>(
+    null
+  );
+  const [availabilityError, setAvailabilityError] = useState(false);
+
+  // Eligible pickup locations — those where all items are available
+  const eligibleLocations = LOCATIONS.filter(
+    loc =>
+      RETAIL_LOCATION_SLUGS.has(loc.slug) &&
+      availability?.locations[loc.slug]?.available === true
+  );
+
+  const checkAvailability = useCallback(async () => {
+    setAvailabilityLoading(true);
+    setAvailabilityError(false);
+    setAvailability(null);
+    setPickupLocation('');
+    try {
+      const payload = items.map(i => ({
+        productId: i.productId,
+        variantId: i.variantId,
+      }));
+      const res = await fetch(
+        `/api/cart/availability?items=${encodeURIComponent(JSON.stringify(payload))}`
+      );
+      if (!res.ok) throw new Error('Availability check failed');
+      const data = (await res.json()) as AvailabilityResult; // external API response, safe cast
+      setAvailability(data);
+    } catch {
+      setAvailabilityError(true);
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  }, [items]);
+
+  // Fetch availability whenever user selects pickup
+  useEffect(() => {
+    if (fulfillment === 'pickup') {
+      void checkAvailability();
+    }
+  }, [fulfillment, checkAvailability]);
 
   const canCheckout =
     fulfillment === 'ship' ||
@@ -200,21 +256,53 @@ export default function CartPage() {
               </div>
             </fieldset>
 
+            {/* Pickup location section */}
             {fulfillment === 'pickup' && (
               <div className="cart-pickup-location">
-                <label htmlFor="pickup-location">Select location</label>
-                <select
-                  id="pickup-location"
-                  value={pickupLocation}
-                  onChange={e => setPickupLocation(e.target.value)}
-                >
-                  <option value="">— Choose a location —</option>
-                  {LOCATIONS.map(loc => (
-                    <option key={loc.slug} value={loc.slug}>
-                      {loc.name}
-                    </option>
-                  ))}
-                </select>
+                {availabilityLoading && (
+                  <p className="cart-pickup-status">Checking availability…</p>
+                )}
+
+                {!availabilityLoading && availabilityError && (
+                  <p className="cart-pickup-status cart-pickup-status--error">
+                    Couldn&apos;t check availability.{' '}
+                    <button
+                      type="button"
+                      className="cart-pickup-retry"
+                      onClick={() => void checkAvailability()}
+                    >
+                      Try again
+                    </button>
+                  </p>
+                )}
+
+                {!availabilityLoading && availability && (
+                  <>
+                    {eligibleLocations.length === 0 ? (
+                      <p className="cart-pickup-status cart-pickup-status--unavailable">
+                        Your cart items aren&apos;t available for pickup at any
+                        location right now. Choose shipping or{' '}
+                        <Link href="/locations">visit us in store</Link>.
+                      </p>
+                    ) : (
+                      <>
+                        <label htmlFor="pickup-location">Select location</label>
+                        <select
+                          id="pickup-location"
+                          value={pickupLocation}
+                          onChange={e => setPickupLocation(e.target.value)}
+                        >
+                          <option value="">— Choose a location —</option>
+                          {eligibleLocations.map(loc => (
+                            <option key={loc.slug} value={loc.slug}>
+                              {loc.name}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
