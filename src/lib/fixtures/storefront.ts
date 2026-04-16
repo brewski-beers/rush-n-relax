@@ -8,6 +8,7 @@ import type {
   Promo,
 } from '@/types';
 import type { InventoryItem } from '@/types/inventory';
+import type { VariantTemplate } from '@/types/variant-template';
 import { ONLINE_LOCATION_ID } from '@/constants/location-ids';
 
 export const FIXTURE_DATASET_VERSION = '2026-03-14';
@@ -594,6 +595,93 @@ export function buildPromoDocuments(date: Date = fixtureDate): Promo[] {
     endDate: promo.endDate,
     createdAt: date,
     updatedAt: date,
+  }));
+}
+
+export const VARIANT_TEMPLATE_FIXTURES: readonly Omit<
+  VariantTemplate,
+  'id' | 'createdAt' | 'updatedAt'
+>[] = [
+  {
+    key: 'flower',
+    label: 'Flower (weight)',
+    rows: [
+      { label: '1g', weight: { value: 1, unit: 'g' } },
+      { label: '3.5g', weight: { value: 3.5, unit: 'g' } },
+      { label: '7g', weight: { value: 7, unit: 'g' } },
+      { label: '14g', weight: { value: 14, unit: 'g' } },
+      { label: '28g', weight: { value: 28, unit: 'g' } },
+    ],
+  },
+  {
+    key: 'preroll-qty',
+    label: 'Preroll (qty)',
+    rows: [
+      { label: '1-pack', quantity: 1 },
+      { label: '2-pack', quantity: 2 },
+      { label: '5-pack', quantity: 5 },
+    ],
+  },
+  {
+    key: 'preroll-weight',
+    label: 'Preroll (weight)',
+    rows: [
+      { label: '0.5g', weight: { value: 0.5, unit: 'g' } },
+      { label: '0.75g', weight: { value: 0.75, unit: 'g' } },
+      { label: '1g', weight: { value: 1, unit: 'g' } },
+      { label: '1.5g', weight: { value: 1.5, unit: 'g' } },
+    ],
+  },
+  {
+    key: 'concentrate',
+    label: 'Concentrate',
+    rows: [
+      { label: '0.5g', weight: { value: 0.5, unit: 'g' } },
+      { label: '1g', weight: { value: 1, unit: 'g' } },
+    ],
+  },
+  {
+    key: 'edible',
+    label: 'Edible (free-form)',
+    rows: [{ label: '' }],
+  },
+  {
+    key: 'vape',
+    label: 'Vape',
+    rows: [
+      { label: '0.5g cart', weight: { value: 0.5, unit: 'g' } },
+      { label: '1g cart', weight: { value: 1, unit: 'g' } },
+      { label: 'Disposable 1g', weight: { value: 1, unit: 'g' } },
+    ],
+  },
+  {
+    key: 'drink',
+    label: 'Drink',
+    rows: [
+      { label: 'Single Can', quantity: 1 },
+      { label: '2-pack', quantity: 2 },
+    ],
+  },
+  {
+    key: 'single',
+    label: 'Single / 1-pack',
+    rows: [{ label: '1-pack', quantity: 1 }],
+  },
+  {
+    key: 'custom',
+    label: 'Custom',
+    rows: [{ label: '' }],
+  },
+];
+
+export function buildVariantTemplateDocuments(
+  fixtureDate: Date
+): VariantTemplate[] {
+  return VARIANT_TEMPLATE_FIXTURES.map(t => ({
+    ...t,
+    id: t.key,
+    createdAt: fixtureDate,
+    updatedAt: fixtureDate,
   }));
 }
 

@@ -6,94 +6,21 @@
  * Manages the ProductVariant[] array for a product. Outputs a JSON blob
  * via a hidden input (name="variants") that the server action parses.
  *
- * Template presets are defined here; selecting one pre-populates rows.
- * Each row has: label (free-form) and variantId (auto-slugified, editable).
+ * Templates are loaded from Firestore (variant-templates collection) and passed
+ * in as the `variantTemplates` prop. Template chips replace the original <select>
+ * so each chip can have an inline delete button.
+ *
+ * A "Save as Template" button lets admins persist the current variant set.
  * Cards are drag-and-drop reorderable.
  */
 
 import { useState, useId, useRef } from 'react';
 import type { ProductVariant } from '@/types/product';
-
-// ── Template definitions ───────────────────────────────────────────────────
-
-interface VariantTemplate {
-  key: string;
-  label: string;
-  rows: Omit<ProductVariant, 'variantId'>[];
-}
-
-const TEMPLATES: VariantTemplate[] = [
-  {
-    key: 'flower',
-    label: 'Flower (weight)',
-    rows: [
-      { label: '1g', weight: { value: 1, unit: 'g' } },
-      { label: '3.5g', weight: { value: 3.5, unit: 'g' } },
-      { label: '7g', weight: { value: 7, unit: 'g' } },
-      { label: '14g', weight: { value: 14, unit: 'g' } },
-      { label: '28g', weight: { value: 28, unit: 'g' } },
-    ],
-  },
-  {
-    key: 'preroll-qty',
-    label: 'Preroll (qty)',
-    rows: [
-      { label: '1-pack', quantity: 1 },
-      { label: '2-pack', quantity: 2 },
-      { label: '5-pack', quantity: 5 },
-    ],
-  },
-  {
-    key: 'preroll-weight',
-    label: 'Preroll (weight)',
-    rows: [
-      { label: '0.5g', weight: { value: 0.5, unit: 'g' } },
-      { label: '0.75g', weight: { value: 0.75, unit: 'g' } },
-      { label: '1g', weight: { value: 1, unit: 'g' } },
-      { label: '1.5g', weight: { value: 1.5, unit: 'g' } },
-    ],
-  },
-  {
-    key: 'concentrate',
-    label: 'Concentrate',
-    rows: [
-      { label: '0.5g', weight: { value: 0.5, unit: 'g' } },
-      { label: '1g', weight: { value: 1, unit: 'g' } },
-    ],
-  },
-  {
-    key: 'edible',
-    label: 'Edible (free-form)',
-    rows: [{ label: '' }],
-  },
-  {
-    key: 'vape',
-    label: 'Vape',
-    rows: [
-      { label: '0.5g cart', weight: { value: 0.5, unit: 'g' } },
-      { label: '1g cart', weight: { value: 1, unit: 'g' } },
-      { label: 'Disposable 1g', weight: { value: 1, unit: 'g' } },
-    ],
-  },
-  {
-    key: 'drink',
-    label: 'Drink',
-    rows: [
-      { label: 'Single Can', quantity: 1 },
-      { label: '2-pack', quantity: 2 },
-    ],
-  },
-  {
-    key: 'single',
-    label: 'Single / 1-pack',
-    rows: [{ label: '1-pack', quantity: 1 }],
-  },
-  {
-    key: 'custom',
-    label: 'Custom',
-    rows: [{ label: '' }],
-  },
-];
+import type { VariantTemplate as StoredVariantTemplate } from '@/types/variant-template';
+import {
+  saveVariantTemplateAction,
+  deleteVariantTemplateAction,
+} from '@/app/(admin)/admin/products/actions';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -240,22 +167,116 @@ function VariantCard({
   );
 }
 
+// ── Save-as-Template inline form ───────────────────────────────────────────
+
+interface SaveTemplateFormProps {
+  variants: ProductVariant[];
+  onSaved: (tpl: StoredVariantTemplate) => void;
+  onCancel: () => void;
+}
+
+function SaveTemplateForm({
+  variants,
+  onSaved,
+  onCancel,
+}: SaveTemplateFormProps) {
+  const [label, setLabel] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const key = slugify(label);
+
+  async function handleSave() {
+    if (!key) {
+      setError('Label is required.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const rows = variants.map(({ variantId: _vid, ...rest }) => rest);
+    const result = await saveVariantTemplateAction(key, label, rows);
+    setSaving(false);
+    if (result.ok) {
+      // Build an optimistic template object to update parent state immediately
+      const optimistic: StoredVariantTemplate = {
+        id: result.id,
+        key,
+        label,
+        rows,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      onSaved(optimistic);
+    } else {
+      setError(result.error);
+    }
+  }
+
+  return (
+    <div className="variant-editor-save-tpl-form">
+      <label>
+        <span className="admin-hint">Template label</span>
+        <input
+          type="text"
+          value={label}
+          onChange={e => setLabel(e.target.value)}
+          placeholder="e.g. Flower (weight)"
+          autoFocus
+        />
+      </label>
+      {label && (
+        <span className="admin-hint">
+          Key: <code>{key || '—'}</code>
+        </span>
+      )}
+      {error && <p className="admin-error">{error}</p>}
+      <div className="variant-editor-save-tpl-actions">
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={saving || !key}
+          className="admin-btn-primary"
+        >
+          {saving ? 'Saving…' : 'Save Template'}
+        </button>
+        <button type="button" onClick={onCancel} className="admin-btn-ghost">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 interface VariantEditorProps {
   /** Initial variants (from existing product), or empty for new products */
   initialVariants?: ProductVariant[];
+  /** Stored variant templates from Firestore — passed from server component */
+  variantTemplates?: StoredVariantTemplate[];
 }
 
-export function VariantEditor({ initialVariants = [] }: VariantEditorProps) {
+export function VariantEditor({
+  initialVariants = [],
+  variantTemplates = [],
+}: VariantEditorProps) {
   const [variants, setVariants] = useState<ProductVariant[]>(initialVariants);
+  const [templates, setTemplates] =
+    useState<StoredVariantTemplate[]>(variantTemplates);
+  const [showSaveForm, setShowSaveForm] = useState(false);
   const dragIndexRef = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  function applyTemplate(templateKey: string) {
-    const tpl = TEMPLATES.find(t => t.key === templateKey);
-    if (!tpl) return;
+  function applyTemplate(tpl: StoredVariantTemplate) {
     setVariants(buildRows(tpl.rows));
+  }
+
+  async function handleDeleteTemplate(id: string) {
+    const result = await deleteVariantTemplateAction(id);
+    if (result.ok) {
+      setTemplates(prev => prev.filter(t => t.id !== id));
+    }
+    // On failure silently preserve state — the chip stays visible
   }
 
   function handleChange(
@@ -331,26 +352,37 @@ export function VariantEditor({ initialVariants = [] }: VariantEditorProps) {
         in Inventory.
       </span>
 
+      {/* Template chips */}
       <div className="variant-editor-template-row">
-        <label>
-          Template
-          <select
-            onChange={e => applyTemplate(e.target.value)}
-            defaultValue=""
-            aria-label="Select a variant template"
-          >
-            <option value="" disabled>
-              Pre-fill from template&hellip;
-            </option>
-            {TEMPLATES.map(t => (
-              <option key={t.key} value={t.key}>
-                {t.label}
-              </option>
+        <span className="admin-hint">Templates</span>
+        {templates.length === 0 ? (
+          <span className="admin-hint">No templates saved yet.</span>
+        ) : (
+          <div className="variant-editor-template-chips">
+            {templates.map(tpl => (
+              <span key={tpl.id} className="tag-chip">
+                <button
+                  type="button"
+                  className="variant-editor-chip-apply"
+                  onClick={() => applyTemplate(tpl)}
+                  title={`Apply template: ${tpl.label}`}
+                >
+                  {tpl.label}
+                </button>
+                <button
+                  type="button"
+                  className="tag-chip-remove"
+                  onClick={() => void handleDeleteTemplate(tpl.id)}
+                  aria-label={`Delete template ${tpl.label}`}
+                >
+                  ✕
+                </button>
+              </span>
             ))}
-          </select>
-        </label>
+          </div>
+        )}
         <span className="admin-hint">
-          Selecting a template replaces existing rows.
+          Clicking a template replaces existing rows.
         </span>
       </div>
 
@@ -377,6 +409,36 @@ export function VariantEditor({ initialVariants = [] }: VariantEditorProps) {
       <button type="button" onClick={addRow} className="admin-add-row-btn">
         + Add variant
       </button>
+
+      {/* Save as Template */}
+      {showSaveForm ? (
+        <SaveTemplateForm
+          variants={variants}
+          onSaved={tpl => {
+            setTemplates(prev => {
+              // Replace existing template with same key, or append
+              const idx = prev.findIndex(t => t.key === tpl.key);
+              if (idx !== -1) {
+                const next = [...prev];
+                next[idx] = tpl;
+                return next;
+              }
+              return [...prev, tpl];
+            });
+            setShowSaveForm(false);
+          }}
+          onCancel={() => setShowSaveForm(false)}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowSaveForm(true)}
+          className="variant-editor-save-tpl-btn"
+          disabled={variants.length === 0}
+        >
+          Save as Template
+        </button>
+      )}
 
       {/* Hidden input carries the serialized variants JSON to the server action */}
       <input type="hidden" name="variants" value={JSON.stringify(variants)} />

@@ -7,14 +7,19 @@ import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { CoaSelector } from '@/components/admin/CoaSelector';
 import { TagInput } from '@/components/admin/TagInput';
 import { VariantEditor } from '@/components/admin/VariantEditor';
-import type { Product, ProductCategorySummary } from '@/types';
+import type { Product, ProductCategorySummary, VariantTemplate } from '@/types';
 
 interface Props {
   product: Product;
   categories: ProductCategorySummary[];
+  variantTemplates: VariantTemplate[];
 }
 
-export function ProductEditForm({ product, categories }: Props) {
+export function ProductEditForm({
+  product,
+  categories,
+  variantTemplates,
+}: Props) {
   const boundAction = updateProduct.bind(null, product.slug);
   const [state, formAction, pending] = useActionState(boundAction, null);
   const [imageUploading, setImageUploading] = useState(false);
@@ -87,7 +92,10 @@ export function ProductEditForm({ product, categories }: Props) {
         <CoaSelector currentCoaUrl={product.coaUrl} />
       </fieldset>
 
-      <VariantEditor initialVariants={product.variants ?? []} />
+      <VariantEditor
+        initialVariants={product.variants ?? []}
+        variantTemplates={variantTemplates}
+      />
 
       <fieldset className="admin-fieldset">
         <legend>Cannabis Profile</legend>

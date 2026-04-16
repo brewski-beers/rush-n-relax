@@ -16,6 +16,8 @@ export {
   buildOnlineInventoryDocuments,
   buildPromoDocuments,
   buildCategoryDocuments,
+  VARIANT_TEMPLATE_FIXTURES,
+  buildVariantTemplateDocuments,
 } from './storefront';
 
 export { AUTH_USER_FIXTURES } from './auth';

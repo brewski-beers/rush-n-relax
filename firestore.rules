@@ -52,6 +52,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Variant templates: server-side only via Admin SDK
+    match /variant-templates/{docId} {
+      allow read, write: if false;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

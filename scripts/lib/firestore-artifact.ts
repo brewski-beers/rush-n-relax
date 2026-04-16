@@ -8,6 +8,7 @@ import {
   buildHubInventoryDocuments,
   buildOnlineInventoryDocuments,
   buildCategoryDocuments,
+  buildVariantTemplateDocuments,
 } from '../../src/lib/fixtures';
 
 export type FirestoreValue =
@@ -212,6 +213,20 @@ export function buildStorefrontSeedArtifact(): FirestoreSeedArtifact {
       fields: toFirestoreFields(
         reviewDoc as unknown as Record<string, unknown>
       ),
+    });
+  }
+
+  for (const tpl of buildVariantTemplateDocuments(fixtureDate)) {
+    documents.push({
+      collection: 'variant-templates',
+      docId: tpl.id,
+      fields: toFirestoreFields({
+        key: tpl.key,
+        label: tpl.label,
+        rows: tpl.rows,
+        createdAt: tpl.createdAt,
+        updatedAt: tpl.updatedAt,
+      }),
     });
   }
 

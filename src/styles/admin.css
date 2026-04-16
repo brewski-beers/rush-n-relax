@@ -1866,3 +1866,98 @@
   border-color: var(--admin-accent);
   color: var(--admin-accent);
 }
+
+/* VariantEditor — template chip list */
+.variant-editor-template-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ve-move-gap);
+}
+
+/* Inline apply button inside a tag-chip (no extra padding — chip provides it) */
+.variant-editor-chip-apply {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+}
+
+/* Save as Template button */
+.variant-editor-save-tpl-btn {
+  align-self: flex-start;
+  background: none;
+  border: 1px dashed var(--admin-border-strong);
+  border-radius: 6px;
+  color: var(--admin-muted);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 0.88rem);
+  line-height: 1;
+  padding: var(--ve-add-btn-padding);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.variant-editor-save-tpl-btn:hover:not(:disabled) {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+}
+
+.variant-editor-save-tpl-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Save-as-template inline form */
+.variant-editor-save-tpl-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ve-move-gap);
+  padding: var(--ve-card-padding);
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+}
+
+.variant-editor-save-tpl-actions {
+  display: flex;
+  gap: var(--ve-item-gap);
+}
+
+/* Generic admin button variants used in save-template form */
+.admin-btn-primary {
+  background: var(--admin-accent);
+  border: none;
+  border-radius: 6px;
+  color: var(--admin-bg);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 0.88rem);
+  font-weight: 600;
+  padding: var(--ve-add-btn-padding);
+  transition: opacity 0.15s ease;
+}
+
+.admin-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-btn-ghost {
+  background: none;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 6px;
+  color: var(--admin-muted);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 0.88rem);
+  padding: var(--ve-add-btn-padding);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.admin-btn-ghost:hover {
+  border-color: var(--admin-muted);
+  color: var(--admin-fg);
+}
