@@ -56,6 +56,17 @@ export interface Product {
   effects?: string[];
   /** Flavor descriptors, e.g. ['Citrus', 'Pine', 'Earthy'] */
   flavors?: string[];
+  /** Retail pricing — set in admin; omitted if product is not sold online */
+  pricing?: {
+    /** Retail price in cents */
+    price: number;
+    /** Optional compare-at / MSRP price in cents for strikethrough display */
+    compareAtPrice?: number;
+  };
+  /** True if this product can be purchased online (ship or pickup) */
+  availableOnline?: boolean;
+  /** True if this product can be reserved for in-store pickup */
+  availablePickup?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

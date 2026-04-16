@@ -1,0 +1,310 @@
+/* ── Cart Page ────────────────────────────────────────────────────────── */
+
+.cart-page {
+  padding-top: var(--section-padding-top);
+  padding-bottom: var(--section-padding-bottom);
+}
+
+/* Two-column layout: items left, summary right; stacks on mobile */
+.cart-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+}
+
+@media (min-width: 768px) {
+  .cart-layout {
+    grid-template-columns: 1fr 320px;
+    align-items: start;
+  }
+}
+
+/* ── Cart Table ───────────────────────────────────────────────────────── */
+
+.cart-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.cart-table thead th {
+  text-align: left;
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cart-table tbody td {
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.cart-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Qty Controls ─────────────────────────────────────────────────────── */
+
+.cart-qty-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* .cart-qty-btn is shared with CartDrawer — defined in CartDrawer.css */
+
+/* ── Remove Button ────────────────────────────────────────────────────── */
+
+.cart-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  padding: var(--space-xs);
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.cart-remove-btn:hover {
+  color: var(--color-text);
+}
+
+/* ── Empty State ──────────────────────────────────────────────────────── */
+
+.cart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-3xl) var(--space-sm);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+/* ── Cart Summary Aside ───────────────────────────────────────────────── */
+
+.cart-summary {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+@media (min-width: 768px) {
+  .cart-summary {
+    position: sticky;
+    top: var(--space-lg);
+  }
+}
+
+.cart-summary h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ── Summary Lines ────────────────────────────────────────────────────── */
+
+.cart-summary-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-sm);
+}
+
+.cart-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+.cart-summary-row dt,
+.cart-summary-row dd {
+  margin: 0;
+}
+
+.cart-summary-total {
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: 1.0625rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+/* ── Fulfillment Selector ─────────────────────────────────────────────── */
+
+.cart-fulfillment {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.cart-fulfillment legend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  padding: 0 var(--space-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cart-fulfillment-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+  font-size: 0.9375rem;
+  padding: var(--space-xs) 0;
+}
+
+.cart-fulfillment-option input[type='radio'] {
+  accent-color: var(--color-accent);
+}
+
+/* ── Pickup Location Select ───────────────────────────────────────────── */
+
+.cart-pickup-location {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.cart-pickup-location label {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.cart-pickup-location select {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  width: 100%;
+}
+
+/* ── Checkout & Clear Buttons ─────────────────────────────────────────── */
+
+.cart-checkout-btn {
+  width: 100%;
+  text-align: center;
+}
+
+.cart-clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: var(--space-xs) 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+
+.cart-clear-btn:hover {
+  color: var(--color-text);
+}
+
+/* ── Order Confirmation Page ──────────────────────────────────────────── */
+
+.order-confirmation-page {
+  padding-top: var(--section-padding-top);
+  padding-bottom: var(--section-padding-bottom);
+}
+
+.order-status {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.order-status h1 {
+  margin: 0;
+}
+
+.order-status--paid h1 {
+  color: var(--color-accent);
+}
+
+.order-status--failed h1 {
+  color: var(--color-error);
+}
+
+.order-status--pending h1 {
+  color: var(--color-text);
+}
+
+.order-status--voided h1 {
+  color: var(--color-text-muted);
+}
+
+/* ── Order Items Table ────────────────────────────────────────────────── */
+
+.order-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.order-items-table th,
+.order-items-table td {
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.order-items-table thead th {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.order-items-table tfoot td {
+  border-top: 2px solid var(--color-border);
+  border-bottom: none;
+}
+
+/* ── AddToCartButton ──────────────────────────────────────────────────── */
+
+.add-to-cart-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.add-to-cart-qty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.add-to-cart-btn {
+  flex: 1;
+  min-width: 140px;
+}

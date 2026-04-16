@@ -7,6 +7,8 @@ import { useNavigation } from '@/contexts/useNavigation';
 import { AmbientOverlay } from '@/components/AmbientOverlay';
 import { AgeGate } from '@/components/AgeGate';
 import { Navigation } from '@/components/Navigation';
+import { CartDrawer, CartIconButton } from '@/components/CartDrawer';
+import { CartProvider } from '@/contexts/CartContext';
 import { isRouteActive } from '@/utils/routeMatching';
 
 const NAV_LINKS = [
@@ -125,6 +127,7 @@ export function StorefrontContent({
   children,
 }: Props) {
   const [isAgeVerified, setIsAgeVerified] = useState(initiallyVerified);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -132,22 +135,31 @@ export function StorefrontContent({
   }, [pathname]);
 
   return (
-    <div className="root-layout">
-      {/* AmbientOverlay renders via portal — persists across both states */}
-      <AmbientOverlay />
-      <div id="ambient-portal" />
+    <CartProvider>
+      <div className="root-layout">
+        {/* AmbientOverlay renders via portal — persists across both states */}
+        <AmbientOverlay />
+        <div id="ambient-portal" />
 
-      {!isAgeVerified ? (
-        <div className="age-gate-screen">
-          <AgeGate onVerified={() => setIsAgeVerified(true)} />
-        </div>
-      ) : (
-        <>
-          <Navigation isAdminAuthenticated={isAdminAuthenticated} />
-          <DesktopModal />
-          <div className="content-wrapper">{children}</div>
-        </>
-      )}
-    </div>
+        {!isAgeVerified ? (
+          <div className="age-gate-screen">
+            <AgeGate onVerified={() => setIsAgeVerified(true)} />
+          </div>
+        ) : (
+          <>
+            <Navigation
+              isAdminAuthenticated={isAdminAuthenticated}
+              cartSlot={<CartIconButton onClick={() => setIsCartOpen(true)} />}
+            />
+            <DesktopModal />
+            <div className="content-wrapper">{children}</div>
+            <CartDrawer
+              isOpen={isCartOpen}
+              onClose={() => setIsCartOpen(false)}
+            />
+          </>
+        )}
+      </div>
+    </CartProvider>
   );
 }

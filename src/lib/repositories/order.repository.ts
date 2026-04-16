@@ -11,38 +11,6 @@ function ordersCol() {
   return getAdminFirestore().collection('orders');
 }
 
-// ── Write operations ──────────────────────────────────────────────────────
-
-/**
- * Create a new order. Auto-generates an ID and sets createdAt/updatedAt.
- * Returns the new document ID.
- */
-export async function createOrder(
-  data: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>
-): Promise<string> {
-  const col = ordersCol();
-  const now = new Date();
-  const docRef = col.doc();
-  await docRef.set({ ...data, createdAt: now, updatedAt: now });
-  return docRef.id;
-}
-
-/**
- * Update the status (and optionally the Redde transaction ID) on an order.
- * Always sets updatedAt.
- */
-export async function updateOrderStatus(
-  id: string,
-  status: OrderStatus,
-  reddeTxnId?: string
-): Promise<void> {
-  const update: Record<string, unknown> = { status, updatedAt: new Date() };
-  if (reddeTxnId !== undefined) {
-    update.reddeTxnId = reddeTxnId;
-  }
-  await ordersCol().doc(id).update(update);
-}
-
 // ── Read operations ───────────────────────────────────────────────────────
 
 /**
@@ -52,9 +20,40 @@ export async function updateOrderStatus(
 export async function getOrder(id: string): Promise<Order | null> {
   const doc = await ordersCol().doc(id).get();
   if (!doc.exists) return null;
-  const d = doc.data();
-  if (!d) return null;
-  return docToOrder(doc.id, d);
+  const data = doc.data();
+  if (!data) return null;
+  return docToOrder(doc.id, data);
+}
+
+// ── Write operations ──────────────────────────────────────────────────────
+
+/**
+ * Create a new order. Auto-generates an ID and sets createdAt/updatedAt.
+ * Returns the new document ID.
+ */
+export async function createOrder(
+  data: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<string> {
+  const now = new Date();
+  const docRef = ordersCol().doc();
+  await docRef.set({ ...data, createdAt: now, updatedAt: now });
+  return docRef.id;
+}
+
+/**
+ * Update the status of an order and optionally set the Redde transaction ID.
+ * Always updates updatedAt.
+ */
+export async function updateOrderStatus(
+  id: string,
+  status: OrderStatus,
+  reddeTxnId?: string
+): Promise<void> {
+  const patch: Record<string, unknown> = { status, updatedAt: new Date() };
+  if (reddeTxnId !== undefined) {
+    patch.reddeTxnId = reddeTxnId;
+  }
+  await ordersCol().doc(id).update(patch);
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────

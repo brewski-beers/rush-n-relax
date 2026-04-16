@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ProductImage } from '@/components/ProductImage';
+import { AddToCartButton } from '@/components/AddToCartButton';
 import { LOCATIONS } from '@/constants/locations';
 import {
   getVariantsForCategory,
@@ -226,19 +227,22 @@ export default function ProductDetailClient({
                     aria-pressed={selectedVariant === v.key}
                   >
                     <span className="product-variant-card-size">{v.label}</span>
-                    <span className="product-variant-card-price">See in store</span>
+                    <span className="product-variant-card-price">
+                      See in store
+                    </span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Primary CTA — above the fold */}
-            <Link
-              href="/locations"
-              className="btn btn-primary"
-            >
-              Find a Location Near You
-            </Link>
+            {/* Primary CTA — add to cart if pricing exists, otherwise in-store nudge */}
+            <AddToCartButton product={product} />
+
+            <p className="product-try-in-store-nudge">
+              <Link href="/locations" className="product-try-in-store-link">
+                Or try in store — find a location near you →
+              </Link>
+            </p>
 
             {/* Info table — Terpenes + cannabinoid detail */}
             {(terpenes.length > 0 || hasLabData) && (
@@ -298,7 +302,9 @@ export default function ProductDetailClient({
       {coaSignedUrl && (
         <section className="product-coa-section asymmetry-section-stable">
           <div className="container">
-            <p className="product-coa-context">Third-party lab tested — view the full certificate of analysis</p>
+            <p className="product-coa-context">
+              Third-party lab tested — view the full certificate of analysis
+            </p>
             <a
               href={coaSignedUrl}
               target="_blank"
