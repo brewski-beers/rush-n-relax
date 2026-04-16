@@ -6,6 +6,7 @@ import { updateProduct } from './actions';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { CoaSelector } from '@/components/admin/CoaSelector';
 import { TagInput } from '@/components/admin/TagInput';
+import { VariantEditor } from '@/components/admin/VariantEditor';
 import type { Product, ProductCategorySummary } from '@/types';
 
 interface Props {
@@ -85,6 +86,8 @@ export function ProductEditForm({ product, categories }: Props) {
         <legend>Certificate of Analysis (COA)</legend>
         <CoaSelector currentCoaUrl={product.coaUrl} />
       </fieldset>
+
+      <VariantEditor initialVariants={product.variants ?? []} />
 
       <fieldset className="admin-fieldset">
         <legend>Cannabis Profile</legend>

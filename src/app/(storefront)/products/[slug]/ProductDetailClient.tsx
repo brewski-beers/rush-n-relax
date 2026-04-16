@@ -4,10 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ProductImage } from '@/components/ProductImage';
 import { LOCATIONS } from '@/constants/locations';
-import {
-  getVariantsForCategory,
-  getSizeLabelForCategory,
-} from '@/constants/product-variants';
 import type { Product, ProductSummary, ProductStrain } from '@/types';
 
 const STRAIN_LABELS: Record<ProductStrain, string> = {
@@ -57,8 +53,10 @@ export default function ProductDetailClient({
    */
   heroImageUrl?: string;
 }) {
-  const variants = getVariantsForCategory(product.category);
-  const sizeLabel = getSizeLabelForCategory(product.category);
+  // Use product-level variants if defined; otherwise show no variant selector.
+  // Full variant/pricing resolution is done via resolveVariantPricing (see #135/#136).
+  const variants = product.variants ?? [];
+  const sizeLabel = 'Select Size';
 
   // Featured image is always first; gallery images follow in order.
   // heroImageUrl is a pre-resolved public URL (server-side) for faster LCP.
@@ -71,7 +69,7 @@ export default function ProductDetailClient({
     allImages[0]
   );
   const [selectedVariant, setSelectedVariant] = useState<string>(
-    variants[0]?.key ?? ''
+    variants[0]?.variantId ?? ''
   );
 
   const locationNames = product.availableAt
@@ -219,24 +217,23 @@ export default function ProductDetailClient({
               <div className="product-variant-grid">
                 {variants.map(v => (
                   <button
-                    key={v.key}
+                    key={v.variantId}
                     type="button"
-                    className={`product-variant-card${selectedVariant === v.key ? ' product-variant-card--active' : ''}`}
-                    onClick={() => setSelectedVariant(v.key)}
-                    aria-pressed={selectedVariant === v.key}
+                    className={`product-variant-card${selectedVariant === v.variantId ? ' product-variant-card--active' : ''}`}
+                    onClick={() => setSelectedVariant(v.variantId)}
+                    aria-pressed={selectedVariant === v.variantId}
                   >
                     <span className="product-variant-card-size">{v.label}</span>
-                    <span className="product-variant-card-price">See in store</span>
+                    <span className="product-variant-card-price">
+                      See in store
+                    </span>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Primary CTA — above the fold */}
-            <Link
-              href="/locations"
-              className="btn btn-primary"
-            >
+            <Link href="/locations" className="btn btn-primary">
               Find a Location Near You
             </Link>
 
@@ -298,7 +295,9 @@ export default function ProductDetailClient({
       {coaSignedUrl && (
         <section className="product-coa-section asymmetry-section-stable">
           <div className="container">
-            <p className="product-coa-context">Third-party lab tested — view the full certificate of analysis</p>
+            <p className="product-coa-context">
+              Third-party lab tested — view the full certificate of analysis
+            </p>
             <a
               href={coaSignedUrl}
               target="_blank"
