@@ -81,6 +81,24 @@
   --admin-placeholder-color: rgba(173, 184, 203, 0.75);
   --admin-fieldset-space: 0 0 1rem;
   --admin-fieldset-padding: 0.95rem;
+
+  /* VariantEditor */
+  --ve-list-gap: 0.5rem;
+  --ve-item-gap: 0.5rem;
+  --ve-move-gap: 0.2rem;
+  --ve-move-btn-padding: 0.25rem 0.4rem;
+  --ve-card-gap: 0.75rem;
+  --ve-card-padding: 0.75rem 0.85rem;
+  --ve-fields-gap: 0.75rem;
+  --ve-field-label-gap: 0.3rem;
+  --ve-delete-padding: 0.35rem 0.5rem;
+  --ve-delete-border: 1px solid rgba(255, 127, 148, 0.3);
+  --ve-delete-hover-bg: rgba(255, 127, 148, 0.1);
+  --ve-delete-hover-border: rgba(255, 127, 148, 0.65);
+  --ve-drag-over-bg: rgba(213, 179, 106, 0.06);
+  --ve-drag-over-shadow: 0 0 0 2px rgba(213, 179, 106, 0.25);
+  --ve-template-row-gap: 1rem;
+  --ve-add-btn-padding: 0.45rem 1rem;
   --admin-legend-color: #f3e5c5;
   --admin-legend-padding: 0 0.35rem;
   --admin-checkbox-gap: 0.5rem;
@@ -1692,4 +1710,159 @@
 
 .coa-upload-remove:hover {
   color: var(--admin-error);
+}
+
+/* ── VariantEditor ───────────────────────────────────────────────────────── */
+
+.variant-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ve-card-gap);
+}
+
+.variant-editor-template-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ve-template-row-gap);
+  flex-wrap: wrap;
+}
+
+.variant-editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ve-list-gap);
+}
+
+/* Outer wrapper: arrows + card side by side */
+.variant-editor-item {
+  display: flex;
+  align-items: stretch;
+  gap: var(--ve-item-gap);
+}
+
+/* Move arrows column — outside the card */
+.variant-editor-move {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--ve-move-gap);
+  flex-shrink: 0;
+}
+
+.variant-editor-move-btn {
+  background: none;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: var(--ve-move-btn-padding);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.variant-editor-move-btn:hover:not(:disabled) {
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text);
+}
+
+.variant-editor-move-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.25;
+}
+
+/* Card */
+.variant-editor-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--ve-card-gap);
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  padding: var(--ve-card-padding);
+  cursor: grab;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.variant-editor-card:active {
+  cursor: grabbing;
+}
+
+.variant-editor-item--drag-over .variant-editor-card {
+  border-color: var(--admin-accent);
+  box-shadow: var(--ve-drag-over-shadow);
+  background-color: var(--ve-drag-over-bg);
+}
+
+/* Drag handle glyph */
+.variant-editor-card-drag-handle {
+  color: var(--admin-text-subtle);
+  font-size: 1rem;
+  flex-shrink: 0;
+  user-select: none;
+  cursor: grab;
+  line-height: 1;
+}
+
+/* Fields inside card — grow to fill */
+.variant-editor-card-fields {
+  display: flex;
+  gap: var(--ve-fields-gap);
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.variant-editor-card-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ve-field-label-gap);
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Delete button — far right, red */
+.variant-editor-delete-btn {
+  background: none;
+  border: var(--ve-delete-border);
+  border-radius: 6px;
+  color: var(--admin-error);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: var(--ve-delete-padding);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.variant-editor-delete-btn:hover {
+  background-color: var(--ve-delete-hover-bg);
+  border-color: var(--ve-delete-hover-border);
+}
+
+/* Add variant button */
+.admin-add-row-btn {
+  align-self: flex-start;
+  background: none;
+  border: 1px dashed var(--admin-border-strong);
+  border-radius: 8px;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: 0.88rem;
+  padding: var(--ve-add-btn-padding);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.admin-add-row-btn:hover {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
 }
