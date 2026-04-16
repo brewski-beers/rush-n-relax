@@ -258,12 +258,12 @@ export default function ProductDetailClient({
                       <span className="product-variant-card-price">
                         {v.inStock ? (
                           <>
+                            ${(v.price / 100).toFixed(2)}
                             {v.compareAtPrice !== undefined && (
                               <span className="product-variant-card-compare-at">
                                 ${(v.compareAtPrice / 100).toFixed(2)}
                               </span>
                             )}
-                            ${(v.price / 100).toFixed(2)}
                           </>
                         ) : (
                           'Out of stock'
