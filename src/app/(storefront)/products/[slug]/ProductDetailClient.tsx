@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ProductImage } from '@/components/ProductImage';
+import { AddToCartButton } from '@/components/AddToCartButton';
 import { LOCATIONS } from '@/constants/locations';
 import type { Product, ProductSummary, ProductStrain } from '@/types';
 import type { InventoryItem } from '@/types/inventory';
@@ -10,7 +11,6 @@ import {
   resolveVariantPricing,
   type DisplayVariant,
 } from '@/lib/storefront/resolveVariantPricing';
-import { AddToCartButton } from '@/components/AddToCartButton';
 
 const STRAIN_LABELS: Record<ProductStrain, string> = {
   indica: 'Indica',
@@ -302,7 +302,7 @@ export default function ProductDetailClient({
               <AddToCartButton
                 productId={product.id}
                 productName={product.name}
-                productImage={product.image}
+                productImage={heroImageUrl ?? product.image}
                 selectedVariant={selectedVariant}
                 showQtySelector
               />

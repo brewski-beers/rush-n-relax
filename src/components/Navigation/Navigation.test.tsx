@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { Navigation } from './index';
 import { NavigationProvider } from '@/contexts/NavigationContext';
+import { CartProvider } from '@/contexts/CartContext';
 
 const { pushMock, refreshMock, signOutMock, fetchMock, initializeAppMock } =
   vi.hoisted(() => ({
@@ -71,9 +72,11 @@ vi.mock('../../constants/branding', () => ({
 }));
 
 const NavigationWrapped = () => (
-  <NavigationProvider>
-    <Navigation />
-  </NavigationProvider>
+  <CartProvider>
+    <NavigationProvider>
+      <Navigation />
+    </NavigationProvider>
+  </CartProvider>
 );
 
 const NavigationWrappedWithAuth = ({
@@ -81,9 +84,11 @@ const NavigationWrappedWithAuth = ({
 }: {
   isAdminAuthenticated: boolean;
 }) => (
-  <NavigationProvider>
-    <Navigation isAdminAuthenticated={isAdminAuthenticated} />
-  </NavigationProvider>
+  <CartProvider>
+    <NavigationProvider>
+      <Navigation isAdminAuthenticated={isAdminAuthenticated} />
+    </NavigationProvider>
+  </CartProvider>
 );
 
 describe('Navigation Component', () => {

@@ -12,20 +12,20 @@ export interface OrderItem {
   productId: string;
   productName: string;
   quantity: number;
-  /** Cents */
+  /** cents */
   unitPrice: number;
-  /** Cents */
+  /** cents */
   lineTotal: number;
 }
 
 export interface Order {
   id: string;
   items: OrderItem[];
-  /** Cents */
+  /** cents */
   subtotal: number;
-  /** Cents */
+  /** cents */
   tax: number;
-  /** Cents */
+  /** cents */
   total: number;
   locationId: string;
   fulfillmentType: FulfillmentType;

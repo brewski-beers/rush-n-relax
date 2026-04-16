@@ -3,7 +3,7 @@
  * Lives at: inventory/{locationId}/items/{productId}
  *
  * locationId can be a retail location slug or HUB_LOCATION_ID ('hub').
- * Hub items support availableOnline to promote stock to the storefront.
+ * Online Store items support availableOnline to promote stock to the storefront.
  */
 export interface InventoryItem {
   /** References products/{productId} */
@@ -13,21 +13,21 @@ export interface InventoryItem {
   /** Whether this product is currently in stock at this location */
   inStock: boolean;
   /**
-   * Hub only — when true, product is listed for online purchase and ships from hub.
+   * Online Store only — when true, product is listed for online purchase.
    * Always false for retail locations.
    */
   availableOnline: boolean;
   /**
    * Retail locations only — when true, product can be purchased online for
    * in-store pickup at this location. Deducts from this location's inventory.
-   * Always false for hub.
+   * Always false for Online Store.
    */
   availablePickup: boolean;
   /**
    * When true, product is spotlighted at this location.
-   * Hub: shown in homepage "What We Carry" (requires availableOnline = true).
+   * Online Store: shown in homepage "What We Carry" (requires availableOnline = true).
    * Retail: shown in per-store featured section (requires inStock = true).
-   * Always false when inStock = false; hub also clears when availableOnline = false.
+   * Always false when inStock = false; Online Store also clears when availableOnline = false.
    */
   featured: boolean;
   /** Optional unit count — for future staff-facing stock level display */

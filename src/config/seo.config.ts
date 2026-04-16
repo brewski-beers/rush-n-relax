@@ -94,7 +94,6 @@ export const seoConfig = {
   redirects: [
     { source: '/home', destination: '/', permanent: true },
     { source: '/reviews', destination: '/', permanent: true },
-    { source: '/cart', destination: '/', permanent: true },
   ],
 
   structuredData: {

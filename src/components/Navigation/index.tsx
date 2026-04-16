@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
+import { useCart } from '@/hooks/useCart';
 import { signOut } from 'firebase/auth';
 import { initializeApp } from '@/firebase';
 import { useNavigation } from '../../contexts/useNavigation';
@@ -17,6 +18,7 @@ import cannabisLeaf from '../../assets/icons/cannabis-leaf.svg';
 import './Navigation.css';
 
 const CANNABIS_LEAF_ICON_SRC = getAssetSrc(cannabisLeaf);
+
 const ADMIN_ENTRY_HOLD_MS = 4200;
 
 const NAV_LINKS = [
@@ -33,6 +35,7 @@ interface NavigationProps {
 
 export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
   const { isMenuOpen, toggleMenu } = useNavigation();
+  const { totalItems: itemCount } = useCart();
   const pathname = usePathname();
   const router = useRouter();
   const [logoSrc, setLogoSrc] = useState<string | null>(null);
@@ -137,25 +140,6 @@ export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
           21+ only
         </p>
 
-        {/* Desktop Navigation Links — hidden on mobile via CSS */}
-        <nav className="desktop-nav" aria-label="Main navigation">
-          <ul className="desktop-nav-links">
-            {NAV_LINKS.map(link => (
-              <li key={link.path}>
-                <Link
-                  href={link.path}
-                  className="nav-link"
-                  aria-current={
-                    isRouteActive(pathname, link.path) ? 'page' : undefined
-                  }
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
         {isAdminAuthenticated ? (
           <div className="admin-shortcuts" aria-label="Admin shortcuts">
             <Link href="/admin/dashboard" className="admin-shortcut-link">
@@ -181,18 +165,44 @@ export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
           onPointerUp={handlePressEnd}
           onPointerCancel={handlePressEnd}
           onPointerLeave={handlePressEnd}
-          aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+          aria-label={
+            isMenuOpen
+              ? 'Close menu'
+              : `Open menu${itemCount > 0 ? `, ${itemCount} items in cart` : ''}`
+          }
           aria-expanded={isMenuOpen}
           aria-controls="nav-menu"
         >
-          {CANNABIS_LEAF_ICON_SRC ? (
+          {itemCount > 0 ? (
+            <>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="nav-toggle-icon"
+                aria-hidden="true"
+              >
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+              <span className="nav-toggle-badge" aria-hidden="true">
+                {itemCount}
+              </span>
+            </>
+          ) : CANNABIS_LEAF_ICON_SRC ? (
             <img
               src={CANNABIS_LEAF_ICON_SRC}
               alt=""
-              className="cannabis-leaf-icon"
+              className="nav-toggle-icon"
             />
           ) : (
-            <span className="cannabis-leaf-icon" aria-hidden="true">
+            <span className="nav-toggle-icon" aria-hidden="true">
               🌿
             </span>
           )}
@@ -203,6 +213,41 @@ export function Navigation({ isAdminAuthenticated = false }: NavigationProps) {
           className={`mobile-drawer ${isMenuOpen ? 'active' : ''}`}
           aria-label="Mobile navigation"
         >
+          {/* Cart row — always shown at top of mobile drawer */}
+          <Link
+            href="/cart"
+            className="mobile-cart-row"
+            onClick={() => toggleMenu()}
+          >
+            <span className="mobile-cart-row-icon" aria-hidden="true">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+              {itemCount > 0 && (
+                <span className="mobile-cart-row-badge">{itemCount}</span>
+              )}
+            </span>
+            <span className="mobile-cart-row-label">
+              {itemCount === 0
+                ? 'Your cart is empty'
+                : `${itemCount} item${itemCount !== 1 ? 's' : ''} in cart`}
+            </span>
+            <span className="mobile-cart-row-arrow" aria-hidden="true">
+              →
+            </span>
+          </Link>
+
           {/* Navigation Links */}
           <ul className="nav-links">
             {NAV_LINKS.map((link, index) => (
