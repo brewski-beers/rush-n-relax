@@ -133,7 +133,7 @@ export default function CartPage() {
                     <div className="cart-qty-controls">
                       <button
                         type="button"
-                        className="cart-qty-btn"
+                        className={`cart-qty-btn${item.quantity === 1 ? ' cart-qty-btn--remove' : ''}`}
                         aria-label={
                           item.quantity === 1
                             ? `Remove ${item.name}`
@@ -151,11 +151,11 @@ export default function CartPage() {
                       >
                         {item.quantity === 1 ? (
                           <svg
-                            width="13"
-                            height="13"
+                            width="14"
+                            height="14"
                             viewBox="0 0 13 13"
-                            fill="currentColor"
                             aria-hidden="true"
+                            className="cart-trash-icon"
                           >
                             {/* lid */}
                             <rect
@@ -164,6 +164,7 @@ export default function CartPage() {
                               width="11"
                               height="1.5"
                               rx="0.75"
+                              fill="currentColor"
                             />
                             {/* handle */}
                             <rect
@@ -172,9 +173,13 @@ export default function CartPage() {
                               width="4"
                               height="1.5"
                               rx="0.75"
+                              fill="currentColor"
                             />
                             {/* body */}
-                            <path d="M2.5 4.5l.6 7c.05.55.5.97 1.05.97h4.7c.55 0 1-.42 1.05-.97l.6-7H2.5z" />
+                            <path
+                              d="M2.5 4.5l.6 7c.05.55.5.97 1.05.97h4.7c.55 0 1-.42 1.05-.97l.6-7H2.5z"
+                              fill="currentColor"
+                            />
                           </svg>
                         ) : (
                           '−'
