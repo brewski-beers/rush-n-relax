@@ -95,21 +95,30 @@ export default function CartPage() {
                       >
                         {item.quantity === 1 ? (
                           <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                            width="13"
+                            height="13"
+                            viewBox="0 0 13 13"
+                            fill="currentColor"
                             aria-hidden="true"
                           >
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                            <path d="M10 11v6" />
-                            <path d="M14 11v6" />
-                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                            {/* lid */}
+                            <rect
+                              x="1"
+                              y="2"
+                              width="11"
+                              height="1.5"
+                              rx="0.75"
+                            />
+                            {/* handle */}
+                            <rect
+                              x="4.5"
+                              y="0.25"
+                              width="4"
+                              height="1.5"
+                              rx="0.75"
+                            />
+                            {/* body */}
+                            <path d="M2.5 4.5l.6 7c.05.55.5.97 1.05.97h4.7c.55 0 1-.42 1.05-.97l.6-7H2.5z" />
                           </svg>
                         ) : (
                           '−'
