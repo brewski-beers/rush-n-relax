@@ -85,3 +85,10 @@ export function toDate(value: Timestamp | Date | string | undefined): Date {
  * No Firestore Location document exists for this ID — it is a code constant only.
  */
 export const HUB_LOCATION_ID = 'hub';
+
+/**
+ * Virtual location ID for online/e-commerce inventory.
+ * Storefront pricing and availability is read from inventory/online/items/{productId}.
+ * No Firestore Location document exists for this ID — it is a code constant only.
+ */
+export const ONLINE_LOCATION_ID = 'online';

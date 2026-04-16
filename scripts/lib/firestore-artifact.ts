@@ -6,6 +6,7 @@ import {
   buildLocationDocuments,
   buildProductDocuments,
   buildHubInventoryDocuments,
+  buildOnlineInventoryDocuments,
   buildCategoryDocuments,
 } from '../../src/lib/fixtures';
 
@@ -140,6 +141,24 @@ export function buildStorefrontSeedArtifact(): FirestoreSeedArtifact {
         availablePickup: item.availablePickup,
         featured: item.featured,
         quantity: item.quantity,
+        updatedAt: item.updatedAt,
+      }),
+    });
+  }
+
+  for (const item of buildOnlineInventoryDocuments(fixtureDate)) {
+    documents.push({
+      collection: `inventory/${item.locationId}/items`,
+      docId: item.productId,
+      fields: toFirestoreFields({
+        productId: item.productId,
+        locationId: item.locationId,
+        inStock: item.inStock,
+        availableOnline: item.availableOnline,
+        availablePickup: item.availablePickup,
+        featured: item.featured,
+        quantity: item.quantity,
+        variantPricing: item.variantPricing,
         updatedAt: item.updatedAt,
       }),
     });

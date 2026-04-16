@@ -8,6 +8,7 @@ import type {
   Promo,
 } from '@/types';
 import type { InventoryItem } from '@/types/inventory';
+import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 
 export const FIXTURE_DATASET_VERSION = '2026-03-14';
 export const FIXTURE_TIMESTAMP = '2026-03-14T00:00:00.000Z';
@@ -51,6 +52,7 @@ export interface InventoryItemFixture {
   availablePickup: boolean;
   featured: boolean;
   quantity: number;
+  variantPricing?: InventoryItem['variantPricing'];
 }
 
 export interface PromoFixture {
@@ -240,6 +242,80 @@ export const HUB_INVENTORY_FIXTURES: readonly InventoryItemFixture[] =
     featured: true,
     quantity: 99,
   }));
+
+/** Online virtual location inventory — canonical source for storefront variant pricing. */
+export const ONLINE_INVENTORY_FIXTURES: readonly InventoryItemFixture[] = [
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'flower',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: true,
+    quantity: 99,
+    variantPricing: {
+      '1g': { price: 1000 },
+      '3-5g': { price: 2800 },
+      '7g': { price: 5000 },
+      '14g': { price: 9000, compareAtPrice: 10000 },
+      '28g': { price: 16000, compareAtPrice: 18000 },
+    },
+  },
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'concentrates',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: true,
+    quantity: 99,
+    variantPricing: {
+      '0-5g': { price: 2500 },
+      '1g': { price: 4500, compareAtPrice: 5000 },
+    },
+  },
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'drinks',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: false,
+    quantity: 99,
+    variantPricing: {
+      'single-can': { price: 800 },
+      '2-pack': { price: 1400 },
+    },
+  },
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'edibles',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: false,
+    quantity: 99,
+    variantPricing: {
+      '10mg': { price: 500 },
+      '25mg': { price: 1000 },
+      '50mg': { price: 1800, compareAtPrice: 2000 },
+    },
+  },
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'vapes',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: false,
+    quantity: 99,
+    variantPricing: {
+      '0-5g-cart': { price: 2000 },
+      '1g-cart': { price: 3500 },
+      'disposable-1g': { price: 4000, compareAtPrice: 4500 },
+    },
+  },
+];
 
 export const PROMO_FIXTURES: readonly PromoFixture[] = [
   {
@@ -480,6 +556,22 @@ export function buildHubInventoryDocuments(
     availablePickup: item.availablePickup,
     featured: item.featured,
     quantity: item.quantity,
+    updatedAt: date,
+  }));
+}
+
+export function buildOnlineInventoryDocuments(
+  date: Date = fixtureDate
+): InventoryItem[] {
+  return ONLINE_INVENTORY_FIXTURES.map(item => ({
+    productId: item.productId,
+    locationId: item.locationId,
+    inStock: item.inStock,
+    availableOnline: item.availableOnline,
+    availablePickup: item.availablePickup,
+    featured: item.featured,
+    quantity: item.quantity,
+    variantPricing: item.variantPricing,
     updatedAt: date,
   }));
 }
