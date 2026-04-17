@@ -1,6 +1,7 @@
-import Link from 'next/link';
 import { buildMetadata } from '@/lib/seo/metadata.factory';
 import { listVendors } from '@/lib/repositories';
+import { Card } from '@/components/Card';
+import { CardGrid } from '@/components/CardGrid';
 
 export const revalidate = 3600;
 
@@ -33,20 +34,16 @@ export default async function VendorsPage() {
               No vendors listed yet — check back soon.
             </p>
           ) : (
-            <div className="vendors-grid">
+            <CardGrid columns="3" gap="lg">
               {vendors.map(
                 (vendor: import('@/types').VendorSummary, index: number) => (
-                  <Link
+                  <Card
                     key={vendor.slug}
-                    href={`/vendors/${vendor.slug}`}
-                    className={[
-                      'rnr-card',
-                      'rnr-card--product',
-                      index % 3 === 1
-                        ? 'rnr-card--surface-anchor rnr-card--anchor rnr-card--elevation-soft rnr-card--motion'
-                        : 'rnr-card--surface-stable rnr-card--stable rnr-card--elevation-none',
-                      'vendor-card',
-                    ].join(' ')}
+                    variant="info"
+                    to={`/vendors/${vendor.slug}`}
+                    surface={index % 3 === 1 ? 'anchor' : 'stable'}
+                    elevation={index % 3 === 1 ? 'soft' : 'none'}
+                    motion={index % 3 === 1}
                   >
                     <div className="vendor-card-content">
                       <h2 className="vendor-card-name">{vendor.name}</h2>
@@ -61,10 +58,10 @@ export default async function VendorsPage() {
                       )}
                       <div className="vendor-card-cta">View Products →</div>
                     </div>
-                  </Link>
+                  </Card>
                 )
               )}
-            </div>
+            </CardGrid>
           )}
         </div>
       </section>
