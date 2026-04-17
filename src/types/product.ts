@@ -16,6 +16,22 @@ export interface LabResults {
 }
 
 /**
+ * FDA-style Nutrition Facts for edible products.
+ * All per-serving macronutrient fields are optional strings matching FDA label conventions.
+ */
+export interface NutritionFacts {
+  /** e.g. "1 gummy (5g)" */
+  servingSize: string;
+  servingsPerContainer: number;
+  calories: number;
+  totalFat?: string;
+  sodium?: string;
+  totalCarbs?: string;
+  sugars?: string;
+  protein?: string;
+}
+
+/**
  * A single purchasable variant of a product (e.g. "1/8 oz", "10mg gummy").
  * Variants are authored at the product level and priced at the inventory level
  * via InventoryItem.variantPricing.
@@ -75,6 +91,8 @@ export interface Product {
    * Priced per-variant at the inventory level via InventoryItem.variantPricing.
    */
   variants?: ProductVariant[];
+  /** FDA-style nutrition facts -- edibles only. */
+  nutritionFacts?: NutritionFacts;
   createdAt: Date;
   updatedAt: Date;
 }

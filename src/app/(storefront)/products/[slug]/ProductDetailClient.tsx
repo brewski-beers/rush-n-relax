@@ -11,6 +11,7 @@ import {
   resolveVariantPricing,
   type DisplayVariant,
 } from '@/lib/storefront/resolveVariantPricing';
+import { NutritionFactsPanel } from '@/components/NutritionFactsPanel';
 
 const STRAIN_LABELS: Record<ProductStrain, string> = {
   indica: 'Indica',
@@ -362,6 +363,17 @@ export default function ProductDetailClient({
           <div className="container">
             <h2 className="product-section-heading">Description</h2>
             <p className="product-details-body">{product.details}</p>
+          </div>
+        </section>
+      )}
+
+      {/* Nutrition Facts -- edibles only */}
+      {product.category === 'edibles' && product.nutritionFacts != null && (
+        <section className="product-nutrition-section asymmetry-section-stable">
+          <div className="container">
+            <h2 className="product-section-heading">Nutrition Information</h2>
+            {/* non-null safe: product.nutritionFacts != null checked above */}
+            <NutritionFactsPanel facts={product.nutritionFacts} />
           </div>
         </section>
       )}

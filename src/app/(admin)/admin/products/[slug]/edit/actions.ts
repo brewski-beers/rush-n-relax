@@ -9,7 +9,7 @@ import {
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
-import type { ProductStatus, ProductStrain, ProductVariant } from '@/types';
+import type { ProductStatus, ProductStrain, ProductVariant, NutritionFacts } from '@/types';
 
 // compliance-hold is system-managed — admins cannot set it directly
 const SETTABLE_STATUSES: ProductStatus[] = [
@@ -172,6 +172,39 @@ export async function updateProduct(
     }
   }
 
+  // -- Nutrition Facts (edibles only) ----------------------------------------
+  let nutritionFacts: NutritionFacts | undefined;
+  if (category === 'edibles') {
+    const nfServingSize =
+      formData.get('nfServingSize')?.toString().trim() ?? '';
+    const nfSpcRaw =
+      formData.get('nfServingsPerContainer')?.toString().trim() ?? '';
+    const nfCalRaw = formData.get('nfCalories')?.toString().trim() ?? '';
+    const nfSpc = Number(nfSpcRaw);
+    const nfCal = Number(nfCalRaw);
+    if (
+      nfServingSize &&
+      nfSpcRaw &&
+      Number.isFinite(nfSpc) &&
+      nfSpc > 0 &&
+      nfCalRaw &&
+      Number.isFinite(nfCal) &&
+      nfCal >= 0
+    ) {
+      nutritionFacts = {
+        servingSize: nfServingSize,
+        servingsPerContainer: nfSpc,
+        calories: nfCal,
+        totalFat: formData.get('nfTotalFat')?.toString().trim() || undefined,
+        sodium: formData.get('nfSodium')?.toString().trim() || undefined,
+        totalCarbs:
+          formData.get('nfTotalCarbs')?.toString().trim() || undefined,
+        sugars: formData.get('nfSugars')?.toString().trim() || undefined,
+        protein: formData.get('nfProtein')?.toString().trim() || undefined,
+      };
+    }
+  }
+
   const payload = {
     slug: existing.slug,
     name,
@@ -200,6 +233,7 @@ export async function updateProduct(
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
     ...(variants !== undefined ? { variants } : {}),
+    ...(nutritionFacts !== undefined ? { nutritionFacts } : {}),
   };
 
   try {

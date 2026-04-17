@@ -1,0 +1,1 @@
+export { NutritionFactsPanel } from './NutritionFactsPanel';

@@ -7,18 +7,20 @@ import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { CoaSelector } from '@/components/admin/CoaSelector';
 import { TagInput } from '@/components/admin/TagInput';
 import { VariantEditor } from '@/components/admin/VariantEditor';
-import type { Product, ProductCategorySummary, VariantTemplate } from '@/types';
+import type { Product, ProductCategorySummary, VariantTemplate, VendorSummary } from '@/types';
 
 interface Props {
   product: Product;
   categories: ProductCategorySummary[];
   variantTemplates: VariantTemplate[];
+  vendors: VendorSummary[];
 }
 
 export function ProductEditForm({
   product,
   categories,
   variantTemplates,
+  vendors,
 }: Props) {
   const boundAction = updateProduct.bind(null, product.slug);
   const [state, formAction, pending] = useActionState(boundAction, null);
@@ -39,6 +41,18 @@ export function ProductEditForm({
           {categories.map(cat => (
             <option key={cat.slug} value={cat.slug}>
               {cat.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Vendor <span className="admin-hint">(optional)</span>
+        <select name="vendorSlug" defaultValue={product.vendorSlug ?? ''}>
+          <option value="">— None —</option>
+          {vendors.map(v => (
+            <option key={v.slug} value={v.slug}>
+              {v.name}
             </option>
           ))}
         </select>
@@ -204,6 +218,83 @@ export function ProductEditForm({
         <Link href="/admin/inventory">Inventory</Link> to set which locations
         carry this product.
       </p>
+
+      {product.category === 'edibles' && (
+        <fieldset className="admin-fieldset">
+          <legend>Nutrition Facts</legend>
+          <span className="admin-hint">
+            Optional. Displayed as an FDA-style label on the product page.
+          </span>
+          <label>
+            Serving Size
+            <input
+              name="nfServingSize"
+              defaultValue={product.nutritionFacts?.servingSize ?? ''}
+              placeholder="e.g. 1 gummy (5g)"
+            />
+          </label>
+          <label>
+            Servings Per Container
+            <input
+              name="nfServingsPerContainer"
+              type="number"
+              min={1}
+              defaultValue={product.nutritionFacts?.servingsPerContainer ?? ''}
+              placeholder="e.g. 10"
+            />
+          </label>
+          <label>
+            Calories
+            <input
+              name="nfCalories"
+              type="number"
+              min={0}
+              defaultValue={product.nutritionFacts?.calories ?? ''}
+              placeholder="e.g. 25"
+            />
+          </label>
+          <label>
+            Total Fat <span className="admin-hint">(e.g. 0g)</span>
+            <input
+              name="nfTotalFat"
+              defaultValue={product.nutritionFacts?.totalFat ?? ''}
+              placeholder="0g"
+            />
+          </label>
+          <label>
+            Sodium <span className="admin-hint">(e.g. 5mg)</span>
+            <input
+              name="nfSodium"
+              defaultValue={product.nutritionFacts?.sodium ?? ''}
+              placeholder="5mg"
+            />
+          </label>
+          <label>
+            Total Carbohydrate <span className="admin-hint">(e.g. 6g)</span>
+            <input
+              name="nfTotalCarbs"
+              defaultValue={product.nutritionFacts?.totalCarbs ?? ''}
+              placeholder="6g"
+            />
+          </label>
+          <label>
+            Sugars <span className="admin-hint">(e.g. 5g)</span>
+            <input
+              name="nfSugars"
+              defaultValue={product.nutritionFacts?.sugars ?? ''}
+              placeholder="5g"
+            />
+          </label>
+          <label>
+            Protein <span className="admin-hint">(e.g. 0g)</span>
+            <input
+              name="nfProtein"
+              defaultValue={product.nutritionFacts?.protein ?? ''}
+              placeholder="0g"
+            />
+          </label>
+        </fieldset>
+      )}
 
       <div className="admin-form-actions">
         <Link href="/admin/products">Cancel</Link>

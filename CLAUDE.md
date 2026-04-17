@@ -27,6 +27,7 @@ outbound-emails/{docId}
 email-templates/{templateId}
 email-template-revisions/{docId}
 vendors/{slug}
+orders/{orderId}
 ```
 
 All Firestore access is **server-side only** via Admin SDK. No client-side Firestore reads.

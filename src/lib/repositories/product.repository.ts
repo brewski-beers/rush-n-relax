@@ -9,6 +9,7 @@ import type {
   ProductSummary,
   LabResults,
   ProductStrain,
+  NutritionFacts,
 } from '@/types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
@@ -177,6 +178,7 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     vendorSlug: d.vendorSlug ?? undefined,
     labResults: docToLabResults(d.labResults),
     leaflyUrl: d.leaflyUrl ?? undefined,
+    nutritionFacts: docToNutritionFacts(d),
     strain:
       typeof d.strain === 'string' &&
       VALID_STRAINS.has(d.strain as ProductStrain)
@@ -241,6 +243,26 @@ function docToVariants(raw: unknown): ProductVariant[] | undefined {
     valid.push(variant);
   }
   return valid.length > 0 ? valid : undefined;
+}
+
+function docToNutritionFacts(
+  d: FirebaseFirestore.DocumentData
+): NutritionFacts | undefined {
+  const nf = d.nutritionFacts;
+  if (!nf || typeof nf !== 'object') return undefined;
+  if (typeof nf.servingSize !== 'string') return undefined;
+  if (typeof nf.servingsPerContainer !== 'number') return undefined;
+  if (typeof nf.calories !== 'number') return undefined;
+  return {
+    servingSize: nf.servingSize,
+    servingsPerContainer: nf.servingsPerContainer,
+    calories: nf.calories,
+    totalFat: typeof nf.totalFat === 'string' ? nf.totalFat : undefined,
+    sodium: typeof nf.sodium === 'string' ? nf.sodium : undefined,
+    totalCarbs: typeof nf.totalCarbs === 'string' ? nf.totalCarbs : undefined,
+    sugars: typeof nf.sugars === 'string' ? nf.sugars : undefined,
+    protein: typeof nf.protein === 'string' ? nf.protein : undefined,
+  };
 }
 
 function stripUndefinedFields<T extends Record<string, unknown>>(

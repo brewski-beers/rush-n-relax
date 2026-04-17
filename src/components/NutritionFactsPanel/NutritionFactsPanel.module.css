@@ -1,0 +1,74 @@
+.panel {
+  /* FDA label requires explicit black-on-white -- using component-scoped custom props */
+  --nf-ink: var(--color-on-accent);
+  --nf-paper: var(--color-white);
+  --nf-border: var(--color-on-accent);
+  border: 3px solid var(--nf-border);
+  padding: var(--space-xs) var(--space-sm);
+  max-width: 280px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.875rem;
+  color: var(--nf-ink);
+  background: var(--nf-paper);
+  margin: var(--space-md) 0;
+}
+.header {
+  font-size: 1.75rem;
+  font-weight: 900;
+  line-height: 1;
+  border-bottom: 8px solid var(--nf-border);
+  padding-bottom: 0.1em;
+  margin-bottom: 0.1em;
+}
+.servingInfo {
+  border-bottom: 3px solid var(--nf-border);
+  padding: 0.15em 0;
+  font-size: 0.8125rem;
+}
+.servingsPerContainer {
+  font-size: 0.8125rem;
+}
+.servingSize {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+.caloriesBlock {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 3px solid var(--nf-border);
+  padding: 0.1em 0;
+}
+.caloriesLabel {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.caloriesValue {
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.dvNote {
+  text-align: right;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--nf-border);
+  padding: 0.1em 0;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--nf-border);
+  padding: 0.1em 0;
+  font-size: 0.8125rem;
+}
+.rowIndent {
+  padding-left: var(--space-sm);
+}
+.footnote {
+  font-size: 0.625rem;
+  margin-top: var(--space-xs);
+  line-height: 1.3;
+}
