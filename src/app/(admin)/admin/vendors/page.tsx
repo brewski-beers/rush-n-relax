@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { requireRole } from '@/lib/admin-auth';
 import { listAllVendors } from '@/lib/repositories';
 import { ConfirmButton } from '@/components/admin/ConfirmButton';
-import { deactivateVendor, activateVendor } from './actions';
+import { archiveVendor, restoreVendor } from './actions';
 
 export default async function AdminVendorsPage() {
   await requireRole('owner');
@@ -24,7 +24,7 @@ export default async function AdminVendorsPage() {
           <thead>
             <tr>
               <th>Name</th>
-              <th>Description Source</th>
+              <th>Categories</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -33,10 +33,10 @@ export default async function AdminVendorsPage() {
             {vendors.map(vendor => (
               <tr
                 key={vendor.id}
-                data-status={vendor.isActive ? 'active' : 'inactive'}
+                data-status={vendor.isActive ? 'active' : 'archived'}
               >
                 <td>{vendor.name}</td>
-                <td>{vendor.descriptionSource}</td>
+                <td>{vendor.categories.join(', ') || '—'}</td>
                 <td>
                   <span
                     className={
@@ -45,24 +45,24 @@ export default async function AdminVendorsPage() {
                         : 'admin-badge-inactive'
                     }
                   >
-                    {vendor.isActive ? 'Active' : 'Inactive'}
+                    {vendor.isActive ? 'Active' : 'Archived'}
                   </span>
                 </td>
                 <td className="admin-actions">
                   <Link href={`/admin/vendors/${vendor.slug}/edit`}>Edit</Link>
                   {vendor.isActive ? (
                     <ConfirmButton
-                      action={deactivateVendor.bind(null, vendor.slug)}
-                      message={`Deactivate "${vendor.name}"?`}
+                      action={archiveVendor.bind(null, vendor.slug)}
+                      message={`Archive "${vendor.name}"? It will be hidden from the storefront.`}
                     >
-                      Deactivate
+                      Archive
                     </ConfirmButton>
                   ) : (
                     <ConfirmButton
-                      action={activateVendor.bind(null, vendor.slug)}
-                      message={`Activate "${vendor.name}"?`}
+                      action={restoreVendor.bind(null, vendor.slug)}
+                      message={`Restore "${vendor.name}"?`}
                     >
-                      Activate
+                      Restore
                     </ConfirmButton>
                   )}
                 </td>

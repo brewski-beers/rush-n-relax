@@ -77,6 +77,7 @@ flowchart LR
     DASH --> PROMO["/admin/promos\nPromos table"]
     DASH --> INV["/admin/inventory\nLocation picker"]
     DASH --> USERS["/admin/users\nRole management"]
+    DASH --> VENDORS["/admin/vendors\nVendors table"]
     DASH --> EMAIL_TPL["/admin/email-templates\nTemplate CMS"]
     DASH --> EMAIL_Q["/admin/email-queue\nQueue monitor"]
 
@@ -89,6 +90,7 @@ flowchart LR
     subgraph FS["Firestore"]
         FS_LOC["locations/{slug}"]
         FS_PROD["products/{slug}"]
+        FS_VENDORS["vendors/{slug}"]
         FS_CAT["product-categories/{slug}"]
         FS_PROMO["promos/{slug}"]
         FS_INV["inventory/{locationId}/items/{productId}"]
@@ -100,6 +102,7 @@ flowchart LR
 
     LOC --> FS_LOC
     PROD --> FS_PROD
+    VENDORS --> FS_VENDORS
     CAT --> FS_CAT
     PROMO --> FS_PROMO
     HUB --> FS_INV
@@ -126,6 +129,7 @@ flowchart LR
 | PROMO     | Promos CMS page                                                       |
 | INV       | Inventory module — Phase 2                                            |
 | USERS     | Users module — owner-only invite + custom-claim role assignments      |
+| VENDORS   | Vendors CMS page — owner-only                                         |
 | EMAIL_TPL | Email template CMS — owner-only live editor + preview                 |
 | EMAIL_Q   | Outbound email queue monitor — owner-only operational console         |
 | HUB       | RnR Hub — non-physical warehouse location (`HUB_LOCATION_ID = 'hub'`) |
@@ -148,6 +152,7 @@ flowchart LR
 - Hub inventory items have an `availableOnline` flag — toggles online shipping availability (Phase 3A).
 - Retail inventory items have an `availablePickup` flag — toggles buy-online / pick-up-in-store (Phase 3A).
 - Compliance guard: setting either flag is blocked if the product's status is `compliance-hold`.
+- Vendors admin is owner-only at `/admin/vendors`; full CRUD — list, create (`/new`), edit (`/[slug]/edit`), archive/restore toggle. Vendors are stored in `vendors/{slug}` (doc ID = slug, immutable after creation). Each vendor has `name`, `slug`, `website`, `logoUrl`, `description`, `categories` (string array), and `isActive`. Archiving sets `isActive: false` — vendor remains in Firestore for history but is hidden from storefront queries (`listVendors()` filters to active only).
 - Categories admin is owner-only at `/admin/categories`; full CRUD — list, create (`/new`), edit (`/[slug]/edit`), and activate/deactivate toggle. Categories are stored in `product-categories/{slug}`.
 - Category slugs are immutable after creation (doc ID = slug). The edit form disables the slug field.
 - Deactivating a category hides it from the storefront filter bar and all product admin dropdowns — no code deploy required.

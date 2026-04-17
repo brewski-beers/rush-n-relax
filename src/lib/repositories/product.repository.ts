@@ -159,6 +159,7 @@ function docToProductSummary(
         ? (d.strain as ProductStrain)
         : undefined,
     variants: docToVariants(d.variants),
+    leaflyUrl: d.leaflyUrl ?? undefined,
   } satisfies ProductSummary;
 }
 

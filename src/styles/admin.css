@@ -190,6 +190,11 @@
   --admin-img-upload-remove-border: 1px solid rgba(255, 127, 148, 0.4);
   --admin-img-upload-spinner-track: rgba(255, 255, 255, 0.2);
 
+  /* ── Leafly badge ──────────────────────────────────────────────────────── */
+  --admin-leafly-badge-bg: #1b5e20;
+  --admin-leafly-badge-color: #a5d6a7;
+  --admin-leafly-badge-margin-left: 0.5rem;
+
   position: relative;
   min-height: 100vh;
   background:
@@ -1357,6 +1362,32 @@
 .admin-status-dead-letter {
   background: var(--admin-status-failed-bg);
   color: var(--admin-status-failed-color);
+}
+
+.admin-badge-leafly {
+  display: inline-flex;
+  align-items: center;
+  background: var(--admin-leafly-badge-bg);
+  color: var(--admin-leafly-badge-color);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.15em 0.55em;
+  margin-left: var(--admin-leafly-badge-margin-left);
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+.admin-external-link {
+  color: var(--admin-link);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.admin-external-link:hover {
+  text-decoration: underline;
 }
 
 .admin-email-container-list {

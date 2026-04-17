@@ -110,4 +110,5 @@ export type ProductSummary = Pick<
   | 'vendorSlug'
   | 'strain'
   | 'variants'
+  | 'leaflyUrl'
 >;
