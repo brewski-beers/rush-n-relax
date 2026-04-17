@@ -44,10 +44,9 @@ const vendors: Omit<Vendor, 'id' | 'createdAt' | 'updatedAt'>[] = [
     categories: ['accessories'],
     isActive: true,
   },
-  // TODO: confirm if this vendor should be renamed "Uncle Skunks"
   {
-    slug: 'chronic-craft-sodas',
-    name: 'Chronic Craft Sodas',
+    slug: 'uncle-skunks',
+    name: 'Uncle Skunks',
     website: 'https://uncleskunks.com',
     categories: ['drinks'],
     isActive: true,
