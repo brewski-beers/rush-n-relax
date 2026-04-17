@@ -1173,6 +1173,9 @@ export function buildCategoryDocuments(
     description: cat.description,
     order: cat.order,
     isActive: cat.isActive,
+    requiresCannabisProfile: false,
+    requiresNutritionFacts: false,
+    requiresCOA: false,
     createdAt: date,
     updatedAt: date,
   }));

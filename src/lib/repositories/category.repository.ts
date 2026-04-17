@@ -66,25 +66,25 @@ export async function upsertCategory(
   const existing = await col.doc(data.slug).get();
   const now = FieldValue.serverTimestamp();
 
+  const fields = {
+    slug: data.slug,
+    label: data.label,
+    description: data.description,
+    order: data.order,
+    isActive: data.isActive,
+    requiresCannabisProfile: data.requiresCannabisProfile,
+    requiresNutritionFacts: data.requiresNutritionFacts,
+    requiresCOA: data.requiresCOA,
+  };
+
   if (existing.exists) {
     await col.doc(data.slug).set(
-      {
-        slug: data.slug,
-        label: data.label,
-        description: data.description,
-        order: data.order,
-        isActive: data.isActive,
-        updatedAt: now,
-      },
+      { ...fields, updatedAt: now },
       { merge: true }
     );
   } else {
     await col.doc(data.slug).set({
-      slug: data.slug,
-      label: data.label,
-      description: data.description,
-      order: data.order,
-      isActive: data.isActive,
+      ...fields,
       createdAt: now,
       updatedAt: now,
     });
@@ -132,6 +132,9 @@ function docToCategorySummary(
     slug: id,
     label: d.label,
     order: d.order,
+    requiresCannabisProfile: d.requiresCannabisProfile ?? false,
+    requiresNutritionFacts: d.requiresNutritionFacts ?? false,
+    requiresCOA: d.requiresCOA ?? false,
   } satisfies ProductCategorySummary;
 }
 
@@ -145,6 +148,9 @@ function docToCategory(
     description: d.description ?? '',
     order: d.order,
     isActive: d.isActive ?? false,
+    requiresCannabisProfile: d.requiresCannabisProfile ?? false,
+    requiresNutritionFacts: d.requiresNutritionFacts ?? false,
+    requiresCOA: d.requiresCOA ?? false,
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
   } satisfies ProductCategoryConfig;

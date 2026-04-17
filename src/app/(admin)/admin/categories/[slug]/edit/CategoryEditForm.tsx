@@ -45,7 +45,7 @@ export function CategoryEditForm({ category }: Props) {
 
       <label>
         Order{' '}
-        <span className="admin-hint">(integer — lower numbers appear first)</span>
+        <span className="admin-hint">(integer \u2014 lower numbers appear first)</span>
         <input
           name="order"
           type="number"
@@ -69,10 +69,55 @@ export function CategoryEditForm({ category }: Props) {
         </span>
       </label>
 
+      <fieldset className="admin-fieldset">
+        <legend>Product Form Contract</legend>
+        <span className="admin-hint">
+          Controls which form sections appear when creating or editing a product
+          in this category.
+        </span>
+
+        <label className="admin-checkbox">
+          <input
+            type="checkbox"
+            name="requiresCannabisProfile"
+            value="true"
+            defaultChecked={category.requiresCannabisProfile}
+          />
+          Show Cannabis Profile{' '}
+          <span className="admin-hint">
+            (strain, effects, flavors, lab results)
+          </span>
+        </label>
+
+        <label className="admin-checkbox">
+          <input
+            type="checkbox"
+            name="requiresNutritionFacts"
+            value="true"
+            defaultChecked={category.requiresNutritionFacts}
+          />
+          Show Nutrition Facts{' '}
+          <span className="admin-hint">(FDA nutrition facts panel)</span>
+        </label>
+
+        <label className="admin-checkbox">
+          <input
+            type="checkbox"
+            name="requiresCOA"
+            value="true"
+            defaultChecked={category.requiresCOA}
+          />
+          Show COA Section{' '}
+          <span className="admin-hint">
+            (certificate of analysis upload)
+          </span>
+        </label>
+      </fieldset>
+
       <div className="admin-form-actions">
         <Link href="/admin/categories">Cancel</Link>
         <button type="submit" disabled={pending}>
-          {pending ? 'Saving…' : 'Save'}
+          {pending ? 'Saving\u2026' : 'Save'}
         </button>
       </div>
     </form>

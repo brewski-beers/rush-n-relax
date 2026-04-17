@@ -16,6 +16,11 @@ export async function createCategory(
   const description = formData.get('description')?.toString().trim();
   const orderRaw = formData.get('order')?.toString().trim();
   const isActive = formData.get('isActive') === 'true';
+  const requiresCannabisProfile =
+    formData.get('requiresCannabisProfile') === 'true';
+  const requiresNutritionFacts =
+    formData.get('requiresNutritionFacts') === 'true';
+  const requiresCOA = formData.get('requiresCOA') === 'true';
 
   if (!slug || !label || !description || !orderRaw) {
     return { error: 'All required fields must be filled.' };
@@ -37,7 +42,16 @@ export async function createCategory(
     return { error: `A category with slug "${slug}" already exists.` };
   }
 
-  await upsertCategory({ slug, label, description, order, isActive });
+  await upsertCategory({
+    slug,
+    label,
+    description,
+    order,
+    isActive,
+    requiresCannabisProfile,
+    requiresNutritionFacts,
+    requiresCOA,
+  });
 
   revalidatePath('/admin/categories');
   revalidatePath('/products');

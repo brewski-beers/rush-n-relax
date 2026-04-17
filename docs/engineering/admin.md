@@ -157,6 +157,7 @@ flowchart LR
 - Category slugs are immutable after creation (doc ID = slug). The edit form disables the slug field.
 - Deactivating a category hides it from the storefront filter bar and all product admin dropdowns — no code deploy required.
 - Product admin forms (`/admin/products/new` and `/admin/products/[slug]/edit`) source their category dropdown from `listActiveCategories()` — Firestore is the source of truth, not a TypeScript union.
+- Each category carries three form contract flags: `requiresCannabisProfile`, `requiresNutritionFacts`, `requiresCOA`. These are toggled in the category create/edit admin forms and included in `ProductCategorySummary`. The `ProductWizardForm` reads the selected category's flags to conditionally show/hide Cannabis Profile (step 3), COA (step 4), and Nutrition Facts (step 5) sections. The edit page resolves `initialCategory` from `listActiveCategories()` to pre-gate sections on load without user interaction.
 - All admin pages use `export const dynamic = 'force-dynamic'` — no static prerender at build time.
 - Writes go through Server Actions (`actions.ts`) which call the repository layer directly.
 - Location `placeId` is optional in admin forms; when absent, maps fall back to address queries and reviews remain unavailable until a Place ID is added.

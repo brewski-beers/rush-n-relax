@@ -19,6 +19,11 @@ export async function updateCategory(
   const description = formData.get('description')?.toString().trim();
   const orderRaw = formData.get('order')?.toString().trim();
   const isActive = formData.get('isActive') === 'true';
+  const requiresCannabisProfile =
+    formData.get('requiresCannabisProfile') === 'true';
+  const requiresNutritionFacts =
+    formData.get('requiresNutritionFacts') === 'true';
+  const requiresCOA = formData.get('requiresCOA') === 'true';
 
   if (!label || !description || !orderRaw) {
     return { error: 'All required fields must be filled.' };
@@ -30,7 +35,16 @@ export async function updateCategory(
   }
 
   try {
-    await upsertCategory({ slug, label, description, order, isActive });
+    await upsertCategory({
+      slug,
+      label,
+      description,
+      order,
+      isActive,
+      requiresCannabisProfile,
+      requiresNutritionFacts,
+      requiresCOA,
+    });
 
     revalidatePath('/admin/categories');
     revalidatePath('/products');

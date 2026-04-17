@@ -14,7 +14,7 @@ The repository maps this via docToNutritionFacts() -- returns undefined if the s
 ## Storefront rendering
 
 NutritionFactsPanel (src/components/NutritionFactsPanel/) renders an FDA-style black-bordered label.
-Only mounted when product.category === 'edibles' AND product.nutritionFacts != null.
+Only mounted when product.nutritionFacts != null (category contract flag-gated at entry time).
 Non-edible product pages are not affected.
 
 ## Admin entry — wizard UI (added 2026-04-17)
@@ -31,6 +31,11 @@ Steps:
 5. Availability & Compliance — availableAt checkboxes, federalDeadlineRisk toggle, status (edit only), variants
 6. Images — featured + gallery via ProductImageUpload
 
+Steps 3 (Cannabis Profile), 4 (COA), and 5 (Nutrition Facts) are conditionally shown based on
+the selected category's `requiresCannabisProfile`, `requiresCOA`, and `requiresNutritionFacts`
+flags (sourced from `ProductCategorySummary`). The edit page resolves `initialCategory` from
+`listActiveCategories()` to pre-gate sections on load without requiring user re-selection.
+
 The wizard renders all step content in the DOM at all times (hidden via CSS) so that
 hidden inputs from TagInput / VariantEditor / CoaSelector are always present for FormData
 submission via useActionState.
@@ -39,6 +44,8 @@ Per-step validation fires on Next button press before advancing.
 Back navigation never loses data (all inputs are uncontrolled / default-value pinned).
 
 Server actions are unchanged — the wizard maps directly to the same FormData fields.
+The updateProduct action reads the category's `requiresNutritionFacts` flag to decide
+whether to parse and persist NutritionFacts fields.
 
 ### createProduct (new/actions.ts)
 
