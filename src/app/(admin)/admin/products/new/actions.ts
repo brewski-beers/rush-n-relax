@@ -53,6 +53,10 @@ export async function createProduct(
   const featuredImagePath =
     formData.get('featuredImagePath')?.toString() || undefined;
 
+  // ── COA URL ───────────────────────────────────────────────────────────────
+  const coaUrl = formData.get('coaUrl')?.toString().trim() || undefined;
+
+  // ── Leafly URL ─────────────────────────────────────────────────────────────
   const leaflyUrl = formData.get('leaflyUrl')?.toString().trim() || undefined;
 
   // ── Cannabis profile fields ────────────────────────────────────────────
@@ -145,13 +149,14 @@ export async function createProduct(
     federalDeadlineRisk,
     availableAt,
     status: 'active',
+    ...(vendorSlug !== undefined ? { vendorSlug } : {}),
+    ...(coaUrl !== undefined ? { coaUrl } : {}),
+    ...(leaflyUrl !== undefined ? { leaflyUrl } : {}),
     ...(strain !== undefined ? { strain } : {}),
     ...(effects !== undefined ? { effects } : {}),
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
     ...(variants !== undefined ? { variants } : {}),
-    ...(vendorSlug ? { vendorSlug } : {}),
-    ...(leaflyUrl ? { leaflyUrl } : {}),
   });
 
   revalidatePath('/admin/products');
