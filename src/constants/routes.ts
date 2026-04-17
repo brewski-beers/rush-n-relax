@@ -49,6 +49,9 @@ export const PAGE_TO_ROUTE: Record<string, RoutePath | 'dynamic'> = {
   cart: 'dynamic',
   'order/[id]': 'dynamic',
   'promo/[slug]': 'dynamic',
+  terms: 'dynamic',
+  privacy: 'dynamic',
+  shipping: 'dynamic',
 };
 
 /**

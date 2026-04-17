@@ -1,0 +1,19 @@
+/* AddToCartButton styles
+   All values use Asymmetry design system tokens. No raw hex or rem. */
+
+.add-to-cart-btn {
+  /* Smooth transition between default and confirmed states */
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* Added confirmation state */
+.add-to-cart-btn--added,
+.add-to-cart-btn--added:hover {
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success);
+  color: var(--color-success);
+  cursor: default;
+}
