@@ -29,9 +29,9 @@ export async function listVendors(): Promise<VendorSummary[]> {
 /**
  * List all vendors regardless of active status — admin use only.
  */
-export async function listAllVendors(): Promise<VendorSummary[]> {
+export async function listAllVendors(): Promise<Vendor[]> {
   const snap = await vendorsCol().orderBy('name').get();
-  return snap.docs.map(doc => docToVendorSummary(doc.id, doc.data()));
+  return snap.docs.map(doc => docToVendor(doc.id, doc.data()));
 }
 
 /**
@@ -99,7 +99,7 @@ function docToVendorSummary(
     id,
     slug: d.slug,
     name: d.name,
-    descriptionSource: d.descriptionSource,
+    categories: Array.isArray(d.categories) ? d.categories : [],
     isActive: d.isActive ?? false,
   } satisfies VendorSummary;
 }
@@ -111,8 +111,8 @@ function docToVendor(id: string, d: FirebaseFirestore.DocumentData): Vendor {
     name: d.name,
     website: d.website ?? undefined,
     logoUrl: d.logoUrl ?? undefined,
-    descriptionSource: d.descriptionSource,
-    notes: d.notes ?? undefined,
+    description: d.description ?? undefined,
+    categories: Array.isArray(d.categories) ? d.categories : [],
     isActive: d.isActive ?? false,
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),

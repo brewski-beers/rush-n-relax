@@ -4,13 +4,13 @@ import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/admin-auth';
 import { setVendorActive } from '@/lib/repositories';
 
-export async function deactivateVendor(slug: string): Promise<void> {
+export async function archiveVendor(slug: string): Promise<void> {
   await requireRole('owner');
   await setVendorActive(slug, false);
   revalidatePath('/admin/vendors');
 }
 
-export async function activateVendor(slug: string): Promise<void> {
+export async function restoreVendor(slug: string): Promise<void> {
   await requireRole('owner');
   await setVendorActive(slug, true);
   revalidatePath('/admin/vendors');

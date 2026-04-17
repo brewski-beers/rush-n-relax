@@ -1,6 +1,7 @@
 // Run with: npx tsx scripts/seed-vendors.ts
 // Seeds the vendors collection into the Firebase emulator.
 // Expects Firestore emulator on :8080.
+// Idempotent: updates existing docs, inserts new ones.
 
 import { getAdminFirestore } from '../src/lib/firebase/admin';
 import type { Vendor } from '../src/types';
@@ -9,45 +10,52 @@ process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 
 const vendors: Omit<Vendor, 'id' | 'createdAt' | 'updatedAt'>[] = [
   {
-    slug: 'secret-nature',
-    name: 'Secret Nature',
-    website: 'https://secretnaturecbd.com',
-    descriptionSource: 'leafly',
+    slug: 'enjoy',
+    name: 'Enjoy',
+    website: 'https://enjoycannabis.com',
+    categories: ['edibles', 'drinks'],
     isActive: true,
   },
   {
-    slug: 'plain-jane',
-    name: 'Plain Jane',
-    website: 'https://plainjane.com',
-    descriptionSource: 'leafly',
+    slug: 'cannaelite',
+    name: 'Cannaelite',
+    website: 'https://canna-elite.com',
+    categories: ['edibles', 'drinks'],
     isActive: true,
   },
   {
-    slug: 'cbdfx',
-    name: 'CBDfx',
-    website: 'https://cbdfx.com',
-    descriptionSource: 'vendor-provided',
+    slug: 'the-wildwood-company',
+    name: 'The Wildwood Company',
+    website: 'https://discoverwildwood.com',
+    categories: ['vapes'],
     isActive: true,
   },
   {
-    slug: 'cannaaid',
-    name: 'CannaAid',
-    website: 'https://cannaaidshop.com',
-    descriptionSource: 'custom',
+    slug: 'wyld',
+    name: 'Wyld',
+    website: 'https://wyldcbd.com',
+    categories: ['edibles', 'drinks'],
     isActive: true,
   },
   {
-    slug: 'exhale-wellness',
-    name: 'Exhale Wellness',
-    website: 'https://exhalewellness.com',
-    descriptionSource: 'vendor-provided',
+    slug: 'zenco',
+    name: 'Zenco',
+    website: 'https://thezenco.com',
+    categories: ['accessories'],
     isActive: true,
   },
   {
-    slug: 'delta-extrax',
-    name: 'Delta Extrax',
-    website: 'https://deltaextrax.com',
-    descriptionSource: 'vendor-provided',
+    slug: 'uncle-skunks',
+    name: 'Uncle Skunks',
+    website: 'https://uncleskunks.com',
+    categories: ['drinks'],
+    isActive: true,
+  },
+  {
+    slug: 'goodland-extracts',
+    name: 'Goodland Extracts',
+    website: 'https://goodlandextracts.com',
+    categories: ['extracts'],
     isActive: true,
   },
 ];

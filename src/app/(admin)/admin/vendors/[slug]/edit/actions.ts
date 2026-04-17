@@ -4,13 +4,6 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
 import { upsertVendor, getVendorBySlug } from '@/lib/repositories';
-import type { DescriptionSource } from '@/types';
-
-const VALID_SOURCES: DescriptionSource[] = [
-  'leafly',
-  'custom',
-  'vendor-provided',
-];
 
 export async function updateVendor(
   slug: string,
@@ -25,17 +18,18 @@ export async function updateVendor(
   const name = formData.get('name')?.toString().trim();
   const website = formData.get('website')?.toString().trim() || undefined;
   const logoUrl = formData.get('logoUrl')?.toString().trim() || undefined;
-  const descriptionSource = formData
-    .get('descriptionSource')
-    ?.toString() as DescriptionSource;
-  const notes = formData.get('notes')?.toString().trim() || undefined;
+  const description =
+    formData.get('description')?.toString().trim() || undefined;
+  const categoriesRaw = formData.get('categories')?.toString() ?? '';
+  const categories = categoriesRaw
+    ? categoriesRaw
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    : [];
 
-  if (!name || !descriptionSource) {
-    return { error: 'Name and description source are required.' };
-  }
-
-  if (!VALID_SOURCES.includes(descriptionSource)) {
-    return { error: 'Invalid description source.' };
+  if (!name) {
+    return { error: 'Name is required.' };
   }
 
   try {
@@ -44,8 +38,8 @@ export async function updateVendor(
       name,
       website,
       logoUrl,
-      descriptionSource,
-      notes,
+      description,
+      categories,
       isActive: existing.isActive,
     });
 

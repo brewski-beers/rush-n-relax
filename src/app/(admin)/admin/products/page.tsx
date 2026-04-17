@@ -32,7 +32,17 @@ export default async function AdminProductsPage() {
           <tbody>
             {products.map(product => (
               <tr key={product.id} data-status={product.status}>
-                <td>{product.name}</td>
+                <td>
+                  {product.name}
+                  {product.leaflyUrl && (
+                    <span
+                      className="admin-badge-leafly"
+                      aria-label="Leafly match set"
+                    >
+                      Leafly
+                    </span>
+                  )}
+                </td>
                 <td>{product.category}</td>
                 <td>{product.status}</td>
                 <td className="admin-actions">
