@@ -35,7 +35,7 @@ export async function updateProduct(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await requireRole('staff');
+  const actor = await requireRole('staff');
 
   const existing = await getProductBySlug(slug);
   if (!existing) return { error: 'Product not found.' };
@@ -43,12 +43,10 @@ export async function updateProduct(
   const name = formData.get('name')?.toString().trim();
   const category = formData.get('category')?.toString();
   const details = formData.get('details')?.toString().trim();
-  const status = formData.get('status')?.toString() as ProductStatus;
-  const vendorSlug = formData.get('vendorSlug')?.toString() || undefined;
   const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
-  if (!name || !category || !details || !status) {
+  if (!name || !category || !details) {
     return { error: 'All required fields must be filled.' };
   }
 
@@ -57,8 +55,24 @@ export async function updateProduct(
     return { error: 'Invalid category.' };
   }
 
-  if (!SETTABLE_STATUSES.includes(status)) {
-    return { error: 'Cannot set that status directly.' };
+  // Status is only editable by owners. If the field is absent from FormData
+  // (non-owner users don't see it in the wizard), fall back to the existing value.
+  // compliance-hold can never be changed here — always preserved.
+  let status: ProductStatus;
+  if (existing.status === 'compliance-hold') {
+    status = 'compliance-hold';
+  } else if (actor.role === 'owner') {
+    const rawStatus = formData.get('status')?.toString() as
+      | ProductStatus
+      | undefined;
+    if (rawStatus && SETTABLE_STATUSES.includes(rawStatus)) {
+      status = rawStatus;
+    } else {
+      status = existing.status;
+    }
+  } else {
+    // Non-owner staff cannot change status — preserve existing
+    status = existing.status;
   }
 
   // formData.get() returns:
@@ -80,6 +94,9 @@ export async function updateProduct(
   const featuredCleared = rawFeaturedPath === ''; // '' = explicitly removed
   const featuredFromForm = rawFeaturedPath !== null; // null = widget not rendered
 
+  // Suppress unused variable warning — featuredFromForm is an intentional guard
+  void featuredFromForm;
+
   const galleryImagePaths = rawGalleryPaths.filter(
     (p): p is string => typeof p === 'string' && p !== ''
   );
@@ -90,6 +107,10 @@ export async function updateProduct(
     galleryImagePaths.length === 0 &&
     existing.images !== undefined &&
     existing.images.length > 0;
+
+  // ── Vendor ────────────────────────────────────────────────────────────────
+  const vendorSlug =
+    formData.get('vendorSlug')?.toString().trim() || existing.vendorSlug;
 
   // ── Cannabis profile fields ────────────────────────────────────────────
   const strainRaw = formData.get('strain')?.toString() ?? '';
@@ -212,6 +233,9 @@ export async function updateProduct(
         sugars: formData.get('nfSugars')?.toString().trim() || undefined,
         protein: formData.get('nfProtein')?.toString().trim() || undefined,
       };
+    } else {
+      // edibles with no nutrition form data — preserve existing
+      nutritionFacts = existing.nutritionFacts;
     }
   }
 
@@ -237,6 +261,7 @@ export async function updateProduct(
     status,
     federalDeadlineRisk,
     availableAt,
+    ...(vendorSlug ? { vendorSlug } : {}),
     ...(coaUrl ? { coaUrl } : {}),
     ...(strain !== undefined ? { strain } : {}),
     ...(effects !== undefined ? { effects } : {}),
@@ -245,7 +270,6 @@ export async function updateProduct(
     ...(variants !== undefined ? { variants } : {}),
     ...(nutritionFacts !== undefined ? { nutritionFacts } : {}),
     ...(leaflyUrl ? { leaflyUrl } : {}),
-    ...(vendorSlug ? { vendorSlug } : {}),
   };
 
   try {

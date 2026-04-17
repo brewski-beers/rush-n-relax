@@ -13,7 +13,7 @@
  *   2. Category & Name
  *   3. Description (+ cannabis profile)
  *   4. Lab Results
- *   5. Availability & Compliance (+ variants)
+ *   5. Availability & Compliance (+ variants; Status visible to owner only in edit mode)
  *   6. Images
  */
 
@@ -46,6 +46,12 @@ interface Props {
   variantTemplates: VariantTemplate[];
   vendors: VendorSummary[];
   locations: LocationOption[];
+  /**
+   * Whether the current user holds the `owner` role.
+   * When true (edit mode only), the Status field is shown in Step 5.
+   * Defaults to false (safe default — hides privileged field).
+   */
+  isOwner?: boolean;
   /** Server action bound appropriately by caller */
   action: (
     prev: { error?: string } | null,
@@ -114,6 +120,7 @@ export function ProductWizardForm({
   variantTemplates,
   vendors,
   locations,
+  isOwner = false,
   action,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, null);
@@ -124,6 +131,7 @@ export function ProductWizardForm({
   // Controlled inputs that need auto-suggest or inter-field logic
   const [name, setName] = useState(product?.name ?? '');
   const [slug, setSlug] = useState(product?.slug ?? '');
+  const [category, setCategory] = useState(product?.category ?? '');
   const [availableAt, setAvailableAt] = useState<string[]>(
     product?.availableAt ?? []
   );
@@ -162,6 +170,12 @@ export function ProductWizardForm({
       : pending
         ? 'Saving…'
         : 'Save Changes';
+
+  // Whether to show the Status field: edit mode AND caller has owner role
+  const showStatusField = mode === 'edit' && isOwner;
+
+  // Show nutrition facts section for edibles (derived from controlled category state)
+  const isEdibles = category === 'edibles';
 
   return (
     <form action={formAction} className="admin-form">
@@ -212,7 +226,11 @@ export function ProductWizardForm({
           <legend>Category &amp; Name</legend>
           <label>
             Category
-            <select name="category" defaultValue={product?.category ?? ''}>
+            <select
+              name="category"
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+            >
               <option value="">Select…</option>
               {categories.map(cat => (
                 <option key={cat.slug} value={cat.slug}>
@@ -441,7 +459,7 @@ export function ProductWizardForm({
             </span>
           </label>
 
-          {mode === 'edit' && (
+          {showStatusField && (
             <label>
               Status
               {product?.status === 'compliance-hold' ? (
@@ -470,6 +488,85 @@ export function ProductWizardForm({
                 </select>
               )}
             </label>
+          )}
+
+          {isEdibles && (
+            <fieldset className="admin-fieldset">
+              <legend>Nutrition Facts</legend>
+              <span className="admin-hint">
+                Optional. Displayed as an FDA-style label on the product page.
+              </span>
+              <label>
+                Serving Size
+                <input
+                  name="nfServingSize"
+                  defaultValue={product?.nutritionFacts?.servingSize ?? ''}
+                  placeholder="e.g. 1 gummy (5g)"
+                />
+              </label>
+              <label>
+                Servings Per Container
+                <input
+                  name="nfServingsPerContainer"
+                  type="number"
+                  min={1}
+                  defaultValue={
+                    product?.nutritionFacts?.servingsPerContainer ?? ''
+                  }
+                  placeholder="e.g. 10"
+                />
+              </label>
+              <label>
+                Calories
+                <input
+                  name="nfCalories"
+                  type="number"
+                  min={0}
+                  defaultValue={product?.nutritionFacts?.calories ?? ''}
+                  placeholder="e.g. 25"
+                />
+              </label>
+              <label>
+                Total Fat <span className="admin-hint">(e.g. 0g)</span>
+                <input
+                  name="nfTotalFat"
+                  defaultValue={product?.nutritionFacts?.totalFat ?? ''}
+                  placeholder="0g"
+                />
+              </label>
+              <label>
+                Sodium <span className="admin-hint">(e.g. 5mg)</span>
+                <input
+                  name="nfSodium"
+                  defaultValue={product?.nutritionFacts?.sodium ?? ''}
+                  placeholder="5mg"
+                />
+              </label>
+              <label>
+                Total Carbohydrate <span className="admin-hint">(e.g. 6g)</span>
+                <input
+                  name="nfTotalCarbs"
+                  defaultValue={product?.nutritionFacts?.totalCarbs ?? ''}
+                  placeholder="6g"
+                />
+              </label>
+              <label>
+                Sugars <span className="admin-hint">(e.g. 5g)</span>
+                <input
+                  name="nfSugars"
+                  defaultValue={product?.nutritionFacts?.sugars ?? ''}
+                  placeholder="5g"
+                />
+              </label>
+              <label>
+                Protein <span className="admin-hint">(e.g. 0g)</span>
+                <input
+                  name="nfProtein"
+                  defaultValue={product?.nutritionFacts?.protein ?? ''}
+                  placeholder="0g"
+                />
+              </label>
+            </fieldset>
           )}
 
           <VariantEditor
