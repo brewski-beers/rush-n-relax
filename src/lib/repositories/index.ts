@@ -10,6 +10,7 @@ export {
   listProducts,
   listProductsByIds,
   listProductsByCategory,
+  listProductsByVendor,
   getProductBySlug,
   upsertProduct,
   clearProductFields,

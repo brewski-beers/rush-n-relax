@@ -273,3 +273,19 @@ function stripUndefinedFields<T extends Record<string, unknown>>(
     Object.entries(value).filter(([, v]) => v !== undefined)
   ) as Partial<T>;
 }
+
+/**
+ * List active products for a given vendor slug.
+ * Used by the public vendor detail page.
+ */
+export async function listProductsByVendor(
+  vendorSlug: string
+): Promise<ProductSummary[]> {
+  const snap = await productsCol()
+    .where('status', '==', 'active')
+    .where('vendorSlug', '==', vendorSlug)
+    .orderBy('name')
+    .get();
+
+  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+}
