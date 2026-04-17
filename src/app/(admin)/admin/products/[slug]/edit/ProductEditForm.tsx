@@ -7,7 +7,12 @@ import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { CoaSelector } from '@/components/admin/CoaSelector';
 import { TagInput } from '@/components/admin/TagInput';
 import { VariantEditor } from '@/components/admin/VariantEditor';
-import type { Product, ProductCategorySummary, VariantTemplate, VendorSummary } from '@/types';
+import type {
+  Product,
+  ProductCategorySummary,
+  VariantTemplate,
+  VendorSummary,
+} from '@/types';
 
 interface Props {
   product: Product;
@@ -34,6 +39,36 @@ export function ProductEditForm({
         Name
         <input name="name" defaultValue={product.name} required />
       </label>
+
+      <div className="admin-leafly-row">
+        <label className="admin-leafly-label">
+          Leafly URL
+          <input
+            name="leaflyUrl"
+            type="url"
+            defaultValue={product.leaflyUrl ?? ''}
+            placeholder="https://www.leafly.com/strains/…"
+          />
+        </label>
+        <a
+          href={`https://www.leafly.com/search?q=${encodeURIComponent(product.name)}&typefilter=strain`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="admin-leafly-search-btn"
+        >
+          Search Leafly ↗
+        </a>
+        {product.leaflyUrl && (
+          <a
+            href={product.leaflyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="admin-leafly-view-btn"
+          >
+            View Match ↗
+          </a>
+        )}
+      </div>
 
       <label>
         Category
