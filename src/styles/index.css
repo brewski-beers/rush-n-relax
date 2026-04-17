@@ -29,3 +29,6 @@
 
 /* Cart, order confirmation, and add-to-cart styles */
 @import './cart.css';
+
+/* Site footer */
+@import './footer.css';

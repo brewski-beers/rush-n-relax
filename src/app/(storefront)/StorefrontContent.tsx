@@ -11,6 +11,7 @@ import { CartProvider } from '@/contexts/CartContext';
 import { useCart } from '@/hooks/useCart';
 import { formatCents } from '@/utils/currency';
 import { isRouteActive } from '@/utils/routeMatching';
+import { Footer } from '@/components/Footer/Footer';
 
 const NAV_LINKS = [
   { label: 'Home', path: '/' },
@@ -183,7 +184,10 @@ export function StorefrontContent({
           <>
             <Navigation isAdminAuthenticated={isAdminAuthenticated} />
             <DesktopModal />
-            <div className="content-wrapper">{children}</div>
+            <div className="content-wrapper">
+              {children}
+              <Footer />
+            </div>
           </>
         )}
       </div>

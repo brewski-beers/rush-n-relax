@@ -15,7 +15,14 @@ export default defineConfig(async () => {
       globals: true,
       environment: 'jsdom',
       setupFiles: './src/tests/setup.ts',
-      exclude: ['node_modules', 'dist', '.next', 'e2e/**', 'functions/**'],
+      exclude: [
+        'node_modules',
+        'dist',
+        '.next',
+        'e2e/**',
+        'functions/**',
+        '**/.claude/**',
+      ],
     },
   };
 });
