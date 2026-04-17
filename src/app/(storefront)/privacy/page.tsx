@@ -18,7 +18,7 @@ export default function PrivacyPage() {
         <div className="container">
           <h1>Privacy Policy</h1>
           <p className="lead">
-            Last updated: June 2025 (placeholder — pending legal review)
+            Last updated: April 16, 2026 (placeholder — pending legal review)
           </p>
         </div>
       </section>
