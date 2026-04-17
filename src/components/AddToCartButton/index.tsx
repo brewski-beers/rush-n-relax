@@ -10,8 +10,10 @@
  * This component does NOT derive pricing or availability internally.
  */
 
+import { useState, useCallback } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import type { DisplayVariant } from '@/lib/storefront/resolveVariantPricing';
+import './AddToCartButton.css';
 
 interface AddToCartButtonProps {
   productId: string;
@@ -26,6 +28,9 @@ interface AddToCartButtonProps {
   className?: string;
 }
 
+/** Duration of the confirmation feedback state in milliseconds */
+const CONFIRM_DURATION_MS = 1_500;
+
 export function AddToCartButton({
   productId,
   productName,
@@ -35,10 +40,11 @@ export function AddToCartButton({
   className,
 }: AddToCartButtonProps) {
   const { addItem } = useCart();
+  const [added, setAdded] = useState(false);
 
   const disabled = !selectedVariant || !selectedVariant.inStock;
 
-  function handleAdd() {
+  const handleAdd = useCallback(() => {
     if (!selectedVariant) return;
     addItem({
       productId,
@@ -48,7 +54,17 @@ export function AddToCartButton({
       unitPrice: selectedVariant.price,
       image: productImage,
     });
-  }
+    setAdded(true);
+    setTimeout(() => setAdded(false), CONFIRM_DURATION_MS);
+  }, [addItem, productId, productName, productImage, selectedVariant]);
+
+  const label = !selectedVariant
+    ? 'Select a variant'
+    : !selectedVariant.inStock
+      ? 'Out of Stock'
+      : added
+        ? 'Added ✓'
+        : 'Add to Cart';
 
   return (
     <div
@@ -56,21 +72,20 @@ export function AddToCartButton({
     >
       <button
         type="button"
-        className={`btn btn-primary add-to-cart-btn${className ? ` ${className}` : ''}`}
+        className={`btn btn-primary add-to-cart-btn${added ? ' add-to-cart-btn--added' : ''}${className ? ` ${className}` : ''}`}
         onClick={handleAdd}
-        disabled={disabled}
-        aria-disabled={disabled}
+        disabled={disabled || added}
+        aria-disabled={disabled || added}
+        aria-live="polite"
         aria-label={
           selectedVariant
-            ? `Add ${productName} — ${selectedVariant.label} to cart`
+            ? added
+              ? `${productName} added to cart`
+              : `Add ${productName} — ${selectedVariant.label} to cart`
             : 'Select a variant to add to cart'
         }
       >
-        {!selectedVariant
-          ? 'Select a variant'
-          : !selectedVariant.inStock
-            ? 'Out of Stock'
-            : 'Add to Cart'}
+        {label}
       </button>
     </div>
   );
