@@ -7,7 +7,12 @@ import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { CoaSelector } from '@/components/admin/CoaSelector';
 import { TagInput } from '@/components/admin/TagInput';
 import { VariantEditor } from '@/components/admin/VariantEditor';
-import type { Product, ProductCategorySummary, VariantTemplate, VendorSummary } from '@/types';
+import type {
+  Product,
+  ProductCategorySummary,
+  VariantTemplate,
+  VendorSummary,
+} from '@/types';
 
 interface Props {
   product: Product;
@@ -295,6 +300,35 @@ export function ProductEditForm({
           </label>
         </fieldset>
       )}
+
+      <fieldset className="admin-fieldset">
+        <legend>Leafly Reference</legend>
+        <span className="admin-hint">
+          Staff-only. Paste the Leafly strain URL to cross-reference
+          descriptions and data sheets.
+        </span>
+        {product.leaflyUrl ? (
+          <a
+            href={product.leaflyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="admin-external-link"
+          >
+            View on Leafly ↗
+          </a>
+        ) : (
+          <p className="admin-hint admin-muted">No Leafly match set.</p>
+        )}
+        <label>
+          Leafly URL
+          <input
+            name="leaflyUrl"
+            type="url"
+            defaultValue={product.leaflyUrl ?? ''}
+            placeholder="https://www.leafly.com/strains/…"
+          />
+        </label>
+      </fieldset>
 
       <div className="admin-form-actions">
         <Link href="/admin/products">Cancel</Link>

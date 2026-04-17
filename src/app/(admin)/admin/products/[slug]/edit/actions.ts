@@ -9,7 +9,12 @@ import {
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
-import type { ProductStatus, ProductStrain, ProductVariant, NutritionFacts } from '@/types';
+import type {
+  ProductStatus,
+  ProductStrain,
+  ProductVariant,
+  NutritionFacts,
+} from '@/types';
 
 // compliance-hold is system-managed — admins cannot set it directly
 const SETTABLE_STATUSES: ProductStatus[] = [
@@ -152,6 +157,10 @@ export async function updateProduct(
   const coaUrlRaw = formData.get('coaUrl')?.toString() ?? '';
   const coaUrl = coaUrlRaw || existing.coaUrl;
 
+  // ── Leafly URL ─────────────────────────────────────────────────────────
+  const leaflyUrlRaw = formData.get('leaflyUrl')?.toString().trim() ?? '';
+  const leaflyUrl = leaflyUrlRaw || existing.leaflyUrl;
+
   // ── Variants ──────────────────────────────────────────────────────────────
   const variantsRaw = formData.get('variants')?.toString() ?? '';
   let variants: ProductVariant[] | undefined;
@@ -234,6 +243,7 @@ export async function updateProduct(
     ...(labResults !== undefined ? { labResults } : {}),
     ...(variants !== undefined ? { variants } : {}),
     ...(nutritionFacts !== undefined ? { nutritionFacts } : {}),
+    ...(leaflyUrl ? { leaflyUrl } : {}),
   };
 
   try {
