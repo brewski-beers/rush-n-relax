@@ -9,7 +9,7 @@ import {
   listActiveCategories,
 } from '@/lib/repositories';
 import { generateSkus } from '@/lib/variants/generateSkus';
-import type { ProductStrain, VariantGroup } from '@/types';
+import type { NutritionFacts, ProductStrain, VariantGroup } from '@/types';
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
@@ -42,7 +42,8 @@ export async function createProduct(
   }
 
   const activeCategories = await listActiveCategories();
-  if (!activeCategories.some(c => c.slug === category)) {
+  const selectedCategory = activeCategories.find(c => c.slug === category);
+  if (!selectedCategory) {
     return { error: 'Invalid category.' };
   }
 
@@ -150,6 +151,39 @@ export async function createProduct(
     : [];
   const variants = generateSkus(variantGroups);
 
+  // ── Nutrition Facts — shown when category has requiresNutritionFacts flag ----
+  let nutritionFacts: NutritionFacts | undefined;
+  if (selectedCategory.requiresNutritionFacts) {
+    const nfServingSize =
+      formData.get('nfServingSize')?.toString().trim() ?? '';
+    const nfSpcRaw =
+      formData.get('nfServingsPerContainer')?.toString().trim() ?? '';
+    const nfCalRaw = formData.get('nfCalories')?.toString().trim() ?? '';
+    const nfSpc = Number(nfSpcRaw);
+    const nfCal = Number(nfCalRaw);
+    if (
+      nfServingSize &&
+      nfSpcRaw &&
+      Number.isFinite(nfSpc) &&
+      nfSpc > 0 &&
+      nfCalRaw &&
+      Number.isFinite(nfCal) &&
+      nfCal >= 0
+    ) {
+      nutritionFacts = {
+        servingSize: nfServingSize,
+        servingsPerContainer: nfSpc,
+        calories: nfCal,
+        totalFat: formData.get('nfTotalFat')?.toString().trim() || undefined,
+        sodium: formData.get('nfSodium')?.toString().trim() || undefined,
+        totalCarbs:
+          formData.get('nfTotalCarbs')?.toString().trim() || undefined,
+        sugars: formData.get('nfSugars')?.toString().trim() || undefined,
+        protein: formData.get('nfProtein')?.toString().trim() || undefined,
+      };
+    }
+  }
+
   await upsertProduct({
     slug,
     name,
@@ -172,6 +206,7 @@ export async function createProduct(
     ...(volumeMl !== undefined ? { volumeMl } : {}),
     ...(thcMgPerServing !== undefined ? { thcMgPerServing } : {}),
     ...(cbdMgPerServing !== undefined ? { cbdMgPerServing } : {}),
+    ...(nutritionFacts !== undefined ? { nutritionFacts } : {}),
   });
 
   revalidatePath('/admin/products');
