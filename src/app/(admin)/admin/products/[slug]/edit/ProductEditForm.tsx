@@ -331,35 +331,6 @@ export function ProductEditForm({
         </fieldset>
       )}
 
-      <fieldset className="admin-fieldset">
-        <legend>Leafly Reference</legend>
-        <span className="admin-hint">
-          Staff-only. Paste the Leafly strain URL to cross-reference
-          descriptions and data sheets.
-        </span>
-        {product.leaflyUrl ? (
-          <a
-            href={product.leaflyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="admin-external-link"
-          >
-            View on Leafly ↗
-          </a>
-        ) : (
-          <p className="admin-hint admin-muted">No Leafly match set.</p>
-        )}
-        <label>
-          Leafly URL
-          <input
-            name="leaflyUrl"
-            type="url"
-            defaultValue={product.leaflyUrl ?? ''}
-            placeholder="https://www.leafly.com/strains/…"
-          />
-        </label>
-      </fieldset>
-
       <div className="admin-form-actions">
         <Link href="/admin/products">Cancel</Link>
         <button type="submit" disabled={pending || imageUploading}>
