@@ -40,6 +40,36 @@ export function ProductEditForm({
         <input name="name" defaultValue={product.name} required />
       </label>
 
+      <div className="admin-leafly-field">
+        <span className="admin-leafly-field-label">Leafly URL</span>
+        <div className="admin-leafly-row">
+          <input
+            name="leaflyUrl"
+            type="url"
+            defaultValue={product.leaflyUrl ?? ''}
+            placeholder="https://www.leafly.com/strains/…"
+          />
+          <a
+            href={`https://www.leafly.com/search?q=${encodeURIComponent(product.name)}&typefilter=strain`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="admin-leafly-search-btn"
+          >
+            Search Leafly ↗
+          </a>
+          {product.leaflyUrl && (
+            <a
+              href={product.leaflyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="admin-leafly-view-btn"
+            >
+              View Match ↗
+            </a>
+          )}
+        </div>
+      </div>
+
       <label>
         Category
         <select name="category" defaultValue={product.category} required>
@@ -300,35 +330,6 @@ export function ProductEditForm({
           </label>
         </fieldset>
       )}
-
-      <fieldset className="admin-fieldset">
-        <legend>Leafly Reference</legend>
-        <span className="admin-hint">
-          Staff-only. Paste the Leafly strain URL to cross-reference
-          descriptions and data sheets.
-        </span>
-        {product.leaflyUrl ? (
-          <a
-            href={product.leaflyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="admin-external-link"
-          >
-            View on Leafly ↗
-          </a>
-        ) : (
-          <p className="admin-hint admin-muted">No Leafly match set.</p>
-        )}
-        <label>
-          Leafly URL
-          <input
-            name="leaflyUrl"
-            type="url"
-            defaultValue={product.leaflyUrl ?? ''}
-            placeholder="https://www.leafly.com/strains/…"
-          />
-        </label>
-      </fieldset>
 
       <div className="admin-form-actions">
         <Link href="/admin/products">Cancel</Link>

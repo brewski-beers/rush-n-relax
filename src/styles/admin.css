@@ -190,10 +190,17 @@
   --admin-img-upload-remove-border: 1px solid rgba(255, 127, 148, 0.4);
   --admin-img-upload-spinner-track: rgba(255, 255, 255, 0.2);
 
-  /* ── Leafly badge ──────────────────────────────────────────────────────── */
+  /* ── Leafly ────────────────────────────────────────────────────────────── */
   --admin-leafly-badge-bg: #1b5e20;
   --admin-leafly-badge-color: #a5d6a7;
   --admin-leafly-badge-margin-left: 0.5rem;
+  --admin-leafly-row-gap: 0.75rem;
+  --admin-leafly-label-gap: 0.25rem;
+  --admin-leafly-btn-padding: 0.5rem 0.75rem;
+  --admin-leafly-btn-font-size: 0.8125rem;
+  --admin-leafly-view-bg: #1b5e20;
+  --admin-leafly-view-color: #a5d6a7;
+  --admin-leafly-view-bg-hover: #2e7d32;
 
   position: relative;
   min-height: 100vh;
@@ -1377,6 +1384,60 @@
   margin-left: var(--admin-leafly-badge-margin-left);
   vertical-align: middle;
   text-transform: uppercase;
+}
+
+.admin-leafly-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-leafly-label-gap);
+  margin-bottom: var(--admin-form-label-margin-bottom);
+}
+
+.admin-leafly-field-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--admin-label);
+}
+
+.admin-leafly-row {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-leafly-row-gap);
+}
+
+.admin-leafly-row input {
+  flex: 1;
+}
+
+.admin-leafly-search-btn,
+.admin-leafly-view-btn {
+  flex-shrink: 0;
+  padding: var(--admin-leafly-btn-padding);
+  border-radius: var(--admin-radius);
+  font-size: var(--admin-leafly-btn-font-size);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin-leafly-search-btn {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text);
+  border: 1px solid var(--admin-border);
+}
+
+.admin-leafly-search-btn:hover {
+  background: var(--admin-surface-hover);
+}
+
+.admin-leafly-view-btn {
+  background: var(--admin-leafly-view-bg);
+  color: var(--admin-leafly-view-color);
+  border: 1px solid transparent;
+}
+
+.admin-leafly-view-btn:hover {
+  background: var(--admin-leafly-view-bg-hover);
 }
 
 .admin-external-link {
