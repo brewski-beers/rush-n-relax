@@ -18,6 +18,7 @@ interface Props {
 export function ProductCreateForm({ categories, variantTemplates }: Props) {
   const [state, formAction, pending] = useActionState(createProduct, null);
   const [slug, setSlug] = useState('');
+  const [name, setName] = useState('');
   const [imageUploading, setImageUploading] = useState(false);
 
   return (
@@ -41,8 +42,34 @@ export function ProductCreateForm({ categories, variantTemplates }: Props) {
 
       <label>
         Name
-        <input name="name" required />
+        <input
+          name="name"
+          required
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
       </label>
+
+      <div className="admin-leafly-field">
+        <span className="admin-leafly-field-label">Leafly URL</span>
+        <div className="admin-leafly-row">
+          <input
+            name="leaflyUrl"
+            type="url"
+            placeholder="https://www.leafly.com/strains/…"
+          />
+          {name && (
+            <a
+              href={`https://www.leafly.com/search?q=${encodeURIComponent(name)}&typefilter=strain`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="admin-leafly-search-btn"
+            >
+              Search Leafly ↗
+            </a>
+          )}
+        </div>
+      </div>
 
       <label>
         Category

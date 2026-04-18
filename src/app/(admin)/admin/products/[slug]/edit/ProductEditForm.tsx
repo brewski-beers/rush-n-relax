@@ -40,34 +40,34 @@ export function ProductEditForm({
         <input name="name" defaultValue={product.name} required />
       </label>
 
-      <div className="admin-leafly-row">
-        <label className="admin-leafly-label">
-          Leafly URL
+      <div className="admin-leafly-field">
+        <span className="admin-leafly-field-label">Leafly URL</span>
+        <div className="admin-leafly-row">
           <input
             name="leaflyUrl"
             type="url"
             defaultValue={product.leaflyUrl ?? ''}
             placeholder="https://www.leafly.com/strains/…"
           />
-        </label>
-        <a
-          href={`https://www.leafly.com/search?q=${encodeURIComponent(product.name)}&typefilter=strain`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="admin-leafly-search-btn"
-        >
-          Search Leafly ↗
-        </a>
-        {product.leaflyUrl && (
           <a
-            href={product.leaflyUrl}
+            href={`https://www.leafly.com/search?q=${encodeURIComponent(product.name)}&typefilter=strain`}
             target="_blank"
             rel="noopener noreferrer"
-            className="admin-leafly-view-btn"
+            className="admin-leafly-search-btn"
           >
-            View Match ↗
+            Search Leafly ↗
           </a>
-        )}
+          {product.leaflyUrl && (
+            <a
+              href={product.leaflyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="admin-leafly-view-btn"
+            >
+              View Match ↗
+            </a>
+          )}
+        </div>
       </div>
 
       <label>
