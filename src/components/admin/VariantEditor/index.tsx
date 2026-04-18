@@ -3,18 +3,14 @@
 /**
  * VariantEditor — variant-group configurator for admin product forms.
  *
- * Manages VariantGroup[] state. Each group has a label, a combinable toggle,
- * and a list of options. Combinable groups are cartesian-product expanded into
- * flat SKUs on save (via generateSkus in the server action).
+ * Each group has a label, a combinable toggle, and a list of options.
+ * Combinable groups are cartesian-product expanded into flat SKUs on save.
  *
- * Outputs a JSON blob via a hidden input (name="variantGroups") that the
- * server action parses and passes through generateSkus.
+ * Per-group UX:
+ *   - "Copy from template" dropdown replaces the group's options with a saved template
+ *   - "Save '{name}' as template" appears when the group label doesn't match any template key
  *
- * A live SKU preview is rendered below all groups so admins can see the
- * resulting variant list before saving.
- *
- * Templates store a full VariantGroup definition. Clicking a template chip
- * appends that group to the current list.
+ * Top-level template chips add a whole new pre-configured group.
  */
 
 import { useState, useId, useRef } from 'react';
@@ -34,80 +30,6 @@ function slugify(label: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
-}
-
-// ── SaveTemplateForm ───────────────────────────────────────────────────────
-
-interface SaveTemplateFormProps {
-  group: VariantGroup;
-  onSaved: (tpl: StoredVariantTemplate) => void;
-  onCancel: () => void;
-}
-
-function SaveTemplateForm({ group, onSaved, onCancel }: SaveTemplateFormProps) {
-  const [label, setLabel] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const key = slugify(label);
-
-  async function handleSave() {
-    if (!key) {
-      setError('Label is required.');
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    const result = await saveVariantTemplateAction(key, label, group);
-    setSaving(false);
-    if (result.ok) {
-      const optimistic: StoredVariantTemplate = {
-        id: result.id,
-        key,
-        label,
-        group,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      onSaved(optimistic);
-    } else {
-      setError(result.error);
-    }
-  }
-
-  return (
-    <div className="variant-editor-save-tpl-form">
-      <label>
-        <span className="admin-hint">Template label</span>
-        <input
-          type="text"
-          value={label}
-          onChange={e => setLabel(e.target.value)}
-          placeholder="e.g. Flower (weight)"
-          autoFocus
-        />
-      </label>
-      {label && (
-        <span className="admin-hint">
-          Key: <code>{key || '—'}</code>
-        </span>
-      )}
-      {error && <p className="admin-error">{error}</p>}
-      <div className="variant-editor-save-tpl-actions">
-        <button
-          type="button"
-          onClick={() => void handleSave()}
-          disabled={saving || !key}
-          className="admin-btn-primary"
-        >
-          {saving ? 'Saving…' : 'Save Template'}
-        </button>
-        <button type="button" onClick={onCancel} className="admin-btn-ghost">
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
 }
 
 // ── OptionRow ─────────────────────────────────────────────────────────────
@@ -150,7 +72,6 @@ function OptionRow({
   function handleLabelChange(e: React.ChangeEvent<HTMLInputElement>) {
     const newLabel = e.target.value;
     onLabelChange(groupIndex, index, newLabel);
-    // Auto-update optionId only when it still matches the auto-derived value
     if (option.optionId === slugify(option.label)) {
       onIdChange(groupIndex, index, slugify(newLabel));
     }
@@ -201,7 +122,7 @@ function OptionRow({
               type="text"
               value={option.label}
               onChange={handleLabelChange}
-              placeholder="e.g. Berry"
+              placeholder="e.g. Eighth | 3.5g"
               required
             />
           </label>
@@ -235,11 +156,12 @@ function OptionRow({
 interface GroupPanelProps {
   group: VariantGroup;
   groupIndex: number;
-  totalGroups: number;
-  dragOverKey: string | null; // `${groupIdx}-${optIdx}`
+  templates: StoredVariantTemplate[];
+  dragOverKey: string | null;
   onGroupLabelChange: (groupIdx: number, value: string) => void;
   onCombinableChange: (groupIdx: number, value: boolean) => void;
   onDeleteGroup: (groupIdx: number) => void;
+  onReplaceOptions: (groupIdx: number, options: VariantOption[]) => void;
   onOptionLabelChange: (
     groupIdx: number,
     optIdx: number,
@@ -260,10 +182,12 @@ interface GroupPanelProps {
 function GroupPanel({
   group,
   groupIndex,
+  templates,
   dragOverKey,
   onGroupLabelChange,
   onCombinableChange,
   onDeleteGroup,
+  onReplaceOptions,
   onOptionLabelChange,
   onOptionIdChange,
   onDeleteOption,
@@ -277,6 +201,11 @@ function GroupPanel({
   onSaveAsTemplate,
 }: GroupPanelProps) {
   const checkId = useId();
+  const [copyMenuOpen, setCopyMenuOpen] = useState(false);
+
+  const groupKey = slugify(group.label);
+  const hasTemplateMatch = templates.some(t => t.key === groupKey);
+  const showSaveButton = group.options.length > 0 && !hasTemplateMatch;
 
   return (
     <div className="variant-editor-group">
@@ -304,15 +233,6 @@ function GroupPanel({
         </label>
         <button
           type="button"
-          onClick={() => onSaveAsTemplate(groupIndex)}
-          className="variant-editor-save-tpl-btn"
-          disabled={group.options.length === 0}
-          title="Save this group as a template"
-        >
-          Save as Template
-        </button>
-        <button
-          type="button"
           onClick={() => onDeleteGroup(groupIndex)}
           aria-label={`Delete group ${groupIndex + 1}`}
           className="variant-editor-delete-btn"
@@ -321,7 +241,41 @@ function GroupPanel({
         </button>
       </div>
 
-      {/* Options */}
+      {/* Options header row */}
+      <div className="variant-editor-options-header">
+        <span className="admin-hint">Options</span>
+        {templates.length > 0 && (
+          <div className="variant-editor-copy-menu">
+            <button
+              type="button"
+              className="admin-btn-ghost variant-editor-copy-btn"
+              onClick={() => setCopyMenuOpen(o => !o)}
+              aria-expanded={copyMenuOpen}
+            >
+              Copy from template ▾
+            </button>
+            {copyMenuOpen && (
+              <div className="variant-editor-copy-dropdown">
+                {templates.map(tpl => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className="variant-editor-copy-option"
+                    onClick={() => {
+                      onReplaceOptions(groupIndex, tpl.group.options);
+                      setCopyMenuOpen(false);
+                    }}
+                  >
+                    {tpl.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Option rows */}
       <div className="variant-editor-list">
         {group.options.map((opt, oi) => (
           <OptionRow
@@ -344,13 +298,98 @@ function GroupPanel({
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => onAddOption(groupIndex)}
-        className="admin-add-row-btn"
-      >
-        + Add option
-      </button>
+      <div className="variant-editor-group-footer">
+        <button
+          type="button"
+          onClick={() => onAddOption(groupIndex)}
+          className="admin-add-row-btn"
+        >
+          + Add option
+        </button>
+        {showSaveButton && group.label && (
+          <button
+            type="button"
+            className="variant-editor-save-tpl-btn"
+            onClick={() => onSaveAsTemplate(groupIndex)}
+          >
+            Save &ldquo;{group.label}&rdquo; as template
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── SaveTemplateForm ───────────────────────────────────────────────────────
+
+interface SaveTemplateFormProps {
+  group: VariantGroup;
+  onSaved: (tpl: StoredVariantTemplate) => void;
+  onCancel: () => void;
+}
+
+function SaveTemplateForm({ group, onSaved, onCancel }: SaveTemplateFormProps) {
+  const [label, setLabel] = useState(group.label);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const key = slugify(label);
+
+  async function handleSave() {
+    if (!key) {
+      setError('Label is required.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const result = await saveVariantTemplateAction(key, label, group);
+    setSaving(false);
+    if (result.ok) {
+      const optimistic: StoredVariantTemplate = {
+        id: result.id,
+        key,
+        label,
+        group,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      onSaved(optimistic);
+    } else {
+      setError(result.error);
+    }
+  }
+
+  return (
+    <div className="variant-editor-save-tpl-form">
+      <label>
+        <span className="admin-hint">Template name</span>
+        <input
+          type="text"
+          value={label}
+          onChange={e => setLabel(e.target.value)}
+          placeholder="e.g. Flower weights"
+          autoFocus
+        />
+      </label>
+      {label && (
+        <span className="admin-hint">
+          Key: <code>{key || '—'}</code>
+        </span>
+      )}
+      {error && <p className="admin-error">{error}</p>}
+      <div className="variant-editor-save-tpl-actions">
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={saving || !key}
+          className="admin-btn-primary"
+        >
+          {saving ? 'Saving…' : 'Save Template'}
+        </button>
+        <button type="button" onClick={onCancel} className="admin-btn-ghost">
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }
@@ -358,9 +397,7 @@ function GroupPanel({
 // ── VariantEditor (main) ───────────────────────────────────────────────────
 
 interface VariantEditorProps {
-  /** Initial groups (from existing product), or empty for new products */
   initialGroups?: VariantGroup[];
-  /** Stored variant templates from Firestore — passed from server component */
   variantTemplates?: StoredVariantTemplate[];
 }
 
@@ -371,17 +408,14 @@ export function VariantEditor({
   const [groups, setGroups] = useState<VariantGroup[]>(initialGroups);
   const [templates, setTemplates] =
     useState<StoredVariantTemplate[]>(variantTemplates);
-
-  // saveAsTemplate state: which groupIndex is pending save, or null
   const [savingGroupIdx, setSavingGroupIdx] = useState<number | null>(null);
 
-  // Drag state: `${groupIdx}-${optIdx}` key
   const dragKeyRef = useRef<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
 
   // ── Template actions ──────────────────────────────────────────────────────
 
-  function applyTemplate(tpl: StoredVariantTemplate) {
+  function addGroupFromTemplate(tpl: StoredVariantTemplate) {
     setGroups(prev => [...prev, { ...tpl.group }]);
   }
 
@@ -390,16 +424,19 @@ export function VariantEditor({
     if (result.ok) {
       setTemplates(prev => prev.filter(t => t.id !== id));
     }
-    // On failure silently preserve state — chip stays visible
   }
 
-  // ── Group mutations ──────────────────────────────────────────────────────
+  // ── Group mutations ───────────────────────────────────────────────────────
 
   function addGroup() {
-    const groupId = `group-${Date.now()}`;
     setGroups(prev => [
       ...prev,
-      { groupId, label: '', combinable: false, options: [] },
+      {
+        groupId: `group-${Date.now()}`,
+        label: '',
+        combinable: false,
+        options: [],
+      },
     ]);
   }
 
@@ -414,7 +451,6 @@ export function VariantEditor({
           ? {
               ...g,
               label: value,
-              // Keep groupId in sync with label while still auto-derived
               groupId:
                 g.groupId === slugify(g.label) ? slugify(value) : g.groupId,
             }
@@ -429,7 +465,13 @@ export function VariantEditor({
     );
   }
 
-  // ── Option mutations ─────────────────────────────────────────────────────
+  function replaceOptions(groupIdx: number, options: VariantOption[]) {
+    setGroups(prev =>
+      prev.map((g, i) => (i === groupIdx ? { ...g, options: [...options] } : g))
+    );
+  }
+
+  // ── Option mutations ──────────────────────────────────────────────────────
 
   function addOption(groupIdx: number) {
     setGroups(prev =>
@@ -487,7 +529,6 @@ export function VariantEditor({
       prev.map((g, i) => {
         if (i !== groupIdx) return g;
         const opts = [...g.options];
-        // safe swap — bounds checked above
         [opts[optIdx - 1], opts[optIdx]] = [opts[optIdx], opts[optIdx - 1]];
         return { ...g, options: opts };
       })
@@ -500,14 +541,13 @@ export function VariantEditor({
         if (i !== groupIdx) return g;
         if (optIdx >= g.options.length - 1) return g;
         const opts = [...g.options];
-        // safe swap — bounds checked above
         [opts[optIdx], opts[optIdx + 1]] = [opts[optIdx + 1], opts[optIdx]];
         return { ...g, options: opts };
       })
     );
   }
 
-  // ── Drag handlers ────────────────────────────────────────────────────────
+  // ── Drag handlers ─────────────────────────────────────────────────────────
 
   function handleDragStart(groupIdx: number, optIdx: number) {
     dragKeyRef.current = `${groupIdx}-${optIdx}`;
@@ -551,11 +591,7 @@ export function VariantEditor({
     setDragOverKey(null);
   }
 
-  // ── SKU preview ──────────────────────────────────────────────────────────
-
   const previewSkus = generateSkus(groups);
-
-  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <fieldset className="admin-fieldset variant-editor">
@@ -565,20 +601,18 @@ export function VariantEditor({
         Pricing is set per-location in Inventory.
       </span>
 
-      {/* Template chips */}
-      <div className="variant-editor-template-row">
-        <span className="admin-hint">Templates</span>
-        {templates.length === 0 ? (
-          <span className="admin-hint">No templates saved yet.</span>
-        ) : (
+      {/* Top-level template chips — adds a whole new pre-configured group */}
+      {templates.length > 0 && (
+        <div className="variant-editor-template-row">
+          <span className="admin-hint">Add group from template:</span>
           <div className="variant-editor-template-chips">
             {templates.map(tpl => (
               <span key={tpl.id} className="tag-chip variant-template-chip">
                 <button
                   type="button"
                   className="variant-editor-chip-apply"
-                  onClick={() => applyTemplate(tpl)}
-                  title={`Apply template: ${tpl.label}`}
+                  onClick={() => addGroupFromTemplate(tpl)}
+                  title={`Add group: ${tpl.label}`}
                 >
                   {tpl.label}
                 </button>
@@ -593,9 +627,8 @@ export function VariantEditor({
               </span>
             ))}
           </div>
-        )}
-        <span className="admin-hint">Clicking a template appends a group.</span>
-      </div>
+        </div>
+      )}
 
       {/* Group panels */}
       {groups.map((group, gi) => (
@@ -603,11 +636,12 @@ export function VariantEditor({
           key={group.groupId}
           group={group}
           groupIndex={gi}
-          totalGroups={groups.length}
+          templates={templates}
           dragOverKey={dragOverKey}
           onGroupLabelChange={changeGroupLabel}
           onCombinableChange={changeCombinableFlag}
           onDeleteGroup={deleteGroup}
+          onReplaceOptions={replaceOptions}
           onOptionLabelChange={changeOptionLabel}
           onOptionIdChange={changeOptionId}
           onDeleteOption={deleteOption}
@@ -626,7 +660,7 @@ export function VariantEditor({
         + Add group
       </button>
 
-      {/* Save-as-template inline form — shown below the target group */}
+      {/* Save-as-template inline form */}
       {savingGroupIdx !== null && groups[savingGroupIdx] !== undefined && (
         <SaveTemplateForm
           group={groups[savingGroupIdx]}

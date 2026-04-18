@@ -2039,6 +2039,92 @@
   gap: var(--ve-item-gap);
 }
 
+/* Group panel */
+.variant-editor-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ve-move-gap);
+  padding: var(--ve-card-padding);
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+}
+
+.variant-editor-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ve-item-gap);
+  flex-wrap: wrap;
+}
+
+.variant-editor-group-label-input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.variant-editor-combinable-label {
+  display: flex;
+  align-items: center;
+  gap: var(--ve-item-gap);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Options sub-header with "Copy from template" inline */
+.variant-editor-options-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ve-item-gap);
+}
+
+/* Copy-from-template dropdown */
+.variant-editor-copy-menu {
+  position: relative;
+}
+
+.variant-editor-copy-btn {
+  font-size: var(--font-size-sm, 0.88rem);
+  padding: var(--ve-add-btn-padding);
+}
+
+.variant-editor-copy-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 10;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px var(--admin-shadow, rgba(0, 0, 0, 0.35));
+}
+
+.variant-editor-copy-option {
+  background: none;
+  border: none;
+  color: var(--admin-text);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 0.88rem);
+  padding: var(--ve-add-btn-padding);
+  text-align: left;
+  transition: background 0.1s ease;
+}
+
+.variant-editor-copy-option:hover {
+  background: var(--admin-surface-soft);
+}
+
+/* Group footer — add option + conditional save-as-template */
+.variant-editor-group-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--ve-item-gap);
+  flex-wrap: wrap;
+}
+
 /* Generic admin button variants used in save-template form */
 .admin-btn-primary {
   background: var(--admin-accent);
