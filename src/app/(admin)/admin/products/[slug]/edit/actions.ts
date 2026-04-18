@@ -65,7 +65,9 @@ export async function updateProduct(
     const rawStatus = formData.get('status')?.toString() as
       | ProductStatus
       | undefined;
-    if (rawStatus && SETTABLE_STATUSES.includes(rawStatus)) {
+    if (rawStatus === 'compliance-hold') {
+      return { error: 'Cannot set that status directly.' };
+    } else if (rawStatus && SETTABLE_STATUSES.includes(rawStatus)) {
       status = rawStatus;
     } else {
       status = existing.status;
