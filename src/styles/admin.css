@@ -1976,6 +1976,27 @@
   padding: 0;
 }
 
+/* Template chips — selectable/clickable, visually distinct from applied tags */
+.variant-template-chip {
+  background: transparent;
+  border: 1px solid var(--admin-border-strong);
+  color: var(--admin-text-muted);
+}
+
+.variant-template-chip .variant-editor-chip-apply {
+  color: var(--admin-text-muted);
+  transition: color 0.15s ease;
+}
+
+.variant-template-chip:hover {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+}
+
+.variant-template-chip:hover .variant-editor-chip-apply {
+  color: var(--admin-accent);
+}
+
 /* Save as Template button */
 .variant-editor-save-tpl-btn {
   align-self: flex-start;
@@ -2052,4 +2073,83 @@
 .admin-btn-ghost:hover {
   border-color: var(--admin-muted);
   color: var(--admin-fg);
+}
+
+/* ── Wizard ──────────────────────────────────────────────────────────────── */
+
+.wizard-step--hidden {
+  display: none;
+}
+
+.wizard-step-indicator {
+  color: var(--admin-text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+}
+
+.wizard-nav {
+  justify-content: space-between;
+}
+
+/* ── Wizard Review ───────────────────────────────────────────────────────── */
+
+.wizard-review-section {
+  border-bottom: 1px solid var(--admin-border);
+  padding: var(--admin-fieldset-padding) 0;
+}
+
+.wizard-review-section:last-child {
+  border-bottom: none;
+}
+
+.wizard-review-section-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--admin-section-title-margin);
+}
+
+.wizard-review-edit {
+  background: none;
+  border: none;
+  color: var(--admin-accent);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 0.88rem);
+  padding: 0;
+}
+
+.wizard-review-edit:hover {
+  text-decoration: underline;
+}
+
+/* ── Danger button ──────────────────────────────────────────────────────── */
+
+.admin-btn-danger {
+  background: none;
+  border: var(--admin-error-border);
+  border-radius: 6px;
+  color: var(--admin-error);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: var(--ve-add-btn-padding);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.admin-btn-danger:hover:not(:disabled) {
+  background-color: var(--admin-error-bg);
+}
+
+.admin-btn-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.admin-inline-form {
+  display: inline;
 }

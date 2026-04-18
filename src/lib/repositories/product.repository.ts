@@ -187,6 +187,10 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     effects: Array.isArray(d.effects) ? (d.effects as string[]) : undefined,
     flavors: Array.isArray(d.flavors) ? (d.flavors as string[]) : undefined,
     variants: docToVariants(d.variants),
+    variantSelectorLabel:
+      typeof d.variantSelectorLabel === 'string'
+        ? d.variantSelectorLabel
+        : undefined,
     extractionType:
       typeof d.extractionType === 'string' ? d.extractionType : undefined,
     hardwareType:

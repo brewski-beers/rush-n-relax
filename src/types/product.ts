@@ -85,6 +85,11 @@ export interface Product {
    * Priced per-variant at the inventory level via InventoryItem.variantPricing.
    */
   variants?: ProductVariant[];
+  /**
+   * Storefront selector heading for variants, e.g. "Select Weight", "Select Flavor".
+   * Defaults to "Select Size" if not set.
+   */
+  variantSelectorLabel?: string;
   /** FDA-style nutrition facts — edibles and drinks (serving info). */
   nutritionFacts?: NutritionFacts;
   // ── Vape-specific ──────────────────────────────────────────────────────────

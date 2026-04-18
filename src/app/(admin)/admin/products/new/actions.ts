@@ -142,6 +142,10 @@ export async function createProduct(
       ? Number(cbdMgRaw)
       : undefined;
 
+  // ── Variant selector label ────────────────────────────────────────────────
+  const variantSelectorLabel =
+    formData.get('variantSelectorLabel')?.toString().trim() || undefined;
+
   // ── Variants ──────────────────────────────────────────────────────────────
   const variantsRaw = formData.get('variants')?.toString() ?? '';
   let variants: ProductVariant[] | undefined;
@@ -178,6 +182,7 @@ export async function createProduct(
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
     ...(variants !== undefined ? { variants } : {}),
+    ...(variantSelectorLabel !== undefined ? { variantSelectorLabel } : {}),
     ...(extractionType !== undefined ? { extractionType } : {}),
     ...(hardwareType !== undefined ? { hardwareType } : {}),
     ...(volumeMl !== undefined ? { volumeMl } : {}),

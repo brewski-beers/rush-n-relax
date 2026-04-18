@@ -254,13 +254,17 @@ interface VariantEditorProps {
   initialVariants?: ProductVariant[];
   /** Stored variant templates from Firestore — passed from server component */
   variantTemplates?: StoredVariantTemplate[];
+  /** Initial storefront selector label, e.g. "Select Weight" */
+  initialSelectorLabel?: string;
 }
 
 export function VariantEditor({
   initialVariants = [],
   variantTemplates = [],
+  initialSelectorLabel = '',
 }: VariantEditorProps) {
   const [variants, setVariants] = useState<ProductVariant[]>(initialVariants);
+  const [selectorLabel, setSelectorLabel] = useState(initialSelectorLabel);
   const [templates, setTemplates] =
     useState<StoredVariantTemplate[]>(variantTemplates);
   const [showSaveForm, setShowSaveForm] = useState(false);
@@ -268,7 +272,7 @@ export function VariantEditor({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   function applyTemplate(tpl: StoredVariantTemplate) {
-    setVariants(buildRows(tpl.rows));
+    setVariants(prev => [...prev, ...buildRows(tpl.rows)]);
   }
 
   async function handleDeleteTemplate(id: string) {
@@ -348,9 +352,22 @@ export function VariantEditor({
     <fieldset className="admin-fieldset variant-editor">
       <legend>Variants</legend>
       <span className="admin-hint">
-        Define purchasable sizes or configurations. Pricing is set per-location
-        in Inventory.
+        Define purchasable options. Pricing is set per-location in Inventory.
       </span>
+
+      <label>
+        Selector Label{' '}
+        <span className="admin-hint">
+          (storefront heading — e.g. &quot;Select Weight&quot;, &quot;Select
+          Flavor&quot;)
+        </span>
+        <input
+          type="text"
+          value={selectorLabel}
+          onChange={e => setSelectorLabel(e.target.value)}
+          placeholder="Select Size"
+        />
+      </label>
 
       {/* Template chips */}
       <div className="variant-editor-template-row">
@@ -360,7 +377,7 @@ export function VariantEditor({
         ) : (
           <div className="variant-editor-template-chips">
             {templates.map(tpl => (
-              <span key={tpl.id} className="tag-chip">
+              <span key={tpl.id} className="tag-chip variant-template-chip">
                 <button
                   type="button"
                   className="variant-editor-chip-apply"
@@ -381,9 +398,7 @@ export function VariantEditor({
             ))}
           </div>
         )}
-        <span className="admin-hint">
-          Clicking a template replaces existing rows.
-        </span>
+        <span className="admin-hint">Clicking a template appends rows.</span>
       </div>
 
       <div className="variant-editor-list">
@@ -440,7 +455,7 @@ export function VariantEditor({
         </button>
       )}
 
-      {/* Hidden input carries the serialized variants JSON to the server action */}
+      <input type="hidden" name="variantSelectorLabel" value={selectorLabel} />
       <input type="hidden" name="variants" value={JSON.stringify(variants)} />
     </fieldset>
   );

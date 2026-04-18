@@ -61,7 +61,7 @@ interface Props {
 }
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_BYTES = 15 * 1024 * 1024; // 15 MB
 const GALLERY_SIZE = 5;
 
 function buildGallery(paths?: string[]): (string | null)[] {
@@ -159,7 +159,7 @@ function ProductImageUploadInner({
       return;
     }
     if (file.size > MAX_BYTES) {
-      setError(slot, 'Max file size is 5 MB.');
+      setError(slot, 'Max file size is 15 MB.');
       return;
     }
 

@@ -234,7 +234,9 @@ export default function ProductDetailClient({
             {/* ── Pricing variants ───────────────────────────────────────────── */}
             {hasOnlinePricing ? (
               <div className="product-pricing-block">
-                <span className="product-hero-tag-label">Select Size</span>
+                <span className="product-hero-tag-label">
+                  {product.variantSelectorLabel ?? 'Select Size'}
+                </span>
                 <div className="product-variant-grid">
                   {displayVariants.map(v => (
                     <button

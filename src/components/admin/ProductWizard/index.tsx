@@ -36,27 +36,37 @@ import type {
 
 type Mode = 'create' | 'edit';
 
-interface LocationOption {
-  slug: string;
-  name: string;
-}
-
 interface Props {
   mode: Mode;
   product?: Product;
   categories: ProductCategorySummary[];
   variantTemplates: VariantTemplate[];
   vendors: VendorSummary[];
-  locations: LocationOption[];
-  /**
-   * Whether the current user holds the `owner` role.
-   * When true (edit mode only), the Status field is shown in Step 4.
-   */
-  isOwner?: boolean;
   action: (
     prev: { error?: string } | null,
     formData: FormData
   ) => Promise<{ error?: string }>;
+}
+
+interface ReviewSnapshot {
+  name: string;
+  categoryLabel: string;
+  slug: string;
+  vendorName: string;
+  details: string;
+  strain: string;
+  leaflyUrl: string;
+  thcPct: string;
+  coaUploaded: boolean;
+  hardwareType: string;
+  extractionType: string;
+  volumeMl: string;
+  thcMgPerServing: string;
+  servingSize: string;
+  flavors: string[];
+  effects: string[];
+  variantCount: number;
+  hasFeaturedImage: boolean;
 }
 
 // ─── Category Configurator Map ────────────────────────────────────────────────
@@ -138,8 +148,8 @@ function getCategoryConfig(category: string): CategoryConfig {
 
 function getStepSequence(category: string): number[] {
   return getCategoryConfig(category).configuratorTitle
-    ? [1, 2, 3, 4, 5]
-    : [1, 2, 4, 5];
+    ? [1, 2, 3, 4, 5, 6]
+    : [1, 2, 4, 5, 6];
 }
 
 function getStepTitle(domStep: number, category: string): string {
@@ -147,10 +157,51 @@ function getStepTitle(domStep: number, category: string): string {
     1: 'Category & Name',
     2: 'Description',
     3: getCategoryConfig(category).configuratorTitle ?? '',
-    4: 'Availability & Compliance',
+    4: 'Variants',
     5: 'Images',
+    6: 'Review',
   };
   return titles[domStep] ?? '';
+}
+
+// ─── Review capture ───────────────────────────────────────────────────────────
+
+function captureReview(
+  form: HTMLFormElement,
+  category: string,
+  categories: ProductCategorySummary[],
+  vendors: VendorSummary[]
+): ReviewSnapshot {
+  const v = (name: string) =>
+    (form.elements.namedItem(name) as HTMLInputElement | null)?.value ?? '';
+  const variantCount = (() => {
+    try {
+      const raw = v('variants');
+      return raw ? (JSON.parse(raw) as unknown[]).length : 0;
+    } catch {
+      return 0;
+    }
+  })();
+  return {
+    name: v('name'),
+    categoryLabel: categories.find(c => c.slug === category)?.label ?? category,
+    slug: v('slug'),
+    vendorName: vendors.find(vd => vd.slug === v('vendorSlug'))?.name ?? '',
+    details: v('details'),
+    strain: v('strain'),
+    leaflyUrl: v('leaflyUrl'),
+    thcPct: v('labResults_thcPercent'),
+    coaUploaded: !!v('coaUrl'),
+    hardwareType: v('hardwareType'),
+    extractionType: v('extractionType'),
+    volumeMl: v('volumeMl'),
+    thcMgPerServing: v('thcMgPerServing'),
+    servingSize: v('nfServingSize'),
+    flavors: v('flavors').split(',').filter(Boolean),
+    effects: v('effects').split(',').filter(Boolean),
+    variantCount,
+    hasFeaturedImage: !!v('featuredImagePath'),
+  };
 }
 
 // ─── Per-step validation ──────────────────────────────────────────────────────
@@ -192,20 +243,18 @@ export function ProductWizardForm({
   categories,
   variantTemplates,
   vendors,
-  locations,
-  isOwner = false,
   action,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, null);
   const [imageUploading, setImageUploading] = useState(false);
   const [stepError, setStepError] = useState<string | null>(null);
+  const [reviewSnapshot, setReviewSnapshot] = useState<ReviewSnapshot | null>(
+    null
+  );
 
   const [name, setName] = useState(product?.name ?? '');
   const [slug, setSlug] = useState(product?.slug ?? '');
   const [category, setCategory] = useState(product?.category ?? '');
-  const [availableAt, setAvailableAt] = useState<string[]>(
-    product?.availableAt ?? []
-  );
 
   const [domStep, setDomStep] = useState(1);
 
@@ -216,7 +265,6 @@ export function ProductWizardForm({
   const isLastStep = seqIndex === totalSteps - 1;
 
   const catConfig = getCategoryConfig(category);
-  const showStatusField = mode === 'edit' && isOwner;
 
   function getForm(): HTMLFormElement | null {
     return document.querySelector<HTMLFormElement>('form.admin-form');
@@ -231,7 +279,12 @@ export function ProductWizardForm({
     }
     setStepError(null);
     const next = sequence[seqIndex + 1];
-    if (next !== undefined) setDomStep(next);
+    if (next !== undefined) {
+      if (next === 6 && form) {
+        setReviewSnapshot(captureReview(form, category, categories, vendors));
+      }
+      setDomStep(next);
+    }
   }
 
   function goBack() {
@@ -733,7 +786,7 @@ export function ProductWizardForm({
         </fieldset>
       </div>
 
-      {/* ── Step 4: Availability & Compliance ─────────────────── */}
+      {/* ── Step 4: Variants ──────────────────────────────────── */}
       <div
         className={
           domStep !== 4 ? 'wizard-step wizard-step--hidden' : 'wizard-step'
@@ -741,63 +794,10 @@ export function ProductWizardForm({
         aria-hidden={domStep !== 4}
       >
         <fieldset className="admin-fieldset">
-          <legend>Availability &amp; Compliance</legend>
-
-          <p className="admin-section-title">Available At</p>
-          <span className="admin-hint">
-            Select which locations carry this product.
-          </span>
-          {locations.map(loc => (
-            <label key={loc.slug} className="admin-checkbox-label">
-              <input
-                type="checkbox"
-                name="availableAt"
-                value={loc.slug}
-                checked={availableAt.includes(loc.slug)}
-                onChange={e => {
-                  const next = e.target.checked
-                    ? [...availableAt, loc.slug]
-                    : availableAt.filter(s => s !== loc.slug);
-                  setAvailableAt(next);
-                }}
-              />
-              {loc.name}
-            </label>
-          ))}
-
-          {showStatusField && (
-            <label>
-              Status
-              {product?.status === 'compliance-hold' ? (
-                <>
-                  <input type="hidden" name="status" value="compliance-hold" />
-                  <input
-                    value="compliance-hold"
-                    disabled
-                    className="admin-input-readonly"
-                  />
-                  <span className="admin-hint">
-                    Set by compliance system — cannot be changed here.
-                  </span>
-                </>
-              ) : (
-                <select
-                  name="status"
-                  defaultValue={product?.status ?? 'active'}
-                  required
-                >
-                  <option value="active">Active</option>
-                  <option value="pending-reformulation">
-                    Pending Reformulation
-                  </option>
-                  <option value="archived">Archived</option>
-                </select>
-              )}
-            </label>
-          )}
-
+          <legend>Variants</legend>
           <VariantEditor
             initialVariants={product?.variants ?? []}
+            initialSelectorLabel={product?.variantSelectorLabel}
             variantTemplates={variantTemplates}
           />
         </fieldset>
@@ -827,6 +827,163 @@ export function ProductWizardForm({
             />
           )}
         </fieldset>
+      </div>
+
+      {/* ── Step 6: Review ───────────────────────────────────────── */}
+      <div
+        className={
+          domStep !== 6 ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+        }
+        aria-hidden={domStep !== 6}
+      >
+        {reviewSnapshot && (
+          <div className="wizard-review">
+            {/* Category & Name */}
+            <div className="wizard-review-section">
+              <div className="wizard-review-section-header">
+                <p className="admin-section-title">Category &amp; Name</p>
+                <button
+                  type="button"
+                  className="wizard-review-edit"
+                  onClick={() => {
+                    setReviewSnapshot(null);
+                    setDomStep(1);
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
+              <p>
+                {reviewSnapshot.categoryLabel} —{' '}
+                <strong>{reviewSnapshot.name}</strong>
+              </p>
+              <p className="admin-hint">{reviewSnapshot.slug}</p>
+              {reviewSnapshot.vendorName && (
+                <p className="admin-hint">
+                  Vendor: {reviewSnapshot.vendorName}
+                </p>
+              )}
+            </div>
+
+            {/* Description */}
+            <div className="wizard-review-section">
+              <div className="wizard-review-section-header">
+                <p className="admin-section-title">Description</p>
+                <button
+                  type="button"
+                  className="wizard-review-edit"
+                  onClick={() => {
+                    setReviewSnapshot(null);
+                    setDomStep(2);
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
+              <p className="admin-hint">
+                {reviewSnapshot.details.slice(0, 120)}
+                {reviewSnapshot.details.length > 120 ? '\u2026' : ''}
+              </p>
+            </div>
+
+            {/* Configurator section (if applicable) */}
+            {catConfig.configuratorTitle && (
+              <div className="wizard-review-section">
+                <div className="wizard-review-section-header">
+                  <p className="admin-section-title">
+                    {catConfig.configuratorTitle}
+                  </p>
+                  <button
+                    type="button"
+                    className="wizard-review-edit"
+                    onClick={() => {
+                      setReviewSnapshot(null);
+                      setDomStep(3);
+                    }}
+                  >
+                    Edit
+                  </button>
+                </div>
+                <div className="admin-hint">
+                  {catConfig.hasFlowerProfile && reviewSnapshot.strain && (
+                    <span>Strain: {reviewSnapshot.strain} · </span>
+                  )}
+                  {catConfig.hasLabResults && reviewSnapshot.thcPct && (
+                    <span>THC: {reviewSnapshot.thcPct}% · </span>
+                  )}
+                  {catConfig.hasLabResults && (
+                    <span>
+                      COA: {reviewSnapshot.coaUploaded ? 'Uploaded' : 'None'}{' '}
+                      ·{' '}
+                    </span>
+                  )}
+                  {catConfig.hasVapeAttributes &&
+                    reviewSnapshot.hardwareType && (
+                      <span>{reviewSnapshot.hardwareType} · </span>
+                    )}
+                  {catConfig.hasVapeAttributes &&
+                    reviewSnapshot.extractionType && (
+                      <span>{reviewSnapshot.extractionType}</span>
+                    )}
+                  {catConfig.hasDrinkAttributes &&
+                    reviewSnapshot.thcMgPerServing && (
+                      <span>
+                        {reviewSnapshot.thcMgPerServing}mg THC/serving
+                      </span>
+                    )}
+                  {catConfig.hasNutritionFacts &&
+                    reviewSnapshot.servingSize && (
+                      <span>Serving: {reviewSnapshot.servingSize}</span>
+                    )}
+                </div>
+              </div>
+            )}
+
+            {/* Variants */}
+            <div className="wizard-review-section">
+              <div className="wizard-review-section-header">
+                <p className="admin-section-title">Variants</p>
+                <button
+                  type="button"
+                  className="wizard-review-edit"
+                  onClick={() => {
+                    setReviewSnapshot(null);
+                    setDomStep(4);
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
+              <p className="admin-hint">
+                {reviewSnapshot.variantCount > 0
+                  ? `${reviewSnapshot.variantCount} variant${reviewSnapshot.variantCount !== 1 ? 's' : ''} defined`
+                  : 'No variants \u2014 pricing set in Inventory'}
+              </p>
+            </div>
+
+            {/* Images */}
+            <div className="wizard-review-section">
+              <div className="wizard-review-section-header">
+                <p className="admin-section-title">Images</p>
+                <button
+                  type="button"
+                  className="wizard-review-edit"
+                  onClick={() => {
+                    setReviewSnapshot(null);
+                    setDomStep(5);
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
+              <p className="admin-hint">
+                {reviewSnapshot.hasFeaturedImage
+                  ? 'Featured image uploaded'
+                  : 'No featured image \u2014 can be added after creation'}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Navigation ─────────────────────────────────────────── */}

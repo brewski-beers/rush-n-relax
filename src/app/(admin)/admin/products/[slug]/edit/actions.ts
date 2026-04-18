@@ -8,20 +8,9 @@ import {
   clearProductFields,
   getProductBySlug,
   listActiveCategories,
+  setProductStatus,
 } from '@/lib/repositories';
-import type {
-  ProductStatus,
-  ProductStrain,
-  ProductVariant,
-  NutritionFacts,
-} from '@/types';
-
-// compliance-hold is system-managed — admins cannot set it directly
-const SETTABLE_STATUSES: ProductStatus[] = [
-  'active',
-  'pending-reformulation',
-  'archived',
-];
+import type { ProductStrain, ProductVariant, NutritionFacts } from '@/types';
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
@@ -35,7 +24,7 @@ export async function updateProduct(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  const actor = await requireRole('staff');
+  await requireRole('staff');
 
   const existing = await getProductBySlug(slug);
   if (!existing) return { error: 'Product not found.' };
@@ -43,7 +32,7 @@ export async function updateProduct(
   const name = formData.get('name')?.toString().trim();
   const category = formData.get('category')?.toString();
   const details = formData.get('details')?.toString().trim();
-  const availableAt = formData.getAll('availableAt').map(v => v.toString());
+  const availableAt = existing.availableAt; // inventory system owns availability
 
   if (!name || !category || !details) {
     return { error: 'All required fields must be filled.' };
@@ -54,27 +43,8 @@ export async function updateProduct(
     return { error: 'Invalid category.' };
   }
 
-  // Status is only editable by owners. If the field is absent from FormData
-  // (non-owner users don't see it in the wizard), fall back to the existing value.
-  // compliance-hold can never be changed here — always preserved.
-  let status: ProductStatus;
-  if (existing.status === 'compliance-hold') {
-    status = 'compliance-hold';
-  } else if (actor.role === 'owner') {
-    const rawStatus = formData.get('status')?.toString() as
-      | ProductStatus
-      | undefined;
-    if (rawStatus === 'compliance-hold') {
-      return { error: 'Cannot set that status directly.' };
-    } else if (rawStatus && SETTABLE_STATUSES.includes(rawStatus)) {
-      status = rawStatus;
-    } else {
-      status = existing.status;
-    }
-  } else {
-    // Non-owner staff cannot change status — preserve existing
-    status = existing.status;
-  }
+  // Status is managed externally (archiveProduct action / compliance CF)
+  const status = existing.status;
 
   // formData.get() returns:
   //   null   — field not in form (ProductImageUpload not rendered)
@@ -204,6 +174,11 @@ export async function updateProduct(
     }
   }
 
+  // ── Variant selector label ────────────────────────────────────────────────
+  const variantSelectorLabel =
+    formData.get('variantSelectorLabel')?.toString().trim() ||
+    existing.variantSelectorLabel;
+
   // ── Vape attributes ───────────────────────────────────────────────────────
   const extractionType =
     formData.get('extractionType')?.toString().trim() ||
@@ -302,6 +277,7 @@ export async function updateProduct(
     ...(volumeMl !== undefined ? { volumeMl } : {}),
     ...(thcMgPerServing !== undefined ? { thcMgPerServing } : {}),
     ...(cbdMgPerServing !== undefined ? { cbdMgPerServing } : {}),
+    ...(variantSelectorLabel ? { variantSelectorLabel } : {}),
   };
 
   try {
@@ -323,4 +299,12 @@ export async function updateProduct(
     if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
     return { error: 'Failed to save. Please try again.' };
   }
+}
+
+export async function archiveProduct(slug: string): Promise<void> {
+  await requireRole('staff');
+  await setProductStatus(slug, 'archived');
+  revalidatePath('/admin/products');
+  revalidatePath(`/products/${slug}`);
+  redirect('/admin/products');
 }
