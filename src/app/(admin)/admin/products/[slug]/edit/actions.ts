@@ -44,6 +44,7 @@ export async function updateProduct(
   const category = formData.get('category')?.toString();
   const details = formData.get('details')?.toString().trim();
   const status = formData.get('status')?.toString() as ProductStatus;
+  const vendorSlug = formData.get('vendorSlug')?.toString() || undefined;
   const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
@@ -244,6 +245,7 @@ export async function updateProduct(
     ...(variants !== undefined ? { variants } : {}),
     ...(nutritionFacts !== undefined ? { nutritionFacts } : {}),
     ...(leaflyUrl ? { leaflyUrl } : {}),
+    ...(vendorSlug ? { vendorSlug } : {}),
   };
 
   try {

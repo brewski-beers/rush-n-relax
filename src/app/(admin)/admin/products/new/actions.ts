@@ -27,6 +27,7 @@ export async function createProduct(
   const name = formData.get('name')?.toString().trim();
   const category = formData.get('category')?.toString();
   const details = formData.get('details')?.toString().trim();
+  const vendorSlug = formData.get('vendorSlug')?.toString() || undefined;
   const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
@@ -147,6 +148,7 @@ export async function createProduct(
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
     ...(variants !== undefined ? { variants } : {}),
+    ...(vendorSlug ? { vendorSlug } : {}),
   });
 
   revalidatePath('/admin/products');

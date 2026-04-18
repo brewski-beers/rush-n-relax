@@ -1,15 +1,20 @@
 export const dynamic = 'force-dynamic';
 
 import { requireRole } from '@/lib/admin-auth';
-import { listActiveCategories, listVariantTemplates } from '@/lib/repositories';
+import {
+  listActiveCategories,
+  listVariantTemplates,
+  listVendors,
+} from '@/lib/repositories';
 import { ProductCreateForm } from './ProductCreateForm';
 
 export default async function NewProductPage() {
   await requireRole('staff');
 
-  const [categories, variantTemplates] = await Promise.all([
+  const [categories, variantTemplates, vendors] = await Promise.all([
     listActiveCategories(),
     listVariantTemplates(),
+    listVendors(),
   ]);
 
   return (
@@ -18,6 +23,7 @@ export default async function NewProductPage() {
       <ProductCreateForm
         categories={categories}
         variantTemplates={variantTemplates}
+        vendors={vendors}
       />
     </>
   );
