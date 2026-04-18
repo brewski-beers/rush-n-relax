@@ -17,7 +17,10 @@ export default async function VendorsPage() {
 
   return (
     <main className="vendors-page">
-      <section className="vendors-hero asymmetry-section-stable page-hero-shell">
+      <section
+        id="vendors-hero"
+        className="vendors-hero asymmetry-section-stable page-hero-shell"
+      >
         <div className="container">
           <h1>Our Vendors</h1>
           <p className="lead">
@@ -27,7 +30,10 @@ export default async function VendorsPage() {
         </div>
       </section>
 
-      <section className="vendors-directory asymmetry-section-anchor">
+      <section
+        id="vendors-directory"
+        className="vendors-directory asymmetry-section-anchor"
+      >
         <div className="container">
           {vendors.length === 0 ? (
             <p className="text-secondary">
