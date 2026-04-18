@@ -20,13 +20,13 @@ export interface InventoryRow extends ProductSummary {
 interface Props {
   rows: InventoryRow[];
   locationId: string;
-  isHub: boolean;
+  isOnline: boolean;
 }
 
-export default function InventoryTable({ rows, locationId, isHub }: Props) {
-  // hub: 6 cols (Product, Category, Qty, In Stock, Available Online, Featured)
-  // retail: 6 cols (Product, Category, Qty, In Stock, Available Pickup, Featured)
-  const colSpan = isHub ? 6 : 6;
+export default function InventoryTable({ rows, locationId, isOnline }: Props) {
+  // online: 6 cols (Product, Category, Qty, In Stock, Featured, Variant Pricing)
+  // retail: 5 cols (Product, Category, Qty, In Stock, Available Pickup)
+  const colSpan = isOnline ? 6 : 5;
 
   return (
     <div className="admin-table-wrap">
@@ -37,9 +37,10 @@ export default function InventoryTable({ rows, locationId, isHub }: Props) {
             <th>Category</th>
             <th className="admin-col-qty">Quantity</th>
             <th className="admin-col-toggle">In Stock</th>
-            {isHub && <th className="admin-col-toggle">Available Online</th>}
-            {!isHub && <th className="admin-col-toggle">Available Pickup</th>}
-            <th className="admin-col-toggle">Featured</th>
+            {!isOnline && (
+              <th className="admin-col-toggle">Available Pickup</th>
+            )}
+            {isOnline && <th className="admin-col-toggle">Featured</th>}
           </tr>
         </thead>
         <tbody>
@@ -48,7 +49,7 @@ export default function InventoryTable({ rows, locationId, isHub }: Props) {
               key={`${row.id}:${row.quantity}:${row.inStock}:${row.availableOnline}:${row.featured}`}
               row={row}
               locationId={locationId}
-              isHub={isHub}
+              isOnline={isOnline}
             />
           ))}
           {rows.length === 0 && (
@@ -67,11 +68,11 @@ export default function InventoryTable({ rows, locationId, isHub }: Props) {
 function InventoryRow({
   row,
   locationId,
-  isHub,
+  isOnline,
 }: {
   row: InventoryRow;
   locationId: string;
-  isHub: boolean;
+  isOnline: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -85,9 +86,7 @@ function InventoryRow({
 
   const quantity = normalizeQuantityInput(quantityInput);
   const inStock = quantity > 0;
-
-  // Hub: featured requires availableOnline; retail: featured requires inStock
-  const featuredEnabled = isHub ? availableOnline : inStock;
+  const featuredEnabled = inStock;
 
   function triggerSuccess() {
     setShowSuccess(true);
@@ -178,12 +177,7 @@ function InventoryRow({
     const previous = { quantityInput, availableOnline, featured };
     const nextQuantity = normalizeQuantityInput(quantityInput);
     const nextAvailableOnline = nextQuantity > 0 ? availableOnline : false;
-    const nextFeatured =
-      nextQuantity > 0
-        ? isHub
-          ? nextAvailableOnline && featured
-          : featured
-        : false;
+    const nextFeatured = nextQuantity > 0 ? featured : false;
 
     setQuantityInput(String(nextQuantity));
     setAvailableOnline(nextAvailableOnline);
@@ -259,19 +253,7 @@ function InventoryRow({
             </span>
           </span>
         </td>
-        {isHub && (
-          <td className="admin-col-toggle">
-            <input
-              type="checkbox"
-              className="admin-toggle"
-              checked={availableOnline}
-              disabled={isPending || !inStock}
-              onChange={e => handleToggle('availableOnline', e.target.checked)}
-              aria-label={`Available online for ${row.name}`}
-            />
-          </td>
-        )}
-        {!isHub && (
+        {!isOnline && (
           <td className="admin-col-toggle">
             <input
               type="checkbox"
@@ -283,16 +265,18 @@ function InventoryRow({
             />
           </td>
         )}
-        <td className="admin-col-toggle">
-          <input
-            type="checkbox"
-            className="admin-toggle"
-            checked={featured}
-            disabled={isPending || !featuredEnabled}
-            onChange={e => handleToggle('featured', e.target.checked)}
-            aria-label={`Featured for ${row.name}`}
-          />
-        </td>
+        {isOnline && (
+          <td className="admin-col-toggle">
+            <input
+              type="checkbox"
+              className="admin-toggle"
+              checked={featured}
+              disabled={isPending || !featuredEnabled}
+              onChange={e => handleToggle('featured', e.target.checked)}
+              aria-label={`Featured for ${row.name}`}
+            />
+          </td>
+        )}
       </tr>
       {showPricing && row.variants && row.variants.length > 0 && (
         <tr className="variant-pricing-panel-row">

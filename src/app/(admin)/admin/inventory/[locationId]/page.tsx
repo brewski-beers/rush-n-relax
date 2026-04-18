@@ -7,7 +7,7 @@ import {
   listProducts,
   listInventoryForLocation,
 } from '@/lib/repositories';
-import { HUB_LOCATION_ID, ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
+import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 import InventoryTable, { type InventoryRow } from './InventoryTable';
 
 interface Props {
@@ -18,7 +18,6 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
   await requireRole('owner');
 
   const { locationId } = await params;
-  const isHub = locationId === HUB_LOCATION_ID;
   const isOnline = locationId === ONLINE_LOCATION_ID;
 
   const [locations, products, inventoryItems] = await Promise.all([
@@ -27,11 +26,9 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
     listInventoryForLocation(locationId),
   ]);
 
-  const location = isHub
-    ? { name: 'RnR Hub', city: 'Warehouse', state: '' }
-    : isOnline
-      ? { name: 'Online Store', city: 'Storefront', state: '' }
-      : locations.find(l => l.id === locationId);
+  const location = isOnline
+    ? { name: 'Online Store', city: 'Storefront', state: '' }
+    : locations.find(l => l.id === locationId);
 
   if (!location) notFound();
 
@@ -53,35 +50,27 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
     };
   });
 
-  const locationLabel = isHub
-    ? 'RnR Hub'
-    : isOnline
-      ? 'Online Store'
-      : location.name;
+  const locationLabel = isOnline ? 'Online Store' : location.name;
 
   return (
     <>
       <div className="admin-page-header">
         <h1>Inventory — {locationLabel}</h1>
       </div>
-      {isHub ? (
+      {isOnline ? (
         <p className="admin-section-desc">
-          Online Store inventory. Toggle <strong>Available Online</strong> to
-          list a product on the store, and <strong>Featured</strong> to
-          spotlight it on the homepage.
-        </p>
-      ) : isOnline ? (
-        <p className="admin-section-desc">
-          Online storefront inventory. Set <strong>Variant Pricing</strong> here
-          to show prices and the Add to Cart button on the product page.
+          Online storefront inventory. Toggle <strong>In Stock</strong> to list
+          a product, <strong>Featured</strong> to spotlight it on the homepage,
+          and set <strong>Variant Pricing</strong> to show prices on the product
+          page.
         </p>
       ) : (
         <p className="admin-section-desc">
-          Retail inventory. Toggle <strong>Featured</strong> to spotlight a
-          product for this location.
+          Retail inventory for {location.name}. Toggle <strong>In Stock</strong>{' '}
+          and <strong>Available Pickup</strong> to manage in-store availability.
         </p>
       )}
-      <InventoryTable rows={rows} locationId={locationId} isHub={isHub} />
+      <InventoryTable rows={rows} locationId={locationId} isOnline={isOnline} />
     </>
   );
 }

@@ -132,18 +132,20 @@ describe('updateProduct server action', () => {
   });
 
   describe('given compliance-hold status in the form', () => {
-    it('returns cannot-set-status error', async () => {
+    it('ignores the status field and proceeds normally', async () => {
       stubAuthorisedActor();
       stubExistingProduct();
 
+      // Status is managed externally via setProductStatus — the edit action
+      // ignores any status value submitted via form and uses existing.status.
       const result = await updateProduct(
         'test-product',
         null,
         makeFormData({ status: 'compliance-hold' })
       );
 
-      expect(result).toEqual({ error: 'Cannot set that status directly.' });
-      expect(upsertProductMock).not.toHaveBeenCalled();
+      expect(result).toBeUndefined();
+      expect(upsertProductMock).toHaveBeenCalled();
     });
   });
 

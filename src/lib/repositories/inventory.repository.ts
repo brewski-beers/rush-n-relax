@@ -15,8 +15,7 @@
  *   - inStock = quantity > 0
  *   - availableOnline = false when inStock = false
  *   - availablePickup = false when inStock = false
- *   - featured = false when inStock = false
- *   - featured = false when availableOnline = false (hub only)
+ *   - featured = false when inStock = false (online location only)
  *   - Every mutation writes an immutable adjustment record
  */
 import {
