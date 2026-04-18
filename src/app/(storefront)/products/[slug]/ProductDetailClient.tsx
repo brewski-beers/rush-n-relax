@@ -85,49 +85,56 @@ export default function ProductDetailClient({
     allImages[0]
   );
 
-  // Cascading group selections: Record<groupId, optionId>
-  const [selections, setSelections] = useState<Record<string, string>>({});
-
-  // Derive a flat selectedVariantId from group selections for pricing lookup.
-  // For combinable groups: join all selected optionIds with '-'.
-  // For a single standalone group: use the selected optionId directly.
   const variantGroups = product.variantGroups ?? [];
-  const resolvedVariantId = (() => {
-    if (variantGroups.length === 0) return '';
-    const combinable = variantGroups.filter(g => g.combinable);
-    const standalone = variantGroups.filter(g => !g.combinable);
-    const parts: string[] = [];
-    for (const g of combinable) {
-      const sel = selections[g.groupId];
-      if (sel) parts.push(sel);
-    }
-    if (parts.length === combinable.length && combinable.length > 0) {
-      // All combinable groups have a selection
-      const standaloneId =
-        standalone.length === 1
-          ? (selections[standalone[0].groupId] ?? '')
-          : '';
-      return standaloneId || parts.join('-');
-    }
-    // Fallback: first standalone selection
-    for (const g of standalone) {
-      const sel = selections[g.groupId];
-      if (sel) return sel;
-    }
-    return '';
-  })();
 
-  // Legacy flat selector state — used when no variantGroups defined
-  const [legacySelectedId, setLegacySelectedId] = useState<string>(
+  // Single active variant selection across all groups.
+  // Standalone groups: optionId === variantId directly.
+  // Combinable groups: combined optionIds joined with '-' form the variantId.
+  const [activeVariantId, setActiveVariantId] = useState<string>(
     displayVariants[0]?.variantId ?? ''
   );
 
-  const selectedVariantId =
-    variantGroups.length > 0 ? resolvedVariantId : legacySelectedId;
+  // Per-group selection state — used for combinable cross-product resolution.
+  const [groupSelections, setGroupSelections] = useState<
+    Record<string, string>
+  >({});
 
-  const selectedVariant: DisplayVariant | undefined = displayVariants.find(
-    v => v.variantId === selectedVariantId
-  );
+  // Build a displayVariants lookup map for O(1) price access by variantId.
+  const pricingMap = new Map(displayVariants.map(v => [v.variantId, v]));
+
+  // Resolve combined variantId from combinable group selections.
+  const combinableGroups = variantGroups.filter(g => g.combinable);
+  const combinedId =
+    combinableGroups.length > 0
+      ? combinableGroups
+          .map(g => groupSelections[g.groupId])
+          .filter(Boolean)
+          .join('-')
+      : '';
+
+  const selectedVariantId = activeVariantId;
+  const selectedVariant: DisplayVariant | undefined =
+    pricingMap.get(selectedVariantId);
+
+  function selectOption(
+    groupId: string,
+    optionId: string,
+    combinable: boolean
+  ) {
+    if (combinable) {
+      const next = { ...groupSelections, [groupId]: optionId };
+      setGroupSelections(next);
+      // Resolve combined variantId once all combinable groups are selected
+      const allSelected = combinableGroups.every(g => next[g.groupId]);
+      if (allSelected) {
+        setActiveVariantId(
+          combinableGroups.map(g => next[g.groupId]).join('-')
+        );
+      }
+    } else {
+      setActiveVariantId(optionId);
+    }
+  }
 
   const locationNames = product.availableAt
     .map(slug => LOCATIONS.find(loc => loc.slug === slug)?.name)
@@ -270,59 +277,83 @@ export default function ProductDetailClient({
 
             {/* ── Variant selector ────────────────────────────────────────────── */}
             {hasOnlinePricing ? (
-              variantGroups.length > 1 ? (
-                /* Cascading multi-group selector */
+              variantGroups.length > 0 ? (
+                /* Group-aware selector — all groups visible simultaneously.
+                   Standalone groups: each option is a direct SKU with its own price.
+                   Combinable groups: options are chips; price shown after all are selected. */
                 <div className="product-pricing-block">
-                  {variantGroups.map((group, gi) => {
-                    // Only show group N+1 once group N has a selection
-                    const prevGroup = variantGroups[gi - 1];
-                    const prevSelected =
-                      gi === 0 || (prevGroup && selections[prevGroup.groupId]);
-                    if (!prevSelected) return null;
-                    return (
-                      <div
-                        key={group.groupId}
-                        className="product-variant-group-block"
-                      >
-                        <span className="product-hero-tag-label">
-                          {group.label}
-                        </span>
-                        <div className="product-variant-grid">
-                          {group.options.map(opt => {
-                            const isSelected =
-                              selections[group.groupId] === opt.optionId;
-                            return (
-                              <button
-                                key={opt.optionId}
-                                type="button"
-                                className={[
-                                  'product-variant-card',
-                                  isSelected
-                                    ? 'product-variant-card--active'
-                                    : '',
-                                ]
-                                  .filter(Boolean)
-                                  .join(' ')}
-                                onClick={() =>
-                                  setSelections(prev => ({
-                                    ...prev,
-                                    [group.groupId]: opt.optionId,
-                                  }))
-                                }
-                                aria-pressed={isSelected}
-                              >
-                                <span className="product-variant-card-size">
-                                  {opt.label}
+                  {variantGroups.map(group => (
+                    <div
+                      key={group.groupId}
+                      className="product-variant-group-block"
+                    >
+                      <span className="product-hero-tag-label">
+                        {group.label}
+                      </span>
+                      <div className="product-variant-grid">
+                        {group.options.map(opt => {
+                          const variantId = group.combinable
+                            ? combinedId
+                            : opt.optionId;
+                          const pricing = group.combinable
+                            ? undefined
+                            : pricingMap.get(opt.optionId);
+                          const isActive = group.combinable
+                            ? groupSelections[group.groupId] === opt.optionId
+                            : activeVariantId === opt.optionId;
+                          const oos = pricing ? !pricing.inStock : false;
+                          return (
+                            <button
+                              key={opt.optionId}
+                              type="button"
+                              className={[
+                                'product-variant-card',
+                                isActive ? 'product-variant-card--active' : '',
+                                oos ? 'product-variant-card--oos' : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')}
+                              onClick={() =>
+                                selectOption(
+                                  group.groupId,
+                                  opt.optionId,
+                                  group.combinable
+                                )
+                              }
+                              aria-pressed={isActive}
+                              disabled={oos}
+                            >
+                              <span className="product-variant-card-size">
+                                {opt.label}
+                              </span>
+                              {pricing && (
+                                <span className="product-variant-card-price">
+                                  {pricing.inStock ? (
+                                    <>
+                                      ${(pricing.price / 100).toFixed(2)}
+                                      {pricing.compareAtPrice !== undefined && (
+                                        <span className="product-variant-card-compare-at">
+                                          $
+                                          {(
+                                            pricing.compareAtPrice / 100
+                                          ).toFixed(2)}
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    'Out of stock'
+                                  )}
                                 </span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                              )}
+                            </button>
+                          );
+                          void variantId; // variantId used via selectOption/activeVariantId
+                        })}
                       </div>
-                    );
-                  })}
-                  {/* Price display — shown once all groups have selections */}
-                  {selectedVariant && (
+                    </div>
+                  ))}
+                  {/* Combined price — shown when all combinable groups have a selection */}
+                  {combinableGroups.length > 0 && selectedVariant && (
                     <div className="product-variant-price-summary">
                       <span className="product-variant-card-price">
                         {selectedVariant.inStock ? (
@@ -345,13 +376,8 @@ export default function ProductDetailClient({
                   )}
                 </div>
               ) : (
-                /* Flat pill selector (single group or legacy variants) */
+                /* Legacy flat selector — products without variantGroups */
                 <div className="product-pricing-block">
-                  {variantGroups.length === 1 && (
-                    <span className="product-hero-tag-label">
-                      {variantGroups[0].label}
-                    </span>
-                  )}
                   <div className="product-variant-grid">
                     {displayVariants.map(v => (
                       <button
@@ -359,28 +385,15 @@ export default function ProductDetailClient({
                         type="button"
                         className={[
                           'product-variant-card',
-                          selectedVariantId === v.variantId
+                          activeVariantId === v.variantId
                             ? 'product-variant-card--active'
                             : '',
                           !v.inStock ? 'product-variant-card--oos' : '',
                         ]
                           .filter(Boolean)
                           .join(' ')}
-                        onClick={() => {
-                          if (variantGroups.length === 1) {
-                            // Map flat variantId back to a group selection
-                            const grp = variantGroups[0];
-                            const opt = grp.options.find(
-                              o => o.optionId === v.variantId
-                            );
-                            if (opt) {
-                              setSelections({ [grp.groupId]: opt.optionId });
-                            }
-                          } else {
-                            setLegacySelectedId(v.variantId);
-                          }
-                        }}
-                        aria-pressed={selectedVariantId === v.variantId}
+                        onClick={() => setActiveVariantId(v.variantId)}
+                        aria-pressed={activeVariantId === v.variantId}
                         disabled={!v.inStock}
                       >
                         <span className="product-variant-card-size">

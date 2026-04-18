@@ -161,7 +161,7 @@ interface GroupPanelProps {
   onGroupLabelChange: (groupIdx: number, value: string) => void;
   onCombinableChange: (groupIdx: number, value: boolean) => void;
   onDeleteGroup: (groupIdx: number) => void;
-  onReplaceOptions: (groupIdx: number, options: VariantOption[]) => void;
+  onReplaceOptions: (groupIdx: number, tpl: StoredVariantTemplate) => void;
   onOptionLabelChange: (
     groupIdx: number,
     optIdx: number,
@@ -262,7 +262,7 @@ function GroupPanel({
                     type="button"
                     className="variant-editor-copy-option"
                     onClick={() => {
-                      onReplaceOptions(groupIndex, tpl.group.options);
+                      onReplaceOptions(groupIndex, tpl);
                       setCopyMenuOpen(false);
                     }}
                   >
@@ -465,9 +465,24 @@ export function VariantEditor({
     );
   }
 
-  function replaceOptions(groupIdx: number, options: VariantOption[]) {
+  function replaceOptionsFromTemplate(
+    groupIdx: number,
+    tpl: StoredVariantTemplate
+  ) {
     setGroups(prev =>
-      prev.map((g, i) => (i === groupIdx ? { ...g, options: [...options] } : g))
+      prev.map((g, i) =>
+        i === groupIdx
+          ? {
+              ...g,
+              label: g.label || tpl.label,
+              groupId:
+                !g.label || g.groupId === slugify(g.label)
+                  ? slugify(tpl.label)
+                  : g.groupId,
+              options: [...tpl.group.options],
+            }
+          : g
+      )
     );
   }
 
@@ -641,7 +656,7 @@ export function VariantEditor({
           onGroupLabelChange={changeGroupLabel}
           onCombinableChange={changeCombinableFlag}
           onDeleteGroup={deleteGroup}
-          onReplaceOptions={replaceOptions}
+          onReplaceOptions={replaceOptionsFromTemplate}
           onOptionLabelChange={changeOptionLabel}
           onOptionIdChange={changeOptionId}
           onDeleteOption={deleteOption}
