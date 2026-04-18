@@ -8,14 +8,23 @@ import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { CoaSelector } from '@/components/admin/CoaSelector';
 import { TagInput } from '@/components/admin/TagInput';
 import { VariantEditor } from '@/components/admin/VariantEditor';
-import type { ProductCategorySummary, VariantTemplate } from '@/types';
+import type {
+  ProductCategorySummary,
+  VariantTemplate,
+  VendorSummary,
+} from '@/types';
 
 interface Props {
   categories: ProductCategorySummary[];
   variantTemplates: VariantTemplate[];
+  vendors: VendorSummary[];
 }
 
-export function ProductCreateForm({ categories, variantTemplates }: Props) {
+export function ProductCreateForm({
+  categories,
+  variantTemplates,
+  vendors,
+}: Props) {
   const [state, formAction, pending] = useActionState(createProduct, null);
   const [slug, setSlug] = useState('');
   const [name, setName] = useState('');
@@ -78,6 +87,18 @@ export function ProductCreateForm({ categories, variantTemplates }: Props) {
           {categories.map(cat => (
             <option key={cat.slug} value={cat.slug}>
               {cat.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label>
+        Vendor
+        <select name="vendorSlug">
+          <option value="">None</option>
+          {vendors.map(v => (
+            <option key={v.slug} value={v.slug}>
+              {v.name}
             </option>
           ))}
         </select>

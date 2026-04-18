@@ -18,6 +18,7 @@ export const ROUTE_SECTIONS = {
   '/locations': ['locations-hero', 'locations-list', 'cta'],
   '/contact': ['contact-hero', 'contact-form-section', 'location-contact'],
   '/products': ['products-hero', 'products-grid'],
+  '/vendors': ['vendors-hero', 'vendors-directory'],
 } as const;
 
 export type RoutePath = keyof typeof ROUTE_SECTIONS;
@@ -49,6 +50,8 @@ export const PAGE_TO_ROUTE: Record<string, RoutePath | 'dynamic'> = {
   cart: 'dynamic',
   'order/[id]': 'dynamic',
   'promo/[slug]': 'dynamic',
+  vendors: '/vendors',
+  'vendors/[slug]': 'dynamic',
   terms: 'dynamic',
   privacy: 'dynamic',
   shipping: 'dynamic',

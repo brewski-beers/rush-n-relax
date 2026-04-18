@@ -3,6 +3,8 @@ import Link from 'next/link';
 const FDA_DISCLAIMER =
   'These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease.';
 
+const SITE_LINKS = [{ label: 'Our Vendors', href: '/vendors' }] as const;
+
 const LEGAL_LINKS = [
   { label: 'Terms & Conditions', href: '/terms' },
   { label: 'Privacy Policy', href: '/privacy' },
@@ -114,6 +116,14 @@ export function Footer() {
           <AmexLogo />
           <DiscoverLogo />
         </div>
+
+        <nav className="footer-links" aria-label="Site navigation">
+          {SITE_LINKS.map(link => (
+            <Link key={link.href} href={link.href} className="footer-link">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
 
         <nav className="footer-links" aria-label="Legal navigation">
           {LEGAL_LINKS.map(link => (
