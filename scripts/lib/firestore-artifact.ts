@@ -222,7 +222,7 @@ export function buildStorefrontSeedArtifact(): FirestoreSeedArtifact {
       fields: toFirestoreFields({
         key: tpl.key,
         label: tpl.label,
-        rows: tpl.rows,
+        group: tpl.group,
         createdAt: tpl.createdAt,
         updatedAt: tpl.updatedAt,
       }),

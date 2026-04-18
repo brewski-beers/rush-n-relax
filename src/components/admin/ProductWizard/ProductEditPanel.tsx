@@ -206,7 +206,6 @@ export function ProductEditPanel({
 
           {catConfig.hasFlowerProfile && (
             <>
-              <p className="admin-section-title">Cannabis Profile</p>
               <label>
                 Strain <span className="admin-hint">(optional)</span>
                 <select name="strain" defaultValue={product.strain ?? ''}>
@@ -600,8 +599,7 @@ export function ProductEditPanel({
 
       {/* ── Variants ─────────────────────────────────────────────── */}
       <VariantEditor
-        initialVariants={product.variants ?? []}
-        initialSelectorLabel={product.variantSelectorLabel}
+        initialGroups={product.variantGroups ?? []}
         variantTemplates={variantTemplates}
       />
 

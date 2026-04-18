@@ -176,8 +176,11 @@ function captureReview(
     (form.elements.namedItem(name) as HTMLInputElement | null)?.value ?? '';
   const variantCount = (() => {
     try {
-      const raw = v('variants');
-      return raw ? (JSON.parse(raw) as unknown[]).length : 0;
+      // Read variantGroups JSON; count options across all groups as a proxy
+      const raw = v('variantGroups');
+      if (!raw) return 0;
+      const parsed = JSON.parse(raw) as Array<{ options?: unknown[] }>;
+      return parsed.reduce((sum, g) => sum + (g.options?.length ?? 0), 0);
     } catch {
       return 0;
     }
@@ -450,7 +453,6 @@ export function ProductWizardForm({
           {/* ── Flower: cannabis profile ─────────────────────── */}
           {catConfig.hasFlowerProfile && (
             <>
-              <p className="admin-section-title">Cannabis Profile</p>
               <label>
                 Strain <span className="admin-hint">(optional)</span>
                 <select name="strain" defaultValue={product?.strain ?? ''}>
@@ -796,8 +798,7 @@ export function ProductWizardForm({
         <fieldset className="admin-fieldset">
           <legend>Variants</legend>
           <VariantEditor
-            initialVariants={product?.variants ?? []}
-            initialSelectorLabel={product?.variantSelectorLabel}
+            initialGroups={product?.variantGroups ?? []}
             variantTemplates={variantTemplates}
           />
         </fieldset>

@@ -10,7 +10,8 @@ import {
   listActiveCategories,
   setProductStatus,
 } from '@/lib/repositories';
-import type { ProductStrain, ProductVariant, NutritionFacts } from '@/types';
+import { generateSkus } from '@/lib/variants/generateSkus';
+import type { ProductStrain, VariantGroup, NutritionFacts } from '@/types';
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
@@ -154,30 +155,12 @@ export async function updateProduct(
   const coaUrlRaw = formData.get('coaUrl')?.toString() ?? '';
   const coaUrl = coaUrlRaw || existing.coaUrl;
 
-  // ── Variants ──────────────────────────────────────────────────────────────
-  const variantsRaw = formData.get('variants')?.toString() ?? '';
-  let variants: ProductVariant[] | undefined;
-  if (variantsRaw) {
-    try {
-      const parsed: unknown = JSON.parse(variantsRaw);
-      if (Array.isArray(parsed)) {
-        variants = parsed.filter(
-          (v): v is ProductVariant =>
-            v !== null &&
-            typeof v === 'object' &&
-            typeof (v as Record<string, unknown>).variantId === 'string' &&
-            typeof (v as Record<string, unknown>).label === 'string'
-        );
-      }
-    } catch {
-      // malformed JSON — ignore, keep existing variants
-    }
-  }
-
-  // ── Variant selector label ────────────────────────────────────────────────
-  const variantSelectorLabel =
-    formData.get('variantSelectorLabel')?.toString().trim() ||
-    existing.variantSelectorLabel;
+  // ── Variant groups + generated SKUs ──────────────────────────────────────
+  const variantGroupsRaw = formData.get('variantGroups');
+  const variantGroups: VariantGroup[] = variantGroupsRaw
+    ? (JSON.parse(variantGroupsRaw as string) as VariantGroup[])
+    : (existing.variantGroups ?? []);
+  const variants = generateSkus(variantGroups);
 
   // ── Vape attributes ───────────────────────────────────────────────────────
   const extractionType =
@@ -269,7 +252,8 @@ export async function updateProduct(
     ...(effects !== undefined ? { effects } : {}),
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
-    ...(variants !== undefined ? { variants } : {}),
+    ...(variantGroups.length > 0 ? { variantGroups } : {}),
+    ...(variants.length > 0 ? { variants } : {}),
     ...(nutritionFacts !== undefined ? { nutritionFacts } : {}),
     ...(leaflyUrl ? { leaflyUrl } : {}),
     ...(extractionType ? { extractionType } : {}),
@@ -277,7 +261,6 @@ export async function updateProduct(
     ...(volumeMl !== undefined ? { volumeMl } : {}),
     ...(thcMgPerServing !== undefined ? { thcMgPerServing } : {}),
     ...(cbdMgPerServing !== undefined ? { cbdMgPerServing } : {}),
-    ...(variantSelectorLabel ? { variantSelectorLabel } : {}),
   };
 
   try {

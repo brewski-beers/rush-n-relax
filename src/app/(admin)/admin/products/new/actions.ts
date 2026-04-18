@@ -8,7 +8,8 @@ import {
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
-import type { ProductStrain, ProductVariant } from '@/types';
+import { generateSkus } from '@/lib/variants/generateSkus';
+import type { ProductStrain, VariantGroup } from '@/types';
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
@@ -142,29 +143,12 @@ export async function createProduct(
       ? Number(cbdMgRaw)
       : undefined;
 
-  // ── Variant selector label ────────────────────────────────────────────────
-  const variantSelectorLabel =
-    formData.get('variantSelectorLabel')?.toString().trim() || undefined;
-
-  // ── Variants ──────────────────────────────────────────────────────────────
-  const variantsRaw = formData.get('variants')?.toString() ?? '';
-  let variants: ProductVariant[] | undefined;
-  if (variantsRaw) {
-    try {
-      const parsed: unknown = JSON.parse(variantsRaw);
-      if (Array.isArray(parsed)) {
-        variants = parsed.filter(
-          (v): v is ProductVariant =>
-            v !== null &&
-            typeof v === 'object' &&
-            typeof (v as Record<string, unknown>).variantId === 'string' &&
-            typeof (v as Record<string, unknown>).label === 'string'
-        );
-      }
-    } catch {
-      // malformed JSON — ignore variants
-    }
-  }
+  // ── Variant groups + generated SKUs ──────────────────────────────────────
+  const variantGroupsRaw = formData.get('variantGroups');
+  const variantGroups: VariantGroup[] = variantGroupsRaw
+    ? (JSON.parse(variantGroupsRaw as string) as VariantGroup[])
+    : [];
+  const variants = generateSkus(variantGroups);
 
   await upsertProduct({
     slug,
@@ -181,8 +165,8 @@ export async function createProduct(
     ...(effects !== undefined ? { effects } : {}),
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
-    ...(variants !== undefined ? { variants } : {}),
-    ...(variantSelectorLabel !== undefined ? { variantSelectorLabel } : {}),
+    ...(variantGroups.length > 0 ? { variantGroups } : {}),
+    ...(variants.length > 0 ? { variants } : {}),
     ...(extractionType !== undefined ? { extractionType } : {}),
     ...(hardwareType !== undefined ? { hardwareType } : {}),
     ...(volumeMl !== undefined ? { volumeMl } : {}),

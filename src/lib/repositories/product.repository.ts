@@ -6,6 +6,8 @@ import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type {
   Product,
   ProductVariant,
+  VariantGroup,
+  VariantOption,
   ProductSummary,
   LabResults,
   ProductStrain,
@@ -159,6 +161,7 @@ function docToProductSummary(
         ? (d.strain as ProductStrain)
         : undefined,
     variants: docToVariants(d.variants),
+    variantGroups: docToVariantGroups(d.variantGroups),
     leaflyUrl: d.leaflyUrl ?? undefined,
   } satisfies ProductSummary;
 }
@@ -186,11 +189,8 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
         : undefined,
     effects: Array.isArray(d.effects) ? (d.effects as string[]) : undefined,
     flavors: Array.isArray(d.flavors) ? (d.flavors as string[]) : undefined,
+    variantGroups: docToVariantGroups(d.variantGroups),
     variants: docToVariants(d.variants),
-    variantSelectorLabel:
-      typeof d.variantSelectorLabel === 'string'
-        ? d.variantSelectorLabel
-        : undefined,
     extractionType:
       typeof d.extractionType === 'string' ? d.extractionType : undefined,
     hardwareType:
@@ -217,6 +217,37 @@ function docToLabResults(
     testDate: typeof r.testDate === 'string' ? r.testDate : undefined,
     labName: typeof r.labName === 'string' ? r.labName : undefined,
   };
+}
+
+/**
+ * Defensively maps the variantGroups array from Firestore.
+ * Groups or options missing required fields are silently skipped.
+ */
+function docToVariantGroups(raw: unknown): VariantGroup[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const valid: VariantGroup[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const g = item as Record<string, unknown>;
+    if (typeof g.groupId !== 'string' || typeof g.label !== 'string') continue;
+    const options: VariantOption[] = [];
+    if (Array.isArray(g.options)) {
+      for (const o of g.options) {
+        if (!o || typeof o !== 'object') continue;
+        const opt = o as Record<string, unknown>;
+        if (typeof opt.optionId === 'string' && typeof opt.label === 'string') {
+          options.push({ optionId: opt.optionId, label: opt.label });
+        }
+      }
+    }
+    valid.push({
+      groupId: g.groupId,
+      label: g.label,
+      combinable: g.combinable === true,
+      options,
+    });
+  }
+  return valid.length > 0 ? valid : undefined;
 }
 
 /**

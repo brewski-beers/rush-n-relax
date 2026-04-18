@@ -32,6 +32,26 @@ export interface NutritionFacts {
 }
 
 /**
+ * A single option within a VariantGroup (e.g. "Berry" in a Flavor group).
+ */
+export interface VariantOption {
+  optionId: string;
+  label: string;
+}
+
+/**
+ * A dimension of purchasable options (e.g. Flavor, Quantity, Weight).
+ * When `combinable` is true, this group participates in the cartesian-product
+ * SKU generation along with all other combinable groups.
+ */
+export interface VariantGroup {
+  groupId: string;
+  label: string;
+  combinable: boolean;
+  options: VariantOption[];
+}
+
+/**
  * A single purchasable variant of a product (e.g. "1/8 oz", "10mg gummy").
  * Variants are authored at the product level and priced at the inventory level
  * via InventoryItem.variantPricing.
@@ -81,15 +101,16 @@ export interface Product {
   /** Flavor/taste descriptors, e.g. ['Citrus', 'Pine', 'Berry'] */
   flavors?: string[];
   /**
-   * Purchasable size/dose variants for this product.
+   * Option dimensions for this product (e.g. Flavor, Weight).
+   * Combinable groups are cartesian-product expanded into `variants` on save.
+   */
+  variantGroups?: VariantGroup[];
+  /**
+   * Denormalized flat variant list — computed from variantGroups on save via generateSkus().
+   * Also accepts legacy hand-authored variants for products without variantGroups.
    * Priced per-variant at the inventory level via InventoryItem.variantPricing.
    */
   variants?: ProductVariant[];
-  /**
-   * Storefront selector heading for variants, e.g. "Select Weight", "Select Flavor".
-   * Defaults to "Select Size" if not set.
-   */
-  variantSelectorLabel?: string;
   /** FDA-style nutrition facts — edibles and drinks (serving info). */
   nutritionFacts?: NutritionFacts;
   // ── Vape-specific ──────────────────────────────────────────────────────────
@@ -121,5 +142,6 @@ export type ProductSummary = Pick<
   | 'vendorSlug'
   | 'strain'
   | 'variants'
+  | 'variantGroups'
   | 'leaflyUrl'
 >;

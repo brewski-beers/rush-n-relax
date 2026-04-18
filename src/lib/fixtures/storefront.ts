@@ -598,72 +598,117 @@ export const VARIANT_TEMPLATE_FIXTURES: readonly Omit<
   {
     key: 'flower',
     label: 'Flower (weight)',
-    rows: [
-      { label: '1g', weight: { value: 1, unit: 'g' } },
-      { label: '3.5g', weight: { value: 3.5, unit: 'g' } },
-      { label: '7g', weight: { value: 7, unit: 'g' } },
-      { label: '14g', weight: { value: 14, unit: 'g' } },
-      { label: '28g', weight: { value: 28, unit: 'g' } },
-    ],
+    group: {
+      groupId: 'flower',
+      label: 'Weight',
+      combinable: false,
+      options: [
+        { optionId: '1g', label: '1g' },
+        { optionId: '3-5g', label: '3.5g' },
+        { optionId: '7g', label: '7g' },
+        { optionId: '14g', label: '14g' },
+        { optionId: '28g', label: '28g' },
+      ],
+    },
   },
   {
     key: 'preroll-qty',
     label: 'Preroll (qty)',
-    rows: [
-      { label: '1-pack', quantity: 1 },
-      { label: '2-pack', quantity: 2 },
-      { label: '5-pack', quantity: 5 },
-    ],
+    group: {
+      groupId: 'preroll-qty',
+      label: 'Quantity',
+      combinable: false,
+      options: [
+        { optionId: '1-pack', label: '1-pack' },
+        { optionId: '2-pack', label: '2-pack' },
+        { optionId: '5-pack', label: '5-pack' },
+      ],
+    },
   },
   {
     key: 'preroll-weight',
     label: 'Preroll (weight)',
-    rows: [
-      { label: '0.5g', weight: { value: 0.5, unit: 'g' } },
-      { label: '0.75g', weight: { value: 0.75, unit: 'g' } },
-      { label: '1g', weight: { value: 1, unit: 'g' } },
-      { label: '1.5g', weight: { value: 1.5, unit: 'g' } },
-    ],
+    group: {
+      groupId: 'preroll-weight',
+      label: 'Weight',
+      combinable: false,
+      options: [
+        { optionId: '0-5g', label: '0.5g' },
+        { optionId: '0-75g', label: '0.75g' },
+        { optionId: '1g', label: '1g' },
+        { optionId: '1-5g', label: '1.5g' },
+      ],
+    },
   },
   {
     key: 'concentrate',
     label: 'Concentrate',
-    rows: [
-      { label: '0.5g', weight: { value: 0.5, unit: 'g' } },
-      { label: '1g', weight: { value: 1, unit: 'g' } },
-    ],
+    group: {
+      groupId: 'concentrate',
+      label: 'Weight',
+      combinable: false,
+      options: [
+        { optionId: '0-5g', label: '0.5g' },
+        { optionId: '1g', label: '1g' },
+      ],
+    },
   },
   {
     key: 'edible',
     label: 'Edible (free-form)',
-    rows: [{ label: '' }],
+    group: {
+      groupId: 'edible',
+      label: 'Size',
+      combinable: false,
+      options: [],
+    },
   },
   {
     key: 'vape',
     label: 'Vape',
-    rows: [
-      { label: '0.5g cart', weight: { value: 0.5, unit: 'g' } },
-      { label: '1g cart', weight: { value: 1, unit: 'g' } },
-      { label: 'Disposable 1g', weight: { value: 1, unit: 'g' } },
-    ],
+    group: {
+      groupId: 'vape',
+      label: 'Size',
+      combinable: false,
+      options: [
+        { optionId: '0-5g-cart', label: '0.5g cart' },
+        { optionId: '1g-cart', label: '1g cart' },
+        { optionId: 'disposable-1g', label: 'Disposable 1g' },
+      ],
+    },
   },
   {
     key: 'drink',
     label: 'Drink',
-    rows: [
-      { label: 'Single Can', quantity: 1 },
-      { label: '2-pack', quantity: 2 },
-    ],
+    group: {
+      groupId: 'drink',
+      label: 'Quantity',
+      combinable: false,
+      options: [
+        { optionId: 'single-can', label: 'Single Can' },
+        { optionId: '2-pack', label: '2-pack' },
+      ],
+    },
   },
   {
     key: 'single',
     label: 'Single / 1-pack',
-    rows: [{ label: '1-pack', quantity: 1 }],
+    group: {
+      groupId: 'single',
+      label: 'Quantity',
+      combinable: false,
+      options: [{ optionId: '1-pack', label: '1-pack' }],
+    },
   },
   {
     key: 'custom',
     label: 'Custom',
-    rows: [{ label: '' }],
+    group: {
+      groupId: 'custom',
+      label: 'Option',
+      combinable: false,
+      options: [],
+    },
   },
 ];
 
