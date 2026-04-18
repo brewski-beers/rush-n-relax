@@ -31,6 +31,17 @@ export async function listAllProducts(): Promise<ProductSummary[]> {
 }
 
 /**
+ * List archived products only — admin use only, fetched on demand.
+ */
+export async function listArchivedProducts(): Promise<ProductSummary[]> {
+  const snap = await productsCol()
+    .where('status', '==', 'archived')
+    .orderBy('name')
+    .get();
+  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+}
+
+/**
  * List all active products, ordered by name.
  * Returns lightweight summaries for admin inventory tables.
  */

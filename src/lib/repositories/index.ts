@@ -7,6 +7,7 @@ export {
 
 export {
   listAllProducts,
+  listArchivedProducts,
   listProducts,
   listProductsByIds,
   listProductsByCategory,

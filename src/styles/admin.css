@@ -683,6 +683,22 @@
   line-height: 1.6;
 }
 
+.admin-table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--ve-item-gap);
+  margin-bottom: var(--admin-form-label-gap);
+}
+
+.admin-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-checkbox-gap);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 0.88rem);
+}
+
 .admin-table-wrap {
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);

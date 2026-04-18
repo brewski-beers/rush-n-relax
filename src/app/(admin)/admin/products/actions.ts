@@ -6,7 +6,9 @@ import {
   setProductStatus,
   upsertVariantTemplate,
   deleteVariantTemplate,
+  listArchivedProducts,
 } from '@/lib/repositories';
+import type { ProductSummary } from '@/types';
 import type { VariantGroup } from '@/types/product';
 
 export async function archiveProduct(slug: string): Promise<void> {
@@ -23,6 +25,11 @@ export async function restoreProduct(slug: string): Promise<void> {
   revalidatePath('/admin/products');
   revalidatePath('/products');
   revalidatePath(`/products/${slug}`);
+}
+
+export async function fetchArchivedProductsAction(): Promise<ProductSummary[]> {
+  await requireRole('staff');
+  return listArchivedProducts();
 }
 
 export async function saveVariantTemplateAction(
