@@ -201,6 +201,7 @@
   --admin-leafly-view-bg: #1b5e20;
   --admin-leafly-view-color: #a5d6a7;
   --admin-leafly-view-bg-hover: #2e7d32;
+  --admin-cat-drag-col-width: 2.5rem;
 
   position: relative;
   min-height: 100vh;
@@ -2043,18 +2044,93 @@
 .variant-editor-group {
   display: flex;
   flex-direction: column;
-  gap: var(--ve-move-gap);
-  padding: var(--ve-card-padding);
+  gap: 0;
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-border);
   border-radius: 10px;
+  overflow: hidden;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.variant-editor-group-header {
+.variant-editor-group--drag-over {
+  border-color: var(--admin-accent);
+  box-shadow: var(--ve-drag-over-shadow);
+}
+
+/* Collapsed/expanded header bar — always visible */
+.variant-editor-group-bar {
   display: flex;
   align-items: center;
   gap: var(--ve-item-gap);
-  flex-wrap: wrap;
+  padding: var(--ve-card-padding);
+  cursor: default;
+  user-select: none;
+}
+
+/* ≡ drag handle for the group bar */
+.variant-editor-group-drag-handle {
+  color: var(--admin-text-subtle);
+  cursor: grab;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 var(--ve-move-gap);
+  user-select: none;
+}
+
+.variant-editor-group-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Label + option count summary */
+.variant-editor-group-summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ve-move-gap);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.variant-editor-group-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--admin-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.variant-editor-group-count {
+  white-space: nowrap;
+}
+
+/* Expand/collapse toggle */
+.variant-editor-group-toggle {
+  background: none;
+  border: none;
+  color: var(--admin-text-subtle);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: var(--ve-move-btn-padding);
+  transition: color 0.15s ease;
+}
+
+.variant-editor-group-toggle:hover {
+  color: var(--admin-text-muted);
+}
+
+/* Expanded body — inner content below the bar */
+.variant-editor-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ve-move-gap);
+  border-top: 1px solid var(--admin-border);
+  padding: var(--ve-card-padding);
 }
 
 .variant-editor-group-label-input {
@@ -2068,6 +2144,14 @@
   gap: var(--ve-item-gap);
   white-space: nowrap;
   cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--admin-text-muted);
+  font-weight: 600;
+  margin-top: var(--ve-item-gap);
+}
+
+.variant-editor-stack-hint {
+  margin-top: calc(var(--ve-move-gap) * -1);
 }
 
 /* Options sub-header with "Copy from template" inline */
@@ -2238,4 +2322,36 @@
 
 .admin-inline-form {
   display: inline;
+}
+
+/* ── Categories DnD table ─────────────────────────────────────────────── */
+
+.admin-table-drag-col {
+  width: var(--admin-cat-drag-col-width);
+}
+
+.admin-table-drag-handle {
+  color: var(--admin-text-subtle);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 var(--ve-move-gap);
+  user-select: none;
+  width: var(--admin-cat-drag-col-width);
+}
+
+.admin-table-drag-handle:active {
+  cursor: grabbing;
+}
+
+.admin-table tr.admin-table-row--drag-over td {
+  background: var(--ve-drag-over-bg);
+  border-top: 2px solid var(--admin-accent);
+}
+
+.admin-table tr.admin-table-row--dragging {
+  opacity: 0.45;
 }

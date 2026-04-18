@@ -3,10 +3,12 @@
 /**
  * VariantEditor — variant-group configurator for admin product forms.
  *
- * Each group has a label, a combinable toggle, and a list of options.
- * Combinable groups are cartesian-product expanded into flat SKUs on save.
+ * Each group has a label, a stack toggle, and a list of options.
+ * Stacked groups are cross-multiplied into flat SKUs on save.
  *
  * Per-group UX:
+ *   - Groups with options start collapsed; new (empty) groups start expanded
+ *   - Drag the ≡ handle in the group header bar to reorder groups
  *   - "Copy from template" dropdown replaces the group's options with a saved template
  *   - "Save '{name}' as template" appears when the group label doesn't match any template key
  *
@@ -158,6 +160,9 @@ interface GroupPanelProps {
   groupIndex: number;
   templates: StoredVariantTemplate[];
   dragOverKey: string | null;
+  isExpanded: boolean;
+  isDragOver: boolean;
+  onToggleExpand: (groupIdx: number) => void;
   onGroupLabelChange: (groupIdx: number, value: string) => void;
   onCombinableChange: (groupIdx: number, value: boolean) => void;
   onDeleteGroup: (groupIdx: number) => void;
@@ -177,6 +182,10 @@ interface GroupPanelProps {
   onDrop: (groupIdx: number, optIdx: number) => void;
   onDragEnd: () => void;
   onSaveAsTemplate: (groupIdx: number) => void;
+  onGroupDragStart: (groupIdx: number) => void;
+  onGroupDragOver: (e: React.DragEvent, groupIdx: number) => void;
+  onGroupDrop: (groupIdx: number) => void;
+  onGroupDragEnd: () => void;
 }
 
 function GroupPanel({
@@ -184,6 +193,9 @@ function GroupPanel({
   groupIndex,
   templates,
   dragOverKey,
+  isExpanded,
+  isDragOver,
+  onToggleExpand,
   onGroupLabelChange,
   onCombinableChange,
   onDeleteGroup,
@@ -199,6 +211,10 @@ function GroupPanel({
   onDrop,
   onDragEnd,
   onSaveAsTemplate,
+  onGroupDragStart,
+  onGroupDragOver,
+  onGroupDrop,
+  onGroupDragEnd,
 }: GroupPanelProps) {
   const checkId = useId();
   const [copyMenuOpen, setCopyMenuOpen] = useState(false);
@@ -207,30 +223,58 @@ function GroupPanel({
   const hasTemplateMatch = templates.some(t => t.key === groupKey);
   const showSaveButton = group.options.length > 0 && !hasTemplateMatch;
 
+  const optionCount = group.options.length;
+  const optionSummary =
+    optionCount === 1 ? '1 option' : `${optionCount} options`;
+
   return (
-    <div className="variant-editor-group">
-      {/* Group header */}
-      <div className="variant-editor-group-header">
-        <input
-          type="text"
-          className="variant-editor-group-label-input"
-          value={group.label}
-          onChange={e => onGroupLabelChange(groupIndex, e.target.value)}
-          placeholder="Group label (e.g. Flavor)"
-          aria-label={`Group ${groupIndex + 1} label`}
-        />
-        <label
-          htmlFor={`${checkId}-combinable`}
-          className="variant-editor-combinable-label"
+    <div
+      className={`variant-editor-group${isDragOver ? ' variant-editor-group--drag-over' : ''}`}
+      onDragOver={e => onGroupDragOver(e, groupIndex)}
+      onDrop={() => onGroupDrop(groupIndex)}
+    >
+      {/* Collapsible group header bar */}
+      <div className="variant-editor-group-bar">
+        {/* Drag handle — only this triggers group drag */}
+        <div
+          className="variant-editor-group-drag-handle"
+          aria-hidden="true"
+          draggable
+          onDragStart={() => onGroupDragStart(groupIndex)}
+          onDragEnd={onGroupDragEnd}
+          title="Drag to reorder group"
         >
-          <input
-            id={`${checkId}-combinable`}
-            type="checkbox"
-            checked={group.combinable}
-            onChange={e => onCombinableChange(groupIndex, e.target.checked)}
-          />
-          <span className="admin-hint">Combine with others</span>
-        </label>
+          ≡
+        </div>
+
+        {/* Collapsed summary (label + option count) */}
+        <span className="variant-editor-group-summary">
+          <span className="variant-editor-group-name">
+            {group.label || <em>Unnamed group</em>}
+          </span>
+          {optionCount > 0 && (
+            <span className="admin-hint variant-editor-group-count">
+              · {optionSummary}
+            </span>
+          )}
+        </span>
+
+        {/* Expand / collapse toggle */}
+        <button
+          type="button"
+          className="variant-editor-group-toggle"
+          onClick={() => onToggleExpand(groupIndex)}
+          aria-expanded={isExpanded}
+          aria-label={
+            isExpanded
+              ? `Collapse group ${groupIndex + 1}`
+              : `Expand group ${groupIndex + 1}`
+          }
+        >
+          {isExpanded ? '▲' : '▼'}
+        </button>
+
+        {/* Delete */}
         <button
           type="button"
           onClick={() => onDeleteGroup(groupIndex)}
@@ -241,81 +285,114 @@ function GroupPanel({
         </button>
       </div>
 
-      {/* Options header row */}
-      <div className="variant-editor-options-header">
-        <span className="admin-hint">Options</span>
-        {templates.length > 0 && (
-          <div className="variant-editor-copy-menu">
-            <button
-              type="button"
-              className="admin-btn-ghost variant-editor-copy-btn"
-              onClick={() => setCopyMenuOpen(o => !o)}
-              aria-expanded={copyMenuOpen}
-            >
-              Copy from template ▾
-            </button>
-            {copyMenuOpen && (
-              <div className="variant-editor-copy-dropdown">
-                {templates.map(tpl => (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    className="variant-editor-copy-option"
-                    onClick={() => {
-                      onReplaceOptions(groupIndex, tpl);
-                      setCopyMenuOpen(false);
-                    }}
-                  >
-                    {tpl.label}
-                  </button>
-                ))}
+      {/* Expanded body */}
+      {isExpanded && (
+        <div className="variant-editor-group-body">
+          {/* Group label input */}
+          <input
+            type="text"
+            className="variant-editor-group-label-input"
+            value={group.label}
+            onChange={e => onGroupLabelChange(groupIndex, e.target.value)}
+            placeholder="Group label (e.g. Flavor)"
+            aria-label={`Group ${groupIndex + 1} label`}
+          />
+
+          {/* Options header row */}
+          <div className="variant-editor-options-header">
+            <span className="admin-hint">Options</span>
+            {templates.length > 0 && (
+              <div className="variant-editor-copy-menu">
+                <button
+                  type="button"
+                  className="admin-btn-ghost variant-editor-copy-btn"
+                  onClick={() => setCopyMenuOpen(o => !o)}
+                  aria-expanded={copyMenuOpen}
+                >
+                  Copy from template ▾
+                </button>
+                {copyMenuOpen && (
+                  <div className="variant-editor-copy-dropdown">
+                    {templates.map(tpl => (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        className="variant-editor-copy-option"
+                        onClick={() => {
+                          onReplaceOptions(groupIndex, tpl);
+                          setCopyMenuOpen(false);
+                        }}
+                      >
+                        {tpl.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
-      </div>
 
-      {/* Option rows */}
-      <div className="variant-editor-list">
-        {group.options.map((opt, oi) => (
-          <OptionRow
-            key={oi}
-            option={opt}
-            index={oi}
-            total={group.options.length}
-            isDragOver={dragOverKey === `${groupIndex}-${oi}`}
-            groupIndex={groupIndex}
-            onLabelChange={onOptionLabelChange}
-            onIdChange={onOptionIdChange}
-            onDelete={onDeleteOption}
-            onMoveUp={onMoveOptionUp}
-            onMoveDown={onMoveOptionDown}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            onDragEnd={onDragEnd}
-          />
-        ))}
-      </div>
+          {/* Option rows */}
+          <div className="variant-editor-list">
+            {group.options.map((opt, oi) => (
+              <OptionRow
+                key={oi}
+                option={opt}
+                index={oi}
+                total={group.options.length}
+                isDragOver={dragOverKey === `${groupIndex}-${oi}`}
+                groupIndex={groupIndex}
+                onLabelChange={onOptionLabelChange}
+                onIdChange={onOptionIdChange}
+                onDelete={onDeleteOption}
+                onMoveUp={onMoveOptionUp}
+                onMoveDown={onMoveOptionDown}
+                onDragStart={onDragStart}
+                onDragOver={onDragOver}
+                onDrop={onDrop}
+                onDragEnd={onDragEnd}
+              />
+            ))}
+          </div>
 
-      <div className="variant-editor-group-footer">
-        <button
-          type="button"
-          onClick={() => onAddOption(groupIndex)}
-          className="admin-add-row-btn"
-        >
-          + Add option
-        </button>
-        {showSaveButton && group.label && (
-          <button
-            type="button"
-            className="variant-editor-save-tpl-btn"
-            onClick={() => onSaveAsTemplate(groupIndex)}
+          <div className="variant-editor-group-footer">
+            <button
+              type="button"
+              onClick={() => onAddOption(groupIndex)}
+              className="admin-add-row-btn"
+            >
+              + Add option
+            </button>
+            {showSaveButton && group.label && (
+              <button
+                type="button"
+                className="variant-editor-save-tpl-btn"
+                onClick={() => onSaveAsTemplate(groupIndex)}
+              >
+                Save &ldquo;{group.label}&rdquo; as template
+              </button>
+            )}
+          </div>
+
+          {/* Stack group checkbox */}
+          <label
+            htmlFor={`${checkId}-combinable`}
+            className="variant-editor-combinable-label"
           >
-            Save &ldquo;{group.label}&rdquo; as template
-          </button>
-        )}
-      </div>
+            <input
+              id={`${checkId}-combinable`}
+              type="checkbox"
+              checked={group.combinable}
+              onChange={e => onCombinableChange(groupIndex, e.target.checked)}
+            />
+            <span>Stack group</span>
+          </label>
+          <span className="admin-hint variant-editor-stack-hint">
+            Stacked groups are cross-multiplied into combined SKUs. Order
+            determines selection sequence.
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -410,13 +487,45 @@ export function VariantEditor({
     useState<StoredVariantTemplate[]>(variantTemplates);
   const [savingGroupIdx, setSavingGroupIdx] = useState<number | null>(null);
 
+  // New groups (0 options) start expanded; groups with options start collapsed
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    () =>
+      new Set(
+        initialGroups.filter(g => g.options.length === 0).map(g => g.groupId)
+      )
+  );
+
+  // Option-level DnD
   const dragKeyRef = useRef<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+
+  // Group-level DnD
+  const dragGroupRef = useRef<number | null>(null);
+  const [dragOverGroupIndex, setDragOverGroupIndex] = useState<number | null>(
+    null
+  );
+
+  // ── Expand/collapse ───────────────────────────────────────────────────────
+
+  function toggleExpand(groupIdx: number) {
+    const groupId = groups[groupIdx]?.groupId;
+    if (!groupId) return;
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  }
 
   // ── Template actions ──────────────────────────────────────────────────────
 
   function addGroupFromTemplate(tpl: StoredVariantTemplate) {
     setGroups(prev => [...prev, { ...tpl.group }]);
+    // Template groups have options — start collapsed (don't add to expandedGroups)
   }
 
   async function handleDeleteTemplate(id: string) {
@@ -429,19 +538,30 @@ export function VariantEditor({
   // ── Group mutations ───────────────────────────────────────────────────────
 
   function addGroup() {
+    const newGroupId = `group-${Date.now()}`;
     setGroups(prev => [
       ...prev,
       {
-        groupId: `group-${Date.now()}`,
+        groupId: newGroupId,
         label: '',
         combinable: false,
         options: [],
       },
     ]);
+    // New empty groups start expanded
+    setExpandedGroups(prev => new Set([...prev, newGroupId]));
   }
 
   function deleteGroup(groupIdx: number) {
+    const groupId = groups[groupIdx]?.groupId;
     setGroups(prev => prev.filter((_, i) => i !== groupIdx));
+    if (groupId) {
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.delete(groupId);
+        return next;
+      });
+    }
   }
 
   function changeGroupLabel(groupIdx: number, value: string) {
@@ -562,7 +682,7 @@ export function VariantEditor({
     );
   }
 
-  // ── Drag handlers ─────────────────────────────────────────────────────────
+  // ── Option drag handlers ──────────────────────────────────────────────────
 
   function handleDragStart(groupIdx: number, optIdx: number) {
     dragKeyRef.current = `${groupIdx}-${optIdx}`;
@@ -606,13 +726,48 @@ export function VariantEditor({
     setDragOverKey(null);
   }
 
+  // ── Group drag handlers ───────────────────────────────────────────────────
+
+  function handleGroupDragStart(groupIdx: number) {
+    dragGroupRef.current = groupIdx;
+  }
+
+  function handleGroupDragOver(e: React.DragEvent, groupIdx: number) {
+    e.preventDefault();
+    if (dragGroupRef.current !== null) {
+      setDragOverGroupIndex(groupIdx);
+    }
+  }
+
+  function handleGroupDrop(dropGroupIdx: number) {
+    const dragIdx = dragGroupRef.current;
+    if (dragIdx === null || dragIdx === dropGroupIdx) {
+      dragGroupRef.current = null;
+      setDragOverGroupIndex(null);
+      return;
+    }
+    setGroups(prev => {
+      const next = [...prev];
+      const [dragged] = next.splice(dragIdx, 1);
+      next.splice(dropGroupIdx, 0, dragged);
+      return next;
+    });
+    dragGroupRef.current = null;
+    setDragOverGroupIndex(null);
+  }
+
+  function handleGroupDragEnd() {
+    dragGroupRef.current = null;
+    setDragOverGroupIndex(null);
+  }
+
   const previewSkus = generateSkus(groups);
 
   return (
     <fieldset className="admin-fieldset variant-editor">
       <legend>Variants</legend>
       <span className="admin-hint">
-        Define option groups. Combinable groups are cross-multiplied into SKUs.
+        Define option groups. Stacked groups are cross-multiplied into SKUs.
         Pricing is set per-location in Inventory.
       </span>
 
@@ -653,6 +808,9 @@ export function VariantEditor({
           groupIndex={gi}
           templates={templates}
           dragOverKey={dragOverKey}
+          isExpanded={expandedGroups.has(group.groupId)}
+          isDragOver={dragOverGroupIndex === gi}
+          onToggleExpand={toggleExpand}
           onGroupLabelChange={changeGroupLabel}
           onCombinableChange={changeCombinableFlag}
           onDeleteGroup={deleteGroup}
@@ -668,6 +826,10 @@ export function VariantEditor({
           onDrop={handleDrop}
           onDragEnd={handleDragEnd}
           onSaveAsTemplate={idx => setSavingGroupIdx(idx)}
+          onGroupDragStart={handleGroupDragStart}
+          onGroupDragOver={handleGroupDragOver}
+          onGroupDrop={handleGroupDrop}
+          onGroupDragEnd={handleGroupDragEnd}
         />
       ))}
 

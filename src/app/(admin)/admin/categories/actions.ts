@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireRole } from '@/lib/admin-auth';
-import { setCategoryStatus } from '@/lib/repositories';
+import { setCategoryStatus, reorderCategories } from '@/lib/repositories';
 
 export async function toggleCategoryStatus(
   slug: string,
@@ -10,6 +10,15 @@ export async function toggleCategoryStatus(
 ): Promise<void> {
   await requireRole('staff');
   await setCategoryStatus(slug, !currentIsActive);
+  revalidatePath('/admin/categories');
+  revalidatePath('/products');
+}
+
+export async function reorderCategoriesAction(
+  orderedSlugs: string[]
+): Promise<void> {
+  await requireRole('staff');
+  await reorderCategories(orderedSlugs);
   revalidatePath('/admin/categories');
   revalidatePath('/products');
 }

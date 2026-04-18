@@ -57,6 +57,7 @@ export {
   getCategoryBySlug,
   upsertCategory,
   setCategoryStatus,
+  reorderCategories,
 } from './category.repository';
 
 export {
