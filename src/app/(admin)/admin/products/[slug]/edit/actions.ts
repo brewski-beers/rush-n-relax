@@ -161,10 +161,6 @@ export async function updateProduct(
   const coaUrlRaw = formData.get('coaUrl')?.toString() ?? '';
   const coaUrl = coaUrlRaw || existing.coaUrl;
 
-  // ── Leafly URL ─────────────────────────────────────────────────────────
-  const leaflyUrlRaw = formData.get('leaflyUrl')?.toString().trim() ?? '';
-  const leaflyUrl = leaflyUrlRaw || existing.leaflyUrl;
-
   // ── Variants ──────────────────────────────────────────────────────────────
   const variantsRaw = formData.get('variants')?.toString() ?? '';
   let variants: ProductVariant[] | undefined;
