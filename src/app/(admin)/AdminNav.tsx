@@ -16,6 +16,7 @@ const ALL_LINKS = [
   { label: 'Dashboard', href: '/admin/dashboard' },
   { label: 'Locations', href: '/admin/locations' },
   { label: 'Products', href: '/admin/products' },
+  { label: 'Variant Groups', href: '/admin/variant-groups' },
   { label: 'Categories', href: '/admin/categories' },
   { label: 'Inventory', href: '/admin/inventory' },
   { label: 'Users', href: '/admin/users' },
@@ -25,6 +26,7 @@ const ALL_LINKS = [
 /** Links available to staff role (and above via the full ALL_LINKS list). */
 const STAFF_LINKS = [
   { label: 'Products', href: '/admin/products' },
+  { label: 'Variant Groups', href: '/admin/variant-groups' },
   { label: 'Categories', href: '/admin/categories' },
   { label: 'COA', href: '/admin/coa' },
   { label: 'RnR.com', href: '/' },
