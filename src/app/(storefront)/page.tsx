@@ -9,7 +9,7 @@ import {
   listProductsByIds,
   listLocations,
 } from '@/lib/repositories';
-import { HUB_LOCATION_ID } from '@/lib/firebase/admin';
+import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 
 export const metadata: Metadata = {
   title: 'Rush N Relax — Premium Cannabis Dispensary | East Tennessee',
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const [featuredInventory, locations] = await Promise.all([
-    listFeaturedInventory(HUB_LOCATION_ID),
+    listFeaturedInventory(ONLINE_LOCATION_ID),
     listLocations(),
   ]);
 
