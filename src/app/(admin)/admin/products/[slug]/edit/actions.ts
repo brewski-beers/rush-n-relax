@@ -153,13 +153,13 @@ export async function updateProduct(
 
   const labResults = labResultsFromForm ?? existing.labResults;
 
-  // ── COA URL ────────────────────────────────────────────────────────────
-  const coaUrlRaw = formData.get('coaUrl')?.toString() ?? '';
-  const coaUrl = coaUrlRaw || existing.coaUrl;
-
   // ── Leafly URL ─────────────────────────────────────────────────────────
   const leaflyUrlRaw = formData.get('leaflyUrl')?.toString().trim() ?? '';
   const leaflyUrl = leaflyUrlRaw || existing.leaflyUrl;
+
+  // ── COA URL ────────────────────────────────────────────────────────────
+  const coaUrlRaw = formData.get('coaUrl')?.toString() ?? '';
+  const coaUrl = coaUrlRaw || existing.coaUrl;
 
   // ── Variants ──────────────────────────────────────────────────────────────
   const variantsRaw = formData.get('variants')?.toString() ?? '';

@@ -52,6 +52,8 @@ export async function createProduct(
   const featuredImagePath =
     formData.get('featuredImagePath')?.toString() || undefined;
 
+  const leaflyUrl = formData.get('leaflyUrl')?.toString().trim() || undefined;
+
   // ── Cannabis profile fields ────────────────────────────────────────────
   const strainRaw = formData.get('strain')?.toString() ?? '';
   const strain = VALID_STRAINS.has(strainRaw as ProductStrain)
@@ -147,6 +149,7 @@ export async function createProduct(
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
     ...(variants !== undefined ? { variants } : {}),
+    ...(leaflyUrl ? { leaflyUrl } : {}),
   });
 
   revalidatePath('/admin/products');
