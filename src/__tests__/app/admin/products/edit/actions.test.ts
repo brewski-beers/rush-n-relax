@@ -63,7 +63,6 @@ function stubExistingProduct(overrides: Record<string, unknown> = {}) {
     image: undefined,
     images: undefined,
     coaUrl: undefined,
-    federalDeadlineRisk: false,
     availableAt: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -81,7 +80,6 @@ function makeFormData(
     description: 'Updated description',
     details: 'Updated details',
     status: 'active',
-    federalDeadlineRisk: 'false',
     availableAt: ['oak-ridge'],
   };
   const merged = { ...defaults, ...overrides };

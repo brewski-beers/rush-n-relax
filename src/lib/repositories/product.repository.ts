@@ -173,7 +173,6 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     image: d.image ?? undefined,
     images: Array.isArray(d.images) ? (d.images as string[]) : undefined,
     status: d.status ?? 'active',
-    federalDeadlineRisk: d.federalDeadlineRisk ?? false,
     coaUrl: d.coaUrl ?? undefined,
     availableAt: d.availableAt ?? [],
     vendorSlug: d.vendorSlug ?? undefined,
@@ -188,6 +187,15 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     effects: Array.isArray(d.effects) ? (d.effects as string[]) : undefined,
     flavors: Array.isArray(d.flavors) ? (d.flavors as string[]) : undefined,
     variants: docToVariants(d.variants),
+    extractionType:
+      typeof d.extractionType === 'string' ? d.extractionType : undefined,
+    hardwareType:
+      typeof d.hardwareType === 'string' ? d.hardwareType : undefined,
+    volumeMl: typeof d.volumeMl === 'number' ? d.volumeMl : undefined,
+    thcMgPerServing:
+      typeof d.thcMgPerServing === 'number' ? d.thcMgPerServing : undefined,
+    cbdMgPerServing:
+      typeof d.cbdMgPerServing === 'number' ? d.cbdMgPerServing : undefined,
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
   } satisfies Product;

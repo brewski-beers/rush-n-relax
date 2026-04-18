@@ -28,7 +28,6 @@ export async function createProduct(
   const category = formData.get('category')?.toString();
   const details = formData.get('details')?.toString().trim();
   const vendorSlug = formData.get('vendorSlug')?.toString() || undefined;
-  const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
   if (!slug || !name || !category || !details) {
@@ -120,6 +119,29 @@ export async function createProduct(
         }
       : undefined;
 
+  // ── Vape attributes ───────────────────────────────────────────────────────
+  const extractionType =
+    formData.get('extractionType')?.toString().trim() || undefined;
+  const hardwareType =
+    formData.get('hardwareType')?.toString().trim() || undefined;
+  const volumeMlRaw = formData.get('volumeMl')?.toString() ?? '';
+  const volumeMl =
+    volumeMlRaw !== '' && Number.isFinite(Number(volumeMlRaw))
+      ? Number(volumeMlRaw)
+      : undefined;
+
+  // ── Drink attributes ──────────────────────────────────────────────────────
+  const thcMgRaw = formData.get('thcMgPerServing')?.toString() ?? '';
+  const cbdMgRaw = formData.get('cbdMgPerServing')?.toString() ?? '';
+  const thcMgPerServing =
+    thcMgRaw !== '' && Number.isFinite(Number(thcMgRaw))
+      ? Number(thcMgRaw)
+      : undefined;
+  const cbdMgPerServing =
+    cbdMgRaw !== '' && Number.isFinite(Number(cbdMgRaw))
+      ? Number(cbdMgRaw)
+      : undefined;
+
   // ── Variants ──────────────────────────────────────────────────────────────
   const variantsRaw = formData.get('variants')?.toString() ?? '';
   let variants: ProductVariant[] | undefined;
@@ -146,7 +168,6 @@ export async function createProduct(
     category,
     details,
     image: featuredImagePath,
-    federalDeadlineRisk,
     availableAt,
     status: 'active',
     ...(vendorSlug !== undefined ? { vendorSlug } : {}),
@@ -157,6 +178,11 @@ export async function createProduct(
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
     ...(variants !== undefined ? { variants } : {}),
+    ...(extractionType !== undefined ? { extractionType } : {}),
+    ...(hardwareType !== undefined ? { hardwareType } : {}),
+    ...(volumeMl !== undefined ? { volumeMl } : {}),
+    ...(thcMgPerServing !== undefined ? { thcMgPerServing } : {}),
+    ...(cbdMgPerServing !== undefined ? { cbdMgPerServing } : {}),
   });
 
   revalidatePath('/admin/products');

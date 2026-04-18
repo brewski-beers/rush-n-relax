@@ -64,7 +64,6 @@ function makeFormData(
     category: 'flower',
     description: 'A great product',
     details: 'Some details here',
-    federalDeadlineRisk: 'false',
     availableAt: ['oak-ridge'],
   };
   const merged = { ...defaults, ...overrides };

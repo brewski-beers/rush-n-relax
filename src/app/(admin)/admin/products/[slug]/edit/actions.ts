@@ -43,7 +43,6 @@ export async function updateProduct(
   const name = formData.get('name')?.toString().trim();
   const category = formData.get('category')?.toString();
   const details = formData.get('details')?.toString().trim();
-  const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
   if (!name || !category || !details) {
@@ -205,24 +204,51 @@ export async function updateProduct(
     }
   }
 
-  // -- Nutrition Facts (edibles only) ----------------------------------------
+  // ── Vape attributes ───────────────────────────────────────────────────────
+  const extractionType =
+    formData.get('extractionType')?.toString().trim() ||
+    existing.extractionType;
+  const hardwareType =
+    formData.get('hardwareType')?.toString().trim() || existing.hardwareType;
+  const volumeMlRaw = formData.get('volumeMl')?.toString() ?? '';
+  const volumeMl =
+    volumeMlRaw !== '' && Number.isFinite(Number(volumeMlRaw))
+      ? Number(volumeMlRaw)
+      : existing.volumeMl;
+
+  // ── Drink attributes ──────────────────────────────────────────────────────
+  const thcMgRaw = formData.get('thcMgPerServing')?.toString() ?? '';
+  const cbdMgRaw = formData.get('cbdMgPerServing')?.toString() ?? '';
+  const thcMgPerServing =
+    thcMgRaw !== '' && Number.isFinite(Number(thcMgRaw))
+      ? Number(thcMgRaw)
+      : existing.thcMgPerServing;
+  const cbdMgPerServing =
+    cbdMgRaw !== '' && Number.isFinite(Number(cbdMgRaw))
+      ? Number(cbdMgRaw)
+      : existing.cbdMgPerServing;
+
+  // -- Nutrition Facts (edibles + drinks serving info) -----------------------
+  // For drinks: only servingSize + servingsPerContainer are shown; calories defaults to 0.
+  // For edibles: all three are required.
   let nutritionFacts: NutritionFacts | undefined;
-  if (category === 'edibles') {
+  if (category === 'edibles' || category === 'drinks') {
     const nfServingSize =
       formData.get('nfServingSize')?.toString().trim() ?? '';
     const nfSpcRaw =
       formData.get('nfServingsPerContainer')?.toString().trim() ?? '';
     const nfCalRaw = formData.get('nfCalories')?.toString().trim() ?? '';
     const nfSpc = Number(nfSpcRaw);
-    const nfCal = Number(nfCalRaw);
+    const nfCal = nfCalRaw !== '' ? Number(nfCalRaw) : 0;
+    const calValid =
+      category === 'drinks' ||
+      (nfCalRaw !== '' && Number.isFinite(nfCal) && nfCal >= 0);
     if (
       nfServingSize &&
       nfSpcRaw &&
       Number.isFinite(nfSpc) &&
       nfSpc > 0 &&
-      nfCalRaw &&
-      Number.isFinite(nfCal) &&
-      nfCal >= 0
+      calValid
     ) {
       nutritionFacts = {
         servingSize: nfServingSize,
@@ -261,7 +287,6 @@ export async function updateProduct(
         ? { images: existing.images }
         : {}),
     status,
-    federalDeadlineRisk,
     availableAt,
     ...(vendorSlug ? { vendorSlug } : {}),
     ...(coaUrl ? { coaUrl } : {}),
@@ -272,6 +297,11 @@ export async function updateProduct(
     ...(variants !== undefined ? { variants } : {}),
     ...(nutritionFacts !== undefined ? { nutritionFacts } : {}),
     ...(leaflyUrl ? { leaflyUrl } : {}),
+    ...(extractionType ? { extractionType } : {}),
+    ...(hardwareType ? { hardwareType } : {}),
+    ...(volumeMl !== undefined ? { volumeMl } : {}),
+    ...(thcMgPerServing !== undefined ? { thcMgPerServing } : {}),
+    ...(cbdMgPerServing !== undefined ? { cbdMgPerServing } : {}),
   };
 
   try {

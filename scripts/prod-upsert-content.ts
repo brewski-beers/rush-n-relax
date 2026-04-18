@@ -115,7 +115,6 @@ async function upsertProducts(): Promise<number> {
           details: product.details,
           image: product.image,
           status: product.status,
-          federalDeadlineRisk: product.federalDeadlineRisk,
           ...(product.coaUrl ? { coaUrl: product.coaUrl } : {}),
           availableAt: product.availableAt ?? LOCATION_SLUGS,
           createdAt: now,

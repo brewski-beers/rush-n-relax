@@ -215,7 +215,6 @@ describe('upsertProduct', () => {
         category: 'flower',
         details: 'Smooth and uplifting',
         status: 'active',
-        federalDeadlineRisk: false,
         availableAt: ['oak-ridge'],
       });
 
@@ -238,7 +237,6 @@ describe('upsertProduct', () => {
         category: 'flower',
         details: 'Details',
         status: 'active',
-        federalDeadlineRisk: false,
         availableAt: [],
         // image intentionally absent
       });
@@ -276,7 +274,6 @@ describe('getProductBySlug', () => {
           description: 'Classic sativa',
           details: 'Smooth',
           status: 'active',
-          federalDeadlineRisk: false,
           availableAt: ['oak-ridge'],
           createdAt: new Date('2024-01-01').toISOString(),
           updatedAt: new Date('2024-06-01').toISOString(),
@@ -289,7 +286,6 @@ describe('getProductBySlug', () => {
       expect(result!.slug).toBe('blue-dream');
       expect(result!.name).toBe('Blue Dream');
       expect(result!.status).toBe('active');
-      expect(result!.federalDeadlineRisk).toBe(false);
     });
 
     it('defaults optional fields correctly', async () => {
@@ -467,7 +463,6 @@ describe('getProductBySlug — cannabis profile fields', () => {
           description: 'Classic',
           details: 'Smooth',
           status: 'active',
-          federalDeadlineRisk: false,
           availableAt: [],
           createdAt: new Date('2024-01-01').toISOString(),
           updatedAt: new Date('2024-06-01').toISOString(),

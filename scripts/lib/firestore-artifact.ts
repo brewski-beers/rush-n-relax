@@ -120,7 +120,6 @@ export function buildStorefrontSeedArtifact(): FirestoreSeedArtifact {
         details: product.details,
         image: product.image,
         status: product.status,
-        federalDeadlineRisk: product.federalDeadlineRisk,
         availableAt: product.availableAt,
         coaUrl: product.coaUrl,
         createdAt: product.createdAt,
