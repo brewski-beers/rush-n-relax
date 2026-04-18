@@ -2182,6 +2182,10 @@
   position: relative;
 }
 
+.variant-editor-add-menu-wrap {
+  position: relative;
+}
+
 .variant-editor-copy-btn {
   font-size: var(--font-size-sm, 0.88rem);
   padding: var(--ve-add-btn-padding);

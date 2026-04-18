@@ -422,22 +422,54 @@ export default function ProductDetailClient({
               product.variants &&
               product.variants.length > 0 && (
                 <div className="product-pricing-block">
-                  <span className="product-hero-tag-label">Sizes</span>
-                  <div className="product-variant-grid">
-                    {product.variants.map(v => (
+                  {variantGroups.length > 0 ? (
+                    /* Group-aware "see in store" — same segmentation as the online path */
+                    variantGroups.map(group => (
                       <div
-                        key={v.variantId}
-                        className="product-variant-card product-variant-card--static"
+                        key={group.groupId}
+                        className="product-variant-group-block"
                       >
-                        <span className="product-variant-card-size">
-                          {v.label}
+                        <span className="product-hero-tag-label">
+                          {group.label}
                         </span>
-                        <span className="product-variant-card-price">
-                          See in store
-                        </span>
+                        <div className="product-variant-grid">
+                          {group.options.map(opt => (
+                            <div
+                              key={opt.optionId}
+                              className="product-variant-card product-variant-card--static"
+                            >
+                              <span className="product-variant-card-size">
+                                {opt.label}
+                              </span>
+                              <span className="product-variant-card-price">
+                                See in store
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    ))
+                  ) : (
+                    /* Legacy flat fallback — products without variantGroups */
+                    <>
+                      <span className="product-hero-tag-label">Sizes</span>
+                      <div className="product-variant-grid">
+                        {product.variants.map(v => (
+                          <div
+                            key={v.variantId}
+                            className="product-variant-card product-variant-card--static"
+                          >
+                            <span className="product-variant-card-size">
+                              {v.label}
+                            </span>
+                            <span className="product-variant-card-price">
+                              See in store
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )
             )}
