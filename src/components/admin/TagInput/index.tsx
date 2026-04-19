@@ -85,8 +85,7 @@ export function TagInput({
         {tags.map(tag => (
           <span key={tag} className="tag-chip">
             {tag}
-            <button
-              type="button"
+            <button type="button"
               className="tag-chip-remove"
               onClick={e => {
                 e.stopPropagation();

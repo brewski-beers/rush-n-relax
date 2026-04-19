@@ -81,8 +81,7 @@ function OptionRow({
       aria-label={`Option ${index + 1}`}
     >
       <div className="variant-editor-move">
-        <button
-          type="button"
+        <button type="button"
           onClick={() => onMoveUp(groupIndex, index)}
           disabled={index === 0}
           aria-label={`Move option ${index + 1} up`}
@@ -90,8 +89,7 @@ function OptionRow({
         >
           ↑
         </button>
-        <button
-          type="button"
+        <button type="button"
           onClick={() => onMoveDown(groupIndex, index)}
           disabled={index === total - 1}
           aria-label={`Move option ${index + 1} down`}
@@ -136,8 +134,7 @@ function OptionRow({
             />
           </label>
         </div>
-        <button
-          type="button"
+        <button type="button"
           onClick={() => onDelete(groupIndex, index)}
           aria-label={`Delete option ${index + 1}`}
           className="variant-editor-delete-btn"
@@ -246,8 +243,7 @@ function GroupPanel({
         </span>
 
         {/* Expand / collapse toggle */}
-        <button
-          type="button"
+        <button type="button"
           className="variant-editor-group-toggle"
           onClick={() => onToggleExpand(groupIndex)}
           aria-expanded={isExpanded}
@@ -261,8 +257,7 @@ function GroupPanel({
         </button>
 
         {/* Detach — removes from product only, never deletes global template */}
-        <button
-          type="button"
+        <button type="button"
           onClick={() => onDetachGroup(groupIndex)}
           aria-label={`Remove group ${groupIndex + 1} from this product`}
           className="variant-editor-delete-btn"
@@ -314,8 +309,7 @@ function GroupPanel({
           </div>
 
           <div className="variant-editor-group-footer">
-            <button
-              type="button"
+            <button type="button"
               onClick={() => onAddOption(groupIndex)}
               className="admin-add-row-btn"
             >
@@ -641,8 +635,7 @@ export function VariantEditor({
                 <span className="variant-editor-chip-label">
                   {g.label || <em>Unnamed</em>}
                 </span>
-                <button
-                  type="button"
+                <button type="button"
                   className="tag-chip-remove"
                   onClick={() => detachGroup(gi)}
                   aria-label={`Remove "${g.label || 'unnamed'}" from this product`}
@@ -689,8 +682,7 @@ export function VariantEditor({
       {/* Add group controls */}
       <div className="variant-editor-add-row">
         <div className="variant-editor-add-menu-wrap">
-          <button
-            type="button"
+          <button type="button"
             className="admin-add-row-btn"
             onClick={() => setAddMenuOpen(o => !o)}
             aria-expanded={addMenuOpen}
@@ -705,9 +697,8 @@ export function VariantEditor({
                     From global variant groups
                   </span>
                   {availableTemplates.map(tpl => (
-                    <button
+                    <button type="button"
                       key={tpl.id}
-                      type="button"
                       className="variant-editor-copy-option"
                       onClick={() => attachGroupFromTemplate(tpl)}
                     >
@@ -717,8 +708,7 @@ export function VariantEditor({
                   <hr className="variant-editor-dropdown-divider" />
                 </>
               )}
-              <button
-                type="button"
+              <button type="button"
                 className="variant-editor-copy-option"
                 onClick={addCustomGroup}
               >

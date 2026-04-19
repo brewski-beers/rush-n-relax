@@ -138,8 +138,7 @@ function SortableImageSlot({
             <img src={src} alt={`Gallery slot ${index + 1}`} />
 
             {/* Drag handle */}
-            <button
-              type="button"
+            <button type="button"
               className="img-upload-slot-handle"
               aria-label="Drag to reorder"
               {...attributes}
@@ -149,8 +148,7 @@ function SortableImageSlot({
             </button>
 
             {/* Remove button */}
-            <button
-              type="button"
+            <button type="button"
               className="img-upload-remove-btn"
               aria-label={`Remove gallery image ${index + 1}`}
               disabled={disabled}
@@ -170,8 +168,7 @@ function SortableImageSlot({
 
             {!uploading && (
               <div className="img-upload-slot-overlay">
-                <button
-                  type="button"
+                <button type="button"
                   className="admin-btn-secondary"
                   disabled={disabled}
                   onClick={e => {
