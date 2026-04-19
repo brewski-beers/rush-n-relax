@@ -25,6 +25,7 @@
 import { useState, useActionState } from 'react';
 import Link from 'next/link';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
+import { ProductImage } from '@/components/ProductImage';
 import { CoaSelector } from '@/components/admin/CoaSelector';
 import { TagInput } from '@/components/admin/TagInput';
 import { VariantEditor } from '@/components/admin/VariantEditor';
@@ -75,6 +76,7 @@ interface ReviewSnapshot {
   thcPercent: string;
   cbdPercent: string;
   variantCount: string;
+  featuredImagePath: string;
 }
 
 // --- Constants ---------------------------------------------------------------
@@ -198,6 +200,7 @@ export function ProductWizardForm({
         thcPercent: v('labResults_thcPercent'),
         cbdPercent: v('labResults_cbdPercent'),
         variantCount,
+        featuredImagePath: v('featuredImagePath'),
       });
     }
     setStep(nextStep);
@@ -550,29 +553,50 @@ export function ProductWizardForm({
         }
         aria-hidden={isHidden(6)}
       >
-        <fieldset className="admin-fieldset">
-          <legend>Review &amp; Submit</legend>
-          {review && (
+        {review && (
+          <div className="wizard-review">
+            {/* Product card preview — mirrors the storefront card */}
+            <div className="wizard-review-card">
+              <ProductImage
+                slug={review.slug || 'preview'}
+                alt={review.name}
+                path={review.featuredImagePath || undefined}
+              />
+              <div className="product-card-content">
+                <div className="product-category">{review.category}</div>
+                <h2>{review.name || '—'}</h2>
+                {(review.thcPercent || review.cbdPercent) && (
+                  <div className="product-card-potency">
+                    {review.thcPercent && <span>THC {review.thcPercent}%</span>}
+                    {review.cbdPercent && <span>CBD {review.cbdPercent}%</span>}
+                  </div>
+                )}
+                {review.strain && (
+                  <div className="product-card-strain">{review.strain}</div>
+                )}
+              </div>
+            </div>
+
+            {/* Detail table */}
             <dl className="admin-review-list">
-              <dt>Category</dt><dd>{review.category || '—'}</dd>
-              <dt>Name</dt><dd>{review.name || '—'}</dd>
               <dt>Slug</dt><dd>{review.slug || '—'}</dd>
               {review.vendor && <><dt>Vendor</dt><dd>{review.vendor}</dd></>}
-              <dt>Description</dt><dd>{review.details ? `${review.details.slice(0, 120)}${review.details.length > 120 ? '…' : ''}` : '—'}</dd>
-              {review.strain && <><dt>Strain</dt><dd>{review.strain}</dd></>}
+              <dt>Description</dt>
+              <dd>{review.details ? `${review.details.slice(0, 160)}${review.details.length > 160 ? '…' : ''}` : '—'}</dd>
               {review.effects && <><dt>Effects</dt><dd>{review.effects}</dd></>}
               {review.flavors && <><dt>Flavors</dt><dd>{review.flavors}</dd></>}
-              {review.thcPercent && <><dt>THC %</dt><dd>{review.thcPercent}%</dd></>}
-              {review.cbdPercent && <><dt>CBD %</dt><dd>{review.cbdPercent}%</dd></>}
-              {review.coaUrl && <><dt>COA</dt><dd>{review.coaUrl}</dd></>}
-              {review.leaflyUrl && <><dt>Leafly URL</dt><dd>{review.leaflyUrl}</dd></>}
-              <dt>Variants (SKUs)</dt><dd>{review.variantCount}</dd>
+              {review.coaUrl && <><dt>COA</dt><dd>✓ Uploaded</dd></>}
+              {!review.coaUrl && <><dt>COA</dt><dd className="admin-warning">⚠ Missing — required before going live</dd></>}
+              {review.leaflyUrl && <><dt>Leafly URL</dt><dd>✓ Set</dd></>}
+              <dt>Variants (SKUs)</dt>
+              <dd>{Number(review.variantCount) > 0 ? review.variantCount : <span className="admin-warning">⚠ No variants defined</span>}</dd>
             </dl>
-          )}
-          <p className="admin-hint">
-            Review the details above. Click Back to make changes, or Submit to save.
-          </p>
-        </fieldset>
+
+            <p className="admin-hint">
+              Looks good? Click <strong>Submit</strong> to save, or <strong>Back</strong> to make changes.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* ── Navigation ─────────────────────────────────────────── */}
