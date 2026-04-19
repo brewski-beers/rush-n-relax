@@ -85,4 +85,5 @@ dist/stats.html
 .eslintcache
 serviceAccountKey.json
 .claude/worktrees/
+.claude/memory/
 .claire/
