@@ -15,6 +15,14 @@ import { execSync } from 'child_process';
  * messages rather than an opaque setup crash.
  */
 export default async function globalSetup() {
+  // CI sets CI_SEED_HANDLED=true when it manages seeding externally
+  // (cache-miss path seeds before launching Playwright; cache-hit path
+  // imports emulator state and skips seeding entirely).
+  if (process.env.CI_SEED_HANDLED === 'true') {
+    console.log('[e2e] CI_SEED_HANDLED — skipping emulator seed.');
+    return;
+  }
+
   try {
     console.log(
       '[e2e] Generating emulator artifacts and seeding Firebase emulators...'

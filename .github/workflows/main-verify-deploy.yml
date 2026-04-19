@@ -110,6 +110,7 @@ jobs:
           "npm run test:e2e:core -- --project=chromium"
         env:
           CI: 'true'
+          CI_SEED_HANDLED: 'true'
 
       - name: E2E tests (seed + export)
         if: steps.emulator-cache.outputs.cache-hit != 'true'
@@ -119,6 +120,7 @@ jobs:
           "npm run dev:seed && npm run test:e2e:core -- --project=chromium"
         env:
           CI: 'true'
+          CI_SEED_HANDLED: 'true'
 
       - name: Save emulator data cache
         if: steps.emulator-cache.outputs.cache-hit != 'true'
