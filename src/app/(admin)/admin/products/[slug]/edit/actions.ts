@@ -8,20 +8,10 @@ import {
   clearProductFields,
   getProductBySlug,
   listActiveCategories,
+  setProductStatus,
 } from '@/lib/repositories';
-import type {
-  ProductStatus,
-  ProductStrain,
-  ProductVariant,
-  NutritionFacts,
-} from '@/types';
-
-// compliance-hold is system-managed — admins cannot set it directly
-const SETTABLE_STATUSES: ProductStatus[] = [
-  'active',
-  'pending-reformulation',
-  'archived',
-];
+import { generateSkus } from '@/lib/variants/generateSkus';
+import type { ProductStrain, VariantGroup, NutritionFacts } from '@/types';
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
@@ -43,12 +33,9 @@ export async function updateProduct(
   const name = formData.get('name')?.toString().trim();
   const category = formData.get('category')?.toString();
   const details = formData.get('details')?.toString().trim();
-  const status = formData.get('status')?.toString() as ProductStatus;
-  const vendorSlug = formData.get('vendorSlug')?.toString() || undefined;
-  const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
-  const availableAt = formData.getAll('availableAt').map(v => v.toString());
+  const availableAt = existing.availableAt; // inventory system owns availability
 
-  if (!name || !category || !details || !status) {
+  if (!name || !category || !details) {
     return { error: 'All required fields must be filled.' };
   }
 
@@ -57,9 +44,8 @@ export async function updateProduct(
     return { error: 'Invalid category.' };
   }
 
-  if (!SETTABLE_STATUSES.includes(status)) {
-    return { error: 'Cannot set that status directly.' };
-  }
+  // Status is managed externally (archiveProduct action / compliance CF)
+  const status = existing.status;
 
   // formData.get() returns:
   //   null   — field not in form (ProductImageUpload not rendered)
@@ -80,6 +66,9 @@ export async function updateProduct(
   const featuredCleared = rawFeaturedPath === ''; // '' = explicitly removed
   const featuredFromForm = rawFeaturedPath !== null; // null = widget not rendered
 
+  // Suppress unused variable warning — featuredFromForm is an intentional guard
+  void featuredFromForm;
+
   const galleryImagePaths = rawGalleryPaths.filter(
     (p): p is string => typeof p === 'string' && p !== ''
   );
@@ -90,6 +79,10 @@ export async function updateProduct(
     galleryImagePaths.length === 0 &&
     existing.images !== undefined &&
     existing.images.length > 0;
+
+  // ── Vendor ────────────────────────────────────────────────────────────────
+  const vendorSlug =
+    formData.get('vendorSlug')?.toString().trim() || existing.vendorSlug;
 
   // ── Cannabis profile fields ────────────────────────────────────────────
   const strainRaw = formData.get('strain')?.toString() ?? '';
@@ -162,44 +155,58 @@ export async function updateProduct(
   const coaUrlRaw = formData.get('coaUrl')?.toString() ?? '';
   const coaUrl = coaUrlRaw || existing.coaUrl;
 
-  // ── Variants ──────────────────────────────────────────────────────────────
-  const variantsRaw = formData.get('variants')?.toString() ?? '';
-  let variants: ProductVariant[] | undefined;
-  if (variantsRaw) {
-    try {
-      const parsed: unknown = JSON.parse(variantsRaw);
-      if (Array.isArray(parsed)) {
-        variants = parsed.filter(
-          (v): v is ProductVariant =>
-            v !== null &&
-            typeof v === 'object' &&
-            typeof (v as Record<string, unknown>).variantId === 'string' &&
-            typeof (v as Record<string, unknown>).label === 'string'
-        );
-      }
-    } catch {
-      // malformed JSON — ignore, keep existing variants
-    }
-  }
+  // ── Variant groups + generated SKUs ──────────────────────────────────────
+  const variantGroupsRaw = formData.get('variantGroups');
+  const variantGroups: VariantGroup[] = variantGroupsRaw
+    ? (JSON.parse(variantGroupsRaw as string) as VariantGroup[])
+    : (existing.variantGroups ?? []);
+  const variants = generateSkus(variantGroups);
 
-  // -- Nutrition Facts (edibles only) ----------------------------------------
+  // ── Vape attributes ───────────────────────────────────────────────────────
+  const extractionType =
+    formData.get('extractionType')?.toString().trim() ||
+    existing.extractionType;
+  const hardwareType =
+    formData.get('hardwareType')?.toString().trim() || existing.hardwareType;
+  const volumeMlRaw = formData.get('volumeMl')?.toString() ?? '';
+  const volumeMl =
+    volumeMlRaw !== '' && Number.isFinite(Number(volumeMlRaw))
+      ? Number(volumeMlRaw)
+      : existing.volumeMl;
+
+  // ── Drink attributes ──────────────────────────────────────────────────────
+  const thcMgRaw = formData.get('thcMgPerServing')?.toString() ?? '';
+  const cbdMgRaw = formData.get('cbdMgPerServing')?.toString() ?? '';
+  const thcMgPerServing =
+    thcMgRaw !== '' && Number.isFinite(Number(thcMgRaw))
+      ? Number(thcMgRaw)
+      : existing.thcMgPerServing;
+  const cbdMgPerServing =
+    cbdMgRaw !== '' && Number.isFinite(Number(cbdMgRaw))
+      ? Number(cbdMgRaw)
+      : existing.cbdMgPerServing;
+
+  // -- Nutrition Facts (edibles + drinks serving info) -----------------------
+  // For drinks: only servingSize + servingsPerContainer are shown; calories defaults to 0.
+  // For edibles: all three are required.
   let nutritionFacts: NutritionFacts | undefined;
-  if (category === 'edibles') {
+  if (category === 'edibles' || category === 'drinks') {
     const nfServingSize =
       formData.get('nfServingSize')?.toString().trim() ?? '';
     const nfSpcRaw =
       formData.get('nfServingsPerContainer')?.toString().trim() ?? '';
     const nfCalRaw = formData.get('nfCalories')?.toString().trim() ?? '';
     const nfSpc = Number(nfSpcRaw);
-    const nfCal = Number(nfCalRaw);
+    const nfCal = nfCalRaw !== '' ? Number(nfCalRaw) : 0;
+    const calValid =
+      category === 'drinks' ||
+      (nfCalRaw !== '' && Number.isFinite(nfCal) && nfCal >= 0);
     if (
       nfServingSize &&
       nfSpcRaw &&
       Number.isFinite(nfSpc) &&
       nfSpc > 0 &&
-      nfCalRaw &&
-      Number.isFinite(nfCal) &&
-      nfCal >= 0
+      calValid
     ) {
       nutritionFacts = {
         servingSize: nfServingSize,
@@ -212,6 +219,9 @@ export async function updateProduct(
         sugars: formData.get('nfSugars')?.toString().trim() || undefined,
         protein: formData.get('nfProtein')?.toString().trim() || undefined,
       };
+    } else {
+      // edibles with no nutrition form data — preserve existing
+      nutritionFacts = existing.nutritionFacts;
     }
   }
 
@@ -235,17 +245,22 @@ export async function updateProduct(
         ? { images: existing.images }
         : {}),
     status,
-    federalDeadlineRisk,
     availableAt,
+    ...(vendorSlug ? { vendorSlug } : {}),
     ...(coaUrl ? { coaUrl } : {}),
     ...(strain !== undefined ? { strain } : {}),
     ...(effects !== undefined ? { effects } : {}),
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
-    ...(variants !== undefined ? { variants } : {}),
+    ...(variantGroups.length > 0 ? { variantGroups } : {}),
+    ...(variants.length > 0 ? { variants } : {}),
     ...(nutritionFacts !== undefined ? { nutritionFacts } : {}),
     ...(leaflyUrl ? { leaflyUrl } : {}),
-    ...(vendorSlug ? { vendorSlug } : {}),
+    ...(extractionType ? { extractionType } : {}),
+    ...(hardwareType ? { hardwareType } : {}),
+    ...(volumeMl !== undefined ? { volumeMl } : {}),
+    ...(thcMgPerServing !== undefined ? { thcMgPerServing } : {}),
+    ...(cbdMgPerServing !== undefined ? { cbdMgPerServing } : {}),
   };
 
   try {
@@ -267,4 +282,12 @@ export async function updateProduct(
     if (err instanceof Error && err.message === 'NEXT_REDIRECT') throw err;
     return { error: 'Failed to save. Please try again.' };
   }
+}
+
+export async function archiveProduct(slug: string): Promise<void> {
+  await requireRole('staff');
+  await setProductStatus(slug, 'archived');
+  revalidatePath('/admin/products');
+  revalidatePath(`/products/${slug}`);
+  redirect('/admin/products');
 }

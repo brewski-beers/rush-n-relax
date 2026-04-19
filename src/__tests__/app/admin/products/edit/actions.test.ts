@@ -63,7 +63,6 @@ function stubExistingProduct(overrides: Record<string, unknown> = {}) {
     image: undefined,
     images: undefined,
     coaUrl: undefined,
-    federalDeadlineRisk: false,
     availableAt: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -81,7 +80,6 @@ function makeFormData(
     description: 'Updated description',
     details: 'Updated details',
     status: 'active',
-    federalDeadlineRisk: 'false',
     availableAt: ['oak-ridge'],
   };
   const merged = { ...defaults, ...overrides };
@@ -134,18 +132,20 @@ describe('updateProduct server action', () => {
   });
 
   describe('given compliance-hold status in the form', () => {
-    it('returns cannot-set-status error', async () => {
+    it('ignores the status field and proceeds normally', async () => {
       stubAuthorisedActor();
       stubExistingProduct();
 
+      // Status is managed externally via setProductStatus — the edit action
+      // ignores any status value submitted via form and uses existing.status.
       const result = await updateProduct(
         'test-product',
         null,
         makeFormData({ status: 'compliance-hold' })
       );
 
-      expect(result).toEqual({ error: 'Cannot set that status directly.' });
-      expect(upsertProductMock).not.toHaveBeenCalled();
+      expect(result).toBeUndefined();
+      expect(upsertProductMock).toHaveBeenCalled();
     });
   });
 
@@ -307,6 +307,55 @@ describe('updateProduct server action', () => {
       expect(revalidatePathMock).toHaveBeenCalledWith('/products');
       expect(revalidatePathMock).toHaveBeenCalledWith('/products/test-product');
       expect(redirectMock).toHaveBeenCalledWith('/admin/products');
+    });
+  });
+
+  describe('image clearing', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      redirectMock.mockImplementation(() => {
+        throw new Error('NEXT_REDIRECT');
+      });
+    });
+
+    it('calls clearProductFields with ["image"] when featuredImagePath is explicitly cleared', async () => {
+      stubAuthorisedActor();
+      stubExistingProduct({ image: 'products/test-product/old-hero.jpg' });
+
+      await expect(
+        updateProduct(
+          'test-product',
+          null,
+          makeFormData({ featuredImagePath: '' })
+        )
+      ).rejects.toThrow('NEXT_REDIRECT');
+
+      expect(clearProductFieldsMock).toHaveBeenCalledWith('test-product', [
+        'image',
+      ]);
+    });
+
+    it('calls clearProductFields with ["images"] when all 5 gallery slots are explicitly cleared', async () => {
+      stubAuthorisedActor();
+      stubExistingProduct({ images: ['products/test-product/g0.jpg'] });
+
+      await expect(
+        updateProduct(
+          'test-product',
+          null,
+          makeFormData({
+            galleryImagePath_0: '',
+            galleryImagePath_1: '',
+            galleryImagePath_2: '',
+            galleryImagePath_3: '',
+            galleryImagePath_4: '',
+          })
+        )
+      ).rejects.toThrow('NEXT_REDIRECT');
+
+      expect(clearProductFieldsMock).toHaveBeenCalledWith('test-product', [
+        'images',
+      ]);
     });
   });
 });

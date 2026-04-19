@@ -2,12 +2,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── Hoisted mocks ──────────────────────────────────────────────────────────
 
-const { requireRoleMock, setProductStatusMock, revalidatePathMock } =
-  vi.hoisted(() => ({
-    requireRoleMock: vi.fn(),
-    setProductStatusMock: vi.fn().mockResolvedValue(undefined),
-    revalidatePathMock: vi.fn(),
-  }));
+const {
+  requireRoleMock,
+  setProductStatusMock,
+  upsertVariantTemplateMock,
+  deleteVariantTemplateMock,
+  listArchivedProductsMock,
+  revalidatePathMock,
+} = vi.hoisted(() => ({
+  requireRoleMock: vi.fn(),
+  setProductStatusMock: vi.fn().mockResolvedValue(undefined),
+  upsertVariantTemplateMock: vi.fn().mockResolvedValue('template-id'),
+  deleteVariantTemplateMock: vi.fn().mockResolvedValue(undefined),
+  listArchivedProductsMock: vi.fn().mockResolvedValue([]),
+  revalidatePathMock: vi.fn(),
+}));
 
 vi.mock('@/lib/admin-auth', () => ({
   requireRole: requireRoleMock,
@@ -15,6 +24,9 @@ vi.mock('@/lib/admin-auth', () => ({
 
 vi.mock('@/lib/repositories', () => ({
   setProductStatus: setProductStatusMock,
+  upsertVariantTemplate: upsertVariantTemplateMock,
+  deleteVariantTemplate: deleteVariantTemplateMock,
+  listArchivedProducts: listArchivedProductsMock,
 }));
 
 vi.mock('next/cache', () => ({
@@ -24,6 +36,9 @@ vi.mock('next/cache', () => ({
 import {
   archiveProduct,
   restoreProduct,
+  fetchArchivedProductsAction,
+  saveVariantTemplateAction,
+  deleteVariantTemplateAction,
 } from '@/app/(admin)/admin/products/actions';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -126,6 +141,140 @@ describe('restoreProduct server action', () => {
       expect(revalidatePathMock).toHaveBeenCalledWith('/admin/products');
       expect(revalidatePathMock).toHaveBeenCalledWith('/products');
       expect(revalidatePathMock).toHaveBeenCalledWith('/products/test-product');
+    });
+  });
+});
+
+// ── fetchArchivedProductsAction ────────────────────────────────────────────
+
+describe('fetchArchivedProductsAction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given an unauthenticated caller', () => {
+    it('propagates the redirect thrown by requireRole', async () => {
+      stubUnauthorised();
+
+      await expect(fetchArchivedProductsAction()).rejects.toThrow(
+        'NEXT_REDIRECT:/admin/login'
+      );
+
+      expect(listArchivedProductsMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('given an authorised caller', () => {
+    it('calls listArchivedProducts and returns the data', async () => {
+      stubAuthorisedActor();
+      const archived = [
+        {
+          id: 'old-product',
+          slug: 'old-product',
+          name: 'Old Product',
+          category: 'flower',
+          status: 'archived' as const,
+          availableAt: [],
+        },
+      ];
+      listArchivedProductsMock.mockResolvedValue(archived);
+
+      const result = await fetchArchivedProductsAction();
+
+      expect(listArchivedProductsMock).toHaveBeenCalledOnce();
+      expect(result).toEqual(archived);
+    });
+
+    it('returns an empty array when no archived products exist', async () => {
+      stubAuthorisedActor();
+      listArchivedProductsMock.mockResolvedValue([]);
+
+      const result = await fetchArchivedProductsAction();
+
+      expect(result).toEqual([]);
+    });
+  });
+});
+
+// ── saveVariantTemplateAction ──────────────────────────────────────────────
+
+describe('saveVariantTemplateAction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given an unauthenticated caller', () => {
+    it('returns { ok: false } and does not call upsert', async () => {
+      stubUnauthorised();
+
+      const result = await saveVariantTemplateAction('flower', 'Flower', {
+        groupId: 'g1',
+        label: 'Flower',
+        combinable: false,
+        options: [],
+      });
+
+      expect(result).toMatchObject({ ok: false });
+      expect(upsertVariantTemplateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('given an authorised caller with a valid payload', () => {
+    it('calls upsertVariantTemplate and returns { ok: true, id }', async () => {
+      stubAuthorisedActor();
+      upsertVariantTemplateMock.mockResolvedValue('saved-id');
+
+      const group = {
+        groupId: 'g1',
+        label: 'Weight',
+        combinable: false,
+        options: [
+          { optionId: 'o1', label: '1g' },
+          { optionId: 'o2', label: '3.5g' },
+        ],
+      };
+      const result = await saveVariantTemplateAction(
+        'flower-weight',
+        'Flower (weight)',
+        group
+      );
+
+      expect(upsertVariantTemplateMock).toHaveBeenCalledWith({
+        key: 'flower-weight',
+        label: 'Flower (weight)',
+        group,
+      });
+      expect(result).toEqual({ ok: true, id: 'saved-id' });
+    });
+  });
+});
+
+// ── deleteVariantTemplateAction ────────────────────────────────────────────
+
+describe('deleteVariantTemplateAction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given an unauthenticated caller', () => {
+    it('returns { ok: false } and does not call delete', async () => {
+      stubUnauthorised();
+
+      const result = await deleteVariantTemplateAction('tmpl-id');
+
+      expect(result).toMatchObject({ ok: false });
+      expect(deleteVariantTemplateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('given an authorised caller', () => {
+    it('calls deleteVariantTemplate with the correct ID and returns { ok: true }', async () => {
+      stubAuthorisedActor();
+
+      const result = await deleteVariantTemplateAction('tmpl-id');
+
+      expect(deleteVariantTemplateMock).toHaveBeenCalledWith('tmpl-id');
+      expect(result).toEqual({ ok: true });
     });
   });
 });

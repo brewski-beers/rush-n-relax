@@ -7,6 +7,7 @@ export {
 
 export {
   listAllProducts,
+  listArchivedProducts,
   listProducts,
   listProductsByIds,
   listProductsByCategory,
@@ -57,6 +58,7 @@ export {
   getCategoryBySlug,
   upsertCategory,
   setCategoryStatus,
+  reorderCategories,
 } from './category.repository';
 
 export {

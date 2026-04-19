@@ -6,6 +6,8 @@ import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type {
   Product,
   ProductVariant,
+  VariantGroup,
+  VariantOption,
   ProductSummary,
   LabResults,
   ProductStrain,
@@ -25,6 +27,17 @@ function productsCol() {
  */
 export async function listAllProducts(): Promise<ProductSummary[]> {
   const snap = await productsCol().orderBy('name').get();
+  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+}
+
+/**
+ * List archived products only — admin use only, fetched on demand.
+ */
+export async function listArchivedProducts(): Promise<ProductSummary[]> {
+  const snap = await productsCol()
+    .where('status', '==', 'archived')
+    .orderBy('name')
+    .get();
   return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
 }
 
@@ -159,6 +172,7 @@ function docToProductSummary(
         ? (d.strain as ProductStrain)
         : undefined,
     variants: docToVariants(d.variants),
+    variantGroups: docToVariantGroups(d.variantGroups),
     leaflyUrl: d.leaflyUrl ?? undefined,
   } satisfies ProductSummary;
 }
@@ -173,7 +187,6 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     image: d.image ?? undefined,
     images: Array.isArray(d.images) ? (d.images as string[]) : undefined,
     status: d.status ?? 'active',
-    federalDeadlineRisk: d.federalDeadlineRisk ?? false,
     coaUrl: d.coaUrl ?? undefined,
     availableAt: d.availableAt ?? [],
     vendorSlug: d.vendorSlug ?? undefined,
@@ -187,7 +200,17 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
         : undefined,
     effects: Array.isArray(d.effects) ? (d.effects as string[]) : undefined,
     flavors: Array.isArray(d.flavors) ? (d.flavors as string[]) : undefined,
+    variantGroups: docToVariantGroups(d.variantGroups),
     variants: docToVariants(d.variants),
+    extractionType:
+      typeof d.extractionType === 'string' ? d.extractionType : undefined,
+    hardwareType:
+      typeof d.hardwareType === 'string' ? d.hardwareType : undefined,
+    volumeMl: typeof d.volumeMl === 'number' ? d.volumeMl : undefined,
+    thcMgPerServing:
+      typeof d.thcMgPerServing === 'number' ? d.thcMgPerServing : undefined,
+    cbdMgPerServing:
+      typeof d.cbdMgPerServing === 'number' ? d.cbdMgPerServing : undefined,
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
   } satisfies Product;
@@ -205,6 +228,37 @@ function docToLabResults(
     testDate: typeof r.testDate === 'string' ? r.testDate : undefined,
     labName: typeof r.labName === 'string' ? r.labName : undefined,
   };
+}
+
+/**
+ * Defensively maps the variantGroups array from Firestore.
+ * Groups or options missing required fields are silently skipped.
+ */
+function docToVariantGroups(raw: unknown): VariantGroup[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const valid: VariantGroup[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const g = item as Record<string, unknown>;
+    if (typeof g.groupId !== 'string' || typeof g.label !== 'string') continue;
+    const options: VariantOption[] = [];
+    if (Array.isArray(g.options)) {
+      for (const o of g.options) {
+        if (!o || typeof o !== 'object') continue;
+        const opt = o as Record<string, unknown>;
+        if (typeof opt.optionId === 'string' && typeof opt.label === 'string') {
+          options.push({ optionId: opt.optionId, label: opt.label });
+        }
+      }
+    }
+    valid.push({
+      groupId: g.groupId,
+      label: g.label,
+      combinable: g.combinable === true,
+      options,
+    });
+  }
+  return valid.length > 0 ? valid : undefined;
 }
 
 /**

@@ -67,13 +67,13 @@ describe('updateInventoryItem server action', () => {
       await updateInventoryItem('hub', 'product-a', { inStock: true });
 
       expect(setInventoryItemMock).toHaveBeenCalledOnce();
-      const [locId, prodId, patch, adjustment] =
-        setInventoryItemMock.mock.calls[0] as [
-          string,
-          string,
-          Record<string, unknown>,
-          Record<string, unknown>,
-        ];
+      const [locId, prodId, patch, adjustment] = setInventoryItemMock.mock
+        .calls[0] as [
+        string,
+        string,
+        Record<string, unknown>,
+        Record<string, unknown>,
+      ];
 
       expect(locId).toBe('hub');
       expect(prodId).toBe('product-a');
@@ -169,7 +169,9 @@ describe('updateInventoryItem server action', () => {
     it('propagates the error without revalidating paths', async () => {
       stubAuthorisedActor();
       setInventoryItemMock.mockRejectedValue(
-        new Error("Cannot mark 'product-hold' available for purchase: product is on compliance-hold")
+        new Error(
+          "Cannot mark 'product-hold' available for purchase: product is on compliance-hold"
+        )
       );
 
       await expect(
@@ -177,6 +179,71 @@ describe('updateInventoryItem server action', () => {
       ).rejects.toThrow('compliance-hold');
 
       expect(revalidatePathMock).not.toHaveBeenCalled();
+    });
+  });
+});
+
+import { updateVariantPricing } from '@/app/(admin)/admin/inventory/[locationId]/actions';
+
+describe('updateVariantPricing server action', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setInventoryItemMock.mockResolvedValue(undefined);
+  });
+
+  describe('given an unauthenticated caller', () => {
+    it('does not call setInventoryItem and propagates the redirect', async () => {
+      stubUnauthorised();
+
+      await expect(
+        updateVariantPricing('hub', 'flower', { '1g': { price: 1000 } })
+      ).rejects.toThrow('NEXT_REDIRECT:/admin/login');
+
+      expect(setInventoryItemMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('given an authorised owner updating variant pricing', () => {
+    it('calls setInventoryItem with the variantPricing payload and price-update reason', async () => {
+      stubAuthorisedActor();
+      const pricing = { '1g': { price: 1200 }, '7g': { price: 5500 } };
+
+      await updateVariantPricing('oak-ridge', 'flower', pricing);
+
+      expect(setInventoryItemMock).toHaveBeenCalledOnce();
+      const [locId, prodId, patch, adjustment] = setInventoryItemMock.mock
+        .calls[0] as [
+        string,
+        string,
+        Record<string, unknown>,
+        Record<string, unknown>,
+      ];
+
+      expect(locId).toBe('oak-ridge');
+      expect(prodId).toBe('flower');
+      expect(patch.variantPricing).toEqual(pricing);
+      expect(patch.updatedBy).toBe('owner@rushnrelax.com');
+      expect(adjustment.reason).toBe('price-update');
+      expect(adjustment.source).toBe('admin-ui');
+      expect(adjustment.updatedBy).toBe('owner@rushnrelax.com');
+    });
+  });
+
+  describe('given a successful variant pricing update', () => {
+    it('revalidates the location inventory path, /admin/inventory, and /products', async () => {
+      stubAuthorisedActor();
+
+      await updateVariantPricing('seymour', 'concentrates', {
+        '1g': { price: 4500 },
+      });
+
+      expect(revalidatePathMock).toHaveBeenCalledWith(
+        '/admin/inventory/seymour'
+      );
+      expect(revalidatePathMock).toHaveBeenCalledWith('/admin/inventory');
+      expect(revalidatePathMock).toHaveBeenCalledWith('/products');
+      // Should NOT revalidate '/' (only updateInventoryItem does that)
+      expect(revalidatePathMock).not.toHaveBeenCalledWith('/');
     });
   });
 });

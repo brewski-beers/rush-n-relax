@@ -18,7 +18,9 @@ function categoriesCol() {
  * List all active categories, ordered by `order` ASC.
  * Returns lightweight summaries for the storefront filter bar and product forms.
  */
-export async function listActiveCategories(): Promise<ProductCategorySummary[]> {
+export async function listActiveCategories(): Promise<
+  ProductCategorySummary[]
+> {
   const snap = await categoriesCol()
     .where('isActive', '==', true)
     .orderBy('order')
@@ -89,6 +91,23 @@ export async function upsertCategory(
   }
 
   return data.slug;
+}
+
+/**
+ * Batch-update the `order` field for a list of category slugs.
+ * The position in the array (0-indexed) maps to an order value of index + 1.
+ */
+export async function reorderCategories(orderedSlugs: string[]): Promise<void> {
+  const db = getAdminFirestore();
+  const batch = db.batch();
+  const now = FieldValue.serverTimestamp();
+  orderedSlugs.forEach((slug, index) => {
+    batch.update(categoriesCol().doc(slug), {
+      order: index + 1,
+      updatedAt: now,
+    });
+  });
+  await batch.commit();
 }
 
 /**

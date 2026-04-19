@@ -37,10 +37,20 @@ const ALL_CARDS: DashboardCard[] = [
   { id: 'inventory', label: 'Manage Inventory', href: '/admin/inventory' },
   { id: 'users', label: 'Manage Users', href: '/admin/users' },
   { id: 'coa', label: 'Certificates of Analysis', href: '/admin/coa' },
+  {
+    id: 'variant-groups',
+    label: 'Manage Variant Groups',
+    href: '/admin/variant-groups',
+  },
 ];
 
 /** Card IDs available to the staff role — mirrors STAFF_LINKS in AdminNav. */
-const STAFF_CARD_IDS = new Set(['products', 'categories', 'coa']);
+const STAFF_CARD_IDS = new Set([
+  'products',
+  'categories',
+  'coa',
+  'variant-groups',
+]);
 
 function getDefaultCards(role: UserRole): DashboardCard[] {
   if (role === 'staff') return ALL_CARDS.filter(c => STAFF_CARD_IDS.has(c.id));

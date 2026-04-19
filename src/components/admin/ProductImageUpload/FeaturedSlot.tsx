@@ -121,7 +121,7 @@ export function FeaturedSlot({
               <span className="img-upload-zone-label">
                 Drop image here or click to browse
                 <br />
-                <small>JPEG, PNG, or WebP — max 5 MB</small>
+                <small>JPEG, PNG, or WebP — max 15 MB</small>
               </span>
             )}
           </>

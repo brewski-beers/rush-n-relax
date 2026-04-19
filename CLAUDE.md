@@ -21,6 +21,8 @@ products/{slug}
 promos/{slug}
 inventory/{locationId}/items/{productId}
 location-reviews/{placeId}
+product-categories/{slug}
+variant-templates/{docId}
 contact-submissions/{docId}
 pending-user-invites/{email}
 outbound-emails/{docId}

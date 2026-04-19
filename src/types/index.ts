@@ -6,6 +6,8 @@ export type {
 export type {
   Product,
   ProductVariant,
+  VariantOption,
+  VariantGroup,
   NutritionFacts,
   ProductSummary,
   ProductStatus,

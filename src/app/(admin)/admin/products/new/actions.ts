@@ -8,7 +8,8 @@ import {
   getProductBySlug,
   listActiveCategories,
 } from '@/lib/repositories';
-import type { ProductStrain, ProductVariant } from '@/types';
+import { generateSkus } from '@/lib/variants/generateSkus';
+import type { ProductStrain, VariantGroup } from '@/types';
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
@@ -28,7 +29,6 @@ export async function createProduct(
   const category = formData.get('category')?.toString();
   const details = formData.get('details')?.toString().trim();
   const vendorSlug = formData.get('vendorSlug')?.toString() || undefined;
-  const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
   const availableAt = formData.getAll('availableAt').map(v => v.toString());
 
   if (!slug || !name || !category || !details) {
@@ -53,6 +53,10 @@ export async function createProduct(
   const featuredImagePath =
     formData.get('featuredImagePath')?.toString() || undefined;
 
+  // ── COA URL ───────────────────────────────────────────────────────────────
+  const coaUrl = formData.get('coaUrl')?.toString().trim() || undefined;
+
+  // ── Leafly URL ─────────────────────────────────────────────────────────────
   const leaflyUrl = formData.get('leaflyUrl')?.toString().trim() || undefined;
 
   // ── Cannabis profile fields ────────────────────────────────────────────
@@ -116,25 +120,35 @@ export async function createProduct(
         }
       : undefined;
 
-  // ── Variants ──────────────────────────────────────────────────────────────
-  const variantsRaw = formData.get('variants')?.toString() ?? '';
-  let variants: ProductVariant[] | undefined;
-  if (variantsRaw) {
-    try {
-      const parsed: unknown = JSON.parse(variantsRaw);
-      if (Array.isArray(parsed)) {
-        variants = parsed.filter(
-          (v): v is ProductVariant =>
-            v !== null &&
-            typeof v === 'object' &&
-            typeof (v as Record<string, unknown>).variantId === 'string' &&
-            typeof (v as Record<string, unknown>).label === 'string'
-        );
-      }
-    } catch {
-      // malformed JSON — ignore variants
-    }
-  }
+  // ── Vape attributes ───────────────────────────────────────────────────────
+  const extractionType =
+    formData.get('extractionType')?.toString().trim() || undefined;
+  const hardwareType =
+    formData.get('hardwareType')?.toString().trim() || undefined;
+  const volumeMlRaw = formData.get('volumeMl')?.toString() ?? '';
+  const volumeMl =
+    volumeMlRaw !== '' && Number.isFinite(Number(volumeMlRaw))
+      ? Number(volumeMlRaw)
+      : undefined;
+
+  // ── Drink attributes ──────────────────────────────────────────────────────
+  const thcMgRaw = formData.get('thcMgPerServing')?.toString() ?? '';
+  const cbdMgRaw = formData.get('cbdMgPerServing')?.toString() ?? '';
+  const thcMgPerServing =
+    thcMgRaw !== '' && Number.isFinite(Number(thcMgRaw))
+      ? Number(thcMgRaw)
+      : undefined;
+  const cbdMgPerServing =
+    cbdMgRaw !== '' && Number.isFinite(Number(cbdMgRaw))
+      ? Number(cbdMgRaw)
+      : undefined;
+
+  // ── Variant groups + generated SKUs ──────────────────────────────────────
+  const variantGroupsRaw = formData.get('variantGroups');
+  const variantGroups: VariantGroup[] = variantGroupsRaw
+    ? (JSON.parse(variantGroupsRaw as string) as VariantGroup[])
+    : [];
+  const variants = generateSkus(variantGroups);
 
   await upsertProduct({
     slug,
@@ -142,16 +156,22 @@ export async function createProduct(
     category,
     details,
     image: featuredImagePath,
-    federalDeadlineRisk,
     availableAt,
     status: 'active',
+    ...(vendorSlug !== undefined ? { vendorSlug } : {}),
+    ...(coaUrl !== undefined ? { coaUrl } : {}),
+    ...(leaflyUrl !== undefined ? { leaflyUrl } : {}),
     ...(strain !== undefined ? { strain } : {}),
     ...(effects !== undefined ? { effects } : {}),
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
-    ...(variants !== undefined ? { variants } : {}),
-    ...(vendorSlug ? { vendorSlug } : {}),
-    ...(leaflyUrl ? { leaflyUrl } : {}),
+    ...(variantGroups.length > 0 ? { variantGroups } : {}),
+    ...(variants.length > 0 ? { variants } : {}),
+    ...(extractionType !== undefined ? { extractionType } : {}),
+    ...(hardwareType !== undefined ? { hardwareType } : {}),
+    ...(volumeMl !== undefined ? { volumeMl } : {}),
+    ...(thcMgPerServing !== undefined ? { thcMgPerServing } : {}),
+    ...(cbdMgPerServing !== undefined ? { cbdMgPerServing } : {}),
   });
 
   revalidatePath('/admin/products');

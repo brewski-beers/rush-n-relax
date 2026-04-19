@@ -11,7 +11,7 @@ import { requireRole } from '@/lib/admin-auth';
 import { getAdminStorage } from '@/lib/firebase/admin';
 
 export async function DELETE(request: Request): Promise<Response> {
-  await requireRole('owner');
+  await requireRole('staff');
 
   let body: unknown;
   try {

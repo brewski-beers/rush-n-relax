@@ -17,7 +17,7 @@ import { requireRole } from '@/lib/admin-auth';
 import { getAdminStorage } from '@/lib/firebase/admin';
 
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_BYTES = 15 * 1024 * 1024; // 15 MB
 
 function extFromMime(mime: string): string {
   if (mime === 'image/jpeg') return 'jpg';
@@ -26,7 +26,7 @@ function extFromMime(mime: string): string {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  await requireRole('owner');
+  await requireRole('staff');
 
   let formData: FormData;
   try {
@@ -61,7 +61,7 @@ export async function POST(request: Request): Promise<Response> {
   }
   if (file.size > MAX_BYTES) {
     return Response.json(
-      { error: 'File exceeds the 5 MB limit.' },
+      { error: 'File exceeds the 15 MB limit.' },
       { status: 422 }
     );
   }

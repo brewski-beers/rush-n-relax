@@ -5,6 +5,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type { VariantTemplate } from '@/types';
+import type { VariantGroup, VariantOption } from '@/types/product';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -61,6 +62,33 @@ export async function deleteVariantTemplate(id: string): Promise<void> {
 
 // ── Private helpers ───────────────────────────────────────────────────────
 
+/**
+ * Defensively reconstruct a VariantGroup from a raw Firestore object.
+ * Returns a stub group if the data is malformed rather than throwing.
+ */
+function docToGroup(raw: unknown, fallbackId: string): VariantGroup {
+  if (!raw || typeof raw !== 'object') {
+    return { groupId: fallbackId, label: '', combinable: false, options: [] };
+  }
+  const g = raw as Record<string, unknown>;
+  const options: VariantOption[] = [];
+  if (Array.isArray(g.options)) {
+    for (const o of g.options) {
+      if (!o || typeof o !== 'object') continue;
+      const opt = o as Record<string, unknown>;
+      if (typeof opt.optionId === 'string' && typeof opt.label === 'string') {
+        options.push({ optionId: opt.optionId, label: opt.label });
+      }
+    }
+  }
+  return {
+    groupId: typeof g.groupId === 'string' ? g.groupId : fallbackId,
+    label: typeof g.label === 'string' ? g.label : '',
+    combinable: g.combinable === true,
+    options,
+  };
+}
+
 function docToVariantTemplate(
   id: string,
   data: FirebaseFirestore.DocumentData
@@ -69,8 +97,7 @@ function docToVariantTemplate(
     id,
     key: data.key as string,
     label: data.label as string,
-    // Cast is safe: Firestore stores rows as plain objects matching the type
-    rows: (data.rows as VariantTemplate['rows']) ?? [],
+    group: docToGroup(data.group, id),
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   } satisfies VariantTemplate;

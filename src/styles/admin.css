@@ -201,6 +201,7 @@
   --admin-leafly-view-bg: #1b5e20;
   --admin-leafly-view-color: #a5d6a7;
   --admin-leafly-view-bg-hover: #2e7d32;
+  --admin-cat-drag-col-width: 2.5rem;
 
   position: relative;
   min-height: 100vh;
@@ -680,6 +681,22 @@
   color: var(--admin-text-muted);
   margin: 0 0 var(--space-md);
   line-height: 1.6;
+}
+
+.admin-table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--ve-item-gap);
+  margin-bottom: var(--admin-form-label-gap);
+}
+
+.admin-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-checkbox-gap);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 0.88rem);
 }
 
 .admin-table-wrap {
@@ -1976,6 +1993,27 @@
   padding: 0;
 }
 
+/* Template chips — selectable/clickable, visually distinct from applied tags */
+.variant-template-chip {
+  background: transparent;
+  border: 1px solid var(--admin-border-strong);
+  color: var(--admin-text-muted);
+}
+
+.variant-template-chip .variant-editor-chip-apply {
+  color: var(--admin-text-muted);
+  transition: color 0.15s ease;
+}
+
+.variant-template-chip:hover {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+}
+
+.variant-template-chip:hover .variant-editor-chip-apply {
+  color: var(--admin-accent);
+}
+
 /* Save as Template button */
 .variant-editor-save-tpl-btn {
   align-self: flex-start;
@@ -2018,6 +2056,179 @@
   gap: var(--ve-item-gap);
 }
 
+/* Group panel */
+.variant-editor-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.variant-editor-group--drag-over {
+  border-color: var(--admin-accent);
+  box-shadow: var(--ve-drag-over-shadow);
+}
+
+/* Collapsed/expanded header bar — always visible */
+.variant-editor-group-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--ve-item-gap);
+  padding: var(--ve-card-padding);
+  cursor: default;
+  user-select: none;
+}
+
+/* ≡ drag handle for the group bar */
+.variant-editor-group-drag-handle {
+  color: var(--admin-text-subtle);
+  cursor: grab;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 var(--ve-move-gap);
+  user-select: none;
+}
+
+.variant-editor-group-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Label + option count summary */
+.variant-editor-group-summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ve-move-gap);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.variant-editor-group-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--admin-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.variant-editor-group-count {
+  white-space: nowrap;
+}
+
+/* Expand/collapse toggle */
+.variant-editor-group-toggle {
+  background: none;
+  border: none;
+  color: var(--admin-text-subtle);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: var(--ve-move-btn-padding);
+  transition: color 0.15s ease;
+}
+
+.variant-editor-group-toggle:hover {
+  color: var(--admin-text-muted);
+}
+
+/* Expanded body — inner content below the bar */
+.variant-editor-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ve-move-gap);
+  border-top: 1px solid var(--admin-border);
+  padding: var(--ve-card-padding);
+}
+
+.variant-editor-group-label-input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.variant-editor-combinable-label {
+  display: flex;
+  align-items: center;
+  gap: var(--ve-item-gap);
+  white-space: nowrap;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--admin-text-muted);
+  font-weight: 600;
+  margin-top: var(--ve-item-gap);
+}
+
+.variant-editor-stack-hint {
+  margin-top: calc(var(--ve-move-gap) * -1);
+}
+
+/* Options sub-header with "Copy from template" inline */
+.variant-editor-options-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ve-item-gap);
+}
+
+/* Copy-from-template dropdown */
+.variant-editor-copy-menu {
+  position: relative;
+}
+
+.variant-editor-add-menu-wrap {
+  position: relative;
+}
+
+.variant-editor-copy-btn {
+  font-size: var(--font-size-sm, 0.88rem);
+  padding: var(--ve-add-btn-padding);
+}
+
+.variant-editor-copy-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 10;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px var(--admin-shadow, rgba(0, 0, 0, 0.35));
+}
+
+.variant-editor-copy-option {
+  background: none;
+  border: none;
+  color: var(--admin-text);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 0.88rem);
+  padding: var(--ve-add-btn-padding);
+  text-align: left;
+  transition: background 0.1s ease;
+}
+
+.variant-editor-copy-option:hover {
+  background: var(--admin-surface-soft);
+}
+
+/* Group footer — add option + conditional save-as-template */
+.variant-editor-group-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--ve-item-gap);
+  flex-wrap: wrap;
+}
+
 /* Generic admin button variants used in save-template form */
 .admin-btn-primary {
   background: var(--admin-accent);
@@ -2052,4 +2263,115 @@
 .admin-btn-ghost:hover {
   border-color: var(--admin-muted);
   color: var(--admin-fg);
+}
+
+/* ── Wizard ──────────────────────────────────────────────────────────────── */
+
+.wizard-step--hidden {
+  display: none;
+}
+
+.wizard-step-indicator {
+  color: var(--admin-text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+}
+
+.wizard-nav {
+  justify-content: space-between;
+}
+
+/* ── Wizard Review ───────────────────────────────────────────────────────── */
+
+.wizard-review-section {
+  border-bottom: 1px solid var(--admin-border);
+  padding: var(--admin-fieldset-padding) 0;
+}
+
+.wizard-review-section:last-child {
+  border-bottom: none;
+}
+
+.wizard-review-section-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--admin-section-title-margin);
+}
+
+.wizard-review-edit {
+  background: none;
+  border: none;
+  color: var(--admin-accent);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 0.88rem);
+  padding: 0;
+}
+
+.wizard-review-edit:hover {
+  text-decoration: underline;
+}
+
+/* ── Danger button ──────────────────────────────────────────────────────── */
+
+.admin-btn-danger {
+  background: none;
+  border: var(--admin-error-border);
+  border-radius: 6px;
+  color: var(--admin-error);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: var(--ve-add-btn-padding);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.admin-btn-danger:hover:not(:disabled) {
+  background-color: var(--admin-error-bg);
+}
+
+.admin-btn-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.admin-inline-form {
+  display: inline;
+}
+
+/* ── Categories DnD table ─────────────────────────────────────────────── */
+
+.admin-table-drag-col {
+  width: var(--admin-cat-drag-col-width);
+}
+
+.admin-table-drag-handle {
+  color: var(--admin-text-subtle);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 var(--ve-move-gap);
+  user-select: none;
+  width: var(--admin-cat-drag-col-width);
+}
+
+.admin-table-drag-handle:active {
+  cursor: grabbing;
+}
+
+.admin-table tr.admin-table-row--drag-over td {
+  background: var(--ve-drag-over-bg);
+  border-top: 2px solid var(--admin-accent);
+}
+
+.admin-table tr.admin-table-row--dragging {
+  opacity: 0.45;
 }

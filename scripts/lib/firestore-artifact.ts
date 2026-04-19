@@ -120,7 +120,6 @@ export function buildStorefrontSeedArtifact(): FirestoreSeedArtifact {
         details: product.details,
         image: product.image,
         status: product.status,
-        federalDeadlineRisk: product.federalDeadlineRisk,
         availableAt: product.availableAt,
         coaUrl: product.coaUrl,
         createdAt: product.createdAt,
@@ -223,7 +222,7 @@ export function buildStorefrontSeedArtifact(): FirestoreSeedArtifact {
       fields: toFirestoreFields({
         key: tpl.key,
         label: tpl.label,
-        rows: tpl.rows,
+        group: tpl.group,
         createdAt: tpl.createdAt,
         updatedAt: tpl.updatedAt,
       }),

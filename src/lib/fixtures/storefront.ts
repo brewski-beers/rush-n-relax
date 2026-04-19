@@ -40,7 +40,6 @@ export interface ProductFixture {
   details: string;
   image?: string;
   status: Product['status'];
-  federalDeadlineRisk: boolean;
   availableAt?: string[];
   coaUrl?: string;
 }
@@ -188,7 +187,6 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
       'Our flower collection is the cornerstone of the Rush N Relax experience. Every strain is hand-selected for potency, aroma, and bag appeal. From earthy indicas that melt away the day to energizing sativas that spark creativity, we carry a rotating lineup of top-shelf cultivars. Ask our staff about current strains, terpene profiles, and what pairs best with your mood.',
     image: 'products/flower.png',
     status: 'active',
-    federalDeadlineRisk: true,
   },
   {
     slug: 'concentrates',
@@ -198,7 +196,6 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
       'For those who appreciate purity and potency, our concentrate selection sets the bar. Choose from crumble, diamonds, diamond sauce, kief, and live rosin - each lab-tested and selected for exceptional terpene retention and clean extraction. Whether you dab, top a bowl, or vaporize, these concentrates deliver a depth of flavor and effect that flower alone cannot reach.',
     image: 'products/concentrates.png',
     status: 'active',
-    federalDeadlineRisk: true,
   },
   {
     slug: 'drinks',
@@ -208,7 +205,6 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
       'Skip the smoke and sip your way to elevation. Our THCa-infused beverage lineup features light, carbonated seltzers in a range of natural flavors, each precisely dosed for a consistent, predictable experience. Low-calorie, fast-acting, and sessionable - they are equally at home at a backyard gathering or a quiet night in. Explore our current flavor rotation in store.',
     image: 'products/drinks.png',
     status: 'active',
-    federalDeadlineRisk: true,
   },
   {
     slug: 'edibles',
@@ -218,7 +214,6 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
       'Edibles are where indulgence meets intention. Our shelves carry artisan chocolates, fruit-forward gummies, rich caramel chews, and freshly inspired cookies - every piece crafted for flavor first and dosed for reliability. Start low, go slow, and savor. Whether you are new to edibles or a seasoned enthusiast, our staff will help you find the perfect treat and dosage.',
     image: 'products/edibles.png',
     status: 'active',
-    federalDeadlineRisk: true,
   },
   {
     slug: 'vapes',
@@ -228,7 +223,6 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
       'Our curated vape collection features trusted brands like TribeToke and Wildwoods alongside a rotating selection of premium cartridges and disposables. Every device is chosen for build quality, airflow, and oil compatibility so you get a smooth, flavorful draw every time. Compact enough for your pocket, refined enough for any occasion - vaping has never looked or tasted this good.',
     image: 'products/vapes.png',
     status: 'active',
-    federalDeadlineRisk: false,
   },
 ];
 
@@ -538,7 +532,6 @@ export function buildProductDocuments(date: Date = fixtureDate): Product[] {
     details: product.details,
     image: product.image,
     status: product.status,
-    federalDeadlineRisk: product.federalDeadlineRisk,
     coaUrl: product.coaUrl,
     availableAt: product.availableAt ?? [...LOCATION_SLUGS],
     createdAt: date,
@@ -605,72 +598,117 @@ export const VARIANT_TEMPLATE_FIXTURES: readonly Omit<
   {
     key: 'flower',
     label: 'Flower (weight)',
-    rows: [
-      { label: '1g', weight: { value: 1, unit: 'g' } },
-      { label: '3.5g', weight: { value: 3.5, unit: 'g' } },
-      { label: '7g', weight: { value: 7, unit: 'g' } },
-      { label: '14g', weight: { value: 14, unit: 'g' } },
-      { label: '28g', weight: { value: 28, unit: 'g' } },
-    ],
+    group: {
+      groupId: 'flower',
+      label: 'Weight',
+      combinable: false,
+      options: [
+        { optionId: '1g', label: '1g' },
+        { optionId: '3-5g', label: '3.5g' },
+        { optionId: '7g', label: '7g' },
+        { optionId: '14g', label: '14g' },
+        { optionId: '28g', label: '28g' },
+      ],
+    },
   },
   {
     key: 'preroll-qty',
     label: 'Preroll (qty)',
-    rows: [
-      { label: '1-pack', quantity: 1 },
-      { label: '2-pack', quantity: 2 },
-      { label: '5-pack', quantity: 5 },
-    ],
+    group: {
+      groupId: 'preroll-qty',
+      label: 'Quantity',
+      combinable: false,
+      options: [
+        { optionId: '1-pack', label: '1-pack' },
+        { optionId: '2-pack', label: '2-pack' },
+        { optionId: '5-pack', label: '5-pack' },
+      ],
+    },
   },
   {
     key: 'preroll-weight',
     label: 'Preroll (weight)',
-    rows: [
-      { label: '0.5g', weight: { value: 0.5, unit: 'g' } },
-      { label: '0.75g', weight: { value: 0.75, unit: 'g' } },
-      { label: '1g', weight: { value: 1, unit: 'g' } },
-      { label: '1.5g', weight: { value: 1.5, unit: 'g' } },
-    ],
+    group: {
+      groupId: 'preroll-weight',
+      label: 'Weight',
+      combinable: false,
+      options: [
+        { optionId: '0-5g', label: '0.5g' },
+        { optionId: '0-75g', label: '0.75g' },
+        { optionId: '1g', label: '1g' },
+        { optionId: '1-5g', label: '1.5g' },
+      ],
+    },
   },
   {
     key: 'concentrate',
     label: 'Concentrate',
-    rows: [
-      { label: '0.5g', weight: { value: 0.5, unit: 'g' } },
-      { label: '1g', weight: { value: 1, unit: 'g' } },
-    ],
+    group: {
+      groupId: 'concentrate',
+      label: 'Weight',
+      combinable: false,
+      options: [
+        { optionId: '0-5g', label: '0.5g' },
+        { optionId: '1g', label: '1g' },
+      ],
+    },
   },
   {
     key: 'edible',
     label: 'Edible (free-form)',
-    rows: [{ label: '' }],
+    group: {
+      groupId: 'edible',
+      label: 'Size',
+      combinable: false,
+      options: [],
+    },
   },
   {
     key: 'vape',
     label: 'Vape',
-    rows: [
-      { label: '0.5g cart', weight: { value: 0.5, unit: 'g' } },
-      { label: '1g cart', weight: { value: 1, unit: 'g' } },
-      { label: 'Disposable 1g', weight: { value: 1, unit: 'g' } },
-    ],
+    group: {
+      groupId: 'vape',
+      label: 'Size',
+      combinable: false,
+      options: [
+        { optionId: '0-5g-cart', label: '0.5g cart' },
+        { optionId: '1g-cart', label: '1g cart' },
+        { optionId: 'disposable-1g', label: 'Disposable 1g' },
+      ],
+    },
   },
   {
     key: 'drink',
     label: 'Drink',
-    rows: [
-      { label: 'Single Can', quantity: 1 },
-      { label: '2-pack', quantity: 2 },
-    ],
+    group: {
+      groupId: 'drink',
+      label: 'Quantity',
+      combinable: false,
+      options: [
+        { optionId: 'single-can', label: 'Single Can' },
+        { optionId: '2-pack', label: '2-pack' },
+      ],
+    },
   },
   {
     key: 'single',
     label: 'Single / 1-pack',
-    rows: [{ label: '1-pack', quantity: 1 }],
+    group: {
+      groupId: 'single',
+      label: 'Quantity',
+      combinable: false,
+      options: [{ optionId: '1-pack', label: '1-pack' }],
+    },
   },
   {
     key: 'custom',
     label: 'Custom',
-    rows: [{ label: '' }],
+    group: {
+      groupId: 'custom',
+      label: 'Option',
+      combinable: false,
+      options: [],
+    },
   },
 ];
 

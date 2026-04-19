@@ -32,6 +32,26 @@ export interface NutritionFacts {
 }
 
 /**
+ * A single option within a VariantGroup (e.g. "Berry" in a Flavor group).
+ */
+export interface VariantOption {
+  optionId: string;
+  label: string;
+}
+
+/**
+ * A dimension of purchasable options (e.g. Flavor, Quantity, Weight).
+ * When `combinable` is true, this group participates in the cartesian-product
+ * SKU generation along with all other combinable groups.
+ */
+export interface VariantGroup {
+  groupId: string;
+  label: string;
+  combinable: boolean;
+  options: VariantOption[];
+}
+
+/**
  * A single purchasable variant of a product (e.g. "1/8 oz", "10mg gummy").
  * Variants are authored at the product level and priced at the inventory level
  * via InventoryItem.variantPricing.
@@ -64,12 +84,6 @@ export interface Product {
   /** Firebase Storage paths for the gallery (up to 5), e.g. products/{slug}/gallery/0.jpg */
   images?: string[];
   status: ProductStatus;
-  /**
-   * Flagged true if this product will be affected by the Nov 12, 2026
-   * federal hemp redefinition (≤0.4mg total THC per container).
-   * A Cloud Function sets affected products to 'compliance-hold' on Nov 1, 2026.
-   */
-  federalDeadlineRisk: boolean;
   /** Link to Certificate of Analysis — required for compliance documentation */
   coaUrl?: string;
   /** Location slugs where this product is carried, e.g. ['oak-ridge', 'seymour'] */
@@ -78,21 +92,39 @@ export interface Product {
   vendorSlug?: string;
   /** RnR-owned lab result data (replaces generic coaUrl where available) */
   labResults?: LabResults;
-  /** Leafly product page URL */
+  /** Leafly product page URL — flower only */
   leaflyUrl?: string;
   /** Cannabis strain type — powers strain badge on storefront */
   strain?: ProductStrain;
   /** Consumer-facing effect descriptors, e.g. ['Euphoria', 'Relaxed', 'Sedative'] */
   effects?: string[];
-  /** Flavor descriptors, e.g. ['Citrus', 'Pine', 'Earthy'] */
+  /** Flavor/taste descriptors, e.g. ['Citrus', 'Pine', 'Berry'] */
   flavors?: string[];
   /**
-   * Purchasable size/dose variants for this product.
+   * Option dimensions for this product (e.g. Flavor, Weight).
+   * Combinable groups are cartesian-product expanded into `variants` on save.
+   */
+  variantGroups?: VariantGroup[];
+  /**
+   * Denormalized flat variant list — computed from variantGroups on save via generateSkus().
+   * Also accepts legacy hand-authored variants for products without variantGroups.
    * Priced per-variant at the inventory level via InventoryItem.variantPricing.
    */
   variants?: ProductVariant[];
-  /** FDA-style nutrition facts -- edibles only. */
+  /** FDA-style nutrition facts — edibles and drinks (serving info). */
   nutritionFacts?: NutritionFacts;
+  // ── Vape-specific ──────────────────────────────────────────────────────────
+  /** e.g. "live-resin" | "distillate" | "full-spectrum" | "broad-spectrum" */
+  extractionType?: string;
+  /** e.g. "cartridge" | "disposable" | "all-in-one" */
+  hardwareType?: string;
+  /** Volume in millilitres, e.g. 0.5, 1.0 */
+  volumeMl?: number;
+  // ── Drink-specific ─────────────────────────────────────────────────────────
+  /** THC content in mg per serving */
+  thcMgPerServing?: number;
+  /** CBD content in mg per serving */
+  cbdMgPerServing?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -110,5 +142,6 @@ export type ProductSummary = Pick<
   | 'vendorSlug'
   | 'strain'
   | 'variants'
+  | 'variantGroups'
   | 'leaflyUrl'
 >;
