@@ -36,7 +36,7 @@ export async function listVendors(
   let query = vendorsCol()
     .where('isActive', '==', true)
     .orderBy('name')
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);
@@ -59,7 +59,7 @@ export async function listAllVendors(
   const limit = opts.limit ?? 50;
   let query = vendorsCol()
     .orderBy('name')
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);

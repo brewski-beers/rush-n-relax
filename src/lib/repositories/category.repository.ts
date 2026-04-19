@@ -27,7 +27,7 @@ export async function listActiveCategories(
   let query = categoriesCol()
     .where('isActive', '==', true)
     .orderBy('order')
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   if (opts.cursor) {
     const afterSnap = await categoriesCol().doc(opts.cursor).get();
@@ -52,7 +52,7 @@ export async function listAllCategories(
   const limit = opts.limit ?? 50;
   let query = categoriesCol()
     .orderBy('order')
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   if (opts.cursor) {
     const afterSnap = await categoriesCol().doc(opts.cursor).get();

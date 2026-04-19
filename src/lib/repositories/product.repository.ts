@@ -43,7 +43,7 @@ export async function listAllProducts(
   const limit = opts.limit ?? 50;
   let query = productsCol()
     .orderBy('name')
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);
@@ -67,7 +67,7 @@ export async function listArchivedProducts(
   let query = productsCol()
     .where('status', '==', 'archived')
     .orderBy('name')
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);
@@ -91,7 +91,7 @@ export async function listProducts(
   let query = productsCol()
     .where('status', '==', 'active')
     .orderBy('name')
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);
@@ -138,7 +138,7 @@ export async function listProductsByCategory(
     .where('status', '==', 'active')
     .where('category', '==', category)
     .orderBy('name')
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);
@@ -176,7 +176,7 @@ export async function listProductsByVendor(
     .where('status', '==', 'active')
     .where('vendorSlug', '==', vendorSlug)
     .orderBy('name')
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);

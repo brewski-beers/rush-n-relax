@@ -34,7 +34,7 @@ export async function listAllPromos(
   const limit = opts.limit ?? 50;
   let query = promosCol()
     .orderBy('name')
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);
@@ -72,7 +72,7 @@ export async function listActivePromos(
     .where('active', '==', true)
     .where('endDate', '>', new Date())
     .orderBy('endDate')
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);
@@ -120,7 +120,7 @@ export async function getPromosByLocationSlug(
   let query = promosCol()
     .where('active', '==', true)
     .where('locationSlug', '==', locationSlug)
-    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+    .limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);
