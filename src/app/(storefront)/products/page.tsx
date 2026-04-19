@@ -17,13 +17,13 @@ export const metadata = buildMetadata('/products', {
 });
 
 interface Props {
-  searchParams: Promise<{ category?: string; page?: string }>;
+  searchParams: Promise<{ category?: string }>;
 }
 
 export default async function ProductsPage({ searchParams }: Props) {
-  const { category: rawCategory, page: rawPage } = await searchParams;
+  const { category: rawCategory } = await searchParams;
 
-  const categories = await listActiveCategories();
+  const { items: categories } = await listActiveCategories();
   const validCategory = categories.some(c => c.slug === rawCategory)
     ? rawCategory
     : null;
@@ -57,10 +57,10 @@ export default async function ProductsPage({ searchParams }: Props) {
           </Suspense>
 
           <Suspense
-            key={`${validCategory ?? 'all'}-${rawPage ?? '1'}`}
+            key={validCategory ?? 'all'}
             fallback={<ProductGridSkeleton />}
           >
-            <ProductsGrid category={validCategory ?? null} rawPage={rawPage} />
+            <ProductsGrid category={validCategory ?? null} />
           </Suspense>
         </div>
       </section>
