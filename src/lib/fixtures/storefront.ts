@@ -100,7 +100,7 @@ const fixtureDate = new Date(FIXTURE_TIMESTAMP);
 export const LOCATION_FIXTURES: readonly LocationFixture[] = [
   {
     slug: 'oak-ridge',
-    name: 'Oak Ridge [TEST]',
+    name: 'Oak Ridge',
     address: '1 Emulator Way',
     city: 'Oak Ridge',
     state: 'TN',
@@ -115,7 +115,7 @@ export const LOCATION_FIXTURES: readonly LocationFixture[] = [
   },
   {
     slug: 'maryville',
-    name: 'Maryville [TEST]',
+    name: 'Maryville',
     address: '2 Fixture Boulevard',
     city: 'Maryville',
     state: 'TN',
@@ -130,7 +130,7 @@ export const LOCATION_FIXTURES: readonly LocationFixture[] = [
   },
   {
     slug: 'seymour',
-    name: 'Seymour [TEST]',
+    name: 'Seymour',
     address: '3 Seed Data Drive, Suite 205',
     city: 'Seymour',
     state: 'TN',
