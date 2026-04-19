@@ -21,6 +21,8 @@
   --admin-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
   --admin-shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.25);
   --admin-radius: 14px;
+  --admin-back-link-margin-bottom: 0.75rem;
+  --admin-back-link-font-size: 0.875rem;
   --admin-heading-color: #f6ecd6;
   --admin-nav-link-padding: 0.3rem 0.8rem;
   --admin-nav-link-focus-border: rgba(213, 179, 106, 0.32);
@@ -2379,9 +2381,9 @@
 /* ── Admin back-link ─────────────────────────────────────────────────────── */
 .admin-back-link {
   display: inline-block;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--admin-back-link-margin-bottom);
   color: var(--admin-accent);
-  font-size: 0.875rem;
+  font-size: var(--admin-back-link-font-size);
   font-weight: 600;
   text-decoration: none;
   transition: color 0.2s ease;
