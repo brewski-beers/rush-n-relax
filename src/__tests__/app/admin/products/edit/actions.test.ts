@@ -309,4 +309,53 @@ describe('updateProduct server action', () => {
       expect(redirectMock).toHaveBeenCalledWith('/admin/products');
     });
   });
+
+  describe('image clearing', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      redirectMock.mockImplementation(() => {
+        throw new Error('NEXT_REDIRECT');
+      });
+    });
+
+    it('calls clearProductFields with ["image"] when featuredImagePath is explicitly cleared', async () => {
+      stubAuthorisedActor();
+      stubExistingProduct({ image: 'products/test-product/old-hero.jpg' });
+
+      await expect(
+        updateProduct(
+          'test-product',
+          null,
+          makeFormData({ featuredImagePath: '' })
+        )
+      ).rejects.toThrow('NEXT_REDIRECT');
+
+      expect(clearProductFieldsMock).toHaveBeenCalledWith('test-product', [
+        'image',
+      ]);
+    });
+
+    it('calls clearProductFields with ["images"] when all 5 gallery slots are explicitly cleared', async () => {
+      stubAuthorisedActor();
+      stubExistingProduct({ images: ['products/test-product/g0.jpg'] });
+
+      await expect(
+        updateProduct(
+          'test-product',
+          null,
+          makeFormData({
+            galleryImagePath_0: '',
+            galleryImagePath_1: '',
+            galleryImagePath_2: '',
+            galleryImagePath_3: '',
+            galleryImagePath_4: '',
+          })
+        )
+      ).rejects.toThrow('NEXT_REDIRECT');
+
+      expect(clearProductFieldsMock).toHaveBeenCalledWith('test-product', [
+        'images',
+      ]);
+    });
+  });
 });

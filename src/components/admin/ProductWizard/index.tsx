@@ -795,13 +795,10 @@ export function ProductWizardForm({
         }
         aria-hidden={domStep !== 4}
       >
-        <fieldset className="admin-fieldset">
-          <legend>Variants</legend>
-          <VariantEditor
-            initialGroups={product?.variantGroups ?? []}
-            variantTemplates={variantTemplates}
-          />
-        </fieldset>
+        <VariantEditor
+          initialGroups={product?.variantGroups ?? []}
+          variantTemplates={variantTemplates}
+        />
       </div>
 
       {/* ── Step 5: Images ─────────────────────────────────────── */}

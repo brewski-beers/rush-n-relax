@@ -236,4 +236,39 @@ describe('createProduct server action', () => {
       expect(redirectMock).toHaveBeenCalledWith('/admin/products');
     });
   });
+
+  describe('given a variantGroups payload in the form', () => {
+    it('derives variants via generateSkus and passes both variantGroups and variants to upsertProduct', async () => {
+      stubAuthorisedActor();
+      getProductBySlugMock.mockResolvedValue(null);
+      redirectMock.mockImplementation(() => {
+        throw new Error('NEXT_REDIRECT');
+      });
+
+      const variantGroups = [
+        {
+          key: 'flower-weight',
+          combinable: false,
+          options: [{ label: '1g' }, { label: '3.5g' }],
+        },
+      ];
+
+      await expect(
+        createProduct(
+          null,
+          makeFormData({ variantGroups: JSON.stringify(variantGroups) })
+        )
+      ).rejects.toThrow('NEXT_REDIRECT');
+
+      const [payload] = upsertProductMock.mock.calls[0] as [
+        Record<string, unknown>,
+      ];
+
+      expect(payload.variantGroups).toEqual(variantGroups);
+      expect(Array.isArray(payload.variants)).toBe(true);
+      const variants = payload.variants as { label: string }[];
+      expect(variants).toHaveLength(2);
+      expect(variants.map(v => v.label)).toEqual(['1g', '3.5g']);
+    });
+  });
 });
