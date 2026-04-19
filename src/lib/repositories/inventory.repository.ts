@@ -31,6 +31,7 @@ import type {
   InventoryAdjustmentReason,
   InventoryAdjustmentSource,
 } from '@/types';
+import type { PageResult } from './types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -45,10 +46,24 @@ function inventoryItemsCol(locationId: string) {
  * Returns an empty array if no items have been tracked yet.
  */
 export async function listInventoryForLocation(
-  locationId: string
-): Promise<InventoryItem[]> {
-  const snap = await inventoryItemsCol(locationId).get();
-  return snap.docs.map(doc => docToInventoryItem(doc.id, doc.data()));
+  locationId: string,
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<InventoryItem>> {
+  const limit = opts.limit ?? 500;
+  const col = inventoryItemsCol(locationId);
+  let query = col.orderBy('__name__').limit(limit);
+
+  if (opts.cursor) {
+    const cursorSnap = await col.doc(opts.cursor).get();
+    if (cursorSnap.exists) query = query.startAfter(cursorSnap);
+  }
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => docToInventoryItem(doc.id, doc.data()));
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**
@@ -72,14 +87,20 @@ export async function getInventoryItem(
  * for storefront pricing. Each item's variantPricing map drives the
  * variant selector on the product detail page.
  */
-export async function listOnlineAvailableInventory(): Promise<
-  InventoryItemSummary[]
-> {
-  const snap = await inventoryItemsCol(ONLINE_LOCATION_ID)
-    .where('inStock', '==', true)
-    .get();
+export async function listOnlineAvailableInventory(
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<InventoryItemSummary>> {
+  const limit = opts.limit ?? 25;
+  const col = inventoryItemsCol(ONLINE_LOCATION_ID);
+  let query = col.where('inStock', '==', true).orderBy('__name__').limit(limit);
 
-  return snap.docs.map(doc => {
+  if (opts.cursor) {
+    const cursorSnap = await col.doc(opts.cursor).get();
+    if (cursorSnap.exists) query = query.startAfter(cursorSnap);
+  }
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => {
     const d = doc.data();
     return {
       productId: doc.id,
@@ -92,6 +113,10 @@ export async function listOnlineAvailableInventory(): Promise<
       variantPricing: docToVariantPricing(d.variantPricing),
     } satisfies InventoryItemSummary;
   });
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**
@@ -104,13 +129,23 @@ export async function listOnlineAvailableInventory(): Promise<
  * also true. Used to populate per-store featured sections.
  */
 export async function listFeaturedInventory(
-  locationId: string
-): Promise<InventoryItemSummary[]> {
-  const snap = await inventoryItemsCol(locationId)
+  locationId: string,
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<InventoryItemSummary>> {
+  const limit = opts.limit ?? 25;
+  const col = inventoryItemsCol(locationId);
+  let query = col
     .where('featured', '==', true)
-    .get();
+    .orderBy('__name__')
+    .limit(limit);
 
-  return snap.docs.map(doc => {
+  if (opts.cursor) {
+    const cursorSnap = await col.doc(opts.cursor).get();
+    if (cursorSnap.exists) query = query.startAfter(cursorSnap);
+  }
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => {
     const d = doc.data();
     return {
       productId: doc.id,
@@ -123,6 +158,10 @@ export async function listFeaturedInventory(
       variantPricing: docToVariantPricing(d.variantPricing),
     } satisfies InventoryItemSummary;
   });
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 // ── Write operations ──────────────────────────────────────────────────────
@@ -343,8 +382,3 @@ function normalizeQuantity(value: unknown, fallbackInStock: boolean): number {
 
   return fallbackInStock ? 1 : 0;
 }
-
-// ── Pagination-aware list overloads ───────────────────────────────────────
-// The functions below shadow the originals with opts parameters.
-// They are exported alongside the originals; callers that need pagination
-// import the paginated variants.

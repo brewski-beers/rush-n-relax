@@ -104,6 +104,8 @@
   --admin-checkbox-gap: 0.5rem;
   --admin-checkbox-margin-bottom: 0.6rem;
   --admin-form-actions-gap: 0.8rem;
+  --admin-back-link-margin-bottom: 0.75rem;
+  --admin-back-link-font-size: 0.875rem;
   --admin-error-bg: rgba(255, 127, 148, 0.12);
   --admin-error-border: 1px solid rgba(255, 127, 148, 0.45);
   --admin-error-text: #ffc5ce;
@@ -2379,9 +2381,9 @@
 /* ── Admin back-link ─────────────────────────────────────────────────────── */
 .admin-back-link {
   display: inline-block;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--admin-back-link-margin-bottom);
   color: var(--admin-accent);
-  font-size: 0.875rem;
+  font-size: var(--admin-back-link-font-size);
   font-weight: 600;
   text-decoration: none;
   transition: color 0.2s ease;
