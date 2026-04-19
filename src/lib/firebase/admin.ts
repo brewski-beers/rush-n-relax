@@ -59,6 +59,13 @@ export function getAdminAuth(): Auth {
 export function getAdminFirestore(): Firestore {
   if (adminDb) return adminDb;
   adminDb = getFirestore(getAdminApp());
+  // In Next.js dev, hot-reload clears module vars but the SDK retains the
+  // Firestore instance — settings() throws if called on an already-init'd instance.
+  try {
+    adminDb.settings({ ignoreUndefinedProperties: true });
+  } catch {
+    // Already initialized across a hot-reload boundary — safe to ignore.
+  }
   return adminDb;
 }
 

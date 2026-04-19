@@ -53,6 +53,7 @@ export interface InventoryItemFixture {
   featured: boolean;
   quantity: number;
   variantPricing?: InventoryItem['variantPricing'];
+  notes?: string;
 }
 
 export interface PromoFixture {
@@ -90,51 +91,158 @@ export interface LocationReviewFixture {
 
 const fixtureDate = new Date(FIXTURE_TIMESTAMP);
 
+/**
+ * TEST DATA — not real operational values.
+ * Addresses, phones, and placeIds are intentionally fake so emulator data
+ * is never confused with prod and schema drift is immediately visible.
+ * Coordinates are real-ish (correct region) to keep map component tests meaningful.
+ */
+// ⚠️  FIXTURE DATA — every field below is invented. No real addresses, phones,
+//    coordinates, or place IDs. Slugs oak-ridge/maryville/seymour are kept as
+//    stable identifiers for inventory fixture references only.
 export const LOCATION_FIXTURES: readonly LocationFixture[] = [
   {
     slug: 'oak-ridge',
-    name: 'Oak Ridge',
-    address: '110 Bus Terminal Road',
-    city: 'Oak Ridge',
-    state: 'TN',
-    zip: '37830',
-    phone: '+1 (865) 936-3069',
+    name: 'Pinecrest',
+    address: '42 Ember Lane',
+    city: 'Pinecrest',
+    state: 'XX',
+    zip: '00001',
+    phone: '+1 (555) 010-0001',
     hours: 'Mon-Sun: 10am - 10pm',
     description:
       'Home to our signature speakeasy-style lounge and full-service dispensary. Step inside for handpicked flower, concentrates, edibles, and vapes - complemented by a refined lounge where you can settle in, unwind, and enjoy the experience the way it was meant to be.',
-    coordinates: { lat: 36.023978, lng: -84.24072 },
+    coordinates: { lat: 10.001, lng: -10.001 },
     socialLinkIds: ['fb_oak_ridge' as SocialId],
-    placeId: 'ChIJG2IBn08zXIgROk6xAd9qyY0',
+    placeId: 'fixture-place-id-oak-ridge',
   },
   {
     slug: 'maryville',
-    name: 'Maryville',
-    address: '729 Watkins Road',
-    city: 'Maryville',
-    state: 'TN',
-    zip: '37801',
-    phone: '+1 (865) 265-4102',
+    name: 'Bluffton',
+    address: '7 Canopy Court',
+    city: 'Bluffton',
+    state: 'XX',
+    zip: '00002',
+    phone: '+1 (555) 010-0002',
     hours: 'Mon-Sun: 10am - 10pm',
     description:
-      'Situated along Watkins Road in the heart of Blount County, our Maryville dispensary brings a refined retail experience to the foothills of the Smokies. Walk in for expertly curated flower, edibles, concentrates, and vapes - all held to the same exacting standard that defines Rush N Relax.',
-    coordinates: { lat: 35.750658, lng: -83.992662 },
+      'A refined retail experience in the heart of Bluffton. Walk in for expertly curated flower, edibles, concentrates, and vapes - all held to the same exacting standard that defines Rush N Relax.',
+    coordinates: { lat: 10.002, lng: -10.002 },
     socialLinkIds: ['fb_maryville' as SocialId],
-    placeId: 'ChIJHZao5_GfXogR9G9vWnFH3IM',
+    placeId: 'fixture-place-id-maryville',
   },
   {
     slug: 'seymour',
-    name: 'Seymour',
-    address: '500 Maryville Hwy, Suite 205',
-    city: 'Seymour',
-    state: 'TN',
-    zip: '37865',
-    phone: '+1 (865) 936-2040',
+    name: 'Hartwell',
+    address: '19 Ridgeline Drive, Suite 205',
+    city: 'Hartwell',
+    state: 'XX',
+    zip: '00003',
+    phone: '+1 (555) 010-0003',
     hours: 'Mon-Sun: 10am - 10pm',
     description:
-      'Nestled along Maryville Highway between Knoxville and the Smokies, our Seymour location offers a relaxed, welcoming atmosphere with the same premium selection you expect from Rush N Relax. Swing by on your way through Sevier County - we make it easy to find exactly what you need.',
-    coordinates: { lat: 35.861584, lng: -83.770727 },
+      'Our Hartwell location offers a relaxed, welcoming atmosphere with the same premium selection you expect from Rush N Relax. Stop by anytime — we make it easy to find exactly what you need.',
+    coordinates: { lat: 10.003, lng: -10.003 },
     socialLinkIds: ['fb_seymour' as SocialId],
-    placeId: 'ChIJb1IipsQbXIgREaNxkmmAaHg',
+    placeId: 'fixture-place-id-seymour',
+  },
+  {
+    slug: 'crestwood',
+    name: 'Crestwood Station',
+    address: '88 Vaulted Hollow Rd',
+    city: 'Crestwood',
+    state: 'XX',
+    zip: '00004',
+    phone: '+1 (555) 010-0004',
+    hours: 'Mon-Sat: 10am - 9pm',
+    description:
+      'Crestwood Station brings the full Rush N Relax experience to a bright, modern retail floor with a curated selection of flower, vapes, edibles, and more.',
+    coordinates: { lat: 10.004, lng: -10.004 },
+    placeId: 'fixture-place-id-crestwood',
+  },
+  {
+    slug: 'thornvale',
+    name: 'Thornvale',
+    address: '3 Seedling Square',
+    city: 'Thornvale',
+    state: 'XX',
+    zip: '00005',
+    phone: '+1 (555) 010-0005',
+    hours: 'Mon-Sun: 11am - 8pm',
+    description:
+      'Tucked into the Thornvale town center, this cozy outpost carries a focused selection of our best-selling flower, pre-rolls, and edibles.',
+    coordinates: { lat: 10.005, lng: -10.005 },
+    placeId: 'fixture-place-id-thornvale',
+  },
+  {
+    slug: 'lakemoor',
+    name: 'Lakemoor',
+    address: '512 Fixture Pkwy',
+    city: 'Lakemoor',
+    state: 'XX',
+    zip: '00006',
+    phone: '+1 (555) 010-0006',
+    hours: 'Mon-Fri: 10am - 9pm, Sat-Sun: 9am - 10pm',
+    description:
+      'Our Lakemoor shop sits just off the main strip with ample parking and a warm, knowledgeable team ready to guide you through every category.',
+    coordinates: { lat: 10.006, lng: -10.006 },
+    placeId: 'fixture-place-id-lakemoor',
+  },
+  {
+    slug: 'dunmore',
+    name: 'Dunmore Crossing',
+    address: '200 Test Node Blvd',
+    city: 'Dunmore',
+    state: 'XX',
+    zip: '00007',
+    phone: '+1 (555) 010-0007',
+    hours: 'Mon-Sun: 10am - 10pm',
+    description:
+      'Dunmore Crossing is our highest-volume emulator location — great for testing multi-location inventory edge cases and featured product displays.',
+    coordinates: { lat: 10.007, lng: -10.007 },
+    placeId: 'fixture-place-id-dunmore',
+  },
+  {
+    slug: 'ashby',
+    name: 'Ashby Flats',
+    address: '9 Cypress Mock Lane',
+    city: 'Ashby',
+    state: 'XX',
+    zip: '00008',
+    phone: '+1 (555) 010-0008',
+    hours: 'Tue-Sun: 10am - 8pm',
+    description:
+      'A boutique Rush N Relax outpost in Ashby Flats — smaller footprint, carefully curated shelves, and a staff that knows every product by name.',
+    coordinates: { lat: 10.008, lng: -10.008 },
+    placeId: 'fixture-place-id-ashby',
+  },
+  {
+    slug: 'veldora',
+    name: 'Veldora',
+    address: '1 Stub Street',
+    city: 'Veldora',
+    state: 'XX',
+    zip: '00009',
+    phone: '+1 (555) 010-0009',
+    hours: 'Mon-Sun: 9am - 11pm',
+    description:
+      'Extended hours and a wide floor plan make Veldora one of our most flexible test locations. Ideal for exercising late-hour availability logic.',
+    coordinates: { lat: 10.009, lng: -10.009 },
+    placeId: 'fixture-place-id-veldora',
+  },
+  {
+    slug: 'graymere',
+    name: 'Graymere',
+    address: '77 Null Island Court',
+    city: 'Graymere',
+    state: 'XX',
+    zip: '00010',
+    phone: '+1 (555) 010-0010',
+    hours: 'Mon-Sat: 10am - 7pm',
+    description:
+      'Our newest fixture location. Graymere covers the closed/limited-hours branch for schedule and availability tests.',
+    coordinates: { lat: 10.01, lng: -10.01 },
+    placeId: 'fixture-place-id-graymere',
   },
 ];
 
@@ -176,6 +284,13 @@ export const CATEGORY_FIXTURES: readonly CategoryFixture[] = [
     order: 5,
     isActive: true,
   },
+  {
+    slug: 'pre-roll',
+    label: 'Pre-Rolls',
+    description: 'Hand-rolled pre-rolls, singles and multi-packs',
+    order: 6,
+    isActive: true,
+  },
 ];
 
 export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
@@ -185,8 +300,9 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
     category: 'flower',
     details:
       'Our flower collection is the cornerstone of the Rush N Relax experience. Every strain is hand-selected for potency, aroma, and bag appeal. From earthy indicas that melt away the day to energizing sativas that spark creativity, we carry a rotating lineup of top-shelf cultivars. Ask our staff about current strains, terpene profiles, and what pairs best with your mood.',
-    image: 'products/flower.png',
+    image: 'products/flower.jpg',
     status: 'active',
+    coaUrl: 'COA/Blue-Dream-2024-01.pdf',
   },
   {
     slug: 'concentrates',
@@ -194,8 +310,9 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
     category: 'concentrates',
     details:
       'For those who appreciate purity and potency, our concentrate selection sets the bar. Choose from crumble, diamonds, diamond sauce, kief, and live rosin - each lab-tested and selected for exceptional terpene retention and clean extraction. Whether you dab, top a bowl, or vaporize, these concentrates deliver a depth of flavor and effect that flower alone cannot reach.',
-    image: 'products/concentrates.png',
+    image: 'products/concentrates.jpg',
     status: 'active',
+    coaUrl: 'COA/OG-Kush-2024-01.pdf',
   },
   {
     slug: 'drinks',
@@ -203,7 +320,7 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
     category: 'drinks',
     details:
       'Skip the smoke and sip your way to elevation. Our THCa-infused beverage lineup features light, carbonated seltzers in a range of natural flavors, each precisely dosed for a consistent, predictable experience. Low-calorie, fast-acting, and sessionable - they are equally at home at a backyard gathering or a quiet night in. Explore our current flavor rotation in store.',
-    image: 'products/drinks.png',
+    image: 'products/drinks.jpg',
     status: 'active',
   },
   {
@@ -212,8 +329,9 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
     category: 'edibles',
     details:
       'Edibles are where indulgence meets intention. Our shelves carry artisan chocolates, fruit-forward gummies, rich caramel chews, and freshly inspired cookies - every piece crafted for flavor first and dosed for reliability. Start low, go slow, and savor. Whether you are new to edibles or a seasoned enthusiast, our staff will help you find the perfect treat and dosage.',
-    image: 'products/edibles.png',
+    image: 'products/edibles.jpg',
     status: 'active',
+    coaUrl: 'COA/Gelato-2024-01.pdf',
   },
   {
     slug: 'vapes',
@@ -221,25 +339,27 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
     category: 'vapes',
     details:
       'Our curated vape collection features trusted brands like TribeToke and Wildwoods alongside a rotating selection of premium cartridges and disposables. Every device is chosen for build quality, airflow, and oil compatibility so you get a smooth, flavorful draw every time. Compact enough for your pocket, refined enough for any occasion - vaping has never looked or tasted this good.',
-    image: 'products/vapes.png',
+    image: 'products/vapes.jpg',
     status: 'active',
   },
 ];
 
-/** Hub inventory seed — all products available online and featured by default. */
-export const HUB_INVENTORY_FIXTURES: readonly InventoryItemFixture[] =
-  PRODUCT_FIXTURES.map(p => ({
-    locationId: 'hub',
-    productId: p.slug,
-    inStock: true,
-    availableOnline: true,
-    availablePickup: false,
-    featured: true,
-    quantity: 99,
-  }));
-
-/** Online virtual location inventory — canonical source for storefront variant pricing. */
+/**
+ * Online store inventory — canonical source for storefront variant pricing.
+ * Covers the 5 generic category products (used by E2E storefront tests) plus
+ * a set of real catalog products that exercise specific edge cases:
+ *
+ *   blue-dream            — fully priced featured flower (happy path)
+ *   og-kush               — full-sale flower (compareAtPrice on every variant)
+ *   granddaddy-purple     — out-of-stock (inStock: false, featured cleared)
+ *   blue-dream-pre-roll   — combinable variant pricing (weight × qty cross-product)
+ *   gelato-live-rosin     — partial pricing (0-5g unpriced → unorderable)
+ *   wyld-raspberry-gummies — per-variant soldout (50mg: inStock: false)
+ *   uncle-skunks-lemon-ginger-sparkling-water — drink with staff notes
+ *   blue-dream-distillate-cart — in-store only (availableOnline: false)
+ */
 export const ONLINE_INVENTORY_FIXTURES: readonly InventoryItemFixture[] = [
+  // ── Generic category products (E2E storefront baseline) ──────────────────────
   {
     locationId: ONLINE_LOCATION_ID,
     productId: 'flower',
@@ -310,6 +430,322 @@ export const ONLINE_INVENTORY_FIXTURES: readonly InventoryItemFixture[] = [
       'disposable-1g': { price: 4000, compareAtPrice: 4500 },
     },
   },
+
+  // ── Real catalog products — edge-case coverage ───────────────────────────────
+
+  // Happy path: fully priced, featured flower from the catalog
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'blue-dream',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: true,
+    quantity: 24,
+    variantPricing: {
+      '1g': { price: 1200 },
+      '3-5g': { price: 3200 },
+      '7g': { price: 5800 },
+      '14g': { price: 10500, compareAtPrice: 12000 },
+      '28g': { price: 18000, compareAtPrice: 20000 },
+    },
+  },
+
+  // Full-sale: compareAtPrice on every variant (entire product on sale)
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'og-kush',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: false,
+    quantity: 10,
+    variantPricing: {
+      '1g': { price: 900, compareAtPrice: 1100 },
+      '3-5g': { price: 2500, compareAtPrice: 3000 },
+      '7g': { price: 4500, compareAtPrice: 5500 },
+      '14g': { price: 8000, compareAtPrice: 10000 },
+      '28g': { price: 14000, compareAtPrice: 17000 },
+    },
+  },
+
+  // Out-of-stock: inStock false, featured must remain false
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'granddaddy-purple',
+    inStock: false,
+    availableOnline: true,
+    availablePickup: false,
+    featured: false,
+    quantity: 0,
+    variantPricing: {
+      '1g': { price: 1100 },
+      '3-5g': { price: 3000 },
+      '7g': { price: 5200 },
+      '14g': { price: 9500 },
+      '28g': { price: 16500 },
+    },
+    notes: 'Restock ETA Thursday — hold requests accepted at counter',
+  },
+
+  // Combinable variant pricing: pre-roll weight × quantity cross-product keys
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'blue-dream-pre-roll',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: true,
+    quantity: 30,
+    variantPricing: {
+      '0-5g-1-pack': { price: 800 },
+      '0-5g-2-pack': { price: 1400 },
+      '0-5g-5-pack': { price: 3200, compareAtPrice: 4000 },
+      '1g-1-pack': { price: 1400 },
+      '1g-2-pack': { price: 2500 },
+      '1g-5-pack': { price: 6000, compareAtPrice: 7000 },
+    },
+  },
+
+  // Partial pricing: 0-5g variant has no price entry → unorderable on storefront
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'gelato-live-rosin',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: false,
+    quantity: 8,
+    variantPricing: {
+      // '0-5g' intentionally omitted — tests "unpriced variant" UI branch
+      '1g': { price: 5500, compareAtPrice: 6000 },
+    },
+  },
+
+  // Per-variant soldout: 50mg is inStock: false, 25mg still orderable
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'wyld-raspberry-gummies',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: false,
+    quantity: 15,
+    variantPricing: {
+      '25mg': { price: 1800 },
+      '50mg': { price: 3200, inStock: false },
+    },
+  },
+
+  // Staff notes: drink with restock annotation
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'uncle-skunks-lemon-ginger-sparkling-water',
+    inStock: true,
+    availableOnline: true,
+    availablePickup: false,
+    featured: false,
+    quantity: 48,
+    variantPricing: {
+      'single-can': { price: 600 },
+      '2-pack': { price: 1000 },
+    },
+    notes: 'Last case — reorder placed',
+  },
+
+  // In-store only: availableOnline false means hidden from storefront browse
+  {
+    locationId: ONLINE_LOCATION_ID,
+    productId: 'blue-dream-distillate-cart',
+    inStock: true,
+    availableOnline: false,
+    availablePickup: false,
+    featured: false,
+    quantity: 12,
+    variantPricing: {
+      '0-5g-cart': { price: 2200 },
+      '1g-cart': { price: 3800 },
+    },
+  },
+];
+
+/**
+ * Retail location inventory — exercises per-location stock states and pickup availability.
+ *
+ *   oak-ridge   — primary test location: pickup enabled, mix of in/out-of-stock
+ *   maryville   — secondary: pickup enabled, subset of products
+ *   seymour     — pickup disabled for most products (no-pickup branch)
+ */
+export const RETAIL_INVENTORY_FIXTURES: readonly InventoryItemFixture[] = [
+  // ── Oak Ridge ────────────────────────────────────────────────────────────────
+
+  // In-stock, pickup enabled, featured at this location
+  {
+    locationId: 'oak-ridge',
+    productId: 'blue-dream',
+    inStock: true,
+    availableOnline: false,
+    availablePickup: true,
+    featured: true,
+    quantity: 18,
+    variantPricing: {
+      '1g': { price: 1200 },
+      '3-5g': { price: 3200 },
+      '7g': { price: 5800 },
+      '14g': { price: 10500 },
+      '28g': { price: 18000 },
+    },
+  },
+
+  // In-stock, pickup enabled, not featured
+  {
+    locationId: 'oak-ridge',
+    productId: 'og-kush',
+    inStock: true,
+    availableOnline: false,
+    availablePickup: true,
+    featured: false,
+    quantity: 6,
+    variantPricing: {
+      '1g': { price: 1100 },
+      '3-5g': { price: 3000 },
+      '7g': { price: 5500 },
+      '14g': { price: 10000 },
+      '28g': { price: 17000 },
+    },
+  },
+
+  // Out-of-stock at oak-ridge specifically (same product in stock online + maryville)
+  {
+    locationId: 'oak-ridge',
+    productId: 'granddaddy-purple',
+    inStock: false,
+    availableOnline: false,
+    availablePickup: false,
+    featured: false,
+    quantity: 0,
+    notes: 'Sold out — next delivery Friday',
+  },
+
+  // In-store only vape — available for retail pickup but not online
+  {
+    locationId: 'oak-ridge',
+    productId: 'blue-dream-distillate-cart',
+    inStock: true,
+    availableOnline: false,
+    availablePickup: true,
+    featured: false,
+    quantity: 8,
+    variantPricing: {
+      '0-5g-cart': { price: 2200 },
+      '1g-cart': { price: 3800 },
+    },
+  },
+
+  // Pre-roll at retail — combinable variant keys
+  {
+    locationId: 'oak-ridge',
+    productId: 'blue-dream-pre-roll',
+    inStock: true,
+    availableOnline: false,
+    availablePickup: true,
+    featured: false,
+    quantity: 20,
+    variantPricing: {
+      '0-5g-1-pack': { price: 800 },
+      '0-5g-5-pack': { price: 3200 },
+      '1g-1-pack': { price: 1400 },
+      '1g-5-pack': { price: 6000 },
+    },
+  },
+
+  // ── Maryville ────────────────────────────────────────────────────────────────
+
+  // Same flower as oak-ridge — tests multi-location same product
+  {
+    locationId: 'maryville',
+    productId: 'blue-dream',
+    inStock: true,
+    availableOnline: false,
+    availablePickup: true,
+    featured: true,
+    quantity: 14,
+    variantPricing: {
+      '1g': { price: 1200 },
+      '3-5g': { price: 3200 },
+      '7g': { price: 5800 },
+      '14g': { price: 10500 },
+      '28g': { price: 18000 },
+    },
+  },
+
+  // Granddaddy Purple in stock at maryville, out-of-stock at oak-ridge
+  {
+    locationId: 'maryville',
+    productId: 'granddaddy-purple',
+    inStock: true,
+    availableOnline: false,
+    availablePickup: true,
+    featured: false,
+    quantity: 5,
+    variantPricing: {
+      '1g': { price: 1100 },
+      '3-5g': { price: 3000 },
+      '7g': { price: 5200 },
+      '14g': { price: 9500 },
+      '28g': { price: 16500 },
+    },
+  },
+
+  // Concentrate at maryville only — location-exclusive product
+  {
+    locationId: 'maryville',
+    productId: 'gelato-live-rosin',
+    inStock: true,
+    availableOnline: false,
+    availablePickup: true,
+    featured: false,
+    quantity: 4,
+    variantPricing: {
+      '0-5g': { price: 3000 },
+      '1g': { price: 5500 },
+    },
+  },
+
+  // ── Seymour ──────────────────────────────────────────────────────────────────
+
+  // Pickup disabled at Seymour — tests availablePickup: false retail branch
+  {
+    locationId: 'seymour',
+    productId: 'og-kush',
+    inStock: true,
+    availableOnline: false,
+    availablePickup: false,
+    featured: false,
+    quantity: 9,
+    variantPricing: {
+      '1g': { price: 1100 },
+      '3-5g': { price: 3000 },
+      '7g': { price: 5500 },
+      '14g': { price: 10000 },
+      '28g': { price: 17000 },
+    },
+  },
+
+  // Edible at seymour — per-variant soldout mirrored at retail
+  {
+    locationId: 'seymour',
+    productId: 'wyld-raspberry-gummies',
+    inStock: true,
+    availableOnline: false,
+    availablePickup: true,
+    featured: false,
+    quantity: 10,
+    variantPricing: {
+      '25mg': { price: 1800 },
+      '50mg': { price: 3200, inStock: false },
+    },
+  },
 ];
 
 export const PROMO_FIXTURES: readonly PromoFixture[] = [
@@ -319,10 +755,10 @@ export const PROMO_FIXTURES: readonly PromoFixture[] = [
     name: 'Hitoki Trident',
     tagline: 'Fire Without Flame.',
     description:
-      'The Hitoki Trident uses three precision laser beams to ignite your flower - no butane, no torch, just pure flavor. Try it now at Rush N Relax Seymour, 500 Maryville Hwy.',
+      'The Hitoki Trident uses three precision laser beams to ignite your flower - no butane, no torch, just pure flavor. Try it now at Rush N Relax Hartwell.',
     details:
-      'The Hitoki Trident replaces your lighter or torch with three high-powered laser beams that ignite flower directly - no butane, no residue, no compromised terpenes. Compatible with standard 14mm water pipes, rechargeable via USB-C, and built for daily use. The result is a noticeably cleaner, more flavorful hit every time. Available to try at Rush N Relax Seymour - 500 Maryville Hwy, Suite 205. Ask our staff for a walkthrough.',
-    cta: 'Visit Seymour',
+      'The Hitoki Trident replaces your lighter or torch with three high-powered laser beams that ignite flower directly - no butane, no residue, no compromised terpenes. Compatible with standard 14mm water pipes, rechargeable via USB-C, and built for daily use. The result is a noticeably cleaner, more flavorful hit every time. Available to try at Rush N Relax Hartwell. Ask our staff for a walkthrough.',
+    cta: 'Visit Hartwell',
     ctaPath: '/locations/seymour',
     image: 'promos/laser-bong.png',
     locationSlug: 'seymour',
@@ -333,7 +769,7 @@ export const PROMO_FIXTURES: readonly PromoFixture[] = [
       'laser lighter',
       'laser ignition',
       'no butane',
-      '500 Maryville Hwy',
+      '19 Ridgeline Drive',
     ],
     active: true,
   },
@@ -341,14 +777,14 @@ export const PROMO_FIXTURES: readonly PromoFixture[] = [
 
 export const LOCATION_REVIEW_FIXTURES: readonly LocationReviewFixture[] = [
   {
-    placeId: 'ChIJG2IBn08zXIgROk6xAd9qyY0',
+    placeId: 'fixture-place-id-oak-ridge',
     rating: 4.8,
     totalRatings: 312,
     reviews: [
       {
         author_name: 'Jane D.',
         rating: 5,
-        text: 'Incredible selection and knowledgeable staff. Best dispensary in Oak Ridge!',
+        text: 'Incredible selection and knowledgeable staff. Best dispensary in Pinecrest!',
         relative_time_description: '2 days ago',
         profile_photo_url: '',
         time: 1700900000,
@@ -389,7 +825,7 @@ export const LOCATION_REVIEW_FIXTURES: readonly LocationReviewFixture[] = [
     cachedAt: 1700000000001,
   },
   {
-    placeId: 'ChIJb1IipsQbXIgREaNxkmmAaHg',
+    placeId: 'fixture-place-id-seymour',
     rating: 4.7,
     totalRatings: 198,
     reviews: [
@@ -437,7 +873,7 @@ export const LOCATION_REVIEW_FIXTURES: readonly LocationReviewFixture[] = [
     cachedAt: 1700000000002,
   },
   {
-    placeId: 'ChIJHZao5_GfXogR9G9vWnFH3IM',
+    placeId: 'fixture-place-id-maryville',
     rating: 4.9,
     totalRatings: 54,
     reviews: [
@@ -476,7 +912,7 @@ export const LOCATION_REVIEW_FIXTURES: readonly LocationReviewFixture[] = [
       {
         author_name: 'Nicole K.',
         rating: 5,
-        text: 'Best dispensary in Blount County. Will absolutely be back.',
+        text: 'Best dispensary in Bluffton. Will absolutely be back.',
         relative_time_description: '3 weeks ago',
         profile_photo_url: '',
         time: 1699150000,
@@ -539,25 +975,11 @@ export function buildProductDocuments(date: Date = fixtureDate): Product[] {
   }));
 }
 
-export function buildHubInventoryDocuments(
-  date: Date = fixtureDate
-): InventoryItem[] {
-  return HUB_INVENTORY_FIXTURES.map(item => ({
-    productId: item.productId,
-    locationId: item.locationId,
-    inStock: item.inStock,
-    availableOnline: item.availableOnline,
-    availablePickup: item.availablePickup,
-    featured: item.featured,
-    quantity: item.quantity,
-    updatedAt: date,
-  }));
-}
-
-export function buildOnlineInventoryDocuments(
-  date: Date = fixtureDate
-): InventoryItem[] {
-  return ONLINE_INVENTORY_FIXTURES.map(item => ({
+function inventoryItemFromFixture(
+  item: InventoryItemFixture,
+  date: Date
+): InventoryItem {
+  const doc: InventoryItem = {
     productId: item.productId,
     locationId: item.locationId,
     inStock: item.inStock,
@@ -567,7 +989,26 @@ export function buildOnlineInventoryDocuments(
     quantity: item.quantity,
     variantPricing: item.variantPricing,
     updatedAt: date,
-  }));
+  };
+  const notes = item.notes;
+  if (notes) doc.notes = notes;
+  return doc;
+}
+
+export function buildOnlineInventoryDocuments(
+  date: Date = fixtureDate
+): InventoryItem[] {
+  return ONLINE_INVENTORY_FIXTURES.map(item =>
+    inventoryItemFromFixture(item, date)
+  );
+}
+
+export function buildRetailInventoryDocuments(
+  date: Date = fixtureDate
+): InventoryItem[] {
+  return RETAIL_INVENTORY_FIXTURES.map(item =>
+    inventoryItemFromFixture(item, date)
+  );
 }
 
 export function buildPromoDocuments(date: Date = fixtureDate): Promo[] {

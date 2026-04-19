@@ -93,14 +93,39 @@ jobs:
         with:
           browsers: chromium
 
-      - name: E2E tests
+      - name: Restore emulator data cache
+        id: emulator-cache
+        uses: actions/cache@v4
+        with:
+          path: ./emulator-data
+          key: emulator-data-${{ hashFiles('scripts/seed-*.ts', 'scripts/seed-*.cjs', 'firestore.rules') }}
+          restore-keys: |
+            emulator-data-
+
+      - name: E2E tests (import cache)
+        if: steps.emulator-cache.outputs.cache-hit == 'true'
         run: >-
           npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,auth,storage
+          --import=./emulator-data
+          "npm run test:e2e:core -- --project=chromium"
+        env:
+          CI: 'true'
+
+      - name: E2E tests (seed + export)
+        if: steps.emulator-cache.outputs.cache-hit != 'true'
+        run: >-
+          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,auth,storage
+          --export-on-exit=./emulator-data
           "npm run dev:seed && npm run test:e2e:core -- --project=chromium"
         env:
-          # Note: emulator routing is handled via NODE_ENV=development (set by
-          # `npm run dev` in playwright.config.ts webServer). No extra env needed.
           CI: 'true'
+
+      - name: Save emulator data cache
+        if: steps.emulator-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ./emulator-data
+          key: emulator-data-${{ hashFiles('scripts/seed-*.ts', 'scripts/seed-*.cjs', 'firestore.rules') }}
 
       - name: Upload verify failure artifacts
         if: failure()

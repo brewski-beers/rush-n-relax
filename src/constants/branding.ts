@@ -1,5 +1,6 @@
 import { getDownloadURL, ref } from 'firebase/storage';
 import { getStorage$, initializeApp } from '../firebase';
+import { getStorageUrl } from '../lib/storage/url-cache';
 
 /**
  * Brand Logo System
@@ -63,11 +64,17 @@ export const resolveBrandLogoUrl = async (
   logo: BrandLogoVariant,
   format: BrandAssetFormat = BrandAssetFormat.PNG
 ): Promise<string> => {
+  const storagePath = getBrandLogoStoragePath(logo, format);
   try {
+    // Use the server-side URL cache when running in a Node environment
+    // (Server Components, scripts). Falls back to client-side Firebase SDK
+    // when called from the browser (window is defined).
+    if (typeof window === 'undefined') {
+      return getStorageUrl(storagePath);
+    }
     initializeApp();
     const storage = getStorage$();
-    const path = getBrandLogoStoragePath(logo, format);
-    return await getDownloadURL(ref(storage, path));
+    return await getDownloadURL(ref(storage, storagePath));
   } catch {
     return getLocalLogoPath(logo, format);
   }

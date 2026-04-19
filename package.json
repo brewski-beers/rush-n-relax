@@ -4,10 +4,10 @@
   "description": "Cannabis retail PWA with Firestore backend",
   "scripts": {
     "dev": "next dev",
-    "dev:emulators": "firebase emulators:start",
+    "dev:emulators": "firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data --project=rush-n-relax",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:emulators\"",
-    "emulators:artifacts": "npx tsx scripts/generate-emulator-artifacts.ts",
-    "dev:seed": "npm run emulators:artifacts && npx tsx scripts/seed-emulators.ts",
+    "dev:seed": "npx tsx scripts/seed-emulators.ts && npx tsx scripts/seed-vendors.ts && npx tsx scripts/seed-catalog.ts",
+    "emulator:export": "firebase emulators:export ./emulator-data --project=rush-n-relax",
     "seed:prod:content": "npx tsx scripts/prod-upsert-content.ts",
     "migrate:products:docids": "npx tsx scripts/migrate-product-doc-ids.ts",
     "build": "next build",

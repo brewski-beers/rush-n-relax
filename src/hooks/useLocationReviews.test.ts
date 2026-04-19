@@ -17,7 +17,7 @@ const mockDoc = vi.mocked(doc);
 const mockGetDoc = vi.mocked(getDoc);
 
 const mockReviewData = {
-  placeId: 'ChIJG2IBn08zXIgROk6xAd9qyY0',
+  placeId: 'test-place-id-oak-ridge',
   rating: 4.7,
   totalRatings: 142,
   reviews: [
@@ -67,7 +67,7 @@ describe('useLocationReviews', () => {
       mockGetDoc.mockResolvedValue(makeSnap(true, mockReviewData));
 
       const { result } = renderHook(() =>
-        useLocationReviews('ChIJG2IBn08zXIgROk6xAd9qyY0')
+        useLocationReviews('test-place-id-oak-ridge')
       );
 
       expect(result.current.status).toBe('loading');
@@ -87,7 +87,7 @@ describe('useLocationReviews', () => {
       mockGetDoc.mockResolvedValue(makeSnap(false));
 
       const { result } = renderHook(() =>
-        useLocationReviews('ChIJG2IBn08zXIgROk6xAd9qyY0')
+        useLocationReviews('test-place-id-oak-ridge')
       );
 
       await waitFor(() => {
@@ -103,7 +103,7 @@ describe('useLocationReviews', () => {
       mockGetDoc.mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() =>
-        useLocationReviews('ChIJG2IBn08zXIgROk6xAd9qyY0')
+        useLocationReviews('test-place-id-oak-ridge')
       );
 
       await waitFor(() => {
@@ -116,12 +116,12 @@ describe('useLocationReviews', () => {
     it('reads from the location-reviews collection with the correct placeId', async () => {
       mockGetDoc.mockResolvedValue(makeSnap(true, mockReviewData));
 
-      renderHook(() => useLocationReviews('ChIJG2IBn08zXIgROk6xAd9qyY0'));
+      renderHook(() => useLocationReviews('test-place-id-oak-ridge'));
 
       expect(mockDoc).toHaveBeenCalledWith(
         {},
         'location-reviews',
-        'ChIJG2IBn08zXIgROk6xAd9qyY0'
+        'test-place-id-oak-ridge'
       );
 
       await waitFor(() => expect(mockGetDoc).toHaveBeenCalled());
@@ -136,7 +136,7 @@ describe('useLocationReviews', () => {
       );
 
       const { result, unmount } = renderHook(() =>
-        useLocationReviews('ChIJG2IBn08zXIgROk6xAd9qyY0')
+        useLocationReviews('test-place-id-oak-ridge')
       );
 
       expect(result.current.status).toBe('loading');
@@ -153,14 +153,14 @@ describe('useLocationReviews', () => {
 
       const { result, rerender } = renderHook(
         ({ id }: { id: string }) => useLocationReviews(id),
-        { initialProps: { id: 'ChIJG2IBn08zXIgROk6xAd9qyY0' } }
+        { initialProps: { id: 'test-place-id-oak-ridge' } }
       );
 
       await waitFor(() => {
         expect(result.current.status).toBe('success');
       });
 
-      rerender({ id: 'ChIJb1IipsQbXIgREaNxkmmAaHg' });
+      rerender({ id: 'test-place-id-seymour' });
 
       expect(result.current.status).toBe('loading');
 
