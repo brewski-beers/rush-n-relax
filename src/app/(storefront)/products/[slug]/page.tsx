@@ -1,9 +1,8 @@
 import { notFound } from 'next/navigation';
 import {
   getProductBySlug,
-  listOnlineAvailableInventory,
-  listProductsByIds,
   getInventoryItem,
+  getRelatedProducts,
 } from '@/lib/repositories';
 import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 import { getAdminStorage } from '@/lib/firebase/admin';
@@ -48,17 +47,13 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-  const [product, onlineInventoryPage, onlineItem] = await Promise.all([
+  const [product, onlineItem] = await Promise.all([
     getProductBySlug(slug),
-    listOnlineAvailableInventory({ limit: 500 }),
     getInventoryItem(ONLINE_LOCATION_ID, slug),
   ]);
   if (!product || product.status === 'archived') notFound();
 
-  const onlineSlugs = onlineInventoryPage.items
-    .map(i => i.productId)
-    .filter(id => id !== slug);
-  const relatedProducts = (await listProductsByIds(onlineSlugs)).slice(0, 6);
+  const relatedProducts = await getRelatedProducts(slug, product.category);
 
   // Resolve hero image URL server-side to avoid client-side Firebase Storage
   // getDownloadURL round-trip, which blocks LCP by 1–3s.

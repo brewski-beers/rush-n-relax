@@ -57,6 +57,7 @@ import {
   listProducts,
   listAllProducts,
   listProductsByCategory,
+  getRelatedProducts,
 } from '@/lib/repositories/product.repository';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -546,6 +547,73 @@ describe('listProducts — strain field on ProductSummary', () => {
       const result = await listProducts();
 
       expect(result.items[0].strain).toBeUndefined();
+    });
+  });
+});
+
+// ── getRelatedProducts ─────────────────────────────────────────────────────
+
+describe('getRelatedProducts', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given no products in the category', () => {
+    it('returns an empty array', async () => {
+      colGetMock.mockResolvedValue({ docs: [] });
+
+      const result = await getRelatedProducts('blue-dream', 'flower');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('given products in the same category including the excluded slug', () => {
+    it('filters out the excludeSlug and returns the rest up to limit', async () => {
+      colGetMock.mockResolvedValue({
+        docs: [
+          makeDocSnapshot('blue-dream', {
+            slug: 'blue-dream',
+            name: 'Blue Dream',
+            category: 'flower',
+            status: 'active',
+            availableAt: [],
+          }),
+          makeDocSnapshot('og-kush', {
+            slug: 'og-kush',
+            name: 'OG Kush',
+            category: 'flower',
+            status: 'active',
+            availableAt: [],
+          }),
+        ],
+      });
+
+      const result = await getRelatedProducts('blue-dream', 'flower', 6);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].slug).toBe('og-kush');
+    });
+  });
+
+  describe('given more products than the limit', () => {
+    it('returns at most limit items (excluding the current slug)', async () => {
+      const docs = Array.from({ length: 8 }, (_, i) =>
+        makeDocSnapshot(`product-${i}`, {
+          slug: `product-${i}`,
+          name: `Product ${i}`,
+          category: 'flower',
+          status: 'active',
+          availableAt: [],
+        })
+      );
+      colGetMock.mockResolvedValue({ docs });
+
+      const result = await getRelatedProducts('product-0', 'flower', 6);
+
+      // product-0 excluded, leaving 7; capped at limit 6
+      expect(result).toHaveLength(6);
+      expect(result.every(p => p.slug !== 'product-0')).toBe(true);
     });
   });
 });
