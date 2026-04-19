@@ -13,6 +13,7 @@ import type {
   ProductStrain,
   NutritionFacts,
 } from '@/types';
+import type { PageResult } from './types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -20,44 +21,94 @@ function productsCol() {
   return getAdminFirestore().collection('products');
 }
 
+// ── Pagination helpers ────────────────────────────────────────────────────
+
+async function resolveCursor(
+  cursor: string | undefined
+): Promise<FirebaseFirestore.DocumentSnapshot | undefined> {
+  if (!cursor) return undefined;
+  const snap = await productsCol().doc(cursor).get();
+  return snap.exists ? snap : undefined;
+}
+
 // ── Read operations ───────────────────────────────────────────────────────
 
 /**
  * List all products regardless of status — admin use only.
+ * Default limit: 50 (admin context).
  */
-export async function listAllProducts(): Promise<ProductSummary[]> {
-  const snap = await productsCol().orderBy('name').get();
-  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+export async function listAllProducts(
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<ProductSummary>> {
+  const limit = opts.limit ?? 50;
+  let query = productsCol()
+    .orderBy('name')
+    .limit(limit);
+
+  const afterSnap = await resolveCursor(opts.cursor);
+  if (afterSnap) query = query.startAfter(afterSnap);
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**
  * List archived products only — admin use only, fetched on demand.
+ * Default limit: 50 (admin context).
  */
-export async function listArchivedProducts(): Promise<ProductSummary[]> {
-  const snap = await productsCol()
+export async function listArchivedProducts(
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<ProductSummary>> {
+  const limit = opts.limit ?? 50;
+  let query = productsCol()
     .where('status', '==', 'archived')
     .orderBy('name')
-    .get();
-  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+    .limit(limit);
+
+  const afterSnap = await resolveCursor(opts.cursor);
+  if (afterSnap) query = query.startAfter(afterSnap);
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**
  * List all active products, ordered by name.
- * Returns lightweight summaries for admin inventory tables.
+ * Default limit: 50 (admin context); use 25 for storefront.
  */
-export async function listProducts(): Promise<ProductSummary[]> {
-  const snap = await productsCol()
+export async function listProducts(
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<ProductSummary>> {
+  const limit = opts.limit ?? 50;
+  let query = productsCol()
     .where('status', '==', 'active')
     .orderBy('name')
-    .get();
+    .limit(limit);
 
-  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+  const afterSnap = await resolveCursor(opts.cursor);
+  if (afterSnap) query = query.startAfter(afterSnap);
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**
  * Fetch products by their slugs (document IDs).
  * Used by storefront pages to join inventory results with product catalog data.
  * Returns results ordered by name. Silently skips missing or non-active slugs.
+ * No pagination — callers pass an explicit slug list.
  */
 export async function listProductsByIds(
   slugs: string[]
@@ -76,17 +127,28 @@ export async function listProductsByIds(
 
 /**
  * List active products by category.
+ * Default limit: 25 (storefront context).
  */
 export async function listProductsByCategory(
-  category: string
-): Promise<ProductSummary[]> {
-  const snap = await productsCol()
+  category: string,
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<ProductSummary>> {
+  const limit = opts.limit ?? 25;
+  let query = productsCol()
     .where('status', '==', 'active')
     .where('category', '==', category)
     .orderBy('name')
-    .get();
+    .limit(limit);
 
-  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+  const afterSnap = await resolveCursor(opts.cursor);
+  if (afterSnap) query = query.startAfter(afterSnap);
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**
@@ -99,6 +161,54 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   const data = doc.data();
   if (!data) return null;
   return docToProduct(doc.id, data);
+}
+
+/**
+ * List active products for a given vendor slug.
+ * Default limit: 25 (storefront context).
+ */
+export async function listProductsByVendor(
+  vendorSlug: string,
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<ProductSummary>> {
+  const limit = opts.limit ?? 25;
+  let query = productsCol()
+    .where('status', '==', 'active')
+    .where('vendorSlug', '==', vendorSlug)
+    .orderBy('name')
+    .limit(limit);
+
+  const afterSnap = await resolveCursor(opts.cursor);
+  if (afterSnap) query = query.startAfter(afterSnap);
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
+}
+
+/**
+ * Fetch related products from the same category, excluding the given slug.
+ * Used on the product detail page to replace the full-catalog listProducts() call.
+ */
+export async function getRelatedProducts(
+  excludeSlug: string,
+  category: string,
+  limit = 6
+): Promise<ProductSummary[]> {
+  // Fetch one extra so we can exclude the current product and still return `limit` items
+  const snap = await productsCol()
+    .where('status', '==', 'active')
+    .where('category', '==', category)
+    .limit(limit + 1)
+    .get();
+
+  return snap.docs
+    .filter(doc => doc.id !== excludeSlug)
+    .slice(0, limit)
+    .map(doc => docToProductSummary(doc.id, doc.data()));
 }
 
 // ── Write operations ──────────────────────────────────────────────────────
@@ -326,20 +436,4 @@ function stripUndefinedFields<T extends Record<string, unknown>>(
   return Object.fromEntries(
     Object.entries(value).filter(([, v]) => v !== undefined)
   ) as Partial<T>;
-}
-
-/**
- * List active products for a given vendor slug.
- * Used by the public vendor detail page.
- */
-export async function listProductsByVendor(
-  vendorSlug: string
-): Promise<ProductSummary[]> {
-  const snap = await productsCol()
-    .where('status', '==', 'active')
-    .where('vendorSlug', '==', vendorSlug)
-    .orderBy('name')
-    .get();
-
-  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
 }

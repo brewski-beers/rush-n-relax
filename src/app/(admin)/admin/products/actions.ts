@@ -29,7 +29,8 @@ export async function restoreProduct(slug: string): Promise<void> {
 
 export async function fetchArchivedProductsAction(): Promise<ProductSummary[]> {
   await requireRole('staff');
-  return listArchivedProducts();
+  const page = await listArchivedProducts();
+  return page.items;
 }
 
 export async function saveVariantTemplateAction(

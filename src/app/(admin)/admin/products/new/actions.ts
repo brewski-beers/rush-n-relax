@@ -41,7 +41,7 @@ export async function createProduct(
     };
   }
 
-  const activeCategories = await listActiveCategories();
+  const { items: activeCategories } = await listActiveCategories();
   const selectedCategory = activeCategories.find(c => c.slug === category);
   if (!selectedCategory) {
     return { error: 'Invalid category.' };

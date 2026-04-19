@@ -7,23 +7,13 @@ const {
   docDeleteMock,
   docSetMock,
   colGetMock,
-  whereMock,
-  orderByMock,
   collectionMock,
   getAdminFirestoreMock,
 } = vi.hoisted(() => {
   const docGetMock = vi.fn();
   const docDeleteMock = vi.fn().mockResolvedValue(undefined);
   const docSetMock = vi.fn().mockResolvedValue(undefined);
-  const colGetMock = vi.fn();
-
-  const orderByMock = vi.fn().mockReturnValue({
-    get: colGetMock,
-  });
-
-  const whereMock = vi.fn().mockReturnValue({
-    orderBy: orderByMock,
-  });
+  const colGetMock = vi.fn().mockResolvedValue({ docs: [] });
 
   const collectionMock = vi.fn(() => ({
     doc: vi.fn((id: string) => ({
@@ -32,8 +22,11 @@ const {
       delete: docDeleteMock,
       set: docSetMock,
     })),
-    where: whereMock,
-    orderBy: orderByMock,
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    startAfter: vi.fn().mockReturnThis(),
+    get: colGetMock,
   }));
 
   const getAdminFirestoreMock = vi.fn(() => ({
@@ -45,8 +38,6 @@ const {
     docDeleteMock,
     docSetMock,
     colGetMock,
-    whereMock,
-    orderByMock,
     collectionMock,
     getAdminFirestoreMock,
   };
@@ -74,59 +65,18 @@ function makePromoDoc(
 }
 
 // ── listActivePromos ───────────────────────────────────────────────────────
+// Note: endDate filtering now happens in the Firestore query
+// (`.where('endDate', '>', new Date())`), not in application code.
+// Tests here validate the mapping + pagination shape.
 
 describe('listActivePromos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('given a promo whose endDate is in the past', () => {
-    it('filters out the expired promo', async () => {
-      const yesterday = new Date(Date.now() - 86_400_000).toISOString();
-      colGetMock.mockResolvedValue({
-        docs: [
-          makePromoDoc('expired-sale', {
-            slug: 'expired-sale',
-            name: 'Expired Sale',
-            tagline: 'Gone',
-            active: true,
-            endDate: yesterday,
-          }),
-        ],
-      });
-
-      const result = await listActivePromos();
-
-      expect(result).toHaveLength(0);
-    });
-  });
-
-  describe('given a promo with no endDate', () => {
-    it('always includes the promo regardless of current date', async () => {
-      colGetMock.mockResolvedValue({
-        docs: [
-          makePromoDoc('evergreen-promo', {
-            slug: 'evergreen-promo',
-            name: 'Evergreen Promo',
-            tagline: 'Always on',
-            active: true,
-            // endDate intentionally absent
-          }),
-        ],
-      });
-
-      const result = await listActivePromos();
-
-      expect(result).toHaveLength(1);
-      expect(result[0].slug).toBe('evergreen-promo');
-    });
-  });
-
-  describe('given a mix of expired and non-expired promos', () => {
-    it('returns only the non-expired ones', async () => {
+  describe('given active promos returned by Firestore', () => {
+    it('returns a PageResult with mapped PromoSummary items', async () => {
       const tomorrow = new Date(Date.now() + 86_400_000).toISOString();
-      const yesterday = new Date(Date.now() - 86_400_000).toISOString();
-
       colGetMock.mockResolvedValue({
         docs: [
           makePromoDoc('future-promo', {
@@ -136,30 +86,44 @@ describe('listActivePromos', () => {
             active: true,
             endDate: tomorrow,
           }),
-          makePromoDoc('past-promo', {
-            slug: 'past-promo',
-            name: 'Past Promo',
-            tagline: 'Over',
-            active: true,
-            endDate: yesterday,
-          }),
         ],
       });
 
       const result = await listActivePromos();
 
-      expect(result).toHaveLength(1);
-      expect(result[0].slug).toBe('future-promo');
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].slug).toBe('future-promo');
+      expect(result.nextCursor).toBeNull();
     });
   });
 
   describe('given no active promos', () => {
-    it('returns an empty array', async () => {
+    it('returns empty items array and null nextCursor', async () => {
       colGetMock.mockResolvedValue({ docs: [] });
 
       const result = await listActivePromos();
 
-      expect(result).toEqual([]);
+      expect(result.items).toEqual([]);
+      expect(result.nextCursor).toBeNull();
+    });
+  });
+
+  describe('given a full page of results', () => {
+    it('returns a non-null nextCursor equal to the last doc id', async () => {
+      const docs = Array.from({ length: 25 }, (_, i) =>
+        makePromoDoc(`promo-${i}`, {
+          slug: `promo-${i}`,
+          name: `Promo ${i}`,
+          tagline: 'Test',
+          active: true,
+        })
+      );
+      colGetMock.mockResolvedValue({ docs });
+
+      const result = await listActivePromos({ limit: 25 });
+
+      expect(result.items).toHaveLength(25);
+      expect(result.nextCursor).toBe('promo-24');
     });
   });
 });

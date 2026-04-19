@@ -28,10 +28,11 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function LocationDetailPage({ params }: Props) {
   const { slug } = await params;
-  const [location, promos] = await Promise.all([
+  const [location, promosPage] = await Promise.all([
     getLocationBySlug(slug),
     getPromosByLocationSlug(slug),
   ]);
+  const { items: promos } = promosPage;
   if (!location) notFound();
 
   return (

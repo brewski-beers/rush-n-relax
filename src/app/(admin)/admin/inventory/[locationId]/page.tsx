@@ -21,11 +21,14 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
   const { locationId } = await params;
   const isOnline = locationId === ONLINE_LOCATION_ID;
 
-  const [locations, products, inventoryItems] = await Promise.all([
+  const [locations, productsPage, inventoryPage] = await Promise.all([
     listLocations(),
-    listProducts(),
-    listInventoryForLocation(locationId),
+    listProducts({ limit: 500 }),
+    listInventoryForLocation(locationId, { limit: 500 }),
   ]);
+
+  const { items: products } = productsPage;
+  const { items: inventoryItems } = inventoryPage;
 
   const location = isOnline
     ? { name: 'Online Store', city: 'Storefront', state: '' }

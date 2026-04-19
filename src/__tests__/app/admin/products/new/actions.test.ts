@@ -13,7 +13,7 @@ const {
   requireRoleMock: vi.fn(),
   upsertProductMock: vi.fn().mockResolvedValue('new-product'),
   getProductBySlugMock: vi.fn().mockResolvedValue(null),
-  listActiveCategoriesMock: vi.fn().mockResolvedValue([]),
+  listActiveCategoriesMock: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
   revalidatePathMock: vi.fn(),
   redirectMock: vi.fn(),
 }));
@@ -82,9 +82,9 @@ function makeFormData(
 describe('createProduct server action', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    listActiveCategoriesMock.mockResolvedValue([
+    listActiveCategoriesMock.mockResolvedValue({ items: [
       { slug: 'flower', label: 'Flower', order: 1 },
-    ]);
+    ], nextCursor: null });
   });
 
   describe('given an unauthenticated caller', () => {
@@ -142,9 +142,9 @@ describe('createProduct server action', () => {
   describe('given an invalid category', () => {
     it('returns an invalid-category error when category is not in active list', async () => {
       stubAuthorisedActor();
-      listActiveCategoriesMock.mockResolvedValue([
+      listActiveCategoriesMock.mockResolvedValue({ items: [
         { slug: 'edibles', label: 'Edibles', order: 2 },
-      ]);
+      ], nextCursor: null });
 
       const result = await createProduct(
         null,

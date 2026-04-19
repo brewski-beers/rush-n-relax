@@ -21,11 +21,12 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [featuredInventory, locations] = await Promise.all([
+  const [featuredInventoryPage, locations] = await Promise.all([
     listFeaturedInventory(ONLINE_LOCATION_ID),
     listLocations(),
   ]);
 
+  const { items: featuredInventory } = featuredInventoryPage;
   const featuredProducts = await listProductsByIds(
     featuredInventory.map(i => i.productId)
   );

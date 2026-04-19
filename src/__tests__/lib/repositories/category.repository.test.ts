@@ -18,8 +18,9 @@ const {
   const docUpdateMock = vi.fn().mockResolvedValue(undefined);
   const colGetMock = vi.fn().mockResolvedValue({ docs: [] });
 
-  const orderByMock = vi.fn().mockReturnValue({ get: colGetMock });
-  const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+  const limitMock = vi.fn().mockReturnValue({ get: colGetMock, startAfter: vi.fn().mockReturnValue({ get: colGetMock }) });
+  const orderByMock = vi.fn().mockReturnValue({ limit: limitMock, get: colGetMock });
+  const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock, where: vi.fn().mockReturnThis(), limit: limitMock });
 
   const collectionMock = vi.fn(() => ({
     doc: vi.fn((id: string) => ({
@@ -231,9 +232,9 @@ describe('listActiveCategories', () => {
 
       const result = await listActiveCategories();
 
-      expect(result).toHaveLength(2);
-      expect(result[0].slug).toBe('flower');
-      expect(result[1].slug).toBe('edibles');
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0].slug).toBe('flower');
+      expect(result.items[1].slug).toBe('edibles');
     });
   });
 
@@ -243,7 +244,7 @@ describe('listActiveCategories', () => {
 
       const result = await listActiveCategories();
 
-      expect(result).toEqual([]);
+      expect(result.items).toEqual([]);
     });
   });
 });

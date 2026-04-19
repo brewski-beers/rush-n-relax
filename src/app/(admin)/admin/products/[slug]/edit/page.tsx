@@ -19,7 +19,7 @@ export default async function ProductEditPage({ params }: Props) {
   await requireRole('staff');
 
   const { slug } = await params;
-  const [product, categories, variantTemplates, vendors] =
+  const [product, categoriesPage, variantTemplates, vendorsPage] =
     await Promise.all([
       getProductBySlug(slug),
       listActiveCategories(),
@@ -27,6 +27,8 @@ export default async function ProductEditPage({ params }: Props) {
       listVendors(),
     ]);
   if (!product) notFound();
+  const { items: categories } = categoriesPage;
+  const { items: vendors } = vendorsPage;
 
   return (
     <>

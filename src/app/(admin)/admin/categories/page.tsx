@@ -7,7 +7,7 @@ import { CategoriesTable } from './CategoriesTable';
 
 export default async function AdminCategoriesPage() {
   await requireRole('staff');
-  const categories = await listAllCategories();
+  const { items: categories } = await listAllCategories();
 
   return (
     <>

@@ -1,3 +1,5 @@
+export type { PageResult } from './types';
+
 export {
   listLocations,
   getLocationBySlug,
@@ -12,6 +14,7 @@ export {
   listProductsByIds,
   listProductsByCategory,
   listProductsByVendor,
+  getRelatedProducts,
   getProductBySlug,
   upsertProduct,
   clearProductFields,

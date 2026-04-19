@@ -13,7 +13,7 @@ export const metadata = buildMetadata('/vendors', {
 });
 
 export default async function VendorsPage() {
-  const vendors = await listVendors();
+  const { items: vendors } = await listVendors();
 
   return (
     <main className="vendors-page">
