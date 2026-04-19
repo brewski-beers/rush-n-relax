@@ -64,15 +64,34 @@ export const PAGE_TO_ROUTE: Record<string, RoutePath | 'dynamic'> = {
 export const LOCATION_ROUTES = [
   {
     path: '/locations/oak-ridge' as const,
-    label: 'Oak Ridge',
+    label: 'Pinecrest',
     slug: 'oak-ridge',
   },
   {
     path: '/locations/maryville' as const,
-    label: 'Maryville',
+    label: 'Bluffton',
     slug: 'maryville',
   },
-  { path: '/locations/seymour' as const, label: 'Seymour', slug: 'seymour' },
+  { path: '/locations/seymour' as const, label: 'Hartwell', slug: 'seymour' },
+  {
+    path: '/locations/crestwood' as const,
+    label: 'Crestwood Station',
+    slug: 'crestwood',
+  },
+  {
+    path: '/locations/thornvale' as const,
+    label: 'Thornvale',
+    slug: 'thornvale',
+  },
+  { path: '/locations/lakemoor' as const, label: 'Lakemoor', slug: 'lakemoor' },
+  {
+    path: '/locations/dunmore' as const,
+    label: 'Dunmore Crossing',
+    slug: 'dunmore',
+  },
+  { path: '/locations/ashby' as const, label: 'Ashby Flats', slug: 'ashby' },
+  { path: '/locations/veldora' as const, label: 'Veldora', slug: 'veldora' },
+  { path: '/locations/graymere' as const, label: 'Graymere', slug: 'graymere' },
 ];
 
 /**
