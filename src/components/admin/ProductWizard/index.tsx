@@ -60,9 +60,25 @@ interface Props {
   ) => Promise<{ error?: string }>;
 }
 
+interface ReviewSnapshot {
+  category: string;
+  name: string;
+  slug: string;
+  vendor: string;
+  details: string;
+  leaflyUrl: string;
+  coaUrl: string;
+  strain: string;
+  effects: string;
+  flavors: string;
+  thcPercent: string;
+  cbdPercent: string;
+  variantCount: string;
+}
+
 // --- Constants ---------------------------------------------------------------
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 const STEP_TITLES: Record<number, string> = {
   1: 'Category & Name',
@@ -70,6 +86,7 @@ const STEP_TITLES: Record<number, string> = {
   3: 'Lab Results',
   4: 'Variants',
   5: 'Images',
+  6: 'Review',
 };
 
 // --- Per-step validation -----------------------------------------------------
@@ -124,6 +141,7 @@ export function ProductWizardForm({
   const [step, setStep] = useState(1);
   const [stepError, setStepError] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
+  const [review, setReview] = useState<ReviewSnapshot | null>(null);
 
   // Controlled inputs that need auto-suggest or inter-field logic
   const [name, setName] = useState(product?.name ?? '');
@@ -147,7 +165,37 @@ export function ProductWizardForm({
       return;
     }
     setStepError(null);
-    setStep(s => Math.min(s + 1, TOTAL_STEPS));
+    const nextStep = Math.min(step + 1, TOTAL_STEPS);
+    if (nextStep === TOTAL_STEPS && form) {
+      const v = (n: string) =>
+        (form.elements.namedItem(n) as HTMLInputElement | null)?.value?.trim() ?? '';
+      const variantJson = v('variantGroups');
+      let variantCount = '0';
+      try {
+        const groups = JSON.parse(variantJson) as Array<{ options?: unknown[] }>;
+        const skuCount = groups.reduce(
+          (acc, g) => acc * ((g.options?.length ?? 0) || 1),
+          groups.length > 0 ? 1 : 0
+        );
+        variantCount = skuCount > 0 ? String(skuCount) : '0';
+      } catch { /* no variants defined */ }
+      setReview({
+        category: selectedCategory?.label ?? v('category'),
+        name: v('name'),
+        slug: v('slug'),
+        vendor: vendors.find(vd => vd.slug === v('vendorSlug'))?.name ?? '',
+        details: v('details'),
+        leaflyUrl: v('leaflyUrl'),
+        coaUrl: v('coaUrl'),
+        strain: v('strain'),
+        effects: v('effects'),
+        flavors: v('flavors'),
+        thcPercent: v('labResults_thcPercent'),
+        cbdPercent: v('labResults_cbdPercent'),
+        variantCount,
+      });
+    }
+    setStep(nextStep);
   }
 
   function goBack() {
@@ -484,6 +532,38 @@ export function ProductWizardForm({
         </fieldset>
       </div>
 
+      {/* ── Step 6: Review ─────────────────────────────────────── */}
+      <div
+        className={
+          isHidden(6) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+        }
+        aria-hidden={isHidden(6)}
+      >
+        <fieldset className="admin-fieldset">
+          <legend>Review &amp; Submit</legend>
+          {review && (
+            <dl className="admin-review-list">
+              <dt>Category</dt><dd>{review.category || '—'}</dd>
+              <dt>Name</dt><dd>{review.name || '—'}</dd>
+              <dt>Slug</dt><dd>{review.slug || '—'}</dd>
+              {review.vendor && <><dt>Vendor</dt><dd>{review.vendor}</dd></>}
+              <dt>Description</dt><dd>{review.details ? `${review.details.slice(0, 120)}${review.details.length > 120 ? '…' : ''}` : '—'}</dd>
+              {review.strain && <><dt>Strain</dt><dd>{review.strain}</dd></>}
+              {review.effects && <><dt>Effects</dt><dd>{review.effects}</dd></>}
+              {review.flavors && <><dt>Flavors</dt><dd>{review.flavors}</dd></>}
+              {review.thcPercent && <><dt>THC %</dt><dd>{review.thcPercent}%</dd></>}
+              {review.cbdPercent && <><dt>CBD %</dt><dd>{review.cbdPercent}%</dd></>}
+              {review.coaUrl && <><dt>COA</dt><dd>{review.coaUrl}</dd></>}
+              {review.leaflyUrl && <><dt>Leafly URL</dt><dd>{review.leaflyUrl}</dd></>}
+              <dt>Variants (SKUs)</dt><dd>{review.variantCount}</dd>
+            </dl>
+          )}
+          <p className="admin-hint">
+            Review the details above. Click Back to make changes, or Submit to save.
+          </p>
+        </fieldset>
+      </div>
+
       {/* ── Navigation ─────────────────────────────────────────── */}
       <div className="wizard-nav admin-form-actions">
         {step === 1 ? (
@@ -495,8 +575,8 @@ export function ProductWizardForm({
         )}
 
         {!isLastStep ? (
-          <button type="button" onClick={goNext}>
-            Next
+          <button type="button" onClick={goNext} disabled={imageUploading}>
+            {step === TOTAL_STEPS - 1 ? 'Review' : 'Next'}
           </button>
         ) : (
           <button type="submit" disabled={pending || imageUploading}>
