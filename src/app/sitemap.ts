@@ -1,68 +1,74 @@
 import type { MetadataRoute } from 'next';
-import { seoConfig } from '@/config/seo.config';
+import { SITE_URL } from '@/constants/site';
+import { LOCATIONS } from '@/constants/locations';
+import { HUB_LOCATION_ID, ONLINE_LOCATION_ID } from '@/constants/location-ids';
 import {
-  listLocations,
-  listProducts,
-  listActivePromos,
+  listOnlineAvailableInventory,
+  listProductsByIds,
+  listVendors,
 } from '@/lib/repositories';
 
-const { domain } = seoConfig.site;
-
+/**
+ * Public sitemap — served at /sitemap.xml via Next.js App Router convention.
+ *
+ * Includes:
+ *  - Static marketing/legal pages
+ *  - Retail location detail pages (virtual hub/online locations excluded)
+ *  - Online-visible product detail pages (same filter as Explore More — products
+ *    present in inventory/online with inStock: true)
+ *  - Active vendor detail pages
+ */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [locations, products, promos] = await Promise.all([
-    listLocations(),
-    listProducts(),
-    listActivePromos(),
+  const now = new Date();
+
+  const staticPaths = [
+    '/',
+    '/about',
+    '/products',
+    '/locations',
+    '/vendors',
+    '/contact',
+    '/terms',
+    '/privacy',
+    '/shipping',
+  ] as const;
+
+  const staticRoutes: MetadataRoute.Sitemap = staticPaths.map(path => ({
+    url: `${SITE_URL}${path === '/' ? '' : path}`,
+    lastModified: now,
+  }));
+
+  // Retail locations only — exclude virtual inventory-only IDs defensively.
+  const virtualLocationIds = new Set<string>([
+    HUB_LOCATION_ID,
+    ONLINE_LOCATION_ID,
   ]);
+  const locationRoutes: MetadataRoute.Sitemap = LOCATIONS.filter(
+    loc => !virtualLocationIds.has(loc.slug)
+  ).map(loc => ({
+    url: `${SITE_URL}/locations/${loc.slug}`,
+    lastModified: now,
+  }));
 
-  const staticRoutes: MetadataRoute.Sitemap = [
-    {
-      url: domain,
-      priority: seoConfig.routes['/'].priority,
-      changeFrequency: seoConfig.routes['/'].changefreq,
-    },
-    {
-      url: `${domain}/about`,
-      priority: seoConfig.routes['/about'].priority,
-      changeFrequency: seoConfig.routes['/about'].changefreq,
-    },
-    {
-      url: `${domain}/locations`,
-      priority: seoConfig.routes['/locations'].priority,
-      changeFrequency: seoConfig.routes['/locations'].changefreq,
-    },
-    {
-      url: `${domain}/products`,
-      priority: seoConfig.routes['/products'].priority,
-      changeFrequency: seoConfig.routes['/products'].changefreq,
-    },
-    {
-      url: `${domain}/contact`,
-      priority: seoConfig.routes['/contact'].priority,
-      changeFrequency: seoConfig.routes['/contact'].changefreq,
-    },
+  // Online-visible products — matches ExploreMore filter (inventory/online in-stock).
+  const onlineInventory = await listOnlineAvailableInventory();
+  const onlineProductIds = onlineInventory.map(i => i.productId);
+  const onlineProducts = await listProductsByIds(onlineProductIds);
+  const productRoutes: MetadataRoute.Sitemap = onlineProducts.map(product => ({
+    url: `${SITE_URL}/products/${product.slug}`,
+    lastModified: now,
+  }));
+
+  const vendors = await listVendors();
+  const vendorRoutes: MetadataRoute.Sitemap = vendors.map(vendor => ({
+    url: `${SITE_URL}/vendors/${vendor.slug}`,
+    lastModified: now,
+  }));
+
+  return [
+    ...staticRoutes,
+    ...locationRoutes,
+    ...productRoutes,
+    ...vendorRoutes,
   ];
-
-  const locationRoutes: MetadataRoute.Sitemap = locations.map(loc => ({
-    url: `${domain}/locations/${loc.slug}`,
-    lastModified: new Date(),
-    priority: seoConfig.routes['/locations/[slug]'].priority,
-    changeFrequency: seoConfig.routes['/locations/[slug]'].changefreq,
-  }));
-
-  const productRoutes: MetadataRoute.Sitemap = products.map(product => ({
-    url: `${domain}/products/${product.slug}`,
-    lastModified: new Date(),
-    priority: seoConfig.routes['/products/[slug]'].priority,
-    changeFrequency: seoConfig.routes['/products/[slug]'].changefreq,
-  }));
-
-  const promoRoutes: MetadataRoute.Sitemap = promos.map(promo => ({
-    url: `${domain}/promo/${promo.slug}`,
-    lastModified: new Date(),
-    priority: seoConfig.routes['/promo/[slug]'].priority,
-    changeFrequency: seoConfig.routes['/promo/[slug]'].changefreq,
-  }));
-
-  return [...staticRoutes, ...locationRoutes, ...productRoutes, ...promoRoutes];
 }

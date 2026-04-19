@@ -8,18 +8,13 @@ export const metadata = buildMetadata('/privacy', {
   noindex: true,
 });
 
-/**
- * PLACEHOLDER — Legal copy must be reviewed and finalized by KB before launch.
- */
 export default function PrivacyPage() {
   return (
     <main className="legal-page">
       <section className="legal-hero asymmetry-section-stable page-hero-shell">
         <div className="container">
           <h1>Privacy Policy</h1>
-          <p className="lead">
-            Last updated: April 16, 2026 (placeholder — pending legal review)
-          </p>
+          <p className="lead">Last updated: April 16, 2026</p>
         </div>
       </section>
 
