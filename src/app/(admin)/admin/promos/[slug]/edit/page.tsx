@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
 import { getPromoBySlug } from '@/lib/repositories';
+import { AdminBackLink } from '@/components/admin/AdminBackLink';
 import { PromoEditForm } from './PromoEditForm';
 
 interface Props {
@@ -18,6 +19,7 @@ export default async function PromoEditPage({ params }: Props) {
 
   return (
     <>
+      <AdminBackLink href="/admin/promos" label="Promos" />
       <h1>Edit Promo — {promo.name}</h1>
       <PromoEditForm promo={promo} />
     </>
