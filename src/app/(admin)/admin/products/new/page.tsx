@@ -5,18 +5,16 @@ import {
   listActiveCategories,
   listVariantTemplates,
   listVendors,
-  listLocations,
 } from '@/lib/repositories';
 import { ProductCreateForm } from './ProductCreateForm';
 
 export default async function NewProductPage() {
   await requireRole('staff');
 
-  const [categories, variantTemplates, vendors, locations] = await Promise.all([
+  const [categories, variantTemplates, vendors] = await Promise.all([
     listActiveCategories(),
     listVariantTemplates(),
     listVendors(),
-    listLocations(),
   ]);
 
   return (
@@ -26,7 +24,6 @@ export default async function NewProductPage() {
         categories={categories}
         variantTemplates={variantTemplates}
         vendors={vendors}
-        locations={locations.map(l => ({ slug: l.slug, name: l.name }))}
       />
     </>
   );

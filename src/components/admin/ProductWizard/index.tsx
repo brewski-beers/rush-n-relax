@@ -39,11 +39,6 @@ import type {
 
 type Mode = 'create' | 'edit';
 
-interface LocationOption {
-  slug: string;
-  name: string;
-}
-
 interface Props {
   mode: Mode;
   product?: Product;
@@ -52,7 +47,6 @@ interface Props {
   categories: ProductCategorySummary[];
   variantTemplates: VariantTemplate[];
   vendors: VendorSummary[];
-  locations: LocationOption[];
   /**
    * Whether the current user holds the `owner` role.
    * When true (edit mode only), the Status field is shown in Step 4.
@@ -74,7 +68,7 @@ const STEP_TITLES: Record<number, string> = {
   1: 'Category & Name',
   2: 'Details',
   3: 'Lab Results',
-  4: 'Availability & Compliance',
+  4: 'Variants',
   5: 'Images',
 };
 
@@ -123,7 +117,6 @@ export function ProductWizardForm({
   categories,
   variantTemplates,
   vendors,
-  locations,
   isOwner = false,
   action,
 }: Props) {
@@ -135,9 +128,6 @@ export function ProductWizardForm({
   // Controlled inputs that need auto-suggest or inter-field logic
   const [name, setName] = useState(product?.name ?? '');
   const [slug, setSlug] = useState(product?.slug ?? '');
-  const [availableAt, setAvailableAt] = useState<string[]>(
-    product?.availableAt ?? []
-  );
 
   // Track selected category to gate form sections by contract flags.
   // Edit mode pre-selects via initialCategory; create mode starts undefined.
@@ -415,7 +405,7 @@ export function ProductWizardForm({
         </fieldset>
       </div>
 
-      {/* ── Step 4: Availability & Compliance ─────────────────── */}
+      {/* ── Step 4: Variants ───────────────────────────────────── */}
       <div
         className={
           isHidden(4) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
@@ -423,44 +413,7 @@ export function ProductWizardForm({
         aria-hidden={isHidden(4)}
       >
         <fieldset className="admin-fieldset">
-          <legend>Availability &amp; Compliance</legend>
-
-          <fieldset className="admin-fieldset">
-            <legend>Available At</legend>
-            <span className="admin-hint">
-              Select which locations carry this product.
-            </span>
-            {locations.map(loc => (
-              <label key={loc.slug} className="admin-checkbox-label">
-                <input
-                  type="checkbox"
-                  name="availableAt"
-                  value={loc.slug}
-                  checked={availableAt.includes(loc.slug)}
-                  onChange={e => {
-                    const next = e.target.checked
-                      ? [...availableAt, loc.slug]
-                      : availableAt.filter(s => s !== loc.slug);
-                    setAvailableAt(next);
-                  }}
-                />
-                {loc.name}
-              </label>
-            ))}
-          </fieldset>
-
-          <label className="admin-checkbox-label">
-            <input
-              type="checkbox"
-              name="federalDeadlineRisk"
-              value="true"
-              defaultChecked={false}
-            />
-            Federal deadline risk{' '}
-            <span className="admin-hint">
-              (affected by Nov 12, 2026 hemp redefinition)
-            </span>
-          </label>
+          <legend>Variants</legend>
 
           {showStatusField && (
             <label>

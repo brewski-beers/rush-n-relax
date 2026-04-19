@@ -40,8 +40,7 @@ export async function updateProduct(
   const name = formData.get('name')?.toString().trim();
   const category = formData.get('category')?.toString();
   const details = formData.get('details')?.toString().trim();
-  const federalDeadlineRisk = formData.get('federalDeadlineRisk') === 'true';
-  const availableAt = formData.getAll('availableAt').map(v => v.toString());
+  const availableAt = existing.availableAt; // managed in Inventory, not via product edit
 
   if (!name || !category || !details) {
     return { error: 'All required fields must be filled.' };

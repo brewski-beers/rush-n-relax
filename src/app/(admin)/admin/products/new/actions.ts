@@ -29,7 +29,7 @@ export async function createProduct(
   const category = formData.get('category')?.toString();
   const details = formData.get('details')?.toString().trim();
   const vendorSlug = formData.get('vendorSlug')?.toString() || undefined;
-  const availableAt = formData.getAll('availableAt').map(v => v.toString());
+  const availableAt: string[] = []; // managed in Inventory, not at creation
 
   if (!slug || !name || !category || !details) {
     return { error: 'All required fields must be filled.' };
