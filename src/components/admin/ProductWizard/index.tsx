@@ -55,7 +55,7 @@ interface Props {
   locations: LocationOption[];
   /**
    * Whether the current user holds the `owner` role.
-   * When true (edit mode only), the Status field is shown in Step 5.
+   * When true (edit mode only), the Status field is shown in Step 4.
    * Defaults to false (safe default — hides privileged field).
    */
   isOwner?: boolean;
@@ -68,15 +68,14 @@ interface Props {
 
 // --- Constants ---------------------------------------------------------------
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 5;
 
 const STEP_TITLES: Record<number, string> = {
   1: 'Category & Name',
-  2: 'Vendor',
-  3: 'Description',
-  4: 'Lab Results',
-  5: 'Availability & Compliance',
-  6: 'Images',
+  2: 'Details',
+  3: 'Lab Results',
+  4: 'Availability & Compliance',
+  5: 'Images',
 };
 
 // --- Per-step validation -----------------------------------------------------
@@ -100,9 +99,6 @@ function validateStep(step: number, form: HTMLFormElement): string | null {
       return 'Slug must be lowercase letters, numbers, and hyphens only.';
   }
   if (step === 2) {
-    if (!v('vendorSlug')) return 'Please select a vendor.';
-  }
-  if (step === 3) {
     if (!v('details')) return 'Description is required.';
   }
   return null;
@@ -271,7 +267,7 @@ export function ProductWizardForm({
         </fieldset>
       </div>
 
-      {/* ── Step 2: Vendor ─────────────────────────────────────── */}
+      {/* ── Step 2: Details ────────────────────────────────────── */}
       <div
         className={
           isHidden(2) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
@@ -279,37 +275,9 @@ export function ProductWizardForm({
         aria-hidden={isHidden(2)}
       >
         <fieldset className="admin-fieldset">
-          <legend>Vendor</legend>
-          <span className="admin-hint">
-            Select the vendor that supplies this product.
-          </span>
+          <legend>Details</legend>
           <label>
-            Vendor
-            <select name="vendorSlug" defaultValue={product?.vendorSlug ?? ''}>
-              <option value="">— Select vendor —</option>
-              {vendors
-                .filter(v => v.isActive)
-                .map(v => (
-                  <option key={v.slug} value={v.slug}>
-                    {v.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-        </fieldset>
-      </div>
-
-      {/* ── Step 3: Description ────────────────────────────────── */}
-      <div
-        className={
-          isHidden(3) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
-        }
-        aria-hidden={isHidden(3)}
-      >
-        <fieldset className="admin-fieldset">
-          <legend>Description</legend>
-          <label>
-            Details
+            Description
             <textarea
               name="details"
               rows={6}
@@ -320,10 +288,21 @@ export function ProductWizardForm({
           </label>
 
           <label>
-            Leafly URL{' '}
-            <span className="admin-hint">
-              (optional — staff-only reference)
-            </span>
+            Vendor <span className="admin-hint">(optional)</span>
+            <select name="vendorSlug" defaultValue={product?.vendorSlug ?? ''}>
+              <option value="">— None —</option>
+              {vendors
+                .filter(v => v.isActive)
+                .map(v => (
+                  <option key={v.slug} value={v.slug}>
+                    {v.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+
+          <label>
+            Leafly URL <span className="admin-hint">(optional)</span>
             <input
               name="leaflyUrl"
               type="url"
@@ -365,12 +344,12 @@ export function ProductWizardForm({
         </fieldset>
       </div>
 
-      {/* ── Step 4: Lab Results ────────────────────────────────── */}
+      {/* ── Step 3: Lab Results ────────────────────────────────── */}
       <div
         className={
-          isHidden(4) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+          isHidden(3) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(4)}
+        aria-hidden={isHidden(3)}
       >
         <fieldset className="admin-fieldset">
           <legend>Lab Results</legend>
@@ -436,12 +415,12 @@ export function ProductWizardForm({
         </fieldset>
       </div>
 
-      {/* ── Step 5: Availability & Compliance ─────────────────── */}
+      {/* ── Step 4: Availability & Compliance ─────────────────── */}
       <div
         className={
-          isHidden(5) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+          isHidden(4) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(5)}
+        aria-hidden={isHidden(4)}
       >
         <fieldset className="admin-fieldset">
           <legend>Availability &amp; Compliance</legend>
@@ -532,29 +511,23 @@ export function ProductWizardForm({
         </fieldset>
       </div>
 
-      {/* ── Step 6: Images ─────────────────────────────────────── */}
+      {/* ── Step 5: Images ─────────────────────────────────────── */}
       <div
         className={
-          isHidden(6) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+          isHidden(5) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(6)}
+        aria-hidden={isHidden(5)}
       >
         <fieldset className="admin-fieldset">
           <legend>Images</legend>
-          {mode === 'create' && !slug ? (
-            <p className="admin-hint admin-muted">
-              A slug is required before uploading images. Go back to Step 1.
-            </p>
-          ) : (
-            <ProductImageUpload
-              slug={slug || product?.slug || ''}
-              initialFeaturedPath={mode === 'edit' ? product?.image : undefined}
-              initialGalleryPaths={
-                mode === 'edit' ? product?.images : undefined
-              }
-              onUploadingChange={setImageUploading}
-            />
-          )}
+          <ProductImageUpload
+            slug={slug || product?.slug || ''}
+            initialFeaturedPath={mode === 'edit' ? product?.image : undefined}
+            initialGalleryPaths={
+              mode === 'edit' ? product?.images : undefined
+            }
+            onUploadingChange={setImageUploading}
+          />
         </fieldset>
       </div>
 
