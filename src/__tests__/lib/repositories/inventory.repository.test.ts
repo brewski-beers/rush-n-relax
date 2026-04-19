@@ -155,13 +155,20 @@ describe('setInventoryItem — quantity: 0 clears all availability flags', () =>
         locationId: 'hub',
       });
       // No compliance check needed because nextAvailableOnline will be false
-      productGetMock.mockResolvedValue({ exists: false, data: () => undefined });
+      productGetMock.mockResolvedValue({
+        exists: false,
+        data: () => undefined,
+      });
 
       await setInventoryItem(
         'hub',
         'product-a',
         { quantity: 0 },
-        { reason: 'manual-count', updatedBy: 'admin@example.com', source: 'admin-ui' }
+        {
+          reason: 'manual-count',
+          updatedBy: 'admin@example.com',
+          source: 'admin-ui',
+        }
       );
 
       expect(batchCommitMock).toHaveBeenCalledOnce();
@@ -196,13 +203,20 @@ describe('setInventoryItem — hub: featured forced to false when availableOnlin
         featured: false,
         locationId: 'hub',
       });
-      productGetMock.mockResolvedValue({ exists: false, data: () => undefined });
+      productGetMock.mockResolvedValue({
+        exists: false,
+        data: () => undefined,
+      });
 
       await setInventoryItem(
         'hub',
         'product-b',
         { availableOnline: false, featured: true },
-        { reason: 'toggle-featured', updatedBy: 'admin@example.com', source: 'admin-ui' }
+        {
+          reason: 'toggle-featured',
+          updatedBy: 'admin@example.com',
+          source: 'admin-ui',
+        }
       );
 
       expect(batchCommitMock).toHaveBeenCalledOnce();
@@ -239,9 +253,15 @@ describe('setInventoryItem — compliance-hold blocks availableOnline / availabl
           'hub',
           'product-hold',
           { availableOnline: true },
-          { reason: 'toggle-online', updatedBy: 'admin@example.com', source: 'admin-ui' }
+          {
+            reason: 'toggle-online',
+            updatedBy: 'admin@example.com',
+            source: 'admin-ui',
+          }
         )
-      ).rejects.toThrow("Cannot mark 'product-hold' available for purchase: product is on compliance-hold");
+      ).rejects.toThrow(
+        "Cannot mark 'product-hold' available for purchase: product is on compliance-hold"
+      );
 
       expect(itemSetMock).not.toHaveBeenCalled();
       expect(batchCommitMock).not.toHaveBeenCalled();
@@ -265,7 +285,11 @@ describe('setInventoryItem — compliance-hold blocks availableOnline / availabl
           'oak-ridge',
           'product-hold',
           { availablePickup: true },
-          { reason: 'toggle-pickup', updatedBy: 'admin@example.com', source: 'admin-ui' }
+          {
+            reason: 'toggle-pickup',
+            updatedBy: 'admin@example.com',
+            source: 'admin-ui',
+          }
         )
       ).rejects.toThrow("Cannot mark 'product-hold' available for purchase");
 
@@ -292,13 +316,20 @@ describe('setInventoryItem — audit log written atomically with item update', (
         featured: false,
         locationId: 'oak-ridge',
       });
-      productGetMock.mockResolvedValue({ exists: false, data: () => undefined });
+      productGetMock.mockResolvedValue({
+        exists: false,
+        data: () => undefined,
+      });
 
       await setInventoryItem(
         'oak-ridge',
         'product-c',
         { quantity: 10 },
-        { reason: 'manual-count', updatedBy: 'admin@example.com', source: 'admin-ui' }
+        {
+          reason: 'manual-count',
+          updatedBy: 'admin@example.com',
+          source: 'admin-ui',
+        }
       );
 
       // batch.commit() must be called exactly once
@@ -318,14 +349,17 @@ describe('setInventoryItem — audit log written atomically with item update', (
       expect(logPayload.updatedBy).toBe('admin@example.com');
       expect(logPayload.reason).toBe('manual-count');
       expect(logPayload.source).toBe('admin-ui');
-      expect((logPayload.changedFields as string[])).toContain('quantity');
+      expect(logPayload.changedFields as string[]).toContain('quantity');
     });
   });
 
   describe('given a system/seed write with no adjustment parameter', () => {
     it('calls itemRef.set directly — no batch, no audit log', async () => {
       stubCurrentItem(null);
-      productGetMock.mockResolvedValue({ exists: false, data: () => undefined });
+      productGetMock.mockResolvedValue({
+        exists: false,
+        data: () => undefined,
+      });
 
       await setInventoryItem('oak-ridge', 'product-seed', {
         quantity: 5,
@@ -369,9 +403,8 @@ describe('inventory.repository — docToInventoryItem mapping', () => {
       });
 
       // getInventoryItem is a direct Firestore read — import it to verify mapping
-      const { getInventoryItem } = await import(
-        '@/lib/repositories/inventory.repository'
-      );
+      const { getInventoryItem } =
+        await import('@/lib/repositories/inventory.repository');
       const item = await getInventoryItem('oak-ridge', 'product-xyz');
 
       expect(item).not.toBeNull();
@@ -395,15 +428,14 @@ describe('inventory.repository — docToInventoryItem mapping', () => {
           locationId: 'hub',
           quantity: 0,
           inStock: false,
-          availableOnline: true,   // stored as true — must be overridden
-          availablePickup: true,   // stored as true — must be overridden
-          featured: true,          // stored as true — must be overridden
+          availableOnline: true, // stored as true — must be overridden
+          availablePickup: true, // stored as true — must be overridden
+          featured: true, // stored as true — must be overridden
         }),
       });
 
-      const { getInventoryItem } = await import(
-        '@/lib/repositories/inventory.repository'
-      );
+      const { getInventoryItem } =
+        await import('@/lib/repositories/inventory.repository');
       const item = await getInventoryItem('hub', 'product-out');
 
       expect(item!.inStock).toBe(false);

@@ -15,7 +15,11 @@ function buildPageHref(page: number, category: string | null): string {
   return qs ? `/products?${qs}` : '/products';
 }
 
-export function Pagination({ currentPage, totalPages, category }: PaginationProps) {
+export function Pagination({
+  currentPage,
+  totalPages,
+  category,
+}: PaginationProps) {
   if (totalPages <= 1) return null;
 
   return (

@@ -1,6 +1,10 @@
 import { notFound } from 'next/navigation';
-import { getProductBySlug, listProducts } from '@/lib/repositories';
-import { getInventoryItem } from '@/lib/repositories';
+import {
+  getProductBySlug,
+  listOnlineAvailableInventory,
+  listProductsByIds,
+  getInventoryItem,
+} from '@/lib/repositories';
 import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 import { getAdminStorage } from '@/lib/firebase/admin';
 import { buildMetadata } from '@/lib/seo/metadata.factory';
@@ -44,16 +48,17 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-  const [product, activeProducts, onlineItem] = await Promise.all([
+  const [product, onlineInventory, onlineItem] = await Promise.all([
     getProductBySlug(slug),
-    listProducts(),
+    listOnlineAvailableInventory(),
     getInventoryItem(ONLINE_LOCATION_ID, slug),
   ]);
   if (!product || product.status === 'archived') notFound();
 
-  const relatedProducts = activeProducts
-    .filter(candidate => candidate.slug !== product.slug)
-    .slice(0, 6);
+  const onlineSlugs = onlineInventory
+    .map(i => i.productId)
+    .filter(id => id !== slug);
+  const relatedProducts = (await listProductsByIds(onlineSlugs)).slice(0, 6);
 
   // Resolve hero image URL server-side to avoid client-side Firebase Storage
   // getDownloadURL round-trip, which blocks LCP by 1–3s.

@@ -102,7 +102,9 @@ async function run(): Promise<void> {
 
   const mode = flags.apply ? 'APPLY' : 'DRY-RUN';
   console.log(`\n[inventory-online-config-migration] Mode: ${mode}`);
-  console.log(`[inventory-online-config-migration] Project: ${flags.projectId}`);
+  console.log(
+    `[inventory-online-config-migration] Project: ${flags.projectId}`
+  );
   console.log(
     `[inventory-online-config-migration] Emulator: ${process.env.FIRESTORE_EMULATOR_HOST ?? 'no'}`
   );
@@ -118,7 +120,9 @@ async function run(): Promise<void> {
     totalScanned += snap.size;
   }
 
-  console.log(`\nScanned ${totalScanned} inventory item(s) across ${locationSnap.length} location(s).`);
+  console.log(
+    `\nScanned ${totalScanned} inventory item(s) across ${locationSnap.length} location(s).`
+  );
 
   if (items.length === 0) {
     console.log('All items already have required fields. Nothing to migrate.');
@@ -164,9 +168,7 @@ async function run(): Promise<void> {
 
     await batch.commit();
     updated += chunk.length;
-    console.log(
-      `[batch] Wrote ${updated}/${items.length} item(s)...`
-    );
+    console.log(`[batch] Wrote ${updated}/${items.length} item(s)...`);
   }
 
   console.log('\nMigration summary:');

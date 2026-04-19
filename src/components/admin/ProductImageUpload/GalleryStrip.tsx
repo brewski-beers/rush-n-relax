@@ -36,7 +36,13 @@ interface Props {
 
 function DragHandleIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 14 14"
+      fill="none"
+      aria-hidden="true"
+    >
       <circle cx="4" cy="3" r="1.5" fill="currentColor" />
       <circle cx="10" cy="3" r="1.5" fill="currentColor" />
       <circle cx="4" cy="7" r="1.5" fill="currentColor" />
@@ -188,7 +194,9 @@ function SortableImageSlot({
                 <span className="img-upload-spinner" />
               </div>
             ) : (
-              <div className="img-upload-slot-empty" aria-hidden="true">+</div>
+              <div className="img-upload-slot-empty" aria-hidden="true">
+                +
+              </div>
             )}
           </>
         )}
