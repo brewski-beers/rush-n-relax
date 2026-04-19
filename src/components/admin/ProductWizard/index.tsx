@@ -9,12 +9,13 @@
  * submission via useActionState.
  *
  * Step structure:
- *   1. Vendor
- *   2. Category & Name
- *   3. Description (+ cannabis profile when requiresCannabisProfile)
- *   4. Lab Results (+ COA when requiresCOA)
- *   5. Availability & Compliance (+ nutrition facts when requiresNutritionFacts)
- *   6. Images
+ *   1. Category & Name
+ *   2. Details (description, vendor, Leafly URL)
+ *   3. Cannabis Profile (strain, THC/CBD %, effects, flavors, terpenes, COA)
+ *      — skipped in navigation when !requiresCannabisProfile && !requiresCOA
+ *   4. Variants (+ nutrition facts when requiresNutritionFacts)
+ *   5. Images
+ *   6. Review
  *
  * Category contract flags (requiresCannabisProfile, requiresNutritionFacts,
  * requiresCOA) are sourced from the selected ProductCategorySummary and gate
@@ -83,7 +84,7 @@ const TOTAL_STEPS = 6;
 const STEP_TITLES: Record<number, string> = {
   1: 'Category & Name',
   2: 'Details',
-  3: 'Lab Results',
+  3: 'Cannabis Profile',
   4: 'Variants',
   5: 'Images',
   6: 'Review',
@@ -165,7 +166,11 @@ export function ProductWizardForm({
       return;
     }
     setStepError(null);
-    const nextStep = Math.min(step + 1, TOTAL_STEPS);
+    const rawNext = step + 1;
+    const nextStep = Math.min(
+      rawNext === 3 && !showStep3 ? 4 : rawNext,
+      TOTAL_STEPS
+    );
     if (nextStep === TOTAL_STEPS && form) {
       const v = (n: string) =>
         (form.elements.namedItem(n) as HTMLInputElement | null)?.value?.trim() ?? '';
@@ -200,7 +205,10 @@ export function ProductWizardForm({
 
   function goBack() {
     setStepError(null);
-    setStep(s => Math.max(s - 1, 1));
+    setStep(s => {
+      const prev = s - 1;
+      return Math.max(prev === 3 && !showStep3 ? 2 : prev, 1);
+    });
   }
 
   function isHidden(targetStep: number) {
@@ -228,6 +236,10 @@ export function ProductWizardForm({
   const showCannabisProfile = selectedCategory?.requiresCannabisProfile ?? false;
   const showNutritionFacts = selectedCategory?.requiresNutritionFacts ?? false;
   const showCOA = selectedCategory?.requiresCOA ?? false;
+
+  // Step 3 (Cannabis Profile) is skipped in navigation for categories that
+  // don't require a cannabis profile or COA (e.g. edibles, drinks).
+  const showStep3 = showCannabisProfile || showCOA;
 
   return (
     <form action={formAction} className="admin-form">
@@ -348,6 +360,19 @@ export function ProductWizardForm({
               placeholder="https://www.leafly.com/strains/..."
             />
           </label>
+        </fieldset>
+      </div>
+
+      {/* ── Step 3: Cannabis Profile ───────────────────────────── */}
+      <div
+        className={
+          isHidden(3) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+        }
+        aria-hidden={isHidden(3)}
+      >
+        <fieldset className="admin-fieldset">
+          <legend>Cannabis Profile</legend>
+          <span className="admin-hint">All fields are optional.</span>
 
           {showCannabisProfile && (
             <>
@@ -360,6 +385,30 @@ export function ProductWizardForm({
                   <option value="hybrid">Hybrid</option>
                   <option value="cbd">CBD</option>
                 </select>
+              </label>
+
+              <label>
+                THC %
+                <input
+                  name="labResults_thcPercent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  defaultValue={product?.labResults?.thcPercent ?? ''}
+                />
+              </label>
+
+              <label>
+                CBD %
+                <input
+                  name="labResults_cbdPercent"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  defaultValue={product?.labResults?.cbdPercent ?? ''}
+                />
               </label>
 
               <TagInput
@@ -377,72 +426,35 @@ export function ProductWizardForm({
                 initialTags={product?.flavors ?? []}
                 placeholder="e.g. Earthy"
               />
+
+              <TagInput
+                name="terpenes"
+                label="Terpenes"
+                hint="Press Enter or comma to add each one."
+                initialTags={product?.labResults?.terpenes ?? []}
+                placeholder="e.g. Myrcene"
+              />
+
+              <label>
+                Test Date <span className="admin-hint">(optional)</span>
+                <input
+                  name="labResults_testDate"
+                  type="date"
+                  defaultValue={product?.labResults?.testDate ?? ''}
+                />
+              </label>
+
+              <label>
+                Lab Name <span className="admin-hint">(optional)</span>
+                <input
+                  name="labResults_labName"
+                  type="text"
+                  defaultValue={product?.labResults?.labName ?? ''}
+                  placeholder="e.g. Confident Cannabis"
+                />
+              </label>
             </>
           )}
-        </fieldset>
-      </div>
-
-      {/* ── Step 3: Lab Results ────────────────────────────────── */}
-      <div
-        className={
-          isHidden(3) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
-        }
-        aria-hidden={isHidden(3)}
-      >
-        <fieldset className="admin-fieldset">
-          <legend>Lab Results</legend>
-          <span className="admin-hint">All fields are optional.</span>
-
-          <label>
-            THC %
-            <input
-              name="labResults_thcPercent"
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-              defaultValue={product?.labResults?.thcPercent ?? ''}
-            />
-          </label>
-
-          <label>
-            CBD %
-            <input
-              name="labResults_cbdPercent"
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-              defaultValue={product?.labResults?.cbdPercent ?? ''}
-            />
-          </label>
-
-          <TagInput
-            name="terpenes"
-            label="Terpenes"
-            hint="Press Enter or comma to add each one."
-            initialTags={product?.labResults?.terpenes ?? []}
-            placeholder="e.g. Myrcene"
-          />
-
-          <label>
-            Test Date
-            <input
-              name="labResults_testDate"
-              type="date"
-              defaultValue={product?.labResults?.testDate ?? ''}
-            />
-          </label>
-
-          <label>
-            Lab Name
-            <input
-              name="labResults_labName"
-              type="text"
-              defaultValue={product?.labResults?.labName ?? ''}
-              placeholder="e.g. Confident Cannabis"
-            />
-          </label>
 
           {showCOA && (
             <fieldset className="admin-fieldset">
