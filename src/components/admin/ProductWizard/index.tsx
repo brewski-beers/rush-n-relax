@@ -71,8 +71,8 @@ interface Props {
 const TOTAL_STEPS = 6;
 
 const STEP_TITLES: Record<number, string> = {
-  1: 'Vendor',
-  2: 'Category & Name',
+  1: 'Category & Name',
+  2: 'Vendor',
   3: 'Description',
   4: 'Lab Results',
   5: 'Availability & Compliance',
@@ -92,15 +92,15 @@ function validateStep(step: number, form: HTMLFormElement): string | null {
     '';
 
   if (step === 1) {
-    if (!v('vendorSlug')) return 'Please select a vendor.';
-  }
-  if (step === 2) {
     if (!v('category')) return 'Please select a category.';
     if (!v('name')) return 'Product name is required.';
     const slug = v('slug');
     if (!slug) return 'Slug is required.';
     if (!/^[a-z0-9-]+$/.test(slug))
       return 'Slug must be lowercase letters, numbers, and hyphens only.';
+  }
+  if (step === 2) {
+    if (!v('vendorSlug')) return 'Please select a vendor.';
   }
   if (step === 3) {
     if (!v('details')) return 'Description is required.';
@@ -205,40 +205,12 @@ export function ProductWizardForm({
       {state?.error && <p className="admin-error">{state.error}</p>}
       {stepError && <p className="admin-error">{stepError}</p>}
 
-      {/* ── Step 1: Vendor ─────────────────────────────────────── */}
+      {/* ── Step 1: Category & Name ────────────────────────────── */}
       <div
         className={
           isHidden(1) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
         aria-hidden={isHidden(1)}
-      >
-        <fieldset className="admin-fieldset">
-          <legend>Vendor</legend>
-          <span className="admin-hint">
-            Select the vendor that supplies this product.
-          </span>
-          <label>
-            Vendor
-            <select name="vendorSlug" defaultValue={product?.vendorSlug ?? ''}>
-              <option value="">— Select vendor —</option>
-              {vendors
-                .filter(v => v.isActive)
-                .map(v => (
-                  <option key={v.slug} value={v.slug}>
-                    {v.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-        </fieldset>
-      </div>
-
-      {/* ── Step 2: Category & Name ────────────────────────────── */}
-      <div
-        className={
-          isHidden(2) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
-        }
-        aria-hidden={isHidden(2)}
       >
         <fieldset className="admin-fieldset">
           <legend>Category &amp; Name</legend>
@@ -295,6 +267,34 @@ export function ProductWizardForm({
                 setSlug(e.target.value.toLowerCase().trim())
               }
             />
+          </label>
+        </fieldset>
+      </div>
+
+      {/* ── Step 2: Vendor ─────────────────────────────────────── */}
+      <div
+        className={
+          isHidden(2) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+        }
+        aria-hidden={isHidden(2)}
+      >
+        <fieldset className="admin-fieldset">
+          <legend>Vendor</legend>
+          <span className="admin-hint">
+            Select the vendor that supplies this product.
+          </span>
+          <label>
+            Vendor
+            <select name="vendorSlug" defaultValue={product?.vendorSlug ?? ''}>
+              <option value="">— Select vendor —</option>
+              {vendors
+                .filter(v => v.isActive)
+                .map(v => (
+                  <option key={v.slug} value={v.slug}>
+                    {v.name}
+                  </option>
+                ))}
+            </select>
           </label>
         </fieldset>
       </div>
@@ -543,7 +543,7 @@ export function ProductWizardForm({
           <legend>Images</legend>
           {mode === 'create' && !slug ? (
             <p className="admin-hint admin-muted">
-              A slug is required before uploading images. Go back to Step 2.
+              A slug is required before uploading images. Go back to Step 1.
             </p>
           ) : (
             <ProductImageUpload
