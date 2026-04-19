@@ -233,9 +233,8 @@ sequenceDiagram
     Note over Emu,Next: Parallel via concurrently
 
     Dev->>NPM: npm run dev:seed
-    NPM->>Gen: generate-emulator-artifacts.ts → emulator-data/firestore.seed.json + auth.seed.json
-    NPM->>Seed: seed-emulators.ts → import Firestore/Auth artifacts + storage stubs
-    Note over Gen,Emu: FIRESTORE_EMULATOR_HOST=localhost:8080 / FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
+    NPM->>Seed: seed-emulators.ts → writes Firestore/Auth/Storage directly from fixture builders
+    Note over Seed,Emu: FIRESTORE_EMULATOR_HOST=localhost:8080 / FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
 
     Dev->>Next: http://localhost:3000
     Next->>Emu: Admin SDK reads locations/
@@ -246,9 +245,46 @@ sequenceDiagram
 ### Key Paths
 
 - `dev:all` starts both services in parallel — no manual ordering required.
-- `dev:seed` generates deterministic emulator artifacts, then seeds Firestore/Auth from those artifacts and uploads storage stubs.
+- `dev:seed` calls `seed-emulators.ts` which writes Firestore/Auth/Storage directly via fixture builder functions. No intermediate JSON artifact.
 - Auth authority is Firebase Auth custom claims; there is no required Firestore `users/{uid}` mirror in runtime.
 - All Admin SDK calls in dev automatically route to `localhost:8080` via `isEmulator`.
+
+### Fixture System (`src/lib/fixtures/`)
+
+All emulator seed data lives in `src/lib/fixtures/storefront.ts`. Builder functions (`buildLocationDocuments`, `buildProductDocuments`, `buildOnlineInventoryDocuments`, `buildRetailInventoryDocuments`, etc.) convert fixtures into typed Firestore documents.
+
+**Test-data convention — fixture values are intentionally fake:**
+
+| Field         | Fixture value             | Why                                                    |
+| ------------- | ------------------------- | ------------------------------------------------------ |
+| Location name | `"Oak Ridge [TEST]"`      | Immediately visible in UI — can't be mistaken for prod |
+| Address       | `"1 Emulator Way"`        | Never a real address                                   |
+| Phone         | `+1 (555) 010-000x`       | 555 range is non-dialable                              |
+| Zip           | `00001`–`00003`           | Not a real USPS zip                                    |
+| `placeId`     | `test-place-id-oak-ridge` | Prevents accidental Google Places API calls in dev     |
+| Coordinates   | Real-ish TN region        | Needed for map component rendering tests               |
+
+Real operational values (actual addresses, phone numbers, Google Place IDs) live in prod Firestore only and are never committed to the codebase.
+
+**Online inventory edge cases covered:**
+
+| Product                                     | Edge case                                                      |
+| ------------------------------------------- | -------------------------------------------------------------- |
+| `flower` / `blue-dream`                     | Happy path — fully priced, featured                            |
+| `og-kush`                                   | Full-sale — `compareAtPrice` on every variant                  |
+| `granddaddy-purple`                         | Out-of-stock — `featured` cleared, `notes` set                 |
+| `blue-dream-pre-roll`                       | Combinable variant pricing — 6 cross-product keys              |
+| `gelato-live-rosin`                         | Partial pricing — one variant unpriced (unorderable UI branch) |
+| `wyld-raspberry-gummies`                    | Per-variant `inStock: false`                                   |
+| `uncle-skunks-lemon-ginger-sparkling-water` | Staff `notes` annotation                                       |
+| `blue-dream-distillate-cart`                | `availableOnline: false` — in-store only                       |
+
+**Retail inventory edge cases covered (oak-ridge / maryville / seymour):**
+
+- `granddaddy-purple`: out-of-stock at oak-ridge, in-stock at maryville — location-specific stock state
+- `gelato-live-rosin`: maryville-only — location-exclusive product
+- `blue-dream-distillate-cart`: retail pickup enabled for an in-store-only vape
+- seymour entries: `availablePickup: false` — no-pickup location branch
 
 ---
 
