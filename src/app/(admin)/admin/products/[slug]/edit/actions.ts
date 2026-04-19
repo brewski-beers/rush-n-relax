@@ -11,7 +11,14 @@ import {
   setProductStatus,
 } from '@/lib/repositories';
 import { generateSkus } from '@/lib/variants/generateSkus';
-import type { ProductStrain, VariantGroup, NutritionFacts } from '@/types';
+import type {
+  ProductStrain,
+  ProductStatus,
+  VariantGroup,
+  NutritionFacts,
+} from '@/types';
+
+const SETTABLE_STATUSES: ProductStatus[] = ['active', 'pending-reformulation', 'archived'];
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',

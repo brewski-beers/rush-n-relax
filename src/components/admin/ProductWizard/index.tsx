@@ -475,7 +475,7 @@ export function ProductWizardForm({
               type="checkbox"
               name="federalDeadlineRisk"
               value="true"
-              defaultChecked={product?.federalDeadlineRisk ?? false}
+              defaultChecked={false}
             />
             Federal deadline risk{' '}
             <span className="admin-hint">
@@ -526,7 +526,7 @@ export function ProductWizardForm({
           )}
 
           <VariantEditor
-            initialVariants={product?.variants ?? []}
+            initialGroups={product?.variantGroups ?? []}
             variantTemplates={variantTemplates}
           />
         </fieldset>
