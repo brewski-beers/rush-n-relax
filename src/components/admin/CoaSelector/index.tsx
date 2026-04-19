@@ -105,8 +105,7 @@ export function CoaSelector({ currentCoaUrl }: Props) {
             📄
           </span>
           <span className="coa-upload-filename">{filename}</span>
-          <button
-            type="button"
+          <button type="button"
             className="coa-upload-remove"
             onClick={handleClear}
             aria-label="Remove COA"

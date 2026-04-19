@@ -11,7 +11,14 @@ import {
   setProductStatus,
 } from '@/lib/repositories';
 import { generateSkus } from '@/lib/variants/generateSkus';
-import type { ProductStrain, VariantGroup, NutritionFacts } from '@/types';
+import type {
+  ProductStrain,
+  ProductStatus,
+  VariantGroup,
+  NutritionFacts,
+} from '@/types';
+
+const SETTABLE_STATUSES: ProductStatus[] = ['active', 'pending-reformulation', 'archived'];
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
@@ -25,7 +32,7 @@ export async function updateProduct(
   _prev: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await requireRole('staff');
+  const actor = await requireRole('staff');
 
   const existing = await getProductBySlug(slug);
   if (!existing) return { error: 'Product not found.' };
@@ -33,19 +40,35 @@ export async function updateProduct(
   const name = formData.get('name')?.toString().trim();
   const category = formData.get('category')?.toString();
   const details = formData.get('details')?.toString().trim();
-  const availableAt = existing.availableAt; // inventory system owns availability
+  const availableAt = existing.availableAt; // managed in Inventory, not via product edit
 
   if (!name || !category || !details) {
     return { error: 'All required fields must be filled.' };
   }
 
   const activeCategories = await listActiveCategories();
-  if (!activeCategories.some(c => c.slug === category)) {
+  const selectedCategory = activeCategories.find(c => c.slug === category);
+  if (!selectedCategory) {
     return { error: 'Invalid category.' };
   }
 
-  // Status is managed externally (archiveProduct action / compliance CF)
-  const status = existing.status;
+  // Status is only editable by owners. If the field is absent from FormData
+  // (non-owner users don't see it in the wizard), fall back to the existing value.
+  // compliance-hold can never be changed here — always preserved.
+  let status: ProductStatus;
+  if (existing.status === 'compliance-hold') {
+    status = 'compliance-hold';
+  } else if (actor.role === 'owner') {
+    const rawStatus = formData.get('status')?.toString() as ProductStatus | undefined;
+    if (rawStatus && SETTABLE_STATUSES.includes(rawStatus)) {
+      status = rawStatus;
+    } else {
+      status = existing.status;
+    }
+  } else {
+    // Non-owner staff cannot change status — preserve existing
+    status = existing.status;
+  }
 
   // formData.get() returns:
   //   null   — field not in form (ProductImageUpload not rendered)
@@ -155,6 +178,10 @@ export async function updateProduct(
   const coaUrlRaw = formData.get('coaUrl')?.toString() ?? '';
   const coaUrl = coaUrlRaw || existing.coaUrl;
 
+  // ── Vendor product URL ─────────────────────────────────────────────────
+  const vendorProductUrlRaw = formData.get('vendorProductUrl')?.toString().trim() ?? '';
+  const vendorProductUrl = vendorProductUrlRaw || existing.vendorProductUrl;
+
   // ── Variant groups + generated SKUs ──────────────────────────────────────
   const variantGroupsRaw = formData.get('variantGroups');
   const variantGroups: VariantGroup[] = variantGroupsRaw
@@ -186,11 +213,9 @@ export async function updateProduct(
       ? Number(cbdMgRaw)
       : existing.cbdMgPerServing;
 
-  // -- Nutrition Facts (edibles + drinks serving info) -----------------------
-  // For drinks: only servingSize + servingsPerContainer are shown; calories defaults to 0.
-  // For edibles: all three are required.
+  // -- Nutrition Facts — shown when category has requiresNutritionFacts flag ----
   let nutritionFacts: NutritionFacts | undefined;
-  if (category === 'edibles' || category === 'drinks') {
+  if (selectedCategory.requiresNutritionFacts) {
     const nfServingSize =
       formData.get('nfServingSize')?.toString().trim() ?? '';
     const nfSpcRaw =
@@ -220,7 +245,7 @@ export async function updateProduct(
         protein: formData.get('nfProtein')?.toString().trim() || undefined,
       };
     } else {
-      // edibles with no nutrition form data — preserve existing
+      // category requires nutrition facts but no form data — preserve existing
       nutritionFacts = existing.nutritionFacts;
     }
   }
@@ -256,6 +281,7 @@ export async function updateProduct(
     ...(variants.length > 0 ? { variants } : {}),
     ...(nutritionFacts !== undefined ? { nutritionFacts } : {}),
     ...(leaflyUrl ? { leaflyUrl } : {}),
+    ...(vendorProductUrl ? { vendorProductUrl } : {}),
     ...(extractionType ? { extractionType } : {}),
     ...(hardwareType ? { hardwareType } : {}),
     ...(volumeMl !== undefined ? { volumeMl } : {}),

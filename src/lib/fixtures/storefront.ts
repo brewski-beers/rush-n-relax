@@ -1164,6 +1164,18 @@ export function buildVariantTemplateDocuments(
   }));
 }
 
+const CATEGORY_CONTRACT_FLAGS: Record<
+  string,
+  { requiresCannabisProfile: boolean; requiresNutritionFacts: boolean; requiresCOA: boolean }
+> = {
+  flower:       { requiresCannabisProfile: true,  requiresNutritionFacts: false, requiresCOA: true  },
+  concentrates: { requiresCannabisProfile: true,  requiresNutritionFacts: false, requiresCOA: true  },
+  'pre-roll':   { requiresCannabisProfile: true,  requiresNutritionFacts: false, requiresCOA: true  },
+  vapes:        { requiresCannabisProfile: false, requiresNutritionFacts: false, requiresCOA: true  },
+  edibles:      { requiresCannabisProfile: false, requiresNutritionFacts: true,  requiresCOA: false },
+  drinks:       { requiresCannabisProfile: false, requiresNutritionFacts: true,  requiresCOA: false },
+};
+
 export function buildCategoryDocuments(
   date: Date = fixtureDate
 ): ProductCategoryConfig[] {
@@ -1173,6 +1185,11 @@ export function buildCategoryDocuments(
     description: cat.description,
     order: cat.order,
     isActive: cat.isActive,
+    ...(CATEGORY_CONTRACT_FLAGS[cat.slug] ?? {
+      requiresCannabisProfile: false,
+      requiresNutritionFacts: false,
+      requiresCOA: false,
+    }),
     createdAt: date,
     updatedAt: date,
   }));

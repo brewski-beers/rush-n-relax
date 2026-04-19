@@ -18,12 +18,13 @@ export default async function ProductEditPage({ params }: Props) {
   await requireRole('staff');
 
   const { slug } = await params;
-  const [product, categories, variantTemplates, vendors] = await Promise.all([
-    getProductBySlug(slug),
-    listActiveCategories(),
-    listVariantTemplates(),
-    listVendors(),
-  ]);
+  const [product, categories, variantTemplates, vendors] =
+    await Promise.all([
+      getProductBySlug(slug),
+      listActiveCategories(),
+      listVariantTemplates(),
+      listVendors(),
+    ]);
   if (!product) notFound();
 
   return (

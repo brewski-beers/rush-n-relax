@@ -85,8 +85,7 @@ export function FeaturedSlot({
             )}
             {!uploading && (
               <div className="img-upload-featured-overlay">
-                <button
-                  type="button"
+                <button type="button"
                   className="admin-btn-secondary"
                   disabled={disabled}
                   onClick={e => {
@@ -96,8 +95,7 @@ export function FeaturedSlot({
                 >
                   Replace
                 </button>
-                <button
-                  type="button"
+                <button type="button"
                   className="img-upload-remove-btn img-upload-remove-btn--featured"
                   disabled={disabled}
                   aria-label="Remove featured image"

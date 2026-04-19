@@ -105,6 +105,9 @@ describe('upsertCategory', () => {
         description: 'A brand new category',
         order: 1,
         isActive: true,
+        requiresCannabisProfile: false,
+        requiresNutritionFacts: false,
+        requiresCOA: false,
       });
 
       expect(docSetMock).toHaveBeenCalledOnce();
@@ -123,6 +126,9 @@ describe('upsertCategory', () => {
         description: 'A brand new category',
         order: 1,
         isActive: true,
+        requiresCannabisProfile: false,
+        requiresNutritionFacts: false,
+        requiresCOA: false,
       });
 
       expect(result).toBe('new-cat');
@@ -147,6 +153,9 @@ describe('upsertCategory', () => {
         description: 'New desc',
         order: 2,
         isActive: false,
+        requiresCannabisProfile: false,
+        requiresNutritionFacts: false,
+        requiresCOA: false,
       });
 
       expect(docSetMock).toHaveBeenCalledOnce();
