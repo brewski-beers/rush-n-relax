@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getInventoryItem } from '@/lib/repositories/inventory.repository';
+import { getAdminFirestore } from '@/lib/firebase/admin';
 import { LOCATION_SLUGS } from '@/lib/fixtures/storefront';
+import type { InventoryItem } from '@/types';
 
 /**
  * GET /api/cart/availability
@@ -22,6 +23,9 @@ import { LOCATION_SLUGS } from '@/lib/fixtures/storefront';
  *     }
  *   }
  * }
+ *
+ * Performance: uses db.getAll() per location to batch all item reads into
+ * L round trips (one per retail location) instead of L × N serial reads.
  */
 
 interface CartItemInput {
@@ -64,27 +68,43 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
   }
 
-  // Fan out: for each retail location, check all cart items in parallel
+  const db = getAdminFirestore();
+
+  // One batch read per retail location instead of L × N serial reads.
   const locationResults = await Promise.all(
     RETAIL_SLUGS.map(async locationSlug => {
+      const refs = cartItems.map(({ productId }) =>
+        db.collection(`inventory/${locationSlug}/items`).doc(productId)
+      );
+
+      // getAll returns snapshots in the same order as refs
+      const snaps = await db.getAll(...refs);
+
       const unavailableItems: string[] = [];
 
-      await Promise.all(
-        cartItems.map(async ({ productId, variantId }) => {
-          const inv = await getInventoryItem(locationSlug, productId);
+      for (let i = 0; i < cartItems.length; i++) {
+        const { productId, variantId } = cartItems[i];
+        const snap = snaps[i];
 
-          if (!inv || !inv.availablePickup) {
-            unavailableItems.push(productId);
-            return;
-          }
+        if (!snap.exists) {
+          unavailableItems.push(productId);
+          continue;
+        }
 
-          // variantPricing absence means "not yet configured" — treat as unavailable
-          const variantEntry = inv.variantPricing?.[variantId];
-          if (!variantEntry || variantEntry.inStock === false) {
-            unavailableItems.push(productId);
-          }
-        })
-      );
+        const d = snap.data() as Record<string, unknown>;
+        const inv = docToPartialInventory(d);
+
+        if (!inv.availablePickup) {
+          unavailableItems.push(productId);
+          continue;
+        }
+
+        // variantPricing absence means "not yet configured" — treat as unavailable
+        const variantEntry = inv.variantPricing?.[variantId];
+        if (!variantEntry || variantEntry.inStock === false) {
+          unavailableItems.push(productId);
+        }
+      }
 
       return {
         locationSlug,
@@ -102,5 +122,59 @@ export async function GET(req: NextRequest) {
     locations[locationSlug] = { available, unavailableItems };
   }
 
-  return NextResponse.json({ locations });
+  return NextResponse.json(
+    { locations },
+    { headers: { 'Cache-Control': 'private, max-age=30' } }
+  );
+}
+
+// ── Private helpers ───────────────────────────────────────────────────────
+
+/**
+ * Extracts only the availability fields needed for cart checks.
+ * Mirrors the invariants in inventory.repository: inStock=false forces
+ * availablePickup to false regardless of the stored field value.
+ */
+function docToPartialInventory(
+  d: Record<string, unknown>
+): Pick<InventoryItem, 'availablePickup' | 'variantPricing'> {
+  const rawQty = d.quantity;
+  const quantity =
+    typeof rawQty === 'number' && Number.isFinite(rawQty)
+      ? Math.max(0, Math.floor(rawQty))
+      : d.inStock
+        ? 1
+        : 0;
+  const inStock = quantity > 0;
+  // Cast through boolean — d.availablePickup is unknown
+  const availablePickup: boolean = inStock ? Boolean(d.availablePickup) : false;
+
+  // Defensively map variantPricing (mirrors inventory.repository)
+  let variantPricing: InventoryItem['variantPricing'];
+  const rawPricing = d.variantPricing;
+  if (
+    rawPricing &&
+    typeof rawPricing === 'object' &&
+    !Array.isArray(rawPricing)
+  ) {
+    const result: NonNullable<InventoryItem['variantPricing']> = {};
+    let hasEntry = false;
+    for (const [variantId, entry] of Object.entries(
+      rawPricing as Record<string, unknown>
+    )) {
+      if (!entry || typeof entry !== 'object') continue;
+      const e = entry as Record<string, unknown>;
+      if (typeof e.price !== 'number') continue;
+      result[variantId] = {
+        price: e.price,
+        compareAtPrice:
+          typeof e.compareAtPrice === 'number' ? e.compareAtPrice : undefined,
+        inStock: typeof e.inStock === 'boolean' ? e.inStock : undefined,
+      };
+      hasEntry = true;
+    }
+    if (hasEntry) variantPricing = result;
+  }
+
+  return { availablePickup, variantPricing };
 }
