@@ -94,6 +94,8 @@ export interface Product {
   labResults?: LabResults;
   /** Leafly product page URL — flower only */
   leaflyUrl?: string;
+  /** Direct product page URL on the vendor's own site */
+  vendorProductUrl?: string;
   /** Cannabis strain type — powers strain badge on storefront */
   strain?: ProductStrain;
   /** Consumer-facing effect descriptors, e.g. ['Euphoria', 'Relaxed', 'Sedative'] */

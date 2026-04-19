@@ -149,6 +149,7 @@ export function ProductWizardForm({
   // Controlled inputs that need auto-suggest or inter-field logic
   const [name, setName] = useState(product?.name ?? '');
   const [slug, setSlug] = useState(product?.slug ?? '');
+  const [selectedVendorSlug, setSelectedVendorSlug] = useState(product?.vendorSlug ?? '');
 
   // Track selected category to gate form sections by contract flags.
   // Edit mode pre-selects via initialCategory; create mode starts undefined.
@@ -342,7 +343,11 @@ export function ProductWizardForm({
 
           <label>
             Vendor <span className="admin-hint">(optional)</span>
-            <select name="vendorSlug" defaultValue={product?.vendorSlug ?? ''}>
+            <select
+              name="vendorSlug"
+              defaultValue={product?.vendorSlug ?? ''}
+              onChange={e => setSelectedVendorSlug(e.target.value)}
+            >
               <option value="">— None —</option>
               {vendors
                 .filter(v => v.isActive)
@@ -354,15 +359,17 @@ export function ProductWizardForm({
             </select>
           </label>
 
-          <label>
-            Leafly URL <span className="admin-hint">(optional)</span>
-            <input
-              name="leaflyUrl"
-              type="url"
-              defaultValue={product?.leaflyUrl ?? ''}
-              placeholder="https://www.leafly.com/strains/..."
-            />
-          </label>
+          {selectedVendorSlug && (
+            <label>
+              Vendor product link <span className="admin-hint">(optional)</span>
+              <input
+                name="vendorProductUrl"
+                type="url"
+                defaultValue={product?.vendorProductUrl ?? ''}
+                placeholder="https://wyldcbd.com/products/..."
+              />
+            </label>
+          )}
         </fieldset>
       </div>
 
@@ -388,6 +395,16 @@ export function ProductWizardForm({
                   <option value="hybrid">Hybrid</option>
                   <option value="cbd">CBD</option>
                 </select>
+              </label>
+
+              <label>
+                Leafly URL <span className="admin-hint">(optional)</span>
+                <input
+                  name="leaflyUrl"
+                  type="url"
+                  defaultValue={product?.leaflyUrl ?? ''}
+                  placeholder="https://www.leafly.com/strains/..."
+                />
               </label>
 
               <label>
@@ -610,15 +627,35 @@ export function ProductWizardForm({
         )}
 
         {!isLastStep ? (
-          <button type="button" onClick={goNext} disabled={imageUploading}>
+          // key forces unmount/remount when transitioning to last step so React
+          // never mutates type="button" → type="submit" in-place mid-click.
+          <button key="next" type="button" onClick={goNext} disabled={imageUploading}>
             {step === TOTAL_STEPS - 1 ? 'Review' : 'Next'}
           </button>
         ) : (
-          <button type="submit" disabled={pending || imageUploading}>
+          <button key="submit" type="submit" disabled={pending || imageUploading}>
             {imageUploading ? 'Uploading image...' : submitLabel}
           </button>
         )}
       </div>
+
+      {/* Hidden passthroughs for fields not rendered when step 3 is skipped */}
+      {!showStep3 && (
+        <>
+          <input type="hidden" name="leaflyUrl" value={product?.leaflyUrl ?? ''} />
+          <input type="hidden" name="strain" value={product?.strain ?? ''} />
+          <input type="hidden" name="effects" value={(product?.effects ?? []).join(',')} />
+          <input type="hidden" name="flavors" value={(product?.flavors ?? []).join(',')} />
+          <input type="hidden" name="terpenes" value={(product?.labResults?.terpenes ?? []).join(',')} />
+          <input type="hidden" name="labResults_thcPercent" value={product?.labResults?.thcPercent ?? ''} />
+          <input type="hidden" name="labResults_cbdPercent" value={product?.labResults?.cbdPercent ?? ''} />
+          <input type="hidden" name="labResults_testDate" value={product?.labResults?.testDate ?? ''} />
+          <input type="hidden" name="labResults_labName" value={product?.labResults?.labName ?? ''} />
+        </>
+      )}
+      {!selectedVendorSlug && (
+        <input type="hidden" name="vendorProductUrl" value={product?.vendorProductUrl ?? ''} />
+      )}
     </form>
   );
 }

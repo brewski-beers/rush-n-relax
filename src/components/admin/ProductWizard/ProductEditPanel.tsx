@@ -176,6 +176,18 @@ export function ProductEditPanel({
         </select>
       </label>
 
+      {product.vendorSlug && (
+        <label>
+          Vendor product link <span className="admin-hint">(optional)</span>
+          <input
+            name="vendorProductUrl"
+            type="url"
+            defaultValue={product.vendorProductUrl ?? ''}
+            placeholder="https://wyldcbd.com/products/..."
+          />
+        </label>
+      )}
+
       {/* ── Description ──────────────────────────────────────────── */}
       <label>
         Details
@@ -473,6 +485,9 @@ export function ProductEditPanel({
       {/* ── Hidden passthrough fields for fields NOT shown ────────── */}
       {!catConfig.hasLeaflyUrl && (
         <input type="hidden" name="leaflyUrl" value={product.leaflyUrl ?? ''} />
+      )}
+      {!product.vendorSlug && (
+        <input type="hidden" name="vendorProductUrl" value={product.vendorProductUrl ?? ''} />
       )}
       {!catConfig.hasFlowerProfile && !catConfig.hasDrinkAttributes && (
         <>

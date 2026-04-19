@@ -60,6 +60,9 @@ export async function createProduct(
   // ── Leafly URL ─────────────────────────────────────────────────────────────
   const leaflyUrl = formData.get('leaflyUrl')?.toString().trim() || undefined;
 
+  // ── Vendor product URL ────────────────────────────────────────────────────
+  const vendorProductUrl = formData.get('vendorProductUrl')?.toString().trim() || undefined;
+
   // ── Cannabis profile fields ────────────────────────────────────────────
   const strainRaw = formData.get('strain')?.toString() ?? '';
   const strain = VALID_STRAINS.has(strainRaw as ProductStrain)
@@ -195,6 +198,7 @@ export async function createProduct(
     ...(vendorSlug !== undefined ? { vendorSlug } : {}),
     ...(coaUrl !== undefined ? { coaUrl } : {}),
     ...(leaflyUrl !== undefined ? { leaflyUrl } : {}),
+    ...(vendorProductUrl !== undefined ? { vendorProductUrl } : {}),
     ...(strain !== undefined ? { strain } : {}),
     ...(effects !== undefined ? { effects } : {}),
     ...(flavors !== undefined ? { flavors } : {}),

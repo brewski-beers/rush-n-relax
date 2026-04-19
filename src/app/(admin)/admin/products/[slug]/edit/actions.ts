@@ -178,6 +178,10 @@ export async function updateProduct(
   const coaUrlRaw = formData.get('coaUrl')?.toString() ?? '';
   const coaUrl = coaUrlRaw || existing.coaUrl;
 
+  // ── Vendor product URL ─────────────────────────────────────────────────
+  const vendorProductUrlRaw = formData.get('vendorProductUrl')?.toString().trim() ?? '';
+  const vendorProductUrl = vendorProductUrlRaw || existing.vendorProductUrl;
+
   // ── Variant groups + generated SKUs ──────────────────────────────────────
   const variantGroupsRaw = formData.get('variantGroups');
   const variantGroups: VariantGroup[] = variantGroupsRaw
@@ -277,6 +281,7 @@ export async function updateProduct(
     ...(variants.length > 0 ? { variants } : {}),
     ...(nutritionFacts !== undefined ? { nutritionFacts } : {}),
     ...(leaflyUrl ? { leaflyUrl } : {}),
+    ...(vendorProductUrl ? { vendorProductUrl } : {}),
     ...(extractionType ? { extractionType } : {}),
     ...(hardwareType ? { hardwareType } : {}),
     ...(volumeMl !== undefined ? { volumeMl } : {}),
