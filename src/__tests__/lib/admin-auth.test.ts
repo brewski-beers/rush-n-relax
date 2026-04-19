@@ -66,7 +66,11 @@ describe('requireRole', () => {
   describe('given a staff session when owner role is required', () => {
     it('redirects to /admin/login (insufficient role)', async () => {
       stubSession('valid-cookie');
-      stubVerifiedToken({ uid: 'staff-uid', email: 'staff@example.com', role: 'staff' });
+      stubVerifiedToken({
+        uid: 'staff-uid',
+        email: 'staff@example.com',
+        role: 'staff',
+      });
 
       await expect(requireRole('owner')).rejects.toThrow(
         'NEXT_REDIRECT:/admin/login'

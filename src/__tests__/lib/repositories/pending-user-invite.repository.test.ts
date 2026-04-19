@@ -25,13 +25,11 @@ const {
   const docMock = vi.fn((name?: string) => ({
     id: name ?? 'generated-id',
     set: setMock,
-    get: vi
-      .fn()
-      .mockResolvedValue({
-        exists: false,
-        id: name ?? 'generated-id',
-        data: () => ({}),
-      }),
+    get: vi.fn().mockResolvedValue({
+      exists: false,
+      id: name ?? 'generated-id',
+      data: () => ({}),
+    }),
   }));
 
   const collectionMock = vi.fn(() => ({

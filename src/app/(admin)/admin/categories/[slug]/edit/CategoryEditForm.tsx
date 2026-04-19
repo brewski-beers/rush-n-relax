@@ -18,8 +18,7 @@ export function CategoryEditForm({ category }: Props) {
       {state?.error && <p className="admin-error">{state.error}</p>}
 
       <label>
-        Slug{' '}
-        <span className="admin-hint">(cannot be changed)</span>
+        Slug <span className="admin-hint">(cannot be changed)</span>
         <input
           value={category.slug}
           disabled
@@ -45,7 +44,9 @@ export function CategoryEditForm({ category }: Props) {
 
       <label>
         Order{' '}
-        <span className="admin-hint">(integer \u2014 lower numbers appear first)</span>
+        <span className="admin-hint">
+          (integer — lower numbers appear first)
+        </span>
         <input
           name="order"
           type="number"

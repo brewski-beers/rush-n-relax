@@ -23,19 +23,21 @@ export async function listLocations(): Promise<LocationSummary[]> {
   return snap.docs.flatMap(doc => {
     const d = doc.data();
     if (!d) return []; // doc.data() returns undefined for non-existent docs; skip phantom snapshots
-    return [{
-      id: doc.id,
-      slug: d.slug,
-      name: d.name,
-      address: d.address,
-      city: d.city,
-      state: d.state,
-      zip: d.zip,
-      phone: d.phone,
-      hours: d.hours,
-      placeId: d.placeId,
-      coordinates: d.coordinates ?? undefined,
-    } satisfies LocationSummary];
+    return [
+      {
+        id: doc.id,
+        slug: d.slug,
+        name: d.name,
+        address: d.address,
+        city: d.city,
+        state: d.state,
+        zip: d.zip,
+        phone: d.phone,
+        hours: d.hours,
+        placeId: d.placeId,
+        coordinates: d.coordinates ?? undefined,
+      } satisfies LocationSummary,
+    ];
   });
 }
 

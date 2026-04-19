@@ -16,12 +16,7 @@ export function CategoryCreateForm() {
         <span className="admin-hint">
           (unique document ID, e.g. flower \u2014 cannot be changed later)
         </span>
-        <input
-          name="slug"
-          placeholder="flower"
-          pattern="[a-z0-9-]+"
-          required
-        />
+        <input name="slug" placeholder="flower" pattern="[a-z0-9-]+" required />
       </label>
 
       <label>
@@ -36,7 +31,9 @@ export function CategoryCreateForm() {
 
       <label>
         Order{' '}
-        <span className="admin-hint">(integer \u2014 lower numbers appear first)</span>
+        <span className="admin-hint">
+          (integer — lower numbers appear first)
+        </span>
         <input name="order" type="number" min={1} step={1} required />
       </label>
 
