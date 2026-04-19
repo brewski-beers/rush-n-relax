@@ -322,10 +322,13 @@ async function seedStorageStub() {
   // ── Product images — all 174 catalog slugs + gallery primary ──────────────
 
   const catalogPath = path.join(__dirname, 'catalog-seed-data.json');
-  const catalogRaw = JSON.parse(fs.readFileSync(catalogPath, 'utf8')) as Array<{
-    slug: string;
-  }>;
-  const catalogSlugs = catalogRaw.map(entry => entry.slug);
+  const catalogSlugs: string[] = fs.existsSync(catalogPath)
+    ? (
+        JSON.parse(fs.readFileSync(catalogPath, 'utf8')) as Array<{
+          slug: string;
+        }>
+      ).map(entry => entry.slug)
+    : [];
 
   // Also include the 5 fixture product slugs used in E2E tests.
   const fixtureSlugs = ['flower', 'concentrates', 'drinks', 'edibles', 'vapes'];

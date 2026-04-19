@@ -20,9 +20,9 @@ try {
   const contents = readFileSync(dataPath, 'utf-8');
   rawProducts = JSON.parse(contents) as typeof rawProducts;
 } catch (err) {
-  console.error(`Could not read ${dataPath}`);
-  console.error('Run /scrape-catalog first to generate the seed data file.');
-  process.exit(1);
+  console.warn(`catalog-seed-data.json not found — skipping catalog seed.`);
+  console.warn('Run /scrape-catalog locally to generate it.');
+  process.exit(0);
 }
 
 async function seedCatalog() {
