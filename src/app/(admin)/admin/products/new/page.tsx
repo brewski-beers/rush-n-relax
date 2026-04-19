@@ -6,6 +6,7 @@ import {
   listVariantTemplates,
   listVendors,
 } from '@/lib/repositories';
+import { AdminBackLink } from '@/components/admin/AdminBackLink';
 import { ProductCreateForm } from './ProductCreateForm';
 
 export default async function NewProductPage() {
@@ -19,6 +20,7 @@ export default async function NewProductPage() {
 
   return (
     <>
+      <AdminBackLink href="/admin/products" label="Products" />
       <h1>New Product</h1>
       <ProductCreateForm
         categories={categories}

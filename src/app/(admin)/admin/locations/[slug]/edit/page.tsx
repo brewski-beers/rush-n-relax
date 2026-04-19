@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
 import { getLocationBySlug } from '@/lib/repositories';
+import { AdminBackLink } from '@/components/admin/AdminBackLink';
 import { LocationEditForm } from './LocationEditForm';
 
 interface Props {
@@ -18,6 +19,7 @@ export default async function LocationEditPage({ params }: Props) {
 
   return (
     <>
+      <AdminBackLink href="/admin/locations" label="Locations" />
       <h1>Edit Location — {location.name}</h1>
       <LocationEditForm location={location} />
     </>
