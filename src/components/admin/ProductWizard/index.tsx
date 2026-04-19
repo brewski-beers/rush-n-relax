@@ -472,10 +472,9 @@ export function ProductWizardForm({
         }
         aria-hidden={isHidden(4)}
       >
-        <fieldset className="admin-fieldset">
-          <legend>Variants</legend>
-
-          {showStatusField && (
+        {showStatusField && (
+          <fieldset className="admin-fieldset">
+            <legend>Status</legend>
             <label>
               Status
               {product?.status === 'compliance-hold' ? (
@@ -504,24 +503,24 @@ export function ProductWizardForm({
                 </select>
               )}
             </label>
-          )}
+          </fieldset>
+        )}
 
-          {showNutritionFacts && (
-            <fieldset className="admin-fieldset">
-              <legend>Nutrition Facts</legend>
-              <span className="admin-hint">
-                Required fields: Serving Size, Servings Per Container, Calories.
-                Others are optional.
-              </span>
-              <NutritionFactsFields nutritionFacts={product?.nutritionFacts} />
-            </fieldset>
-          )}
+        {showNutritionFacts && (
+          <fieldset className="admin-fieldset">
+            <legend>Nutrition Facts</legend>
+            <span className="admin-hint">
+              Required fields: Serving Size, Servings Per Container, Calories.
+              Others are optional.
+            </span>
+            <NutritionFactsFields nutritionFacts={product?.nutritionFacts} />
+          </fieldset>
+        )}
 
-          <VariantEditor
-            initialGroups={product?.variantGroups ?? []}
-            variantTemplates={variantTemplates}
-          />
-        </fieldset>
+        <VariantEditor
+          initialGroups={product?.variantGroups ?? []}
+          variantTemplates={variantTemplates}
+        />
       </div>
 
       {/* ── Step 5: Images ─────────────────────────────────────── */}
