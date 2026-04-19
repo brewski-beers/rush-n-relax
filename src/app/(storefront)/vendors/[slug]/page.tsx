@@ -30,10 +30,12 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function VendorDetailPage({ params }: Props) {
   const { slug } = await params;
-  const [vendor, products] = await Promise.all([
+  const [vendor, productsPage] = await Promise.all([
     getVendorBySlug(slug),
     listProductsByVendor(slug),
   ]);
+
+  const { items: products } = productsPage;
 
   if (!vendor || !vendor.isActive) notFound();
 

@@ -9,10 +9,10 @@ import {
 const { domain } = seoConfig.site;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [locations, products, promos] = await Promise.all([
+  const [locations, productsPage, promosPage] = await Promise.all([
     listLocations(),
-    listProducts(),
-    listActivePromos(),
+    listProducts({ limit: 500 }),
+    listActivePromos({ limit: 500 }),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -49,6 +49,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: seoConfig.routes['/locations/[slug]'].priority,
     changeFrequency: seoConfig.routes['/locations/[slug]'].changefreq,
   }));
+
+  const { items: products } = productsPage;
+  const { items: promos } = promosPage;
 
   const productRoutes: MetadataRoute.Sitemap = products.map(product => ({
     url: `${domain}/products/${product.slug}`,

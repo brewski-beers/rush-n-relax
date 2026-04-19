@@ -15,7 +15,7 @@ interface ProductsGridProps {
 }
 
 export async function ProductsGrid({ category, rawPage }: ProductsGridProps) {
-  const onlineInventory = await listOnlineAvailableInventory();
+  const { items: onlineInventory } = await listOnlineAvailableInventory({ limit: 500 });
   const featuredIds = new Set(
     onlineInventory.filter(i => i.featured).map(i => i.productId)
   );

@@ -24,6 +24,8 @@ const {
     })),
     where: vi.fn().mockReturnThis(),
     orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    startAfter: vi.fn().mockReturnThis(),
     get: colGetMock,
   }));
 
@@ -330,8 +332,8 @@ describe('listProducts', () => {
 
       const result = await listProducts();
 
-      expect(result).toHaveLength(1);
-      expect(result[0].slug).toBe('blue-dream');
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].slug).toBe('blue-dream');
     });
   });
 
@@ -341,7 +343,8 @@ describe('listProducts', () => {
 
       const result = await listProducts();
 
-      expect(result).toEqual([]);
+      expect(result.items).toEqual([]);
+      expect(result.nextCursor).toBeNull();
     });
   });
 });
@@ -378,7 +381,7 @@ describe('listAllProducts', () => {
 
       const result = await listAllProducts();
 
-      expect(result).toHaveLength(2);
+      expect(result.items).toHaveLength(2);
     });
   });
 });
@@ -407,8 +410,8 @@ describe('listProductsByCategory', () => {
 
       const result = await listProductsByCategory('flower');
 
-      expect(result).toHaveLength(1);
-      expect(result[0].category).toBe('flower');
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].category).toBe('flower');
     });
   });
 
@@ -418,7 +421,7 @@ describe('listProductsByCategory', () => {
 
       const result = await listProductsByCategory('nonexistent');
 
-      expect(result).toEqual([]);
+      expect(result.items).toEqual([]);
     });
   });
 });
@@ -520,8 +523,8 @@ describe('listProducts — strain field on ProductSummary', () => {
 
       const result = await listProducts();
 
-      expect(result).toHaveLength(1);
-      expect(result[0].strain).toBe('sativa');
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].strain).toBe('sativa');
     });
   });
 
@@ -542,7 +545,7 @@ describe('listProducts — strain field on ProductSummary', () => {
 
       const result = await listProducts();
 
-      expect(result[0].strain).toBeUndefined();
+      expect(result.items[0].strain).toBeUndefined();
     });
   });
 });

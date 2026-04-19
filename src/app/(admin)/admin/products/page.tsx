@@ -5,10 +5,14 @@ import { requireRole } from '@/lib/admin-auth';
 import { listProducts } from '@/lib/repositories';
 import { ProductsTable } from './ProductsTable';
 
-export default async function AdminProductsPage() {
+interface Props {
+  searchParams: Promise<{ cursor?: string }>;
+}
+
+export default async function AdminProductsPage({ searchParams }: Props) {
   await requireRole('staff');
 
-  const products = await listProducts();
+  const { items: products, nextCursor } = await listProducts({ limit: 50, cursor: (await searchParams)?.cursor });
 
   return (
     <>

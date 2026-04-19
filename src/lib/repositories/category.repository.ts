@@ -3,6 +3,7 @@
  * Server-side only (uses firebase-admin).
  */
 import { FieldValue } from 'firebase-admin/firestore';
+import type { PageResult } from './types';
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type { ProductCategoryConfig, ProductCategorySummary } from '@/types';
 
@@ -17,24 +18,53 @@ function categoriesCol() {
 /**
  * List all active categories, ordered by `order` ASC.
  * Returns lightweight summaries for the storefront filter bar and product forms.
+ * Default limit: 50 — categories are a small set, no pagination needed in practice.
  */
-export async function listActiveCategories(): Promise<
-  ProductCategorySummary[]
-> {
-  const snap = await categoriesCol()
+export async function listActiveCategories(
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<ProductCategorySummary>> {
+  const limit = opts.limit ?? 50;
+  let query = categoriesCol()
     .where('isActive', '==', true)
     .orderBy('order')
-    .get();
+    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
 
-  return snap.docs.map(doc => docToCategorySummary(doc.id, doc.data()));
+  if (opts.cursor) {
+    const afterSnap = await categoriesCol().doc(opts.cursor).get();
+    if (afterSnap.exists) query = query.startAfter(afterSnap);
+  }
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => docToCategorySummary(doc.id, doc.data()));
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**
  * List all categories regardless of active status — admin use only.
+ * Default limit: 50 — categories are a small set, no pagination needed in practice.
  */
-export async function listAllCategories(): Promise<ProductCategoryConfig[]> {
-  const snap = await categoriesCol().orderBy('order').get();
-  return snap.docs.map(doc => docToCategory(doc.id, doc.data()));
+export async function listAllCategories(
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<ProductCategoryConfig>> {
+  const limit = opts.limit ?? 50;
+  let query = categoriesCol()
+    .orderBy('order')
+    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+
+  if (opts.cursor) {
+    const afterSnap = await categoriesCol().doc(opts.cursor).get();
+    if (afterSnap.exists) query = query.startAfter(afterSnap);
+  }
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => docToCategory(doc.id, doc.data()));
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**

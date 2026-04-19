@@ -12,11 +12,13 @@ import { ProductCreateForm } from './ProductCreateForm';
 export default async function NewProductPage() {
   await requireRole('staff');
 
-  const [categories, variantTemplates, vendors] = await Promise.all([
+  const [categoriesPage, variantTemplates, vendorsPage] = await Promise.all([
     listActiveCategories(),
     listVariantTemplates(),
     listVendors(),
   ]);
+  const { items: categories } = categoriesPage;
+  const { items: vendors } = vendorsPage;
 
   return (
     <>

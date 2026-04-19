@@ -6,10 +6,14 @@ import { listAllVendors } from '@/lib/repositories';
 import { ConfirmButton } from '@/components/admin/ConfirmButton';
 import { archiveVendor, restoreVendor } from './actions';
 
-export default async function AdminVendorsPage() {
+interface Props {
+  searchParams: Promise<{ cursor?: string }>;
+}
+
+export default async function AdminVendorsPage({ searchParams }: Props) {
   await requireRole('owner');
 
-  const vendors = await listAllVendors();
+  const { items: vendors, nextCursor } = await listAllVendors({ limit: 50, cursor: (await searchParams)?.cursor });
 
   return (
     <>

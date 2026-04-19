@@ -48,14 +48,14 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-  const [product, onlineInventory, onlineItem] = await Promise.all([
+  const [product, onlineInventoryPage, onlineItem] = await Promise.all([
     getProductBySlug(slug),
-    listOnlineAvailableInventory(),
+    listOnlineAvailableInventory({ limit: 500 }),
     getInventoryItem(ONLINE_LOCATION_ID, slug),
   ]);
   if (!product || product.status === 'archived') notFound();
 
-  const onlineSlugs = onlineInventory
+  const onlineSlugs = onlineInventoryPage.items
     .map(i => i.productId)
     .filter(id => id !== slug);
   const relatedProducts = (await listProductsByIds(onlineSlugs)).slice(0, 6);

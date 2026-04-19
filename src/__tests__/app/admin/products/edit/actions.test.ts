@@ -15,7 +15,7 @@ const {
   upsertProductMock: vi.fn().mockResolvedValue('test-product'),
   clearProductFieldsMock: vi.fn().mockResolvedValue(undefined),
   getProductBySlugMock: vi.fn(),
-  listActiveCategoriesMock: vi.fn().mockResolvedValue([]),
+  listActiveCategoriesMock: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
   revalidatePathMock: vi.fn(),
   redirectMock: vi.fn(),
 }));
@@ -98,9 +98,9 @@ function makeFormData(
 describe('updateProduct server action', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    listActiveCategoriesMock.mockResolvedValue([
+    listActiveCategoriesMock.mockResolvedValue({ items: [
       { slug: 'flower', label: 'Flower', order: 1 },
-    ]);
+    ], nextCursor: null });
   });
 
   describe('given a non-existent product slug', () => {
@@ -153,9 +153,9 @@ describe('updateProduct server action', () => {
     it('returns invalid-category error', async () => {
       stubAuthorisedActor();
       stubExistingProduct();
-      listActiveCategoriesMock.mockResolvedValue([
+      listActiveCategoriesMock.mockResolvedValue({ items: [
         { slug: 'edibles', label: 'Edibles', order: 2 },
-      ]);
+      ], nextCursor: null });
 
       const result = await updateProduct(
         'test-product',

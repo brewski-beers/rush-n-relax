@@ -46,7 +46,7 @@ export async function updateProduct(
     return { error: 'All required fields must be filled.' };
   }
 
-  const activeCategories = await listActiveCategories();
+  const { items: activeCategories } = await listActiveCategories();
   const selectedCategory = activeCategories.find(c => c.slug === category);
   if (!selectedCategory) {
     return { error: 'Invalid category.' };

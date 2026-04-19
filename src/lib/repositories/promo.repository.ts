@@ -4,6 +4,7 @@
  */
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type { Promo, PromoSummary } from '@/types';
+import type { PageResult } from './types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -11,14 +12,35 @@ function promosCol() {
   return getAdminFirestore().collection('promos');
 }
 
+// ── Pagination helpers ────────────────────────────────────────────────────
+
+async function resolveCursor(
+  cursor: string | undefined
+): Promise<FirebaseFirestore.DocumentSnapshot | undefined> {
+  if (!cursor) return undefined;
+  const snap = await promosCol().doc(cursor).get();
+  return snap.exists ? snap : undefined;
+}
+
 // ── Read operations ───────────────────────────────────────────────────────
 
 /**
  * List all promos regardless of active flag — admin use only.
+ * Default limit: 50 (admin context).
  */
-export async function listAllPromos(): Promise<PromoSummary[]> {
-  const snap = await promosCol().orderBy('name').get();
-  return snap.docs.map(doc => {
+export async function listAllPromos(
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<PromoSummary>> {
+  const limit = opts.limit ?? 50;
+  let query = promosCol()
+    .orderBy('name')
+    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
+
+  const afterSnap = await resolveCursor(opts.cursor);
+  if (afterSnap) query = query.startAfter(afterSnap);
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => {
     const d = doc.data();
     return {
       id: doc.id,
@@ -31,34 +53,48 @@ export async function listAllPromos(): Promise<PromoSummary[]> {
       locationSlug: d.locationSlug ?? undefined,
     } satisfies PromoSummary;
   });
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**
  * List all currently active promos.
- * "Active" = active flag is true AND endDate is either absent or in the future.
+ * "Active" = active flag is true AND endDate is in the future (Firestore-side filter).
+ * Default limit: 25 (storefront context).
  */
-export async function listActivePromos(): Promise<PromoSummary[]> {
-  const snap = await promosCol()
+export async function listActivePromos(
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<PromoSummary>> {
+  const limit = opts.limit ?? 25;
+  let query = promosCol()
     .where('active', '==', true)
-    .orderBy('name')
-    .get();
+    .where('endDate', '>', new Date())
+    .orderBy('endDate')
+    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
 
-  const now = new Date();
-  return snap.docs
-    .map(doc => {
-      const d = doc.data();
-      return {
-        id: doc.id,
-        slug: d.slug,
-        name: d.name,
-        tagline: d.tagline,
-        image: d.image ?? undefined,
-        active: d.active,
-        endDate: d.endDate ?? undefined,
-        locationSlug: d.locationSlug ?? undefined,
-      } satisfies PromoSummary;
-    })
-    .filter(p => !p.endDate || new Date(p.endDate) > now);
+  const afterSnap = await resolveCursor(opts.cursor);
+  if (afterSnap) query = query.startAfter(afterSnap);
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => {
+    const d = doc.data();
+    return {
+      id: doc.id,
+      slug: d.slug,
+      name: d.name,
+      tagline: d.tagline,
+      image: d.image ?? undefined,
+      active: d.active,
+      endDate: d.endDate ?? undefined,
+      locationSlug: d.locationSlug ?? undefined,
+    } satisfies PromoSummary;
+  });
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**
@@ -74,16 +110,23 @@ export async function getPromoBySlug(slug: string): Promise<Promo | null> {
 
 /**
  * Fetch promos for a specific location slug.
+ * Default limit: 25 (storefront context).
  */
 export async function getPromosByLocationSlug(
-  locationSlug: string
-): Promise<PromoSummary[]> {
-  const snap = await promosCol()
+  locationSlug: string,
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<PromoSummary>> {
+  const limit = opts.limit ?? 25;
+  let query = promosCol()
     .where('active', '==', true)
     .where('locationSlug', '==', locationSlug)
-    .get();
+    .limit(limit) as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
 
-  return snap.docs.map(doc => {
+  const afterSnap = await resolveCursor(opts.cursor);
+  if (afterSnap) query = query.startAfter(afterSnap);
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => {
     const d = doc.data();
     return {
       id: doc.id,
@@ -96,6 +139,10 @@ export async function getPromosByLocationSlug(
       locationSlug: d.locationSlug ?? undefined,
     } satisfies PromoSummary;
   });
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 // ── Write operations ──────────────────────────────────────────────────────

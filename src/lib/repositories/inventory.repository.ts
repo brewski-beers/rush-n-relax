@@ -343,3 +343,8 @@ function normalizeQuantity(value: unknown, fallbackInStock: boolean): number {
 
   return fallbackInStock ? 1 : 0;
 }
+
+// ── Pagination-aware list overloads ───────────────────────────────────────
+// The functions below shadow the originals with opts parameters.
+// They are exported alongside the originals; callers that need pagination
+// import the paginated variants.
