@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
 import { getCategoryBySlug } from '@/lib/repositories';
+import { AdminBackLink } from '@/components/admin/AdminBackLink';
 import { CategoryEditForm } from './CategoryEditForm';
 
 interface Props {
@@ -18,6 +19,7 @@ export default async function CategoryEditPage({ params }: Props) {
 
   return (
     <>
+      <AdminBackLink href="/admin/categories" label="Categories" />
       <h1>Edit Category — {category.label}</h1>
       <CategoryEditForm category={category} />
     </>

@@ -8,6 +8,7 @@ import {
   listInventoryForLocation,
 } from '@/lib/repositories';
 import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
+import { AdminBackLink } from '@/components/admin/AdminBackLink';
 import InventoryTable, { type InventoryRow } from './InventoryTable';
 
 interface Props {
@@ -54,6 +55,7 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
 
   return (
     <>
+      <AdminBackLink href="/admin/inventory" label="Inventory" />
       <div className="admin-page-header">
         <h1>Inventory — {locationLabel}</h1>
       </div>

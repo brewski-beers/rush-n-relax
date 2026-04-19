@@ -2375,3 +2375,18 @@
 .admin-table tr.admin-table-row--dragging {
   opacity: 0.45;
 }
+
+/* ── Admin back-link ─────────────────────────────────────────────────────── */
+.admin-back-link {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  color: var(--admin-accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.admin-back-link:hover {
+  color: var(--admin-accent-strong);
+}

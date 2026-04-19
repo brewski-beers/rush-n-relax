@@ -8,6 +8,7 @@ import {
   listVariantTemplates,
   listVendors,
 } from '@/lib/repositories';
+import { AdminBackLink } from '@/components/admin/AdminBackLink';
 import { ProductEditForm } from './ProductEditForm';
 
 interface Props {
@@ -29,6 +30,7 @@ export default async function ProductEditPage({ params }: Props) {
 
   return (
     <>
+      <AdminBackLink href="/admin/products" label="Products" />
       <h1>Edit Product — {product.name}</h1>
       <ProductEditForm
         product={product}
