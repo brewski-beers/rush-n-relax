@@ -10,7 +10,7 @@
  * Integration note: AgeChecker's public widget shape is loaded via their hosted
  * script. The onComplete callback receives { status, verificationId }.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import './AgeCheckerModal.css';
 
 export type AgeCheckOutcome =
@@ -44,7 +44,6 @@ const API_KEY = process.env.NEXT_PUBLIC_AGECHECKER_API_KEY ?? '';
 
 export function AgeCheckerModal({ open, onComplete, onClose }: Props) {
   const scriptLoaded = useRef(false);
-  const [testOutcome, setTestOutcome] = useState<'pass' | 'deny' | null>(null);
 
   useEffect(() => {
     if (!open || TEST_MODE) return;
@@ -95,23 +94,21 @@ export function AgeCheckerModal({ open, onComplete, onClose }: Props) {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => {
-                setTestOutcome('pass');
+              onClick={() =>
                 onComplete({
                   status: 'pass',
                   verificationId: `test-verify-${Date.now()}`,
-                });
-              }}
+                })
+              }
             >
               Simulate Pass
             </button>
             <button
               type="button"
               className="btn"
-              onClick={() => {
-                setTestOutcome('deny');
-                onComplete({ status: 'deny', reason: 'Simulated denial' });
-              }}
+              onClick={() =>
+                onComplete({ status: 'deny', reason: 'Simulated denial' })
+              }
             >
               Simulate Deny
             </button>
@@ -119,9 +116,6 @@ export function AgeCheckerModal({ open, onComplete, onClose }: Props) {
               Cancel
             </button>
           </div>
-          {testOutcome && (
-            <p className="agechecker-test-result">Outcome: {testOutcome}</p>
-          )}
         </div>
       </div>
     );

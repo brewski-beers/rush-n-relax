@@ -40,10 +40,3 @@
   flex: 1 1 auto;
   min-width: 0;
 }
-
-.agechecker-test-result {
-  margin-top: var(--space-sm);
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-subtle);
-}
