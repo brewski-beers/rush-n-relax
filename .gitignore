@@ -66,7 +66,6 @@ scripts/catalog-seed-data.json
 .vite/
 
 # Package managers
-pnpm-lock.yaml
 yarn.lock
 
 # Build cache
