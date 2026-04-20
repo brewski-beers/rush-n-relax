@@ -2,6 +2,7 @@
  * Product repository — all Firestore access for product documents.
  * Server-side only (uses firebase-admin).
  */
+import { cache } from 'react';
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type {
   Product,
@@ -41,9 +42,7 @@ export async function listAllProducts(
   opts: { limit?: number; cursor?: string } = {}
 ): Promise<PageResult<ProductSummary>> {
   const limit = opts.limit ?? 50;
-  let query = productsCol()
-    .orderBy('name')
-    .limit(limit);
+  let query = productsCol().orderBy('name').limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);
@@ -154,14 +153,18 @@ export async function listProductsByCategory(
 /**
  * Fetch a single product by slug.
  * Returns null if not found.
+ * Wrapped with React cache() to deduplicate parallel calls within the same
+ * request (e.g. generateMetadata + page component both reading the same slug).
  */
-export async function getProductBySlug(slug: string): Promise<Product | null> {
-  const doc = await productsCol().doc(slug).get();
-  if (!doc.exists) return null;
-  const data = doc.data();
-  if (!data) return null;
-  return docToProduct(doc.id, data);
-}
+export const getProductBySlug = cache(
+  async (slug: string): Promise<Product | null> => {
+    const doc = await productsCol().doc(slug).get();
+    if (!doc.exists) return null;
+    const data = doc.data();
+    if (!data) return null;
+    return docToProduct(doc.id, data);
+  }
+);
 
 /**
  * List active products for a given vendor slug.

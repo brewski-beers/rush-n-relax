@@ -2,6 +2,7 @@
  * Promo repository — all Firestore access for promotion documents.
  * Server-side only (uses firebase-admin).
  */
+import { cache } from 'react';
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type { Promo, PromoSummary } from '@/types';
 import type { PageResult } from './types';
@@ -32,9 +33,7 @@ export async function listAllPromos(
   opts: { limit?: number; cursor?: string } = {}
 ): Promise<PageResult<PromoSummary>> {
   const limit = opts.limit ?? 50;
-  let query = promosCol()
-    .orderBy('name')
-    .limit(limit);
+  let query = promosCol().orderBy('name').limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);
@@ -100,13 +99,17 @@ export async function listActivePromos(
 /**
  * Fetch a single promo by slug.
  * Returns null if not found.
+ * Wrapped with React cache() to deduplicate parallel calls within the same
+ * request (e.g. generateMetadata + page component both reading the same slug).
  */
-export async function getPromoBySlug(slug: string): Promise<Promo | null> {
-  const doc = await promosCol().doc(slug).get();
-  if (!doc.exists) return null;
-  // doc.data() is safe here: existence is confirmed on the line above
-  return docToPromo(doc.id, doc.data()!);
-}
+export const getPromoBySlug = cache(
+  async (slug: string): Promise<Promo | null> => {
+    const doc = await promosCol().doc(slug).get();
+    if (!doc.exists) return null;
+    // doc.data() is safe here: existence is confirmed on the line above
+    return docToPromo(doc.id, doc.data()!);
+  }
+);
 
 /**
  * Fetch promos for a specific location slug.
