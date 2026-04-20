@@ -2404,3 +2404,195 @@
 .admin-back-link:hover {
   color: var(--admin-accent-strong);
 }
+
+/* ============================================================
+   PRODUCT IMAGE UPLOAD
+   Admin-only upload widget for featured + gallery images.
+   Uses only --admin-* CSS custom properties.
+   Ported from ProductImageUpload.css (#184).
+   ============================================================ */
+
+/* Programmatically-triggered file input — visually hidden, not in tab order */
+.img-upload-file-input-hidden {
+  display: none;
+}
+
+/* Section wrapper — provides bottom spacing between featured and gallery */
+.img-upload-featured-section {
+  margin-bottom: var(--admin-img-upload-section-margin);
+}
+
+/* Drop zones */
+.img-upload-featured-zone {
+  border: 2px dashed var(--admin-border-strong);
+  border-radius: 12px;
+  background: var(--admin-field-bg);
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.img-upload-featured-zone--dragover {
+  border-color: var(--admin-accent);
+  background: var(--admin-img-upload-dragover-bg);
+}
+
+.img-upload-zone-label {
+  color: var(--admin-text-subtle);
+  font-size: 0.88rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Gallery strip */
+.img-upload-gallery {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--admin-img-upload-gallery-gap);
+}
+
+/* Individual slots */
+.img-upload-slot {
+  aspect-ratio: 1;
+  border: 2px dashed var(--admin-border-strong);
+  border-radius: 10px;
+  background: var(--admin-field-bg);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.img-upload-slot--dragover {
+  border-color: var(--admin-accent);
+  background: var(--admin-img-upload-dragover-bg);
+}
+
+.img-upload-slot--dragging {
+  opacity: 0.55;
+}
+
+.img-upload-slot img,
+.img-upload-featured-zone img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Overlay on hover */
+.img-upload-slot-overlay,
+.img-upload-featured-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--admin-img-upload-overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.img-upload-slot:hover .img-upload-slot-overlay,
+.img-upload-featured-zone:hover .img-upload-featured-overlay {
+  opacity: 1;
+}
+
+/* Drag handle — mirrors .dashboard-card-handle */
+.img-upload-slot-handle {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  z-index: 2;
+  background: var(--admin-img-upload-handle-bg);
+  border: var(--admin-img-upload-handle-border);
+  border-radius: 6px;
+  color: var(--admin-text-subtle);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-img-upload-handle-padding);
+}
+
+.img-upload-slot-handle:active {
+  cursor: grabbing;
+}
+
+/* Remove button */
+.img-upload-remove-btn {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 2;
+  background: var(--admin-img-upload-remove-bg);
+  border: var(--admin-img-upload-remove-border);
+  border-radius: 50%;
+  color: var(--admin-error-text);
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0;
+}
+
+/* Remove button modifier — adds left gap when displayed inline next to Replace */
+.img-upload-remove-btn--featured {
+  margin-left: var(--admin-img-upload-remove-margin);
+}
+
+/* Spinner */
+.img-upload-spinner-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--admin-img-upload-overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.img-upload-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--admin-img-upload-spinner-track);
+  border-top-color: var(--admin-accent);
+  border-radius: 50%;
+  animation: img-upload-spin 0.7s linear infinite;
+}
+
+@keyframes img-upload-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Empty slot "+" label */
+.img-upload-slot-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--admin-text-subtle);
+  font-size: 1.25rem;
+}
+
+/* Error text */
+.img-upload-error {
+  color: var(--admin-error-text);
+  font-size: 0.78rem;
+  margin-top: var(--admin-img-upload-error-margin);
+}
