@@ -207,6 +207,16 @@
   --admin-leafly-view-bg-hover: #2e7d32;
   --admin-cat-drag-col-width: 2.5rem;
 
+  /* Background gradient stops */
+  --admin-bg-gradient-top: #04070d;
+  --admin-bg-gradient-mid: #0a121f;
+  --admin-bg-gradient-bottom: #070c16;
+
+  /* Inline warn toast */
+  --admin-warn-text: #92400e;
+  --admin-warn-bg: #fef3c7;
+  --admin-warn-border: #fcd34d;
+
   position: relative;
   min-height: 100vh;
   background:
@@ -220,7 +230,12 @@
       rgba(70, 103, 169, 0.22) 0%,
       rgba(70, 103, 169, 0) 68%
     ),
-    linear-gradient(180deg, #04070d 0%, #0a121f 45%, #070c16 100%);
+    linear-gradient(
+      180deg,
+      var(--admin-bg-gradient-top) 0%,
+      var(--admin-bg-gradient-mid) 45%,
+      var(--admin-bg-gradient-bottom) 100%
+    );
   color: var(--admin-text);
   font-family: var(
     --font-ui,
@@ -1340,9 +1355,9 @@
 }
 
 .admin-inline-toast {
-  color: var(--admin-warn-text, #92400e);
-  background: var(--admin-warn-bg, #fef3c7);
-  border: 1px solid var(--admin-warn-border, #fcd34d);
+  color: var(--admin-warn-text);
+  background: var(--admin-warn-bg);
+  border: 1px solid var(--admin-warn-border);
   border-radius: 4px;
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
