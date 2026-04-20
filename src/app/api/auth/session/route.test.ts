@@ -187,6 +187,51 @@ describe('auth session route', () => {
     expect(createSessionCookieMock).not.toHaveBeenCalled();
   });
 
+  it('sets Cache-Control: no-store on successful session creation (POST 200)', async () => {
+    verifyIdTokenMock.mockResolvedValue({
+      uid: 'owner-uid',
+      email: 'owner@rushnrelax.com',
+      role: 'owner',
+    });
+    createSessionCookieMock.mockResolvedValue('session-cookie-value');
+
+    const response = await POST(createPostRequest('valid-token'));
+
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+  });
+
+  it('sets Cache-Control: no-store on 403 rejection (POST)', async () => {
+    verifyIdTokenMock.mockResolvedValue({
+      uid: 'customer-uid',
+      email: 'customer@example.com',
+      role: 'customer',
+    });
+
+    const response = await POST(createPostRequest('customer-token'));
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+  });
+
+  it('sets Cache-Control: no-store on 400 bad body (POST)', async () => {
+    const req = new Request('http://localhost/api/auth/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    const response = await POST(req);
+
+    expect(response.status).toBe(400);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+  });
+
+  it('sets Cache-Control: no-store on DELETE', () => {
+    const response = DELETE();
+
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+  });
+
   it('clears the session cookie on delete', () => {
     const response = DELETE();
     const cookie = response.headers.get('Set-Cookie') ?? '';
