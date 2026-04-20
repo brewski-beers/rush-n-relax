@@ -2,11 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/useCart';
 import { formatCents } from '@/utils/currency';
 import { LOCATIONS } from '@/constants/locations';
+import {
+  AgeCheckerModal,
+  type AgeCheckOutcome,
+} from '@/components/AgeCheckerModal/AgeCheckerModal';
+import { SHIPPING_STATES, canShipToState } from '@/constants/shipping';
+import type { ShippingAddress } from '@/types';
 
-type FulfillmentType = 'pickup' | 'ship';
+type FulfillmentType = 'pickup' | 'shipping';
 
 interface LocationAvailability {
   available: boolean;
@@ -17,22 +24,36 @@ interface AvailabilityResult {
   locations: Record<string, LocationAvailability>;
 }
 
-// Retail-only slugs from LOCATIONS (excludes hub/online virtuals)
 const RETAIL_LOCATION_SLUGS = new Set(LOCATIONS.map(l => l.slug));
 
+const EMPTY_ADDRESS: ShippingAddress = {
+  name: '',
+  line1: '',
+  line2: '',
+  city: '',
+  state: '',
+  zip: '',
+};
+
 export default function CartPage() {
+  const router = useRouter();
   const { items, removeItem, updateQty, subtotal, clearCart } = useCart();
   const [fulfillment, setFulfillment] = useState<FulfillmentType | null>(null);
   const [pickupLocation, setPickupLocation] = useState<string>('');
+  const [shippingAddress, setShippingAddress] =
+    useState<ShippingAddress>(EMPTY_ADDRESS);
+  const [email, setEmail] = useState('');
 
-  // Pickup availability state
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityResult | null>(
     null
   );
   const [availabilityError, setAvailabilityError] = useState(false);
 
-  // Eligible pickup locations — those where all items are available
+  const [ageCheckOpen, setAgeCheckOpen] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
   const eligibleLocations = LOCATIONS.filter(
     loc =>
       RETAIL_LOCATION_SLUGS.has(loc.slug) &&
@@ -53,7 +74,7 @@ export default function CartPage() {
         `/api/cart/availability?items=${encodeURIComponent(JSON.stringify(payload))}`
       );
       if (!res.ok) throw new Error('Availability check failed');
-      const data = (await res.json()) as AvailabilityResult; // external API response, safe cast
+      const data = (await res.json()) as AvailabilityResult;
       setAvailability(data);
     } catch {
       setAvailabilityError(true);
@@ -62,16 +83,103 @@ export default function CartPage() {
     }
   }, [items]);
 
-  // Fetch availability whenever user selects pickup
   useEffect(() => {
     if (fulfillment === 'pickup') {
       void checkAvailability();
     }
   }, [fulfillment, checkAvailability]);
 
+  const shippingStateAllowed =
+    fulfillment !== 'shipping' ||
+    (shippingAddress.state !== '' && canShipToState(shippingAddress.state));
+
+  const shippingAddressComplete =
+    fulfillment !== 'shipping' ||
+    (shippingAddress.name &&
+      shippingAddress.line1 &&
+      shippingAddress.city &&
+      shippingAddress.state &&
+      shippingAddress.zip);
+
   const canCheckout =
-    fulfillment === 'ship' ||
-    (fulfillment === 'pickup' && pickupLocation !== '');
+    (fulfillment === 'pickup' && pickupLocation !== '') ||
+    (fulfillment === 'shipping' &&
+      shippingStateAllowed &&
+      shippingAddressComplete);
+
+  const TAX_RATE = 0.0925;
+  const taxEstimate = Math.round(subtotal * TAX_RATE);
+  const total = subtotal + taxEstimate;
+
+  function startCheckout() {
+    setCheckoutError(null);
+    setAgeCheckOpen(true);
+  }
+
+  const handleAgeResult = useCallback(
+    async (result: AgeCheckOutcome) => {
+      setAgeCheckOpen(false);
+      if (result.status === 'deny') {
+        setCheckoutError(result.reason || 'ID verification failed.');
+        return;
+      }
+
+      setCheckoutLoading(true);
+      try {
+        const locationId = fulfillment === 'pickup' ? pickupLocation : 'online';
+        const orderItems = items.map(i => ({
+          productId: i.productId,
+          productName: i.name,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          lineTotal: i.unitPrice * i.quantity,
+        }));
+
+        const res = await fetch('/api/checkout/session', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            items: orderItems,
+            subtotal,
+            tax: taxEstimate,
+            total,
+            locationId,
+            fulfillmentType: fulfillment,
+            ageVerificationId: result.verificationId,
+            customerEmail: email || undefined,
+            shippingAddress:
+              fulfillment === 'shipping' ? shippingAddress : undefined,
+          }),
+        });
+        const data = (await res.json()) as {
+          redirectUrl?: string;
+          error?: string;
+        };
+        if (!res.ok || !data.redirectUrl) {
+          setCheckoutError(data.error ?? 'Checkout failed.');
+          return;
+        }
+        clearCart();
+        router.push(data.redirectUrl);
+      } catch {
+        setCheckoutError('Network error. Please try again.');
+      } finally {
+        setCheckoutLoading(false);
+      }
+    },
+    [
+      fulfillment,
+      pickupLocation,
+      items,
+      subtotal,
+      taxEstimate,
+      total,
+      shippingAddress,
+      email,
+      clearCart,
+      router,
+    ]
+  );
 
   if (items.length === 0) {
     return (
@@ -89,17 +197,12 @@ export default function CartPage() {
     );
   }
 
-  // Tax placeholder — real computation is server-side at checkout
-  const TAX_RATE = 0.0925;
-  const taxEstimate = Math.round(subtotal * TAX_RATE);
-
   return (
     <main className="cart-page">
       <div className="container">
         <h1>Your Cart</h1>
 
         <div className="cart-layout">
-          {/* ── Cart Items ──────────────────────────────────────── */}
           <section
             className="cart-items-section cart-items-card"
             aria-label="Cart items"
@@ -110,7 +213,6 @@ export default function CartPage() {
                   key={`${item.productId}::${item.variantId}`}
                   className="cart-item"
                 >
-                  {/* Thumbnail */}
                   {item.image && (
                     <img
                       src={item.image}
@@ -119,7 +221,6 @@ export default function CartPage() {
                     />
                   )}
 
-                  {/* Details — name + variant + unit price */}
                   <div className="cart-item-details">
                     <p className="cart-item-name">{item.name}</p>
                     {item.variantLabel && (
@@ -130,7 +231,6 @@ export default function CartPage() {
                     </p>
                   </div>
 
-                  {/* Right column — line total + stepper */}
                   <div className="cart-item-right">
                     <p className="cart-item-total">
                       {formatCents(item.unitPrice * item.quantity)}
@@ -178,7 +278,6 @@ export default function CartPage() {
             </ul>
           </section>
 
-          {/* ── Order Summary + Fulfillment ──────────────────────── */}
           <aside className="cart-summary">
             <h2>Order Summary</h2>
             <dl className="cart-summary-lines">
@@ -192,11 +291,10 @@ export default function CartPage() {
               </div>
               <div className="cart-summary-row cart-summary-total">
                 <dt>Estimated Total</dt>
-                <dd>{formatCents(subtotal + taxEstimate)}</dd>
+                <dd>{formatCents(total)}</dd>
               </div>
             </dl>
 
-            {/* Fulfillment Selector */}
             <fieldset className="cart-fulfillment">
               <legend>How would you like your order?</legend>
               <div className="cart-fulfillment-options">
@@ -214,9 +312,9 @@ export default function CartPage() {
                 </button>
                 <button
                   type="button"
-                  className={`cart-fulfillment-card${fulfillment === 'ship' ? ' cart-fulfillment-card--active' : ''}`}
-                  aria-pressed={fulfillment === 'ship'}
-                  onClick={() => setFulfillment('ship')}
+                  className={`cart-fulfillment-card${fulfillment === 'shipping' ? ' cart-fulfillment-card--active' : ''}`}
+                  aria-pressed={fulfillment === 'shipping'}
+                  onClick={() => setFulfillment('shipping')}
                 >
                   <span className="cart-fulfillment-icon" aria-hidden="true">
                     📦
@@ -227,13 +325,11 @@ export default function CartPage() {
               </div>
             </fieldset>
 
-            {/* Pickup location section */}
             {fulfillment === 'pickup' && (
               <div className="cart-pickup-location">
                 {availabilityLoading && (
                   <p className="cart-pickup-status">Checking availability…</p>
                 )}
-
                 {!availabilityLoading && availabilityError && (
                   <p className="cart-pickup-status cart-pickup-status--error">
                     Couldn&apos;t check availability.{' '}
@@ -246,7 +342,6 @@ export default function CartPage() {
                     </button>
                   </p>
                 )}
-
                 {!availabilityLoading && availability && (
                   <>
                     {eligibleLocations.length === 0 ? (
@@ -277,13 +372,114 @@ export default function CartPage() {
               </div>
             )}
 
+            {fulfillment === 'shipping' && (
+              <div className="cart-shipping-form">
+                <label htmlFor="ship-name">Full name</label>
+                <input
+                  id="ship-name"
+                  value={shippingAddress.name}
+                  onChange={e =>
+                    setShippingAddress({
+                      ...shippingAddress,
+                      name: e.target.value,
+                    })
+                  }
+                />
+                <label htmlFor="ship-line1">Street address</label>
+                <input
+                  id="ship-line1"
+                  value={shippingAddress.line1}
+                  onChange={e =>
+                    setShippingAddress({
+                      ...shippingAddress,
+                      line1: e.target.value,
+                    })
+                  }
+                />
+                <label htmlFor="ship-line2">Apt / Suite (optional)</label>
+                <input
+                  id="ship-line2"
+                  value={shippingAddress.line2 ?? ''}
+                  onChange={e =>
+                    setShippingAddress({
+                      ...shippingAddress,
+                      line2: e.target.value,
+                    })
+                  }
+                />
+                <label htmlFor="ship-city">City</label>
+                <input
+                  id="ship-city"
+                  value={shippingAddress.city}
+                  onChange={e =>
+                    setShippingAddress({
+                      ...shippingAddress,
+                      city: e.target.value,
+                    })
+                  }
+                />
+                <label htmlFor="ship-state">State</label>
+                <select
+                  id="ship-state"
+                  value={shippingAddress.state}
+                  onChange={e =>
+                    setShippingAddress({
+                      ...shippingAddress,
+                      state: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">— Select —</option>
+                  {SHIPPING_STATES.map(s => (
+                    <option key={s.code} value={s.code} disabled={!s.allowed}>
+                      {s.name}
+                      {!s.allowed ? ' — not available' : ''}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="ship-zip">ZIP</label>
+                <input
+                  id="ship-zip"
+                  value={shippingAddress.zip}
+                  onChange={e =>
+                    setShippingAddress({
+                      ...shippingAddress,
+                      zip: e.target.value,
+                    })
+                  }
+                />
+                {shippingAddress.state &&
+                  !canShipToState(shippingAddress.state) && (
+                    <p className="cart-shipping-blocked">
+                      We can&apos;t ship to this state. Please choose pickup or
+                      a different address.
+                    </p>
+                  )}
+              </div>
+            )}
+
+            <label htmlFor="cart-email">Email (for receipt)</label>
+            <input
+              id="cart-email"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+            />
+
+            {checkoutError && (
+              <p className="cart-checkout-error" role="alert">
+                {checkoutError}
+              </p>
+            )}
+
             <button
               type="button"
               className="btn btn-primary cart-checkout-btn"
-              disabled={!canCheckout}
-              aria-disabled={!canCheckout}
+              disabled={!canCheckout || checkoutLoading}
+              aria-disabled={!canCheckout || checkoutLoading}
+              onClick={startCheckout}
             >
-              Proceed to Checkout
+              {checkoutLoading ? 'Processing…' : 'Verify ID & Checkout'}
             </button>
 
             <button
@@ -295,6 +491,12 @@ export default function CartPage() {
             </button>
           </aside>
         </div>
+
+        <AgeCheckerModal
+          open={ageCheckOpen}
+          onComplete={r => void handleAgeResult(r)}
+          onClose={() => setAgeCheckOpen(false)}
+        />
       </div>
     </main>
   );
