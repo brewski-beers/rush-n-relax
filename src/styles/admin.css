@@ -1359,9 +1359,9 @@
   background: var(--admin-warn-bg);
   border: 1px solid var(--admin-warn-border);
   border-radius: 4px;
-  padding: 0.25rem 0.5rem;
+  padding: calc(var(--space-xs) / 2) var(--space-xs);
   font-size: 0.8rem;
-  margin-left: 0.5rem;
+  margin-left: var(--space-xs);
 }
 
 .admin-input--inline {

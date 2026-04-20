@@ -19,6 +19,7 @@ Operating procedure for taking rushnrelax.com live. Follow in order. Do not skip
 - [ ] Legal pages live: `/terms`, `/privacy`, `/shipping`
 - [ ] AgeChecker dashboard: `rushnrelax.com` domain added, webhook URL set, test mode OFF
 - [ ] Clover sandbox keys received and swapped in (assumes Monday delivery)
+- [ ] **Resend API key rotated to new RnR account** — generate key, `firebase functions:secrets:set RESEND_API_KEY`, verify sender domain (SPF/DKIM in Cloudflare), redeploy functions, revoke personal-account key after smoke test confirms `outbound-emails/{jobId}` → `status: sent`
 
 ### Final env var audit
 

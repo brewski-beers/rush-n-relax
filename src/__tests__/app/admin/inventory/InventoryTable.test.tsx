@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 
 const { updateInventoryItemMock, routerRefreshMock } = vi.hoisted(() => ({
   updateInventoryItemMock: vi.fn(),
@@ -72,7 +78,14 @@ describe('InventoryTable — qty=0 cascade toast (issue #198)', () => {
     it('does not show the toast (nothing cascaded)', async () => {
       render(
         <InventoryTable
-          rows={[baseRow({ quantity: 3, availableOnline: false, availablePickup: false, featured: false })]}
+          rows={[
+            baseRow({
+              quantity: 3,
+              availableOnline: false,
+              availablePickup: false,
+              featured: false,
+            }),
+          ]}
           locationId="hub"
           isOnline
         />
@@ -112,7 +125,15 @@ describe('InventoryTable — qty=0 cascade toast (issue #198)', () => {
     it('does NOT auto-restore availability flags (server remains source of truth)', async () => {
       render(
         <InventoryTable
-          rows={[baseRow({ quantity: 0, inStock: false, availableOnline: false, availablePickup: false, featured: false })]}
+          rows={[
+            baseRow({
+              quantity: 0,
+              inStock: false,
+              availableOnline: false,
+              availablePickup: false,
+              featured: false,
+            }),
+          ]}
           locationId="hub"
           isOnline
         />

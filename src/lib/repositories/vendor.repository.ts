@@ -2,6 +2,7 @@
  * Vendor repository — all Firestore access for vendor documents.
  * Server-side only (uses firebase-admin).
  */
+import { cache } from 'react';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type { Vendor, VendorSummary } from '@/types';
@@ -57,9 +58,7 @@ export async function listAllVendors(
   opts: { limit?: number; cursor?: string } = {}
 ): Promise<PageResult<VendorSummary>> {
   const limit = opts.limit ?? 50;
-  let query = vendorsCol()
-    .orderBy('name')
-    .limit(limit);
+  let query = vendorsCol().orderBy('name').limit(limit);
 
   const afterSnap = await resolveCursor(opts.cursor);
   if (afterSnap) query = query.startAfter(afterSnap);
@@ -75,14 +74,18 @@ export async function listAllVendors(
 /**
  * Fetch a single vendor by slug.
  * Returns null if not found.
+ * Wrapped with React cache() to deduplicate parallel calls within the same
+ * request (e.g. generateMetadata + page component both reading the same slug).
  */
-export async function getVendorBySlug(slug: string): Promise<Vendor | null> {
-  const doc = await vendorsCol().doc(slug).get();
-  if (!doc.exists) return null;
-  const data = doc.data();
-  if (!data) return null;
-  return docToVendor(doc.id, data);
-}
+export const getVendorBySlug = cache(
+  async (slug: string): Promise<Vendor | null> => {
+    const doc = await vendorsCol().doc(slug).get();
+    if (!doc.exists) return null;
+    const data = doc.data();
+    if (!data) return null;
+    return docToVendor(doc.id, data);
+  }
+);
 
 // ── Write operations ──────────────────────────────────────────────────────
 
