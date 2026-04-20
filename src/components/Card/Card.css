@@ -82,7 +82,6 @@ a.rnr-card:focus-visible {
 
 .rnr-card--product {
   padding: var(--card-padding);
-  backdrop-filter: blur(8px);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   display: flex;
@@ -127,7 +126,6 @@ a.rnr-card:focus-visible {
 
 .rnr-card--product-small {
   padding: var(--card-padding);
-  backdrop-filter: blur(8px);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   display: flex;
@@ -168,7 +166,6 @@ a.rnr-card:focus-visible {
 
 .rnr-card--location {
   padding: var(--card-padding);
-  backdrop-filter: blur(8px);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
 }
@@ -200,7 +197,6 @@ a.rnr-card:focus-visible {
 
 .rnr-card--info {
   padding: var(--card-padding);
-  backdrop-filter: blur(8px);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
 }
@@ -267,7 +263,6 @@ a.rnr-card:focus-visible {
 .rnr-card--value {
   padding: var(--card-padding);
   text-align: center;
-  backdrop-filter: blur(8px);
   background-color: var(--color-surface-anchor);
   border: 1px solid var(--color-border-anchor-soft);
   border-radius: 0.5rem;

@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import {
   getProductBySlug,
-  listOnlineAvailableInventory,
-  listProductsByIds,
   getInventoryItem,
+  getOnlineInStockSet,
+  getRelatedProducts,
 } from '@/lib/repositories';
 import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 import { getAdminStorage } from '@/lib/firebase/admin';
@@ -48,17 +48,25 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-  const [product, onlineInventory, onlineItem] = await Promise.all([
+  const [product, onlineItem] = await Promise.all([
     getProductBySlug(slug),
-    listOnlineAvailableInventory(),
     getInventoryItem(ONLINE_LOCATION_ID, slug),
   ]);
   if (!product || product.status === 'archived') notFound();
 
-  const onlineSlugs = onlineInventory
-    .map(i => i.productId)
-    .filter(id => id !== slug);
-  const relatedProducts = (await listProductsByIds(onlineSlugs)).slice(0, 6);
+  // Fetch more candidates than needed so we can drop any that aren't currently
+  // online + in stock without ending up with an empty strip.
+  const relatedCandidates = await getRelatedProducts(
+    slug,
+    product.category,
+    12
+  );
+  const relatedOnlineIds = await getOnlineInStockSet(
+    relatedCandidates.map(p => p.id)
+  );
+  const relatedProducts = relatedCandidates
+    .filter(p => relatedOnlineIds.has(p.id))
+    .slice(0, 6);
 
   // Resolve hero image URL server-side to avoid client-side Firebase Storage
   // getDownloadURL round-trip, which blocks LCP by 1–3s.

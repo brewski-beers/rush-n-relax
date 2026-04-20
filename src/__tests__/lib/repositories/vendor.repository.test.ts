@@ -25,6 +25,8 @@ const {
     doc: vi.fn((id: string) => makeDocRef(id)),
     where: vi.fn().mockReturnThis(),
     orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    startAfter: vi.fn().mockReturnThis(),
     get: vi.fn(() => snapDocsMock() as unknown),
   }));
 
@@ -106,7 +108,7 @@ describe('listVendors', () => {
         ],
       });
 
-      const vendors = await listVendors();
+      const { items: vendors } = await listVendors();
       expect(vendors).toHaveLength(2);
       expect(vendors[0].slug).toBe('acme');
       expect(vendors[1].name).toBe('Beta');
@@ -116,7 +118,7 @@ describe('listVendors', () => {
   describe('given no vendors', () => {
     it('returns an empty array', async () => {
       snapDocsMock.mockReturnValue({ docs: [] });
-      const vendors = await listVendors();
+      const { items: vendors } = await listVendors();
       expect(vendors).toEqual([]);
     });
   });
@@ -146,7 +148,7 @@ describe('listAllVendors', () => {
         ],
       });
 
-      const vendors = await listAllVendors();
+      const { items: vendors } = await listAllVendors();
       expect(vendors).toHaveLength(2);
     });
   });

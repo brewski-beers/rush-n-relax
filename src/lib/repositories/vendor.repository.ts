@@ -5,6 +5,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type { Vendor, VendorSummary } from '@/types';
+import type { PageResult } from './types';
 
 // ── Collection helpers ────────────────────────────────────────────────────
 
@@ -12,26 +13,63 @@ function vendorsCol() {
   return getAdminFirestore().collection('vendors');
 }
 
+// ── Pagination helpers ────────────────────────────────────────────────────
+
+async function resolveCursor(
+  cursor: string | undefined
+): Promise<FirebaseFirestore.DocumentSnapshot | undefined> {
+  if (!cursor) return undefined;
+  const snap = await vendorsCol().doc(cursor).get();
+  return snap.exists ? snap : undefined;
+}
+
 // ── Read operations ───────────────────────────────────────────────────────
 
 /**
  * List all active vendors, ordered by name.
+ * Default limit: 25 (storefront context).
  */
-export async function listVendors(): Promise<VendorSummary[]> {
-  const snap = await vendorsCol()
+export async function listVendors(
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<VendorSummary>> {
+  const limit = opts.limit ?? 25;
+  let query = vendorsCol()
     .where('isActive', '==', true)
     .orderBy('name')
-    .get();
+    .limit(limit);
 
-  return snap.docs.map(doc => docToVendorSummary(doc.id, doc.data()));
+  const afterSnap = await resolveCursor(opts.cursor);
+  if (afterSnap) query = query.startAfter(afterSnap);
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => docToVendorSummary(doc.id, doc.data()));
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**
  * List all vendors regardless of active status — admin use only.
+ * Default limit: 50 (admin context).
  */
-export async function listAllVendors(): Promise<VendorSummary[]> {
-  const snap = await vendorsCol().orderBy('name').get();
-  return snap.docs.map(doc => docToVendorSummary(doc.id, doc.data()));
+export async function listAllVendors(
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<VendorSummary>> {
+  const limit = opts.limit ?? 50;
+  let query = vendorsCol()
+    .orderBy('name')
+    .limit(limit);
+
+  const afterSnap = await resolveCursor(opts.cursor);
+  if (afterSnap) query = query.startAfter(afterSnap);
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => docToVendorSummary(doc.id, doc.data()));
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }
 
 /**

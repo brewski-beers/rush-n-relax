@@ -9,7 +9,7 @@ import { destroyPromo } from './actions';
 export default async function AdminPromosPage() {
   await requireRole('owner');
 
-  const promos = await listAllPromos();
+  const { items: promos } = await listAllPromos();
 
   return (
     <>

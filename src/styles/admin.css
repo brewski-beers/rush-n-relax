@@ -106,6 +106,8 @@
   --admin-checkbox-gap: 0.5rem;
   --admin-checkbox-margin-bottom: 0.6rem;
   --admin-form-actions-gap: 0.8rem;
+  --admin-back-link-margin-bottom: 0.75rem;
+  --admin-back-link-font-size: 0.875rem;
   --admin-error-bg: rgba(255, 127, 148, 0.12);
   --admin-error-border: 1px solid rgba(255, 127, 148, 0.45);
   --admin-error-text: #ffc5ce;

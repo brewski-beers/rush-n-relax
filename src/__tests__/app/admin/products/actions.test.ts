@@ -14,7 +14,7 @@ const {
   setProductStatusMock: vi.fn().mockResolvedValue(undefined),
   upsertVariantTemplateMock: vi.fn().mockResolvedValue('template-id'),
   deleteVariantTemplateMock: vi.fn().mockResolvedValue(undefined),
-  listArchivedProductsMock: vi.fn().mockResolvedValue([]),
+  listArchivedProductsMock: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
   revalidatePathMock: vi.fn(),
 }));
 
@@ -177,7 +177,7 @@ describe('fetchArchivedProductsAction', () => {
           availableAt: [],
         },
       ];
-      listArchivedProductsMock.mockResolvedValue(archived);
+      listArchivedProductsMock.mockResolvedValue({ items: archived, nextCursor: null });
 
       const result = await fetchArchivedProductsAction();
 
@@ -187,7 +187,7 @@ describe('fetchArchivedProductsAction', () => {
 
     it('returns an empty array when no archived products exist', async () => {
       stubAuthorisedActor();
-      listArchivedProductsMock.mockResolvedValue([]);
+      listArchivedProductsMock.mockResolvedValue({ items: [], nextCursor: null });
 
       const result = await fetchArchivedProductsAction();
 

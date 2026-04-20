@@ -51,7 +51,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Online-visible products — matches ExploreMore filter (inventory/online in-stock).
-  const onlineInventory = await listOnlineAvailableInventory();
+  const { items: onlineInventory } = await listOnlineAvailableInventory({
+    limit: 1000,
+  });
   const onlineProductIds = onlineInventory.map(i => i.productId);
   const onlineProducts = await listProductsByIds(onlineProductIds);
   const productRoutes: MetadataRoute.Sitemap = onlineProducts.map(product => ({
@@ -59,7 +61,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: now,
   }));
 
-  const vendors = await listVendors();
+  const { items: vendors } = await listVendors({ limit: 1000 });
   const vendorRoutes: MetadataRoute.Sitemap = vendors.map(vendor => ({
     url: `${SITE_URL}/vendors/${vendor.slug}`,
     lastModified: now,
