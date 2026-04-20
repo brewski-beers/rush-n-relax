@@ -1,9 +1,5 @@
-import {
-  listOnlineAvailableInventory,
-  listProductsByIds,
-} from '@/lib/repositories';
+import { fetchProductsPage } from '@/lib/storefront/productsPage';
 import { ProductsGridClient } from './ProductsGridClient';
-import type { ProductsPageItem } from '@/app/api/products/route';
 
 const PAGE_SIZE = 25;
 
@@ -14,38 +10,20 @@ interface ProductsGridProps {
 /**
  * Server Component — fetches page 1 of online products and passes it to the
  * Client Component which handles "Load More" via /api/products.
+ *
+ * Category filtering uses the shared fill-loop (see fetchProductsPage) so a
+ * sparse category keeps scanning inventory until we collect a full page or
+ * inventory is exhausted.
  */
 export async function ProductsGrid({ category }: ProductsGridProps) {
-  const { items: onlineInventory, nextCursor } =
-    await listOnlineAvailableInventory({ limit: PAGE_SIZE });
-
-  const featuredIds = new Set(
-    onlineInventory.filter(i => i.featured).map(i => i.productId)
-  );
-
-  const products = await listProductsByIds(
-    onlineInventory.map(i => i.productId)
-  );
-
-  // TODO(#194): category filter runs in memory over a cursor that paginates the
-  // entire online inventory. Pages further down may contain no items in the
-  // selected category, causing Load More to hide prematurely.
-  const filtered = category
-    ? products.filter(p => p.category === category)
-    : products;
-
-  const initialItems: ProductsPageItem[] = [
-    ...filtered
-      .filter(p => featuredIds.has(p.id))
-      .map(p => ({ ...p, featured: true })),
-    ...filtered
-      .filter(p => !featuredIds.has(p.id))
-      .map(p => ({ ...p, featured: false })),
-  ];
+  const { items, nextCursor } = await fetchProductsPage({
+    limit: PAGE_SIZE,
+    category,
+  });
 
   return (
     <ProductsGridClient
-      initialItems={initialItems}
+      initialItems={items}
       initialNextCursor={nextCursor}
       category={category}
     />
