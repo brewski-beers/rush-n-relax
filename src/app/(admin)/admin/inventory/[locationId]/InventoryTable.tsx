@@ -6,6 +6,9 @@ import { updateInventoryItem, updateVariantPricing } from './actions';
 import type { ProductSummary, ProductVariant } from '@/types';
 import type { InventoryItem } from '@/types/inventory';
 
+const QTY_ZERO_TOAST =
+  'Set qty above 0 to re-enable online availability.';
+
 export interface InventoryRow extends ProductSummary {
   quantity: number;
   inStock: boolean;
@@ -105,6 +108,7 @@ function InventoryRow({
       availablePickup,
       featured,
     };
+    const inStockCascaded = field === 'inStock' && !value;
 
     if (field === 'inStock') {
       const nextQuantity = value ? Math.max(quantity, 1) : 0;
@@ -159,11 +163,14 @@ function InventoryRow({
           // Cascade enforcement: quantity=0 silently forces availability false.
           // Surface an inline toast so staff understand why the toggle didn't stick.
           // Do NOT auto-restore the flags — the server is the source of truth.
-          setBlockedMessage(
-            'Set quantity above 0 to re-enable online/pickup availability.'
-          );
+          setBlockedMessage(QTY_ZERO_TOAST);
           setAvailableOnline(false);
           setAvailablePickup(false);
+          setTimeout(() => setBlockedMessage(null), 4000);
+        } else if (inStockCascaded) {
+          // inStock toggled off -> qty forced to 0, availability cleared.
+          // Surface inline toast so staff understand the cascade.
+          setBlockedMessage(QTY_ZERO_TOAST);
           setTimeout(() => setBlockedMessage(null), 4000);
         } else {
           setBlockedMessage(null);
@@ -196,6 +203,9 @@ function InventoryRow({
     const nextQuantity = normalizeQuantityInput(quantityInput);
     const nextAvailableOnline = nextQuantity > 0 ? availableOnline : false;
     const nextFeatured = nextQuantity > 0 ? featured : false;
+    const cascadeCleared =
+      nextQuantity === 0 &&
+      (row.availableOnline || row.availablePickup || row.featured);
 
     setQuantityInput(String(nextQuantity));
     setAvailableOnline(nextAvailableOnline);
@@ -211,7 +221,12 @@ function InventoryRow({
           ...(nextFeatured !== featured ? { featured: nextFeatured } : {}),
         });
         setUpdateError(null);
-        triggerSuccess();
+        if (cascadeCleared) {
+          setBlockedMessage(QTY_ZERO_TOAST);
+          setTimeout(() => setBlockedMessage(null), 4000);
+        } else {
+          triggerSuccess();
+        }
         router.refresh();
       } catch {
         setQuantityInput(previous.quantityInput);
