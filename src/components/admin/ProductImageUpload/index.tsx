@@ -12,7 +12,6 @@ import { getDownloadURL, ref } from 'firebase/storage';
 import { initializeApp, getStorage$ } from '../../../firebase';
 import { FeaturedSlot } from './FeaturedSlot';
 import { GalleryStrip } from './GalleryStrip';
-import './ProductImageUpload.css';
 
 /**
  * Resolves a Firebase Storage path to a download URL for display.
