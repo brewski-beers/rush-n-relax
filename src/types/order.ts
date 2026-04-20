@@ -18,6 +18,15 @@ export interface OrderItem {
   lineTotal: number;
 }
 
+export interface ShippingAddress {
+  name: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  zip: string;
+}
+
 export interface Order {
   id: string;
   items: OrderItem[];
@@ -30,8 +39,10 @@ export interface Order {
   locationId: string;
   fulfillmentType: FulfillmentType;
   status: OrderStatus;
-  reddeTxnId?: string;
+  cloverPaymentId?: string;
   customerEmail?: string;
+  ageVerificationId?: string;
+  shippingAddress?: ShippingAddress;
   createdAt: Date;
   updatedAt: Date;
 }
