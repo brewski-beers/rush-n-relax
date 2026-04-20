@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateInventoryItem, updateVariantPricing } from './actions';
 import type { ProductSummary, ProductVariant } from '@/types';
 import type { InventoryItem } from '@/types/inventory';
+import { useOptimisticPatch } from '@/hooks/useOptimisticPatch';
 
 export interface InventoryRow extends ProductSummary {
   quantity: number;
@@ -24,8 +25,7 @@ interface Props {
 }
 
 export default function InventoryTable({ rows, locationId, isOnline }: Props) {
-  // online: 6 cols (Product, Category, Qty, In Stock, Featured, Variant Pricing)
-  // retail: 5 cols (Product, Category, Qty, In Stock, Available Pickup)
+  // online: 6 cols; retail: 5 cols
   const colSpan = isOnline ? 6 : 5;
 
   return (
@@ -65,6 +65,13 @@ export default function InventoryTable({ rows, locationId, isOnline }: Props) {
   );
 }
 
+interface RowState {
+  quantityInput: string;
+  availableOnline: boolean;
+  availablePickup: boolean;
+  featured: boolean;
+}
+
 function InventoryRow({
   row,
   locationId,
@@ -75,16 +82,22 @@ function InventoryRow({
   isOnline: boolean;
 }) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [quantityInput, setQuantityInput] = useState(String(row.quantity));
-  const [availableOnline, setAvailableOnline] = useState(row.availableOnline);
-  const [availablePickup, setAvailablePickup] = useState(row.availablePickup);
-  const [featured, setFeatured] = useState(row.featured);
-  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  const { state, setState, isPending, error, clearError, patch } =
+    useOptimisticPatch<RowState>({
+      initial: {
+        quantityInput: String(row.quantity),
+        availableOnline: row.availableOnline,
+        availablePickup: row.availablePickup,
+        featured: row.featured,
+      },
+    });
+
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
 
+  const { quantityInput, availableOnline, availablePickup, featured } = state;
   const quantity = normalizeQuantityInput(quantityInput);
   const inStock = quantity > 0;
   const featuredEnabled = inStock;
@@ -98,30 +111,7 @@ function InventoryRow({
     field: 'inStock' | 'availableOnline' | 'availablePickup' | 'featured',
     value: boolean
   ) {
-    setUpdateError(null);
-    const previous = {
-      quantityInput,
-      availableOnline,
-      availablePickup,
-      featured,
-    };
-
-    if (field === 'inStock') {
-      const nextQuantity = value ? Math.max(quantity, 1) : 0;
-      setQuantityInput(String(nextQuantity));
-      if (!value) {
-        setAvailableOnline(false);
-        setAvailablePickup(false);
-        setFeatured(false);
-      }
-    } else if (field === 'availableOnline') {
-      setAvailableOnline(value);
-      if (!value) setFeatured(false);
-    } else if (field === 'availablePickup') {
-      setAvailablePickup(value);
-    } else {
-      setFeatured(value);
-    }
+    clearError();
 
     const nextPatch: {
       inStock?: boolean;
@@ -147,80 +137,97 @@ function InventoryRow({
             ? { availablePickup: value }
             : { featured: value };
 
-    startTransition(async () => {
-      try {
-        const result = await updateInventoryItem(
-          locationId,
-          row.id,
-          nextPatch
-        );
-        setUpdateError(null);
-        if (result.blocked?.availableOnline || result.blocked?.availablePickup) {
+    void patch({
+      optimistic: prev => {
+        if (field === 'inStock') {
+          const nextQuantity = value ? Math.max(quantity, 1) : 0;
+          return {
+            quantityInput: String(nextQuantity),
+            availableOnline: value ? prev.availableOnline : false,
+            availablePickup: value ? prev.availablePickup : false,
+            featured: value ? prev.featured : false,
+          };
+        }
+        if (field === 'availableOnline') {
+          return {
+            ...prev,
+            availableOnline: value,
+            featured: value ? prev.featured : false,
+          };
+        }
+        if (field === 'availablePickup') {
+          return { ...prev, availablePickup: value };
+        }
+        return { ...prev, featured: value };
+      },
+      action: () => updateInventoryItem(locationId, row.id, nextPatch),
+      onSuccess: (result, setRowState) => {
+        if (
+          result.blocked?.availableOnline ||
+          result.blocked?.availablePickup
+        ) {
           // Cascade enforcement: quantity=0 silently forces availability false.
           // Surface an inline toast so staff understand why the toggle didn't stick.
           // Do NOT auto-restore the flags — the server is the source of truth.
+          setRowState({
+            ...state,
+            availableOnline: false,
+            availablePickup: false,
+          });
           setBlockedMessage(
             'Set quantity above 0 to re-enable online/pickup availability.'
           );
-          setAvailableOnline(false);
-          setAvailablePickup(false);
           setTimeout(() => setBlockedMessage(null), 4000);
         } else {
           setBlockedMessage(null);
           triggerSuccess();
         }
         router.refresh();
-      } catch {
-        setQuantityInput(previous.quantityInput);
-        setAvailableOnline(previous.availableOnline);
-        setAvailablePickup(previous.availablePickup);
-        setFeatured(previous.featured);
-        setUpdateError('Failed to update. Please try again.');
-      }
+      },
     });
   }
 
   function handleQuantityInput(value: string) {
     if (/^\d*$/.test(value)) {
-      setQuantityInput(value);
-      if (normalizeQuantityInput(value) === 0) {
-        setAvailableOnline(false);
-        setFeatured(false);
-      }
+      const nextQty = normalizeQuantityInput(value);
+      setState({
+        quantityInput: value,
+        availableOnline: nextQty === 0 ? false : availableOnline,
+        availablePickup,
+        featured: nextQty === 0 ? false : featured,
+      });
     }
   }
 
   function commitQuantity() {
-    setUpdateError(null);
-    const previous = { quantityInput, availableOnline, featured };
+    clearError();
     const nextQuantity = normalizeQuantityInput(quantityInput);
     const nextAvailableOnline = nextQuantity > 0 ? availableOnline : false;
     const nextFeatured = nextQuantity > 0 ? featured : false;
 
-    setQuantityInput(String(nextQuantity));
-    setAvailableOnline(nextAvailableOnline);
-    setFeatured(nextFeatured);
-
-    startTransition(async () => {
-      try {
-        await updateInventoryItem(locationId, row.id, {
+    void patch({
+      optimistic: prev => ({
+        ...prev,
+        quantityInput: String(nextQuantity),
+        availableOnline: nextAvailableOnline,
+        featured: nextFeatured,
+      }),
+      action: () =>
+        updateInventoryItem(locationId, row.id, {
           quantity: nextQuantity,
           ...(nextAvailableOnline !== availableOnline
             ? { availableOnline: nextAvailableOnline }
             : {}),
           ...(nextFeatured !== featured ? { featured: nextFeatured } : {}),
-        });
-        setUpdateError(null);
+        }),
+      onSuccess: () => {
         triggerSuccess();
         router.refresh();
-      } catch {
-        setQuantityInput(previous.quantityInput);
-        setAvailableOnline(previous.availableOnline);
-        setFeatured(previous.featured);
-        setUpdateError('Failed to update. Please try again.');
-      }
+      },
     });
   }
+
+  const updateError = error;
 
   return (
     <>
