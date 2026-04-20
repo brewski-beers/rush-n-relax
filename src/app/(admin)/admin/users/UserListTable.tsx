@@ -3,6 +3,7 @@
 import { useState, useActionState } from 'react';
 import type { ManagedUserSummary } from '@/lib/admin/user-management';
 import type { UserRole } from '@/types';
+import { ConfirmButton } from '@/components/admin/ConfirmButton';
 import { updateUserRole, addGoogleEmail } from './actions';
 
 const ALL_ROLES: UserRole[] = [
@@ -39,7 +40,16 @@ function EditRow({ user, onClose }: EditRowProps) {
     null
   );
 
+  const defaultRole: UserRole =
+    user.role === 'unassigned' ? 'customer' : user.role;
+  const [selectedRole, setSelectedRole] = useState<UserRole>(defaultRole);
+
   const showGoogleEmailForm = !hasGoogleProvider(user.providers);
+  const isOwnerPromotion = selectedRole === 'owner' && user.role !== 'owner';
+
+  const confirmMessage = isOwnerPromotion
+    ? `You are promoting ${user.email ?? user.uid} to OWNER. This grants full admin access. Type the user's email (${user.email ?? user.uid}) to confirm:`
+    : `Change role for ${user.email ?? user.uid} to "${selectedRole}"?`;
 
   return (
     <tr className="admin-edit-row">
@@ -51,9 +61,8 @@ function EditRow({ user, onClose }: EditRowProps) {
               <input type="hidden" name="uid" value={user.uid} />
               <select
                 name="role"
-                defaultValue={
-                  user.role === 'unassigned' ? 'customer' : user.role
-                }
+                value={selectedRole}
+                onChange={e => setSelectedRole(e.target.value as UserRole)}
                 disabled={rolePending}
                 className="admin-select admin-select--sm"
               >
@@ -63,13 +72,16 @@ function EditRow({ user, onClose }: EditRowProps) {
                   </option>
                 ))}
               </select>
-              <button
+              <ConfirmButton
                 type="submit"
+                message={confirmMessage}
+                confirmText={
+                  isOwnerPromotion ? (user.email ?? user.uid) : undefined
+                }
                 className="admin-btn admin-btn--sm"
-                disabled={rolePending}
               >
                 {rolePending ? '…' : 'Save Role'}
-              </button>
+              </ConfirmButton>
             </form>
             {roleState?.error && (
               <span className="admin-inline-error">{roleState.error}</span>

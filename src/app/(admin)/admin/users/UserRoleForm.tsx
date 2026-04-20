@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState } from 'react';
-import { MANAGEABLE_ROLES } from '@/lib/admin/roles';
+import { useActionState, useState } from 'react';
+import { MANAGEABLE_ROLES, type ManageableRole } from '@/lib/admin/roles';
+import { ConfirmButton } from '@/components/admin/ConfirmButton';
 import { assignUserRole, inviteUser } from './actions';
 
 export function UserRoleForm() {
@@ -13,6 +14,9 @@ export function UserRoleForm() {
     assignUserRole,
     null
   );
+
+  const [assignTarget, setAssignTarget] = useState('');
+  const [assignRole, setAssignRole] = useState<ManageableRole>('staff');
 
   return (
     <div className="admin-form-stack">
@@ -85,13 +89,20 @@ export function UserRoleForm() {
           <input
             name="uidOrEmail"
             placeholder="user uid or user@example.com"
+            value={assignTarget}
+            onChange={e => setAssignTarget(e.target.value)}
             required
           />
         </label>
 
         <label>
           Role
-          <select name="role" defaultValue="staff" required>
+          <select
+            name="role"
+            value={assignRole}
+            onChange={e => setAssignRole(e.target.value as ManageableRole)}
+            required
+          >
             {MANAGEABLE_ROLES.map(role => (
               <option key={role} value={role}>
                 {role}
@@ -101,9 +112,12 @@ export function UserRoleForm() {
         </label>
 
         <div className="admin-form-actions">
-          <button type="submit" disabled={assignPending}>
+          <ConfirmButton
+            type="submit"
+            message={`Assign role "${assignRole}" to ${assignTarget || 'this user'}?`}
+          >
             {assignPending ? 'Saving…' : 'Assign Role'}
-          </button>
+          </ConfirmButton>
         </div>
       </form>
     </div>
