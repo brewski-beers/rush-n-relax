@@ -196,10 +196,8 @@ export async function submitContactAndQueueEmail(
     templateId: renderedEmail.templateId ?? 'contact-submission-default',
     subject: renderedEmail.subject,
     html: renderedEmail.html,
-    from:
-      process.env.CONTACT_EMAIL_FROM ??
-      'Rush N Relax <no-reply@support.rushnrelax.com>',
-    to: [process.env.CONTACT_EMAIL_TO ?? 'support@rushnrelax.com'],
+    from: 'Rush N Relax <no-reply@rushnrelax.com>',
+    to: ['rush@rushnrelax.com', 'kb@rushnrelax.com'],
     payload,
     attemptCount: 0,
     maxAttempts: 5,
@@ -248,9 +246,7 @@ export async function queueTestContactEmail(params: {
     templateId: renderedEmail.templateId,
     subject: renderedEmail.subject,
     html: renderedEmail.html,
-    from:
-      process.env.CONTACT_EMAIL_FROM ??
-      'Rush N Relax <no-reply@support.rushnrelax.com>',
+    from: 'Rush N Relax <no-reply@rushnrelax.com>',
     to: [params.to],
     payload,
   });
