@@ -87,3 +87,4 @@ serviceAccountKey.json
 .claude/worktrees/
 .claude/memory/
 .claire/
+.vercel
