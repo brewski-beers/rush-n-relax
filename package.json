@@ -83,7 +83,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "firebase-admin": "^13.7.0",
     "firebase-tools": "^14.23.0",
-    "globals": "^17.4.0",
+    "globals": "^17.5.0",
     "husky": "^9.1.7",
     "jsdom": "^25.0.1",
     "lint-staged": "^16.4.0",
