@@ -27,6 +27,9 @@ export async function ProductsGrid({ category }: ProductsGridProps) {
     onlineInventory.map(i => i.productId)
   );
 
+  // TODO(#194): category filter runs in memory over a cursor that paginates the
+  // entire online inventory. Pages further down may contain no items in the
+  // selected category, causing Load More to hide prematurely.
   const filtered = category
     ? products.filter(p => p.category === category)
     : products;
