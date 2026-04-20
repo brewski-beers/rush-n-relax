@@ -6,7 +6,7 @@ import { listActiveCategories } from '@/lib/repositories';
 import { ProductsGrid } from './ProductsGrid';
 import '@/styles/products.css';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300; // 5 minutes — catalog changes infrequently
 
 export const metadata = buildMetadata('/products', {
   title:
