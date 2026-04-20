@@ -7,6 +7,8 @@ import type { ProductSummary, ProductVariant } from '@/types';
 import type { InventoryItem } from '@/types/inventory';
 import { useOptimisticPatch } from '@/hooks/useOptimisticPatch';
 
+const QTY_ZERO_TOAST = 'Set qty above 0 to re-enable online availability.';
+
 export interface InventoryRow extends ProductSummary {
   quantity: number;
   inStock: boolean;
@@ -112,6 +114,7 @@ function InventoryRow({
     value: boolean
   ) {
     clearError();
+    const inStockCascaded = field === 'inStock' && !value;
 
     const nextPatch: {
       inStock?: boolean;
@@ -174,9 +177,12 @@ function InventoryRow({
             availableOnline: false,
             availablePickup: false,
           });
-          setBlockedMessage(
-            'Set quantity above 0 to re-enable online/pickup availability.'
-          );
+          setBlockedMessage(QTY_ZERO_TOAST);
+          setTimeout(() => setBlockedMessage(null), 4000);
+        } else if (inStockCascaded) {
+          // inStock toggled off -> qty forced to 0, availability cleared.
+          // Surface inline toast so staff understand the cascade.
+          setBlockedMessage(QTY_ZERO_TOAST);
           setTimeout(() => setBlockedMessage(null), 4000);
         } else {
           setBlockedMessage(null);
@@ -204,6 +210,9 @@ function InventoryRow({
     const nextQuantity = normalizeQuantityInput(quantityInput);
     const nextAvailableOnline = nextQuantity > 0 ? availableOnline : false;
     const nextFeatured = nextQuantity > 0 ? featured : false;
+    const cascadeCleared =
+      nextQuantity === 0 &&
+      (row.availableOnline || row.availablePickup || row.featured);
 
     void patch({
       optimistic: prev => ({
@@ -221,7 +230,12 @@ function InventoryRow({
           ...(nextFeatured !== featured ? { featured: nextFeatured } : {}),
         }),
       onSuccess: () => {
-        triggerSuccess();
+        if (cascadeCleared) {
+          setBlockedMessage(QTY_ZERO_TOAST);
+          setTimeout(() => setBlockedMessage(null), 4000);
+        } else {
+          triggerSuccess();
+        }
         router.refresh();
       },
     });
