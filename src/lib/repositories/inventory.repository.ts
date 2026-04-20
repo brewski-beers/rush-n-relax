@@ -82,6 +82,26 @@ export async function getInventoryItem(
 }
 
 /**
+ * Return the subset of the given product ids that are both online and in stock.
+ * Uses a single batched Firestore read. Empty input → empty Set.
+ */
+export async function getOnlineInStockSet(
+  productIds: string[]
+): Promise<Set<string>> {
+  if (productIds.length === 0) return new Set();
+  const col = inventoryItemsCol(ONLINE_LOCATION_ID);
+  const refs = productIds.map(id => col.doc(id));
+  const snaps = await getAdminFirestore().getAll(...refs);
+  const result = new Set<string>();
+  for (const snap of snaps) {
+    if (!snap.exists) continue;
+    const data = snap.data();
+    if (data?.inStock === true) result.add(snap.id);
+  }
+  return result;
+}
+
+/**
  * List all online inventory items that are in stock.
  * Reads from inventory/online (ONLINE_LOCATION_ID) — the canonical path
  * for storefront pricing. Each item's variantPricing map drives the

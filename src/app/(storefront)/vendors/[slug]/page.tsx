@@ -4,7 +4,11 @@ import { Card } from '@/components/Card';
 import { CardGrid } from '@/components/CardGrid';
 import { ProductImage } from '@/components/ProductImage';
 import { buildMetadata } from '@/lib/seo/metadata.factory';
-import { getVendorBySlug, listProductsByVendor } from '@/lib/repositories';
+import {
+  getOnlineInStockSet,
+  getVendorBySlug,
+  listProductsByVendor,
+} from '@/lib/repositories';
 import { seoConfig } from '@/config/seo.config';
 
 export const revalidate = 3600;
@@ -35,7 +39,12 @@ export default async function VendorDetailPage({ params }: Props) {
     listProductsByVendor(slug),
   ]);
 
-  const { items: products } = productsPage;
+  // Gate vendor listing to products that are in stock online — the vendor page
+  // is a storefront surface, same expectation as /products.
+  const onlineIds = await getOnlineInStockSet(
+    productsPage.items.map(p => p.id)
+  );
+  const products = productsPage.items.filter(p => onlineIds.has(p.id));
 
   if (!vendor || !vendor.isActive) notFound();
 

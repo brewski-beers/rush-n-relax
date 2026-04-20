@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import {
   getProductBySlug,
   getInventoryItem,
+  getOnlineInStockSet,
   getRelatedProducts,
 } from '@/lib/repositories';
 import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
@@ -53,7 +54,19 @@ export default async function ProductDetailPage({ params }: Props) {
   ]);
   if (!product || product.status === 'archived') notFound();
 
-  const relatedProducts = await getRelatedProducts(slug, product.category);
+  // Fetch more candidates than needed so we can drop any that aren't currently
+  // online + in stock without ending up with an empty strip.
+  const relatedCandidates = await getRelatedProducts(
+    slug,
+    product.category,
+    12
+  );
+  const relatedOnlineIds = await getOnlineInStockSet(
+    relatedCandidates.map(p => p.id)
+  );
+  const relatedProducts = relatedCandidates
+    .filter(p => relatedOnlineIds.has(p.id))
+    .slice(0, 6);
 
   // Resolve hero image URL server-side to avoid client-side Firebase Storage
   // getDownloadURL round-trip, which blocks LCP by 1–3s.

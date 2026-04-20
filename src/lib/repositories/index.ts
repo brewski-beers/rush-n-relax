@@ -35,6 +35,7 @@ export {
   getInventoryItem,
   listOnlineAvailableInventory,
   listFeaturedInventory,
+  getOnlineInStockSet,
   setInventoryItem,
 } from './inventory.repository';
 
