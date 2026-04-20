@@ -12,6 +12,13 @@ const SESSION_MAX_AGE_S = 60 * 60 * 24 * 5; // 5 days in seconds
 const OWNER_ROLE: UserRole = 'owner';
 const CLAIMS_UPDATED_RETRY_CODE = 'CLAIMS_UPDATED_RETRY';
 
+// Auth session requests must never be cached by browsers or CDNs.
+const NO_STORE: HeadersInit = { 'Cache-Control': 'no-store' };
+
+function jsonNoStore(body: unknown, status: number): Response {
+  return Response.json(body, { status, headers: NO_STORE });
+}
+
 function getRoleClaim(payload: unknown): unknown {
   if (typeof payload !== 'object' || payload === null) {
     return undefined;
@@ -50,6 +57,9 @@ function parseOwnerAllowlist(): Set<string> {
  *
  * Session cookie is issued only when the user holds a recognized, non-customer role.
  * Gate: isUserRole(roleClaim) && roleClaim !== 'customer'
+ *
+ * Cache-Control: no-store on every response — session issuance must not be
+ * cached by browsers or intermediaries.
  */
 export async function POST(request: Request): Promise<Response> {
   let idToken: string;
@@ -58,17 +68,17 @@ export async function POST(request: Request): Promise<Response> {
     const body: unknown = await request.json();
 
     if (typeof body !== 'object' || body === null) {
-      return Response.json({ error: 'idToken required' }, { status: 400 });
+      return jsonNoStore({ error: 'idToken required' }, 400);
     }
 
     const tokenValue = (body as { idToken?: unknown }).idToken;
     if (typeof tokenValue !== 'string' || tokenValue.length === 0) {
-      return Response.json({ error: 'idToken required' }, { status: 400 });
+      return jsonNoStore({ error: 'idToken required' }, 400);
     }
 
     idToken = tokenValue;
   } catch {
-    return Response.json({ error: 'Invalid request body' }, { status: 400 });
+    return jsonNoStore({ error: 'Invalid request body' }, 400);
   }
 
   try {
@@ -90,12 +100,12 @@ export async function POST(request: Request): Promise<Response> {
           role: OWNER_ROLE,
         });
 
-        return Response.json(
+        return jsonNoStore(
           {
             error: 'Owner claim applied. Refreshing token required.',
             code: CLAIMS_UPDATED_RETRY_CODE,
           },
-          { status: 409 }
+          409
         );
       }
     }
@@ -122,18 +132,18 @@ export async function POST(request: Request): Promise<Response> {
             acceptedByUid: decoded.uid,
           });
 
-          return Response.json(
+          return jsonNoStore(
             {
               error: 'Invite role applied. Refreshing token required.',
               code: CLAIMS_UPDATED_RETRY_CODE,
             },
-            { status: 409 }
+            409
           );
         }
       }
 
       // No valid staff-or-above role and no pending invite — reject.
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+      return jsonNoStore({ error: 'Forbidden' }, 403);
     }
 
     const sessionCookie = await adminAuth.createSessionCookie(idToken, {
@@ -153,20 +163,22 @@ export async function POST(request: Request): Promise<Response> {
 
     return new Response(null, {
       status: 200,
-      headers: { 'Set-Cookie': cookieHeader },
+      headers: {
+        'Set-Cookie': cookieHeader,
+        'Cache-Control': 'no-store',
+      },
     });
   } catch (err) {
     console.error('[auth/session] createSessionCookie failed:', err);
-    return Response.json(
-      { error: 'Failed to create session' },
-      { status: 401 }
-    );
+    return jsonNoStore({ error: 'Failed to create session' }, 401);
   }
 }
 
 /**
  * DELETE /api/auth/session
  * Clear the session cookie (logout).
+ *
+ * Cache-Control: no-store — logout must never be cached.
  */
 export function DELETE(): Response {
   const cookieHeader = [
@@ -181,6 +193,9 @@ export function DELETE(): Response {
     .join('; ');
   return new Response(null, {
     status: 200,
-    headers: { 'Set-Cookie': cookieHeader },
+    headers: {
+      'Set-Cookie': cookieHeader,
+      'Cache-Control': 'no-store',
+    },
   });
 }
