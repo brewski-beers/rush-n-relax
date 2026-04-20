@@ -7,7 +7,18 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage', '*.config.ts', '.next', 'next-env.d.ts'] },
+  {
+    ignores: [
+      'dist',
+      'node_modules',
+      'coverage',
+      '**/*.config.ts',
+      '**/*.config.js',
+      '**/*.config.cjs',
+      '.next',
+      'next-env.d.ts',
+    ],
+  },
   {
     extends: [
       js.configs.recommended,

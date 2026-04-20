@@ -13,7 +13,7 @@ import {
   LOCATION_SLUGS,
   PRODUCT_FIXTURES,
   PROMO_FIXTURES,
-} from '../src/lib/fixtures';
+} from '../apps/web/src/lib/fixtures';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

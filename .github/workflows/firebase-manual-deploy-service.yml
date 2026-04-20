@@ -77,7 +77,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
         run: |
-          npx firebase-tools functions:secrets:access GOOGLE_PLACES_API_KEY \
+          pnpm exec firebase functions:secrets:access GOOGLE_PLACES_API_KEY \
             --project "$FIREBASE_PROJECT_ID" \
             --non-interactive > /dev/null
 

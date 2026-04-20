@@ -290,7 +290,7 @@ function ProductImageUploadInner({
               Object.entries(errors)
                 .filter(([k]) => k !== 'featured')
                 .map(([k, v]) => [Number(k), v])
-            ) as Record<number, string>
+            )
           }
           disabled={formPending}
           onFile={(file, index) => handleFile(file, index)}

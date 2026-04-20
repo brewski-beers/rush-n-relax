@@ -10,7 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import type { UserImportRecord } from 'firebase-admin/auth';
-import { getAdminFirestore, getAdminAuth } from '../src/lib/firebase/admin';
+import { getAdminFirestore, getAdminAuth } from '../apps/web/src/lib/firebase/admin';
 import {
   FIXTURE_TIMESTAMP,
   PROMO_FIXTURES,
@@ -22,7 +22,7 @@ import {
   buildCategoryDocuments,
   buildVariantTemplateDocuments,
   AUTH_USER_FIXTURES,
-} from '../src/lib/fixtures';
+} from '../apps/web/src/lib/fixtures';
 
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 process.env.FIREBASE_AUTH_EMULATOR_HOST = '127.0.0.1:9099';

@@ -3,8 +3,8 @@
 // Expects Firestore emulator on :8080.
 // Idempotent: updates existing docs, inserts new ones.
 
-import { getAdminFirestore } from '../src/lib/firebase/admin';
-import type { Vendor } from '../src/types';
+import { getAdminFirestore } from '../apps/web/src/lib/firebase/admin';
+import type { Vendor } from '../apps/web/src/types';
 
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 

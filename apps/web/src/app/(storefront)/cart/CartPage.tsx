@@ -85,6 +85,7 @@ export default function CartPage() {
 
   useEffect(() => {
     if (fulfillment === 'pickup') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- async call sets state after network; not a sync cascade
       void checkAvailability();
     }
   }, [fulfillment, checkAvailability]);

@@ -6,10 +6,6 @@
     "src/**/*.tsx",
     "e2e/**/*.ts",
     "e2e/**/*.tsx",
-    "functions/**/*.ts",
-    "functions/**/*.tsx",
-    "scripts/**/*.ts",
-    "scripts/**/*.tsx",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules", "dist", ".next"]

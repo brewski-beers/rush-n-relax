@@ -1,5 +1,5 @@
 name: 'Setup'
-description: 'Install Node 20 and run npm ci'
+description: 'Install Node 20, enable pnpm via corepack, and install workspace deps'
 
 runs:
   using: composite
@@ -8,11 +8,26 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
-        cache-dependency-path: |
-          package-lock.json
-          functions/package-lock.json
 
-    - name: Install dependencies
+    - name: Enable pnpm via corepack
       shell: bash
-      run: npm ci --prefer-offline --no-audit
+      run: |
+        corepack enable
+        corepack prepare pnpm@10.32.1 --activate
+
+    - name: Get pnpm store path
+      id: pnpm-store
+      shell: bash
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache pnpm store
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.pnpm-store.outputs.path }}
+        key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          pnpm-store-${{ runner.os }}-
+
+    - name: Install workspace dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

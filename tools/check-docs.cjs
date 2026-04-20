@@ -39,21 +39,21 @@ console.log('Running doc consistency checks...');
 // Stale Firestore path — tenants/rnr/ was removed; all collections are now root-level
 check(
   'tenants/rnr/',
-  ['docs/**/*.md', 'src/**/*.ts', 'src/**/*.tsx'],
+  ['docs/**/*.md', 'apps/web/src/**/*.ts', 'apps/web/src/**/*.tsx'],
   'Old tenant-scoped Firestore path — use root collections (locations/, products/, etc.)'
 );
 
 // Removed type field
 check(
   'shippableCategories',
-  ['src/types/**/*.ts', 'src/lib/**/*.ts'],
+  ['apps/web/src/types/**/*.ts', 'apps/web/src/lib/**/*.ts'],
   'Removed type field — shippableCategories was deleted from the Product schema'
 );
 
 // Removed type field
 check(
   'promoId:',
-  ['src/types/**/*.ts'],
+  ['apps/web/src/types/**/*.ts'],
   'Removed type field — promoId was removed from the Promo schema'
 );
 

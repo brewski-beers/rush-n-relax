@@ -45,7 +45,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
         run: |
-          npx firebase-tools ext:list \
+          pnpm exec firebase ext:list \
             --project "$FIREBASE_PROJECT_ID" \
             --non-interactive > /dev/null
 
@@ -53,7 +53,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
         run: |
-          npx firebase-tools functions:secrets:access GOOGLE_PLACES_API_KEY \
+          pnpm exec firebase functions:secrets:access GOOGLE_PLACES_API_KEY \
             --project "$FIREBASE_PROJECT_ID" \
             --non-interactive > /dev/null
 
@@ -77,13 +77,13 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
 
       - name: Type check
-        run: npx tsc --noEmit
+        run: pnpm typecheck
 
       - name: Unit tests
-        run: npm run test
+        run: pnpm test
 
       - name: Functions unit tests
         run: cd functions && npm ci && npm test
@@ -98,16 +98,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ./emulator-data
-          key: emulator-data-${{ hashFiles('scripts/seed-*.ts', 'scripts/seed-*.cjs', 'firestore.rules') }}
+          key: emulator-data-${{ hashFiles('tools/seed-*.ts', 'tools/seed-*.cjs', 'firestore.rules') }}
           restore-keys: |
             emulator-data-
 
       - name: E2E tests (import cache)
         if: steps.emulator-cache.outputs.cache-hit == 'true'
         run: >-
-          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,auth,storage
+          pnpm exec firebase emulators:exec --project=rush-n-relax --only=firestore,auth,storage
           --import=./emulator-data
-          "npm run test:e2e:core -- --project=chromium"
+          "pnpm test:e2e:core -- --project=chromium"
         env:
           CI: 'true'
           CI_SEED_HANDLED: 'true'
@@ -115,9 +115,9 @@ jobs:
       - name: E2E tests (seed + export)
         if: steps.emulator-cache.outputs.cache-hit != 'true'
         run: >-
-          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,auth,storage
+          pnpm exec firebase emulators:exec --project=rush-n-relax --only=firestore,auth,storage
           --export-on-exit=./emulator-data
-          "npm run dev:seed && npm run test:e2e:core -- --project=chromium"
+          "pnpm dev:seed && pnpm test:e2e:core -- --project=chromium"
         env:
           CI: 'true'
           CI_SEED_HANDLED: 'true'
@@ -127,14 +127,14 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ./emulator-data
-          key: emulator-data-${{ hashFiles('scripts/seed-*.ts', 'scripts/seed-*.cjs', 'firestore.rules') }}
+          key: emulator-data-${{ hashFiles('tools/seed-*.ts', 'tools/seed-*.cjs', 'firestore.rules') }}
 
       - name: Upload verify failure artifacts
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: main-verify-failures
-          path: test-results/
+          path: apps/web/test-results/
           if-no-files-found: ignore
           retention-days: 3
 

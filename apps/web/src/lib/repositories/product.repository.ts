@@ -349,6 +349,8 @@ function docToLabResults(
   raw: FirebaseFirestore.DocumentData | undefined
 ): LabResults | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
+  // Narrow DocumentData's `any`-valued map to `unknown` so field reads are type-checked.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
   const r = raw as Record<string, unknown>;
   return {
     thcPercent: typeof r.thcPercent === 'number' ? r.thcPercent : undefined,

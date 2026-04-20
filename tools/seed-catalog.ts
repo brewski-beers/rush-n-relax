@@ -3,8 +3,8 @@
 // Expects Firestore emulator on :8080.
 // Idempotent: updates existing docs, inserts new ones.
 
-import { getAdminFirestore } from '../src/lib/firebase/admin';
-import type { Product } from '../src/types';
+import { getAdminFirestore } from '../apps/web/src/lib/firebase/admin';
+import type { Product } from '../apps/web/src/types';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
