@@ -51,6 +51,12 @@ export type {
 } from './email';
 export type { GoogleReview } from './reviews';
 export type { Vendor, VendorSummary } from './vendor';
-export type { Order, OrderItem, OrderStatus, FulfillmentType } from './order';
+export type {
+  Order,
+  OrderItem,
+  OrderStatus,
+  FulfillmentType,
+  ShippingAddress,
+} from './order';
 export type { CoaDocument } from './coa';
 export type { VariantTemplate } from './variant-template';

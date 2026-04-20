@@ -21,6 +21,8 @@
   --admin-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
   --admin-shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.25);
   --admin-radius: 14px;
+  --admin-back-link-margin-bottom: 0.75rem;
+  --admin-back-link-font-size: 0.875rem;
   --admin-heading-color: #f6ecd6;
   --admin-nav-link-padding: 0.3rem 0.8rem;
   --admin-nav-link-focus-border: rgba(213, 179, 106, 0.32);

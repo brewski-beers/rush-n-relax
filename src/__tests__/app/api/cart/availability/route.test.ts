@@ -3,12 +3,17 @@ import { NextRequest } from 'next/server';
 
 // ── Hoisted mocks ──────────────────────────────────────────────────────────
 
-const { getInventoryItemMock } = vi.hoisted(() => ({
-  getInventoryItemMock: vi.fn(),
+const { getAllMock } = vi.hoisted(() => ({
+  getAllMock: vi.fn(),
 }));
 
-vi.mock('@/lib/repositories/inventory.repository', () => ({
-  getInventoryItem: getInventoryItemMock,
+vi.mock('@/lib/firebase/admin', () => ({
+  getAdminFirestore: () => ({
+    collection: (path: string) => ({
+      doc: (id: string) => ({ _path: path, id }),
+    }),
+    getAll: getAllMock,
+  }),
 }));
 
 // Stub LOCATION_SLUGS to only retail slugs so tests are deterministic
@@ -28,22 +33,26 @@ function makeRequest(itemsParam?: string): NextRequest {
   return new NextRequest(url);
 }
 
-function makeInventoryItem(
+// Raw Firestore document data — mirrors what snap.data() returns
+function makeInventoryData(
   overrides: Partial<{
     availablePickup: boolean;
+    quantity: number;
     variantPricing: Record<string, { price: number; inStock?: boolean }>;
   }> = {}
 ) {
-  return {
-    productId: 'flower',
-    locationId: 'oak-ridge',
-    inStock: true,
-    availableOnline: true,
-    availablePickup: true,
-    featured: false,
-    quantity: 10,
-    ...overrides,
-  };
+  return { quantity: 10, availablePickup: true, ...overrides };
+}
+
+// Snapshot-like object matching the shape docToPartialInventory reads
+function makeSnap(data: ReturnType<typeof makeInventoryData> | null) {
+  if (data === null) return { exists: false, data: () => ({}) };
+  return { exists: true, data: () => data as Record<string, unknown> };
+}
+
+// Extracts locationSlug from a collection path like "inventory/oak-ridge/items"
+function locationFromRef(ref: { _path: string }): string {
+  return ref._path.split('/')[1];
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -82,14 +91,22 @@ describe('GET /api/cart/availability', () => {
 
   describe('given a cart item whose inventory entry is missing at a location', () => {
     it('marks that location unavailable with the productId in unavailableItems', async () => {
-      // oak-ridge returns null (no inventory entry); others return available item
-      getInventoryItemMock.mockImplementation(
-        async (locationSlug: string, _productId: string) => {
-          if (locationSlug === 'oak-ridge') return null;
-          return makeInventoryItem({
-            availablePickup: true,
-            variantPricing: { '1g': { price: 1000, inStock: true } },
-          });
+      // oak-ridge has no inventory doc; other locations are fully available
+      getAllMock.mockImplementation(
+        (...refs: Array<{ _path: string; id: string }>) => {
+          const slug = locationFromRef(refs[0]);
+          return Promise.resolve(
+            refs.map(() =>
+              makeSnap(
+                slug === 'oak-ridge'
+                  ? null
+                  : makeInventoryData({
+                      availablePickup: true,
+                      variantPricing: { '1g': { price: 1000, inStock: true } },
+                    })
+              )
+            )
+          );
         }
       );
 
@@ -110,11 +127,18 @@ describe('GET /api/cart/availability', () => {
 
   describe('given a cart item with availablePickup: false at a location', () => {
     it('marks that location unavailable', async () => {
-      getInventoryItemMock.mockResolvedValue(
-        makeInventoryItem({
-          availablePickup: false,
-          variantPricing: { '1g': { price: 1000, inStock: true } },
-        })
+      getAllMock.mockImplementation(
+        (...refs: Array<{ _path: string; id: string }>) =>
+          Promise.resolve(
+            refs.map(() =>
+              makeSnap(
+                makeInventoryData({
+                  availablePickup: false,
+                  variantPricing: { '1g': { price: 1000, inStock: true } },
+                })
+              )
+            )
+          )
       );
 
       const items = JSON.stringify([{ productId: 'flower', variantId: '1g' }]);
@@ -127,7 +151,6 @@ describe('GET /api/cart/availability', () => {
           { available: boolean; unavailableItems: string[] }
         >;
       };
-      // All retail locations should be unavailable
       for (const slug of ['oak-ridge', 'maryville', 'seymour']) {
         expect(body.locations[slug].available).toBe(false);
         expect(body.locations[slug].unavailableItems).toContain('flower');
@@ -137,11 +160,18 @@ describe('GET /api/cart/availability', () => {
 
   describe('given a cart item with variantPricing[variantId].inStock === false', () => {
     it('marks the location unavailable for that item', async () => {
-      getInventoryItemMock.mockResolvedValue(
-        makeInventoryItem({
-          availablePickup: true,
-          variantPricing: { '1g': { price: 1000, inStock: false } },
-        })
+      getAllMock.mockImplementation(
+        (...refs: Array<{ _path: string; id: string }>) =>
+          Promise.resolve(
+            refs.map(() =>
+              makeSnap(
+                makeInventoryData({
+                  availablePickup: true,
+                  variantPricing: { '1g': { price: 1000, inStock: false } },
+                })
+              )
+            )
+          )
       );
 
       const items = JSON.stringify([{ productId: 'flower', variantId: '1g' }]);
@@ -162,11 +192,18 @@ describe('GET /api/cart/availability', () => {
 
   describe('given all items are available at all retail locations', () => {
     it('returns available: true for each retail location', async () => {
-      getInventoryItemMock.mockResolvedValue(
-        makeInventoryItem({
-          availablePickup: true,
-          variantPricing: { '1g': { price: 1000, inStock: true } },
-        })
+      getAllMock.mockImplementation(
+        (...refs: Array<{ _path: string; id: string }>) =>
+          Promise.resolve(
+            refs.map(() =>
+              makeSnap(
+                makeInventoryData({
+                  availablePickup: true,
+                  variantPricing: { '1g': { price: 1000, inStock: true } },
+                })
+              )
+            )
+          )
       );
 
       const items = JSON.stringify([{ productId: 'flower', variantId: '1g' }]);

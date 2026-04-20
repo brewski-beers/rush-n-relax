@@ -199,16 +199,32 @@ export async function getRelatedProducts(
   limit = 6
 ): Promise<ProductSummary[]> {
   // Fetch one extra so we can exclude the current product and still return `limit` items
-  const snap = await productsCol()
+  const sameCategorySnap = await productsCol()
     .where('status', '==', 'active')
     .where('category', '==', category)
     .limit(limit + 1)
     .get();
 
-  return snap.docs
+  const sameCategory = sameCategorySnap.docs
     .filter(doc => doc.id !== excludeSlug)
     .slice(0, limit)
     .map(doc => docToProductSummary(doc.id, doc.data()));
+
+  if (sameCategory.length >= limit) return sameCategory;
+
+  // Fall back to other active products so thin categories still surface suggestions.
+  const needed = limit - sameCategory.length;
+  const seenSlugs = new Set([excludeSlug, ...sameCategory.map(p => p.slug)]);
+  const fillerSnap = await productsCol()
+    .where('status', '==', 'active')
+    .limit(limit + seenSlugs.size)
+    .get();
+  const fillers = fillerSnap.docs
+    .filter(doc => !seenSlugs.has(doc.id))
+    .slice(0, needed)
+    .map(doc => docToProductSummary(doc.id, doc.data()));
+
+  return [...sameCategory, ...fillers];
 }
 
 // ── Write operations ──────────────────────────────────────────────────────

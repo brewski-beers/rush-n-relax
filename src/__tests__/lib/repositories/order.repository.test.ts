@@ -128,14 +128,14 @@ describe('order.repository', () => {
       const [payload] = docUpdateMock.mock.calls[0];
       expect(payload.status).toBe('paid');
       expect(payload.updatedAt).toBeInstanceOf(Date);
-      expect(payload.reddeTxnId).toBeUndefined();
+      expect(payload.cloverPaymentId).toBeUndefined();
     });
 
-    it('includes reddeTxnId when provided', async () => {
+    it('includes cloverPaymentId when provided', async () => {
       await updateOrderStatus('order-abc', 'paid', 'txn-xyz');
 
       const [payload] = docUpdateMock.mock.calls[0];
-      expect(payload.reddeTxnId).toBe('txn-xyz');
+      expect(payload.cloverPaymentId).toBe('txn-xyz');
     });
   });
 });
