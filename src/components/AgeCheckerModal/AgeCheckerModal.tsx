@@ -11,6 +11,7 @@
  * script. The onComplete callback receives { status, verificationId }.
  */
 import { useEffect, useRef, useState } from 'react';
+import './AgeCheckerModal.css';
 
 export type AgeCheckOutcome =
   | { status: 'pass'; verificationId: string }
