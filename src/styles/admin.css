@@ -1339,6 +1339,16 @@
   font-size: 0.8rem;
 }
 
+.admin-inline-toast {
+  color: var(--admin-warn-text, #92400e);
+  background: var(--admin-warn-bg, #fef3c7);
+  border: 1px solid var(--admin-warn-border, #fcd34d);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+}
+
 .admin-input--inline {
   flex: 0 1 140px;
   min-width: 80px;

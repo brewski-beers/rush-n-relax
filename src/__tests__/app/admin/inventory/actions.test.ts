@@ -2,12 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── Hoisted mocks ──────────────────────────────────────────────────────────
 
-const { requireRoleMock, setInventoryItemMock, revalidatePathMock } =
-  vi.hoisted(() => ({
-    requireRoleMock: vi.fn(),
-    setInventoryItemMock: vi.fn().mockResolvedValue(undefined),
-    revalidatePathMock: vi.fn(),
-  }));
+const {
+  requireRoleMock,
+  setInventoryItemMock,
+  getInventoryItemMock,
+  revalidatePathMock,
+} = vi.hoisted(() => ({
+  requireRoleMock: vi.fn(),
+  setInventoryItemMock: vi.fn().mockResolvedValue(undefined),
+  getInventoryItemMock: vi.fn().mockResolvedValue(null),
+  revalidatePathMock: vi.fn(),
+}));
 
 vi.mock('@/lib/admin-auth', () => ({
   requireRole: requireRoleMock,
@@ -15,6 +20,7 @@ vi.mock('@/lib/admin-auth', () => ({
 
 vi.mock('@/lib/repositories', () => ({
   setInventoryItem: setInventoryItemMock,
+  getInventoryItem: getInventoryItemMock,
 }));
 
 vi.mock('next/cache', () => ({
@@ -40,11 +46,30 @@ function stubUnauthorised() {
   });
 }
 
+function stubSavedItem(overrides: {
+  availableOnline?: boolean;
+  availablePickup?: boolean;
+  inStock?: boolean;
+  quantity?: number;
+}) {
+  getInventoryItemMock.mockResolvedValue({
+    productId: 'p',
+    locationId: 'hub',
+    inStock: overrides.inStock ?? false,
+    availableOnline: overrides.availableOnline ?? false,
+    availablePickup: overrides.availablePickup ?? false,
+    featured: false,
+    quantity: overrides.quantity ?? 0,
+  });
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 describe('updateInventoryItem server action', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setInventoryItemMock.mockResolvedValue(undefined);
+    getInventoryItemMock.mockResolvedValue(null);
   });
 
   describe('given an unauthenticated caller', () => {
@@ -179,6 +204,75 @@ describe('updateInventoryItem server action', () => {
       ).rejects.toThrow('compliance-hold');
 
       expect(revalidatePathMock).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── Cascade-blocked signal (issue #179) ──────────────────────────────────
+
+  describe('given availableOnline was requested true but quantity is 0', () => {
+    it('returns blocked.availableOnline so the UI can toast', async () => {
+      stubAuthorisedActor();
+      stubSavedItem({
+        availableOnline: false,
+        availablePickup: false,
+        inStock: false,
+        quantity: 0,
+      });
+
+      const result = await updateInventoryItem('hub', 'product-g', {
+        availableOnline: true,
+      });
+
+      expect(result).toEqual({ blocked: { availableOnline: true } });
+    });
+  });
+
+  describe('given availablePickup was requested true but quantity is 0', () => {
+    it('returns blocked.availablePickup so the UI can toast', async () => {
+      stubAuthorisedActor();
+      stubSavedItem({
+        availableOnline: false,
+        availablePickup: false,
+        inStock: false,
+        quantity: 0,
+      });
+
+      const result = await updateInventoryItem('oak-ridge', 'product-h', {
+        availablePickup: true,
+      });
+
+      expect(result).toEqual({ blocked: { availablePickup: true } });
+    });
+  });
+
+  describe('given availability was requested and the cascade allowed it', () => {
+    it('returns an empty result (no blocked flags)', async () => {
+      stubAuthorisedActor();
+      stubSavedItem({
+        availableOnline: true,
+        availablePickup: true,
+        inStock: true,
+        quantity: 5,
+      });
+
+      const result = await updateInventoryItem('hub', 'product-i', {
+        availableOnline: true,
+      });
+
+      expect(result).toEqual({});
+    });
+  });
+
+  describe('given the patch does not request enabling availability', () => {
+    it('does not re-read the item and returns an empty result', async () => {
+      stubAuthorisedActor();
+
+      const result = await updateInventoryItem('hub', 'product-j', {
+        quantity: 10,
+      });
+
+      expect(getInventoryItemMock).not.toHaveBeenCalled();
+      expect(result).toEqual({});
     });
   });
 });

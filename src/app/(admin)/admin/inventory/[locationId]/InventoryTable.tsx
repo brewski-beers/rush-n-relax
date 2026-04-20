@@ -81,6 +81,7 @@ function InventoryRow({
   const [availablePickup, setAvailablePickup] = useState(row.availablePickup);
   const [featured, setFeatured] = useState(row.featured);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
 
@@ -148,9 +149,26 @@ function InventoryRow({
 
     startTransition(async () => {
       try {
-        await updateInventoryItem(locationId, row.id, nextPatch);
+        const result = await updateInventoryItem(
+          locationId,
+          row.id,
+          nextPatch
+        );
         setUpdateError(null);
-        triggerSuccess();
+        if (result.blocked?.availableOnline || result.blocked?.availablePickup) {
+          // Cascade enforcement: quantity=0 silently forces availability false.
+          // Surface an inline toast so staff understand why the toggle didn't stick.
+          // Do NOT auto-restore the flags — the server is the source of truth.
+          setBlockedMessage(
+            'Set quantity above 0 to re-enable online/pickup availability.'
+          );
+          setAvailableOnline(false);
+          setAvailablePickup(false);
+          setTimeout(() => setBlockedMessage(null), 4000);
+        } else {
+          setBlockedMessage(null);
+          triggerSuccess();
+        }
         router.refresh();
       } catch {
         setQuantityInput(previous.quantityInput);
@@ -240,6 +258,15 @@ function InventoryRow({
             />
             {updateError && (
               <span className="admin-inline-error">{updateError}</span>
+            )}
+            {blockedMessage && (
+              <span
+                className="admin-inline-toast"
+                role="status"
+                aria-live="polite"
+              >
+                {blockedMessage}
+              </span>
             )}
             <span
               className={
