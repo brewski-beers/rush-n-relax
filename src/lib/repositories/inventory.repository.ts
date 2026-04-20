@@ -18,6 +18,7 @@
  *   - featured = false when inStock = false (online location only)
  *   - Every mutation writes an immutable adjustment record
  */
+import { cache } from 'react';
 import {
   getAdminFirestore,
   toDate,
@@ -70,16 +71,19 @@ export async function listInventoryForLocation(
  * Fetch a single inventory item for a product at a location.
  * Returns null if the item has not been tracked yet.
  * Callers should treat null as { inStock: false, availableOnline: false }.
+ * Wrapped with React cache() to deduplicate parallel calls within the same request.
  */
-export async function getInventoryItem(
-  locationId: string,
-  productId: string
-): Promise<InventoryItem | null> {
-  const doc = await inventoryItemsCol(locationId).doc(productId).get();
-  if (!doc.exists) return null;
-  // doc.data() is safe here: existence is confirmed on the line above
-  return docToInventoryItem(doc.id, doc.data()!);
-}
+export const getInventoryItem = cache(
+  async (
+    locationId: string,
+    productId: string
+  ): Promise<InventoryItem | null> => {
+    const doc = await inventoryItemsCol(locationId).doc(productId).get();
+    if (!doc.exists) return null;
+    // doc.data() is safe here: existence is confirmed on the line above
+    return docToInventoryItem(doc.id, doc.data()!);
+  }
+);
 
 /**
  * Return the subset of the given product ids that are both online and in stock.
