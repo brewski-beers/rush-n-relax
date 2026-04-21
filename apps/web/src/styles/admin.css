@@ -2611,3 +2611,134 @@
   font-size: 0.78rem;
   margin-top: var(--admin-img-upload-error-margin);
 }
+
+/* ── Branded staff login backdrop ───────────────────────────────────────── */
+
+.staff-entry-backdrop {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem 3rem;
+  background: var(--color-bg, #0f1419);
+  overflow: hidden;
+}
+
+.staff-entry-ambient {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(80% 50% at 85% 0%, rgba(213, 179, 106, 0.06) 0%, rgba(213, 179, 106, 0) 60%),
+    radial-gradient(70% 50% at 10% 100%, rgba(47, 59, 50, 0.35) 0%, rgba(47, 59, 50, 0) 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.staff-entry-wordmark {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-display, 'Cormorant Garamond', Georgia, serif);
+  font-size: 1.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-text, #e8e8e8);
+  text-align: center;
+  margin: 0 0 0.375rem;
+}
+
+.staff-entry-wordmark em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--color-accent, #d5b36a);
+}
+
+.staff-entry-wordmark::after {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 1px;
+  background: var(--color-accent, #d5b36a);
+  margin: 0.5rem auto 0;
+}
+
+.staff-entry-eyebrow {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-mono, 'JetBrains Mono', Monaco, monospace);
+  font-size: 0.65rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-text-faint, #606060);
+  text-align: center;
+  margin: 0 0 1.75rem;
+}
+
+.staff-entry-card.admin-login-wrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 2rem 1.75rem;
+  background: linear-gradient(
+    180deg,
+    rgba(213, 179, 106, 0.04) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  border: 1px solid var(--color-border-accent, rgba(213, 179, 106, 0.35));
+  border-radius: 0.5rem;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+}
+
+.staff-entry-card.admin-login-wrap::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-accent, #d5b36a) 50%,
+    transparent
+  );
+  opacity: 1;
+}
+
+.staff-entry-card-title {
+  font-family: var(--font-display, 'Cormorant Garamond', Georgia, serif);
+  font-size: 1.5rem;
+  font-weight: 500;
+  text-align: center;
+  color: var(--color-text, #e8e8e8);
+  margin: 0 0 0.375rem;
+  letter-spacing: 0;
+}
+
+.staff-entry-card-sub {
+  font-family: var(--font-mono, 'JetBrains Mono', Monaco, monospace);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-text-faint, #606060);
+  text-align: center;
+  margin: 0 0 1.25rem;
+}
+
+.staff-entry-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: 1.5rem;
+  font-family: var(--font-mono, 'JetBrains Mono', Monaco, monospace);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: var(--color-text-faint, #606060);
+  text-align: center;
+}

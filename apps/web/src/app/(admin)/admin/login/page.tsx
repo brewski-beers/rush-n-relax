@@ -179,127 +179,142 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="admin-login-wrap">
-      <h1>Admin Login</h1>
+    <div className="staff-entry-backdrop">
+      {/* Ambient radial gradient backdrop mirroring storefront hero */}
+      <div className="staff-entry-ambient" aria-hidden="true" />
 
-      {error && (
-        <p role="alert" className="admin-error">
-          {error}
-        </p>
-      )}
+      {/* Wordmark */}
+      <p className="staff-entry-wordmark" aria-label="Rush N Relax">
+        Rush <em>N</em> Relax
+      </p>
+      <p className="staff-entry-eyebrow">Staff portal</p>
 
-      {tab === null && (
-        <div className="admin-login-methods">
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={isPending}
-            className="admin-submit"
-          >
-            {isPending ? 'Signing in…' : 'Sign in with Google'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('phone')}
-            className="admin-submit"
-          >
-            Sign in with Phone
-          </button>
-        </div>
-      )}
+      {/* Anchor card with soft gold gradient border */}
+      <div className="staff-entry-card admin-login-wrap">
+        <h1 className="staff-entry-card-title">Sign in</h1>
+        <p className="staff-entry-card-sub">— employees only —</p>
 
-      {tab === 'phone' && !otpStep && (
-        <div className="admin-phone-form">
-          <label htmlFor="phone-input" className="admin-label">
-            Phone number
-          </label>
-          <div className="admin-input-prefix-wrap">
-            <span className="admin-input-prefix">+1</span>
+        {error && (
+          <p role="alert" className="admin-error">
+            {error}
+          </p>
+        )}
+
+        {tab === null && (
+          <div className="admin-login-methods">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isPending}
+              className="admin-submit"
+            >
+              {isPending ? 'Signing in…' : 'Sign in with Google'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('phone')}
+              className="admin-submit"
+            >
+              Sign in with Phone
+            </button>
+          </div>
+        )}
+
+        {tab === 'phone' && !otpStep && (
+          <div className="admin-phone-form">
+            <label htmlFor="phone-input" className="admin-label">
+              Phone number
+            </label>
+            <div className="admin-input-prefix-wrap">
+              <span className="admin-input-prefix">+1</span>
+              <input
+                id="phone-input"
+                type="tel"
+                value={phone}
+                onChange={e =>
+                  setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
+                }
+                placeholder="6155550123"
+                className="admin-input"
+                disabled={isPending}
+                autoComplete="tel-national"
+                maxLength={10}
+                inputMode="numeric"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleSendOtp}
+              disabled={isPending || phone.length !== 10}
+              className="admin-submit"
+            >
+              {isPending ? 'Sending…' : 'Send OTP'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setTab(null);
+                setPhone('');
+                setError(null);
+              }}
+              className="admin-link-btn"
+              disabled={isPending}
+            >
+              Back
+            </button>
+          </div>
+        )}
+
+        {tab === 'phone' && otpStep && (
+          <div className="admin-phone-form">
+            <p className="admin-label">
+              Enter the code sent to <strong>+1 {phone}</strong>
+            </p>
+            <label htmlFor="otp-input" className="admin-label">
+              One-time code
+            </label>
             <input
-              id="phone-input"
-              type="tel"
-              value={phone}
-              onChange={e =>
-                setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
-              }
-              placeholder="6155550123"
+              id="otp-input"
+              type="text"
+              inputMode="numeric"
+              value={otp}
+              onChange={e => setOtp(e.target.value)}
+              placeholder="123456"
               className="admin-input"
               disabled={isPending}
-              autoComplete="tel-national"
-              maxLength={10}
-              inputMode="numeric"
+              autoComplete="one-time-code"
             />
+            <button
+              type="button"
+              onClick={handleConfirmOtp}
+              disabled={isPending || otp.length === 0}
+              className="admin-submit"
+            >
+              {isPending ? 'Verifying…' : 'Verify'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setTab(null);
+                setOtpStep(false);
+                setOtp('');
+                setError(null);
+                recaptchaRef.current?.clear();
+                recaptchaRef.current = null;
+              }}
+              className="admin-link-btn"
+              disabled={isPending}
+            >
+              Back
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleSendOtp}
-            disabled={isPending || phone.length !== 10}
-            className="admin-submit"
-          >
-            {isPending ? 'Sending…' : 'Send OTP'}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setTab(null);
-              setPhone('');
-              setError(null);
-            }}
-            className="admin-link-btn"
-            disabled={isPending}
-          >
-            Back
-          </button>
-        </div>
-      )}
+        )}
 
-      {tab === 'phone' && otpStep && (
-        <div className="admin-phone-form">
-          <p className="admin-label">
-            Enter the code sent to <strong>+1 {phone}</strong>
-          </p>
-          <label htmlFor="otp-input" className="admin-label">
-            One-time code
-          </label>
-          <input
-            id="otp-input"
-            type="text"
-            inputMode="numeric"
-            value={otp}
-            onChange={e => setOtp(e.target.value)}
-            placeholder="123456"
-            className="admin-input"
-            disabled={isPending}
-            autoComplete="one-time-code"
-          />
-          <button
-            type="button"
-            onClick={handleConfirmOtp}
-            disabled={isPending || otp.length === 0}
-            className="admin-submit"
-          >
-            {isPending ? 'Verifying…' : 'Verify'}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setTab(null);
-              setOtpStep(false);
-              setOtp('');
-              setError(null);
-              recaptchaRef.current?.clear();
-              recaptchaRef.current = null;
-            }}
-            className="admin-link-btn"
-            disabled={isPending}
-          >
-            Back
-          </button>
-        </div>
-      )}
+        {/* Invisible reCAPTCHA anchor — always rendered so the verifier can attach */}
+        <div id="recaptcha-container" />
+      </div>
 
-      {/* Invisible reCAPTCHA anchor — always rendered so the verifier can attach */}
-      <div id="recaptcha-container" />
+      <p className="staff-entry-footer">rushnrelax.com · staff access</p>
     </div>
   );
 }
