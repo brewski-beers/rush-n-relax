@@ -31,10 +31,12 @@ function getAdminApp(): App {
   // In CI/local dev: GOOGLE_APPLICATION_CREDENTIALS env var points to service account.
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
     // Allow passing service account as an env var JSON string (useful in some CI envs)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON.parse is any by design
     const serviceAccount = JSON.parse(
       process.env.FIREBASE_SERVICE_ACCOUNT_JSON
     );
     adminApp = initializeApp({
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- serviceAccount is ServiceAccount-shaped at runtime
       credential: cert(serviceAccount),
       projectId: 'rush-n-relax',
       storageBucket: 'rush-n-relax.firebasestorage.app',
@@ -87,4 +89,7 @@ export function toDate(value: Timestamp | Date | string | undefined): Date {
 }
 
 // Re-exported here for backward compatibility — canonical source is src/constants/location-ids.ts
-export { HUB_LOCATION_ID, ONLINE_LOCATION_ID } from '@/constants/location-ids';
+export {
+  HUB_LOCATION_ID,
+  ONLINE_LOCATION_ID,
+} from '../../constants/location-ids';

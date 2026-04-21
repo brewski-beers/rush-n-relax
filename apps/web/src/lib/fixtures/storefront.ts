@@ -9,7 +9,7 @@ import type {
 } from '@/types';
 import type { InventoryItem } from '@/types/inventory';
 import type { VariantTemplate } from '@/types/variant-template';
-import { ONLINE_LOCATION_ID } from '@/constants/location-ids';
+import { ONLINE_LOCATION_ID } from '../../constants/location-ids';
 
 export const FIXTURE_DATASET_VERSION = '2026-03-14';
 export const FIXTURE_TIMESTAMP = '2026-03-14T00:00:00.000Z';
@@ -1166,14 +1166,42 @@ export function buildVariantTemplateDocuments(
 
 const CATEGORY_CONTRACT_FLAGS: Record<
   string,
-  { requiresCannabisProfile: boolean; requiresNutritionFacts: boolean; requiresCOA: boolean }
+  {
+    requiresCannabisProfile: boolean;
+    requiresNutritionFacts: boolean;
+    requiresCOA: boolean;
+  }
 > = {
-  flower:       { requiresCannabisProfile: true,  requiresNutritionFacts: false, requiresCOA: true  },
-  concentrates: { requiresCannabisProfile: true,  requiresNutritionFacts: false, requiresCOA: true  },
-  'pre-roll':   { requiresCannabisProfile: true,  requiresNutritionFacts: false, requiresCOA: true  },
-  vapes:        { requiresCannabisProfile: false, requiresNutritionFacts: false, requiresCOA: true  },
-  edibles:      { requiresCannabisProfile: false, requiresNutritionFacts: true,  requiresCOA: false },
-  drinks:       { requiresCannabisProfile: false, requiresNutritionFacts: true,  requiresCOA: false },
+  flower: {
+    requiresCannabisProfile: true,
+    requiresNutritionFacts: false,
+    requiresCOA: true,
+  },
+  concentrates: {
+    requiresCannabisProfile: true,
+    requiresNutritionFacts: false,
+    requiresCOA: true,
+  },
+  'pre-roll': {
+    requiresCannabisProfile: true,
+    requiresNutritionFacts: false,
+    requiresCOA: true,
+  },
+  vapes: {
+    requiresCannabisProfile: false,
+    requiresNutritionFacts: false,
+    requiresCOA: true,
+  },
+  edibles: {
+    requiresCannabisProfile: false,
+    requiresNutritionFacts: true,
+    requiresCOA: false,
+  },
+  drinks: {
+    requiresCannabisProfile: false,
+    requiresNutritionFacts: true,
+    requiresCOA: false,
+  },
 };
 
 export function buildCategoryDocuments(
