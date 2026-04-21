@@ -12,7 +12,9 @@ const LEAF_SRC = getAssetSrc(cannabisLeaf);
 
 const PINNED = [{ label: 'RnR.com', href: '/' }] as const;
 
-const ALL_LINKS = [
+type NavLink = { label: string; href: string; group?: string };
+
+const ALL_LINKS: NavLink[] = [
   { label: 'Dashboard', href: '/admin/dashboard' },
   { label: 'Locations', href: '/admin/locations' },
   { label: 'Products', href: '/admin/products' },
@@ -20,17 +22,20 @@ const ALL_LINKS = [
   { label: 'Categories', href: '/admin/categories' },
   { label: 'Inventory', href: '/admin/inventory' },
   { label: 'Users', href: '/admin/users' },
+  { label: 'Promos', href: '/admin/promos', group: 'Ops' },
+  { label: 'Email Templates', href: '/admin/email-templates', group: 'Ops' },
+  { label: 'Email Queue', href: '/admin/email-queue', group: 'Ops' },
   { label: 'RnR.com', href: '/' },
-] as const;
+];
 
 /** Links available to staff role (and above via the full ALL_LINKS list). */
-const STAFF_LINKS = [
+const STAFF_LINKS: NavLink[] = [
   { label: 'Products', href: '/admin/products' },
   { label: 'Variant Groups', href: '/admin/variant-groups' },
   { label: 'Categories', href: '/admin/categories' },
   { label: 'COA', href: '/admin/coa' },
   { label: 'RnR.com', href: '/' },
-] as const;
+];
 
 interface AdminNavProps {
   role: UserRole | null;
@@ -51,6 +56,9 @@ export function AdminNav({ role }: AdminNavProps) {
 
   const isStaffOnly = role === 'staff';
   const drawerLinks = isStaffOnly ? STAFF_LINKS : ALL_LINKS;
+
+  // Track which group headings have been rendered to avoid duplicates
+  const renderedGroups = new Set<string>();
 
   return (
     <div className="admin-nav">
@@ -97,17 +105,29 @@ export function AdminNav({ role }: AdminNavProps) {
         aria-label="Full admin navigation"
       >
         <ul className="admin-nav-drawer-list">
-          {drawerLinks.map(link => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                className={`admin-drawer-link${pathname.startsWith(link.href) && link.href !== '/' ? ' admin-drawer-link--active' : ''}`}
-                onClick={() => setIsOpen(false)}
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
+          {drawerLinks.flatMap(link => {
+            const items = [];
+            if (link.group && !renderedGroups.has(link.group)) {
+              renderedGroups.add(link.group);
+              items.push(
+                <li key={`group-${link.group}`} className="admin-nav-drawer-group-heading" aria-hidden="true">
+                  {link.group}
+                </li>
+              );
+            }
+            items.push(
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className={`admin-drawer-link${pathname.startsWith(link.href) && link.href !== '/' ? ' admin-drawer-link--active' : ''}`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            );
+            return items;
+          })}
           <li className="admin-nav-drawer-logout">
             <LogoutButton />
           </li>
