@@ -51,21 +51,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Online-visible products — matches ExploreMore filter (inventory/online in-stock).
-  const { items: onlineInventory } = await listOnlineAvailableInventory({
-    limit: 1000,
-  });
-  const onlineProductIds = onlineInventory.map(i => i.productId);
-  const onlineProducts = await listProductsByIds(onlineProductIds);
-  const productRoutes: MetadataRoute.Sitemap = onlineProducts.map(product => ({
-    url: `${SITE_URL}/products/${product.slug}`,
-    lastModified: now,
-  }));
+  // Gracefully degrade to empty arrays if Firestore is unreachable (e.g. missing creds at build).
+  let productRoutes: MetadataRoute.Sitemap = [];
+  let vendorRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const { items: onlineInventory } = await listOnlineAvailableInventory({
+      limit: 1000,
+    });
+    const onlineProductIds = onlineInventory.map(i => i.productId);
+    const onlineProducts = await listProductsByIds(onlineProductIds);
+    productRoutes = onlineProducts.map(product => ({
+      url: `${SITE_URL}/products/${product.slug}`,
+      lastModified: now,
+    }));
 
-  const { items: vendors } = await listVendors({ limit: 1000 });
-  const vendorRoutes: MetadataRoute.Sitemap = vendors.map(vendor => ({
-    url: `${SITE_URL}/vendors/${vendor.slug}`,
-    lastModified: now,
-  }));
+    const { items: vendors } = await listVendors({ limit: 1000 });
+    vendorRoutes = vendors.map(vendor => ({
+      url: `${SITE_URL}/vendors/${vendor.slug}`,
+      lastModified: now,
+    }));
+  } catch (err) {
+    console.error('[sitemap] Firestore unavailable — omitting dynamic routes:', err);
+  }
 
   return [
     ...staticRoutes,
