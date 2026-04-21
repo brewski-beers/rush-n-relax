@@ -15,16 +15,16 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ inputs.browsers }}-${{ hashFiles('package-lock.json') }}
+        key: playwright-${{ runner.os }}-${{ inputs.browsers }}-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
           playwright-${{ runner.os }}-${{ inputs.browsers }}-
 
     - name: Install Playwright browsers
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       shell: bash
-      run: npx playwright install ${{ inputs.browsers }} --with-deps
+      run: pnpm --filter web exec playwright install ${{ inputs.browsers }} --with-deps
 
     - name: Install Playwright system dependencies
       if: steps.playwright-cache.outputs.cache-hit == 'true'
       shell: bash
-      run: npx playwright install-deps ${{ inputs.browsers }}
+      run: pnpm --filter web exec playwright install-deps ${{ inputs.browsers }}

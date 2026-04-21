@@ -31,15 +31,15 @@ jobs:
 
       - name: Lint
         if: needs.changes.outputs.should_run == 'true'
-        run: npm run lint
+        run: pnpm lint
 
       - name: Type check
         if: needs.changes.outputs.should_run == 'true'
-        run: npx tsc --noEmit
+        run: pnpm typecheck
 
       - name: Unit tests
         if: needs.changes.outputs.should_run == 'true'
-        run: npm run test
+        run: pnpm test
 
       - name: Functions unit tests
         if: needs.changes.outputs.should_run == 'true'
@@ -57,16 +57,16 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ./emulator-data
-          key: emulator-data-${{ hashFiles('scripts/seed-*.ts', 'scripts/seed-*.cjs', 'firestore.rules') }}
+          key: emulator-data-${{ hashFiles('tools/seed-*.ts', 'tools/seed-*.cjs', 'firestore.rules') }}
           restore-keys: |
             emulator-data-
 
       - name: E2E tests (import cache)
         if: needs.changes.outputs.should_run == 'true' && steps.emulator-cache.outputs.cache-hit == 'true'
         run: >-
-          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,auth,storage
+          pnpm exec firebase emulators:exec --project=rush-n-relax --only=firestore,auth,storage
           --import=./emulator-data
-          "npm run test:e2e:core -- --project=chromium"
+          "pnpm test:e2e:core -- --project=chromium"
         env:
           CI: 'true'
           CI_SEED_HANDLED: 'true'
@@ -74,9 +74,9 @@ jobs:
       - name: E2E tests (seed + export)
         if: needs.changes.outputs.should_run == 'true' && steps.emulator-cache.outputs.cache-hit != 'true'
         run: >-
-          npx firebase-tools emulators:exec --project=rush-n-relax --only=firestore,auth,storage
+          pnpm exec firebase emulators:exec --project=rush-n-relax --only=firestore,auth,storage
           --export-on-exit=./emulator-data
-          "npm run dev:seed && npm run test:e2e:core -- --project=chromium"
+          "pnpm dev:seed && pnpm test:e2e:core -- --project=chromium"
         env:
           CI: 'true'
           CI_SEED_HANDLED: 'true'
@@ -86,7 +86,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ./emulator-data
-          key: emulator-data-${{ hashFiles('scripts/seed-*.ts', 'scripts/seed-*.cjs', 'firestore.rules') }}
+          key: emulator-data-${{ hashFiles('tools/seed-*.ts', 'tools/seed-*.cjs', 'firestore.rules') }}
 
       - name: No-op summary
         if: needs.changes.outputs.should_run != 'true'
@@ -102,7 +102,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: pr-verify-failures
-          path: test-results/
+          path: apps/web/test-results/
           if-no-files-found: ignore
           retention-days: 3
-

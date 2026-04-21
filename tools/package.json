@@ -1,0 +1,9 @@
+{
+  "name": "tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Repo-wide tooling: seed scripts, migrations, doc lint",
+  "dependencies": {
+    "firebase-admin": "^13.8.0"
+  }
+}
