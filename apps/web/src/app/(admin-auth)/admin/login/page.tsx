@@ -52,6 +52,8 @@ export default function LoginPage() {
   const [tab, setTab] = useState<'google' | 'phone' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [redirecting, setRedirecting] = useState(false);
+  const busy = isPending || redirecting;
 
   // Phone flow state
   const [phone, setPhone] = useState('');
@@ -90,6 +92,7 @@ export default function LoginPage() {
           );
         }
 
+        setRedirecting(true);
         window.location.assign('/admin/dashboard');
       } catch (err: unknown) {
         const message =
@@ -167,6 +170,7 @@ export default function LoginPage() {
           );
         }
 
+        setRedirecting(true);
         window.location.assign('/admin/dashboard');
       } catch (err: unknown) {
         const message =
@@ -196,10 +200,10 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={handleGoogleSignIn}
-              disabled={isPending}
+              disabled={busy}
               className="admin-submit"
             >
-              {isPending ? 'Signing in…' : 'Sign in with Google'}
+              {busy ? 'Signing in…' : 'Sign in with Google'}
             </button>
             <button
               type="button"
@@ -227,7 +231,7 @@ export default function LoginPage() {
                 }
                 placeholder="6155550123"
                 className="admin-input"
-                disabled={isPending}
+                disabled={busy}
                 autoComplete="tel-national"
                 maxLength={10}
                 inputMode="numeric"
@@ -236,10 +240,10 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={handleSendOtp}
-              disabled={isPending || phone.length !== 10}
+              disabled={busy || phone.length !== 10}
               className="admin-submit"
             >
-              {isPending ? 'Sending…' : 'Send OTP'}
+              {busy ? 'Sending…' : 'Send OTP'}
             </button>
             <button
               type="button"
@@ -249,7 +253,7 @@ export default function LoginPage() {
                 setError(null);
               }}
               className="admin-link-btn"
-              disabled={isPending}
+              disabled={busy}
             >
               Back
             </button>
@@ -272,16 +276,16 @@ export default function LoginPage() {
               onChange={e => setOtp(e.target.value)}
               placeholder="123456"
               className="admin-input"
-              disabled={isPending}
+              disabled={busy}
               autoComplete="one-time-code"
             />
             <button
               type="button"
               onClick={handleConfirmOtp}
-              disabled={isPending || otp.length === 0}
+              disabled={busy || otp.length === 0}
               className="admin-submit"
             >
-              {isPending ? 'Verifying…' : 'Verify'}
+              {busy ? 'Verifying…' : 'Verify'}
             </button>
             <button
               type="button"
@@ -294,7 +298,7 @@ export default function LoginPage() {
                 recaptchaRef.current = null;
               }}
               className="admin-link-btn"
-              disabled={isPending}
+              disabled={busy}
             >
               Back
             </button>
