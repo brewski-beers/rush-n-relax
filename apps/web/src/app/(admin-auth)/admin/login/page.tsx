@@ -180,16 +180,10 @@ export default function LoginPage() {
 
   return (
     <div className="staff-entry-shell">
-      {/* Wordmark */}
-      <p className="staff-entry-wordmark" aria-label="Rush N Relax">
-        Rush <em>N</em> Relax
-      </p>
-      <p className="staff-entry-eyebrow">Staff portal</p>
-
-      {/* Anchor card with soft gold gradient border */}
       <div className="staff-entry-card admin-login-wrap">
-        <h1 className="staff-entry-card-title">Sign in</h1>
-        <p className="staff-entry-card-sub">— employees only —</p>
+        <h1 className="staff-entry-card-title">
+          Sign in to <em>admin</em>
+        </h1>
 
         {error && (
           <p role="alert" className="admin-error">
@@ -310,8 +304,6 @@ export default function LoginPage() {
         {/* Invisible reCAPTCHA anchor — always rendered so the verifier can attach */}
         <div id="recaptcha-container" />
       </div>
-
-      <p className="staff-entry-footer">rushnrelax.com · staff access</p>
     </div>
   );
 }

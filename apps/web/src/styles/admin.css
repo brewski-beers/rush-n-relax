@@ -2641,96 +2641,32 @@
   width: 100%;
 }
 
-.staff-entry-wordmark {
-  font-family: var(--font-display, 'Cormorant Garamond', Georgia, serif);
-  font-size: 1.75rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--color-text);
-  text-align: center;
-  margin: 0 0 var(--space-xs);
-}
-
-.staff-entry-wordmark em {
-  font-style: italic;
-  font-weight: 400;
-  color: var(--color-accent);
-}
-
-.staff-entry-eyebrow {
-  font-family: var(--font-mono, 'JetBrains Mono', Monaco, monospace);
-  font-size: 0.65rem;
-  font-weight: 400;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--color-accent);
-  text-align: center;
-  margin: 0 0 var(--space-lg);
-}
-
 .staff-entry-card.admin-login-wrap {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   margin: 0 auto;
-  padding: var(--space-lg) var(--space-md);
-  background: linear-gradient(
-    180deg,
-    rgba(213, 179, 106, 0.04) 0%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
-  border: 1px solid var(--color-border-accent);
+  padding: var(--space-xl) var(--space-lg);
+  background: var(--color-surface-backdrop);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 0.5rem;
-  box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(12px);
-}
-
-.staff-entry-card.admin-login-wrap::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: 10%;
-  right: 10%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--color-accent) 50%,
-    transparent
-  );
-  opacity: 1;
 }
 
 .staff-entry-card-title {
   font-family: var(--font-display, 'Cormorant Garamond', Georgia, serif);
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 500;
   text-align: center;
   color: var(--color-text);
-  margin: 0 0 var(--space-xs);
+  margin: 0 0 var(--space-lg);
   letter-spacing: 0;
 }
 
-.staff-entry-card-sub {
-  font-family: var(--font-mono, 'JetBrains Mono', Monaco, monospace);
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--color-text-faint);
-  text-align: center;
-  margin: 0 0 var(--space-sm);
-}
-
-.staff-entry-footer {
-  position: relative;
-  z-index: 1;
-  margin-top: var(--space-md);
-  font-family: var(--font-mono, 'JetBrains Mono', Monaco, monospace);
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  color: var(--color-text-faint);
-  text-align: center;
+.staff-entry-card-title em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--color-accent);
 }
