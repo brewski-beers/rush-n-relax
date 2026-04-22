@@ -22,8 +22,9 @@
  * which form sections are visible.
  */
 
-import { useState, useActionState } from 'react';
+import { useCallback, useEffect, useState, useActionState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { ProductImage } from '@/components/ProductImage';
 import { CoaSelector } from '@/components/admin/CoaSelector';
@@ -92,6 +93,23 @@ const STEP_TITLES: Record<number, string> = {
   6: 'Review',
 };
 
+/**
+ * URL slugs for each step — used for deep-linking via `?step=` search param.
+ * Keeping slugs stable decouples shareable URLs from internal step numbers.
+ */
+const STEP_SLUGS = ['basics', 'details', 'cannabis', 'variants', 'images', 'review'] as const;
+type StepSlug = (typeof STEP_SLUGS)[number];
+
+function stepFromSlug(slug: string | null): number {
+  if (!slug) return 1;
+  const idx = (STEP_SLUGS as readonly string[]).indexOf(slug);
+  return idx === -1 ? 1 : idx + 1;
+}
+
+function slugFromStep(step: number): StepSlug {
+  return STEP_SLUGS[step - 1] ?? 'basics';
+}
+
 // --- Per-step validation -----------------------------------------------------
 
 /**
@@ -141,7 +159,52 @@ export function ProductWizardForm({
   action,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, null);
-  const [step, setStep] = useState(1);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [step, setStepRaw] = useState<number>(() =>
+    stepFromSlug(searchParams?.get('step') ?? null)
+  );
+
+  /**
+   * Sync step → URL. Uses router.replace so each step change creates a new
+   * history entry (enabling browser Back/Forward to traverse steps).
+   * We intentionally use replace rather than push on the *initial* normalization
+   * to avoid polluting history when hydrating from an invalid slug.
+   */
+  const setStep = useCallback(
+    (next: number | ((prev: number) => number)) => {
+      setStepRaw(prev => {
+        const resolved = typeof next === 'function' ? next(prev) : next;
+        if (resolved !== prev && pathname) {
+          const params = new URLSearchParams(searchParams?.toString() ?? '');
+          params.set('step', slugFromStep(resolved));
+          router.push(`${pathname}?${params.toString()}`);
+        }
+        return resolved;
+      });
+    },
+    [pathname, router, searchParams]
+  );
+
+  // Respond to browser back/forward: URL changes but component stays mounted.
+  useEffect(() => {
+    const urlStep = stepFromSlug(searchParams?.get('step') ?? null);
+    setStepRaw(prev => (prev === urlStep ? prev : urlStep));
+  }, [searchParams]);
+
+  // On mount, normalize invalid / missing ?step= values to the canonical slug.
+  useEffect(() => {
+    const raw = searchParams?.get('step') ?? null;
+    const normalized = slugFromStep(stepFromSlug(raw));
+    if (raw !== normalized && pathname) {
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
+      params.set('step', normalized);
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [stepError, setStepError] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [review, setReview] = useState<ReviewSnapshot | null>(null);
