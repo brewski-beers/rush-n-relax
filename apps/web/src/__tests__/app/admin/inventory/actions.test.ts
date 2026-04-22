@@ -128,6 +128,7 @@ describe('updateInventoryItem server action', () => {
   describe('given a valid owner toggling featured', () => {
     it('calls setInventoryItem with toggle-featured reason', async () => {
       stubAuthorisedActor();
+      stubSavedItem({ inStock: true, availablePickup: true, quantity: 5 });
 
       await updateInventoryItem('hub', 'product-c', { featured: true });
 
@@ -159,24 +160,6 @@ describe('updateInventoryItem server action', () => {
     });
   });
 
-  describe('given a valid owner toggling availableOnline', () => {
-    it('calls setInventoryItem with toggle-online reason', async () => {
-      stubAuthorisedActor();
-
-      await updateInventoryItem('hub', 'product-e', {
-        availableOnline: true,
-      });
-
-      const [, , , adjustment] = setInventoryItemMock.mock.calls[0] as [
-        string,
-        string,
-        Record<string, unknown>,
-        Record<string, unknown>,
-      ];
-      expect(adjustment.reason).toBe('toggle-online');
-    });
-  });
-
   describe('given a successful update', () => {
     it('revalidates the expected paths', async () => {
       stubAuthorisedActor();
@@ -200,79 +183,33 @@ describe('updateInventoryItem server action', () => {
       );
 
       await expect(
-        updateInventoryItem('hub', 'product-hold', { availableOnline: true })
+        updateInventoryItem('hub', 'product-hold', { inStock: true })
       ).rejects.toThrow('compliance-hold');
 
       expect(revalidatePathMock).not.toHaveBeenCalled();
     });
   });
 
-  // ── Cascade-blocked signal (issue #179) ──────────────────────────────────
+  // Cascade-blocked signal (issue #179) was removed in issue #233 —
+  // the inStock master-switch model replaces cascade behavior.
 
-  describe('given availableOnline was requested true but quantity is 0', () => {
-    it('returns blocked.availableOnline so the UI can toast', async () => {
+  describe('given featured=true is requested while the item is not inStock', () => {
+    it('returns ok:false with an invariant-violation error', async () => {
       stubAuthorisedActor();
       stubSavedItem({
-        availableOnline: false,
         availablePickup: false,
         inStock: false,
         quantity: 0,
       });
 
-      const result = await updateInventoryItem('hub', 'product-g', {
-        availableOnline: true,
+      const result = await updateInventoryItem('hub', 'product-k', {
+        featured: true,
       });
 
-      expect(result).toEqual({ blocked: { availableOnline: true } });
-    });
-  });
-
-  describe('given availablePickup was requested true but quantity is 0', () => {
-    it('returns blocked.availablePickup so the UI can toast', async () => {
-      stubAuthorisedActor();
-      stubSavedItem({
-        availableOnline: false,
-        availablePickup: false,
-        inStock: false,
-        quantity: 0,
+      expect(result).toEqual({
+        ok: false,
+        error: 'Cannot feature an item that is not in stock.',
       });
-
-      const result = await updateInventoryItem('oak-ridge', 'product-h', {
-        availablePickup: true,
-      });
-
-      expect(result).toEqual({ blocked: { availablePickup: true } });
-    });
-  });
-
-  describe('given availability was requested and the cascade allowed it', () => {
-    it('returns an empty result (no blocked flags)', async () => {
-      stubAuthorisedActor();
-      stubSavedItem({
-        availableOnline: true,
-        availablePickup: true,
-        inStock: true,
-        quantity: 5,
-      });
-
-      const result = await updateInventoryItem('hub', 'product-i', {
-        availableOnline: true,
-      });
-
-      expect(result).toEqual({});
-    });
-  });
-
-  describe('given the patch does not request enabling availability', () => {
-    it('does not re-read the item and returns an empty result', async () => {
-      stubAuthorisedActor();
-
-      const result = await updateInventoryItem('hub', 'product-j', {
-        quantity: 10,
-      });
-
-      expect(getInventoryItemMock).not.toHaveBeenCalled();
-      expect(result).toEqual({});
     });
   });
 });
