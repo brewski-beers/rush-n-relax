@@ -179,10 +179,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="staff-entry-backdrop">
-      {/* Ambient radial gradient backdrop mirroring storefront hero */}
-      <div className="staff-entry-ambient" aria-hidden="true" />
-
+    <div className="staff-entry-shell">
       {/* Wordmark */}
       <p className="staff-entry-wordmark" aria-label="Rush N Relax">
         Rush <em>N</em> Relax
