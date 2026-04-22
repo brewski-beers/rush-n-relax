@@ -13,7 +13,7 @@ test.describe('Admin Login', () => {
     await page.goto('/admin/login');
 
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Admin Login' })
+      page.getByRole('heading', { level: 1, name: /Sign in to admin/ })
     ).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Sign in with Google' })
@@ -50,7 +50,7 @@ test.describe('Admin Login', () => {
 
     await expect(page).toHaveURL(/\/admin\/login/);
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Admin Login' })
+      page.getByRole('heading', { level: 1, name: /Sign in to admin/ })
     ).toBeVisible();
   });
 });

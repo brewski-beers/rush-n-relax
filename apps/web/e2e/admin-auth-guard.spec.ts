@@ -37,7 +37,7 @@ test.describe('Admin Auth Guard — unauthenticated redirects', () => {
       // Then: they are redirected to /admin/login
       await expect(page).toHaveURL(/\/admin\/login/, { timeout: 8000 });
       await expect(
-        page.getByRole('heading', { level: 1, name: 'Admin Login' })
+        page.getByRole('heading', { level: 1, name: /Sign in to admin/ })
       ).toBeVisible();
     });
   }
