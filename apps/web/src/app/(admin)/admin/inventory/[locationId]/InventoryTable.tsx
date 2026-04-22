@@ -114,6 +114,7 @@ function InventoryRow({
     value: boolean
   ) {
     clearError();
+    if (blockedMessage) setBlockedMessage(null);
     const inStockCascaded = field === 'inStock' && !value;
 
     const nextPatch: {
@@ -178,12 +179,12 @@ function InventoryRow({
             availablePickup: false,
           });
           setBlockedMessage(QTY_ZERO_TOAST);
-          setTimeout(() => setBlockedMessage(null), 4000);
+          setTimeout(() => setBlockedMessage(null), 5000);
         } else if (inStockCascaded) {
           // inStock toggled off -> qty forced to 0, availability cleared.
           // Surface inline toast so staff understand the cascade.
           setBlockedMessage(QTY_ZERO_TOAST);
-          setTimeout(() => setBlockedMessage(null), 4000);
+          setTimeout(() => setBlockedMessage(null), 5000);
         } else {
           setBlockedMessage(null);
           triggerSuccess();
@@ -195,6 +196,8 @@ function InventoryRow({
 
   function handleQuantityInput(value: string) {
     if (/^\d*$/.test(value)) {
+      // Dismiss any lingering cascade toast when staff begins re-editing the row.
+      if (blockedMessage) setBlockedMessage(null);
       const nextQty = normalizeQuantityInput(value);
       setState({
         quantityInput: value,
@@ -232,7 +235,7 @@ function InventoryRow({
       onSuccess: () => {
         if (cascadeCleared) {
           setBlockedMessage(QTY_ZERO_TOAST);
-          setTimeout(() => setBlockedMessage(null), 4000);
+          setTimeout(() => setBlockedMessage(null), 5000);
         } else {
           triggerSuccess();
         }

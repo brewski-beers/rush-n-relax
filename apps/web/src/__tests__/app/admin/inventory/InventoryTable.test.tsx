@@ -153,3 +153,73 @@ describe('InventoryTable — qty=0 cascade toast (issue #198)', () => {
     });
   });
 });
+
+describe('InventoryTable — toast dismissal (issue #220)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    updateInventoryItemMock.mockResolvedValue({});
+  });
+
+  describe('given the cascade toast is showing', () => {
+    it('auto-dismisses after 5 seconds', async () => {
+      vi.useFakeTimers();
+      try {
+        render(
+          <InventoryTable
+            rows={[baseRow({ availableOnline: true })]}
+            locationId="hub"
+            isOnline
+          />
+        );
+        const qty = screen.getByLabelText(/Quantity for Test Flower/i);
+        await act(async () => {
+          fireEvent.change(qty, { target: { value: '0' } });
+          fireEvent.blur(qty);
+        });
+        // Flush the awaited action
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(0);
+        });
+        expect(screen.getByText(TOAST_COPY)).toBeInTheDocument();
+
+        // Just before 5s, still there
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(4999);
+        });
+        expect(screen.queryByText(TOAST_COPY)).toBeInTheDocument();
+
+        // At 5s, gone
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(2);
+        });
+        expect(screen.queryByText(TOAST_COPY)).not.toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('dismisses immediately when staff begins re-editing the row', async () => {
+      render(
+        <InventoryTable
+          rows={[baseRow({ availableOnline: true })]}
+          locationId="hub"
+          isOnline
+        />
+      );
+      const qty = screen.getByLabelText(/Quantity for Test Flower/i);
+      await act(async () => {
+        fireEvent.change(qty, { target: { value: '0' } });
+        fireEvent.blur(qty);
+      });
+      await waitFor(() => {
+        expect(screen.getByText(TOAST_COPY)).toBeInTheDocument();
+      });
+
+      // Re-edit the qty input — toast should clear immediately
+      await act(async () => {
+        fireEvent.change(qty, { target: { value: '3' } });
+      });
+      expect(screen.queryByText(TOAST_COPY)).not.toBeInTheDocument();
+    });
+  });
+});
