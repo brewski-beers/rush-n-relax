@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   signInWithPopup,
   GoogleAuthProvider,
@@ -49,11 +50,10 @@ async function exchangeTokenForSession(
 }
 
 export default function LoginPage() {
+  const router = useRouter();
   const [tab, setTab] = useState<'google' | 'phone' | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const [redirecting, setRedirecting] = useState(false);
-  const busy = isPending || redirecting;
+  const [busy, startTransition] = useTransition();
 
   // Phone flow state
   const [phone, setPhone] = useState('');
@@ -92,8 +92,8 @@ export default function LoginPage() {
           );
         }
 
-        setRedirecting(true);
-        window.location.assign('/admin/dashboard');
+        router.replace('/admin/dashboard');
+        router.refresh();
       } catch (err: unknown) {
         const message =
           err instanceof Error
@@ -170,8 +170,8 @@ export default function LoginPage() {
           );
         }
 
-        setRedirecting(true);
-        window.location.assign('/admin/dashboard');
+        router.replace('/admin/dashboard');
+        router.refresh();
       } catch (err: unknown) {
         const message =
           err instanceof Error
