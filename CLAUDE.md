@@ -134,3 +134,13 @@ export OBSIDIAN_API_KEY="<your-obsidian-local-rest-api-key>"
 Get the key from Obsidian → Settings → Community Plugins → Local REST API → API Key.
 
 Never commit a literal value into `.mcp.json`. If a new MCP server needs a secret, follow the same `${ENV_VAR}` pattern.
+
+---
+
+## Worktree Hygiene
+
+To prevent worktree and branch sprawl:
+
+- **Agents**: when work completes (PR merged or abandoned), call the `ExitWorktree` action with `remove: true` to detach the worktree cleanly. Never leave `/private/tmp/rnr-*` or `.claude/worktrees/*` directories behind after the task is done.
+- **Manual cleanup**: run `./tools/prune-worker-branches.sh` from the repo root to delete local `worker/*` branches already merged into `main`. Safe to run anytime — it uses `git branch -d` (refuses unmerged work).
+- **Stale worktrees**: `git worktree list` to inspect; `git worktree remove <path>` for clean ones; `git worktree prune` to clear refs to deleted dirs.
