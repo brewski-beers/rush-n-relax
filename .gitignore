@@ -87,3 +87,4 @@ serviceAccountKey.json
 .claude/memory/
 .claire/
 .vercel
+.claude/scheduled_tasks.lock
