@@ -45,16 +45,10 @@ jobs:
           service_account: firebase-adminsdk-fbsvc@rush-n-relax.iam.gserviceaccount.com
 
       - name: Validate Functions secret access
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
         run: |
           pnpm exec firebase functions:secrets:access GOOGLE_PLACES_API_KEY \
             --project "$FIREBASE_PROJECT_ID" \
             --non-interactive
-
-      - name: Cleanup preflight credentials
-        if: always()
-        run: rm -f "${{ steps.auth.outputs.credentials_path }}"
 
   verify:
     name: verify
