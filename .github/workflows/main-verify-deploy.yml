@@ -46,7 +46,8 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
         run: |
           pnpm exec firebase projects:list \
-            --non-interactive | grep "$FIREBASE_PROJECT_ID"
+            --project "$FIREBASE_PROJECT_ID" \
+            --non-interactive 2>&1
 
       - name: Validate Functions secret access
         env:
