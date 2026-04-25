@@ -41,14 +41,6 @@ jobs:
         with:
           service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
 
-      - name: Validate Firebase auth and project access
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
-        run: |
-          pnpm exec firebase projects:list \
-            --project "$FIREBASE_PROJECT_ID" \
-            --non-interactive 2>&1
-
       - name: Validate Functions secret access
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_path }}
