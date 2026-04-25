@@ -2,8 +2,10 @@
  * Firebase Admin SDK singleton — server-side only.
  * Used by Server Components and API routes for privileged Firestore reads/writes.
  *
- * In Vercel: set FIREBASE_SERVICE_ACCOUNT_JSON env var with the service account JSON.
- * For local development, set GOOGLE_APPLICATION_CREDENTIALS to a service account JSON.
+ * Auth hierarchy (in order):
+ * 1. Vercel OIDC → GCP Workload Identity Federation (keyless, Phase B)
+ * 2. Static SA key in FIREBASE_SERVICE_ACCOUNT_JSON (fallback during migration)
+ * 3. Application Default Credentials (ADC: gcloud auth, emulators, App Hosting)
  */
 import { getApps, initializeApp, cert, type App } from 'firebase-admin/app';
 import {
@@ -27,10 +29,48 @@ function getAdminApp(): App {
     return adminApp;
   }
 
-  // In Firebase App Hosting: ADC provides credentials automatically.
-  // In CI/local dev: GOOGLE_APPLICATION_CREDENTIALS env var points to service account.
+  // Phase B (Vercel OIDC → WIF): Build external account config from Vercel env vars
+  // When enabled, Vercel injects VERCEL_OIDC_TOKEN automatically.
+  // Firebase Admin SDK will exchange this token for a GCP bearer token via WIF.
+  if (
+    process.env.VERCEL_OIDC_TOKEN &&
+    process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER &&
+    process.env.GCP_SERVICE_ACCOUNT_EMAIL
+  ) {
+    const externalAccountConfig = {
+      type: 'external_account',
+      audience: process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER,
+      subject_token_type: 'urn:ietf:params:oauth:token-type:jwt',
+      token_url: 'https://sts.googleapis.com/v1/token',
+      credential_source: {
+        environment_id: 'azure1',
+        // Required by google-auth-library, but Vercel OIDC is provided via subject_token
+        regional_cred_verification_url:
+          'https://sts.{region}.googleapis.com/v1/validateToken?access_token={token}',
+      },
+      service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${process.env.GCP_SERVICE_ACCOUNT_EMAIL}:generateAccessToken`,
+      subject_token: process.env.VERCEL_OIDC_TOKEN,
+    };
+
+    try {
+      adminApp = initializeApp({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any -- Firebase Admin accepts credential config objects
+        credential: externalAccountConfig as any,
+        projectId: 'rush-n-relax',
+        storageBucket: 'rush-n-relax.firebasestorage.app',
+      });
+      return adminApp;
+    } catch (err) {
+      console.warn(
+        'Vercel OIDC initialization failed, falling back to next method:',
+        err
+      );
+      // Fall through to next auth method
+    }
+  }
+
+  // Fallback (during migration or if WIF fails): static SA key
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    // Allow passing service account as an env var JSON string (useful in some CI envs)
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON.parse is any by design
     const serviceAccount = JSON.parse(
       process.env.FIREBASE_SERVICE_ACCOUNT_JSON
@@ -41,13 +81,14 @@ function getAdminApp(): App {
       projectId: 'rush-n-relax',
       storageBucket: 'rush-n-relax.firebasestorage.app',
     });
-  } else {
-    // Application Default Credentials (App Hosting + local with gcloud auth)
-    adminApp = initializeApp({
-      projectId: 'rush-n-relax',
-      storageBucket: 'rush-n-relax.firebasestorage.app',
-    });
+    return adminApp;
   }
+
+  // Final fallback: Application Default Credentials (ADC / gcloud auth / emulators)
+  adminApp = initializeApp({
+    projectId: 'rush-n-relax',
+    storageBucket: 'rush-n-relax.firebasestorage.app',
+  });
 
   return adminApp;
 }
