@@ -47,7 +47,7 @@ jobs:
         run: |
           pnpm exec firebase ext:list \
             --project "$FIREBASE_PROJECT_ID" \
-            --non-interactive > /dev/null
+            --non-interactive
 
       - name: Validate Functions secret access
         env:
@@ -55,7 +55,7 @@ jobs:
         run: |
           pnpm exec firebase functions:secrets:access GOOGLE_PLACES_API_KEY \
             --project "$FIREBASE_PROJECT_ID" \
-            --non-interactive > /dev/null
+            --non-interactive
 
       - name: Cleanup preflight credentials
         if: always()
