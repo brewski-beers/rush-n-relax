@@ -118,3 +118,19 @@ On session start, load these for context (see global CLAUDE.md for the `cat $KNO
 
 - [[handoff-self-documentation]]
 
+---
+
+## Local Setup — MCP Secrets
+
+`.mcp.json` is a symlink to `~/Developer/BrewCortex/.mcp.json` (shared across all KB projects). It uses env-var interpolation for secrets — no live keys are committed.
+
+To enable the Obsidian MCP server locally, export `OBSIDIAN_API_KEY` in your shell profile:
+
+```bash
+# ~/.zshrc
+export OBSIDIAN_API_KEY="<your-obsidian-local-rest-api-key>"
+```
+
+Get the key from Obsidian → Settings → Community Plugins → Local REST API → API Key.
+
+Never commit a literal value into `.mcp.json`. If a new MCP server needs a secret, follow the same `${ENV_VAR}` pattern.
