@@ -13,16 +13,20 @@
  * Invariants (enforced at every write):
  *   - quantity ≥ 0, integer
  *   - inStock = quantity > 0
- *   - availableOnline = false when inStock = false
  *   - availablePickup = false when inStock = false
- *   - featured = false when inStock = false (online location only)
+ *   - featured = false when inStock = false
  *   - Every mutation writes an immutable adjustment record
+ *
+ * Legacy `availableOnline` was retired in #232 — the repository no longer
+ * reads or writes that field. Compliance guards continue to honor an
+ * `availableOnline: true` patch argument for back-compat with admin actions
+ * pending their own removal (#233); the request is treated as intent to
+ * expose the product for purchase.
  */
 import { cache } from 'react';
 import {
   getAdminFirestore,
   toDate,
-  HUB_LOCATION_ID,
   ONLINE_LOCATION_ID,
 } from '@/lib/firebase/admin';
 import type {
@@ -70,7 +74,7 @@ export async function listInventoryForLocation(
 /**
  * Fetch a single inventory item for a product at a location.
  * Returns null if the item has not been tracked yet.
- * Callers should treat null as { inStock: false, availableOnline: false }.
+ * Callers should treat null as { inStock: false }.
  * Wrapped with React cache() to deduplicate parallel calls within the same request.
  */
 export const getInventoryItem = cache(
@@ -130,7 +134,6 @@ export async function listOnlineAvailableInventory(
       productId: doc.id,
       locationId: ONLINE_LOCATION_ID,
       inStock: d.inStock ?? false,
-      availableOnline: d.availableOnline ?? false,
       availablePickup: false,
       featured: d.featured ?? false,
       quantity: d.quantity ?? undefined,
@@ -146,11 +149,11 @@ export async function listOnlineAvailableInventory(
 /**
  * List featured inventory items for a location.
  *
- * Hub: returns items where featured = true. Invariants guarantee availableOnline
- * and inStock are also true. Used to populate homepage "What We Carry".
+ * Online: returns items where featured = true. Invariants guarantee inStock
+ * is also true. Used to populate homepage "What We Carry".
  *
- * Retail: returns items where featured = true. Invariants guarantee inStock is
- * also true. Used to populate per-store featured sections.
+ * Retail: returns items where featured = true. Invariants guarantee inStock
+ * is also true. Used to populate per-store featured sections.
  */
 export async function listFeaturedInventory(
   locationId: string,
@@ -175,7 +178,6 @@ export async function listFeaturedInventory(
       productId: doc.id,
       locationId,
       inStock: d.inStock ?? false,
-      availableOnline: d.availableOnline ?? false,
       availablePickup: d.availablePickup ?? false,
       featured: true,
       quantity: d.quantity ?? undefined,
@@ -188,14 +190,37 @@ export async function listFeaturedInventory(
   };
 }
 
+/**
+ * List featured inventory items at a location, returning the full
+ * `InventoryItem` shape (not the summary). Filters to featured && inStock —
+ * the invariant at write-time guarantees featured implies inStock, but the
+ * equality query is spelled out here to keep the contract explicit.
+ *
+ * Introduced for the simplified storefront/home-page rails (#238) that need
+ * the full item (notes, updatedAt, etc.) without a second round-trip.
+ */
+export async function listFeaturedAtLocation(
+  locationId: string
+): Promise<InventoryItem[]> {
+  const col = inventoryItemsCol(locationId);
+  const snap = await col
+    .where('featured', '==', true)
+    .where('inStock', '==', true)
+    .get();
+  return snap.docs.map(doc => docToInventoryItem(doc.id, doc.data()));
+}
+
 // ── Write operations ──────────────────────────────────────────────────────
 
 /**
  * Create or update an inventory item.
  * Document ID is the productId — one record per product per location.
  *
- * Compliance guard: setting availableOnline: true is blocked if the product
- * has status 'compliance-hold'. Throws if violated.
+ * Compliance guard: setting availableOnline: true (legacy, back-compat) or
+ * availablePickup: true is blocked if the product has status 'compliance-hold'.
+ * Throws if violated. Note that `availableOnline` is no longer persisted —
+ * the argument is honored only as intent for the compliance check until
+ * consumer call sites are cleaned up (#233).
  *
  * Every call writes an immutable adjustment log entry atomically alongside
  * the item update. The `adjustment` parameter controls the log metadata.
@@ -207,6 +232,7 @@ export async function setInventoryItem(
   productId: string,
   patch: {
     inStock?: boolean;
+    /** @deprecated Legacy — accepted for compliance-guard back-compat only; not persisted. */
     availableOnline?: boolean;
     availablePickup?: boolean;
     featured?: boolean;
@@ -227,14 +253,12 @@ export async function setInventoryItem(
   const itemRef = inventoryItemsCol(locationId).doc(productId);
   const currentSnap = await itemRef.get();
   const current = currentSnap.data();
-  const isHub = locationId === HUB_LOCATION_ID;
 
   const currentQuantity = normalizeQuantity(
     current?.quantity,
     current?.inStock ?? false
   );
   const currentInStock: boolean = current?.inStock ?? false;
-  const currentAvailableOnline: boolean = current?.availableOnline ?? false;
   const currentAvailablePickup: boolean = current?.availablePickup ?? false;
   const currentFeatured: boolean = current?.featured ?? false;
 
@@ -249,22 +273,22 @@ export async function setInventoryItem(
 
   const nextInStock = nextQuantity > 0;
 
-  const requestedAvailableOnline =
-    patch.availableOnline ?? currentAvailableOnline;
   const requestedAvailablePickup =
     patch.availablePickup ?? currentAvailablePickup;
   const requestedFeatured = patch.featured ?? currentFeatured;
 
-  const nextAvailableOnline = nextInStock ? requestedAvailableOnline : false;
   const nextAvailablePickup = nextInStock ? requestedAvailablePickup : false;
-  // Hub: featured requires availableOnline; all locations: featured requires inStock
-  const nextFeatured = isHub
-    ? nextAvailableOnline && requestedFeatured
-    : nextInStock && requestedFeatured;
+  // featured requires inStock at every location; availableOnline is no longer
+  // a precondition (storefront visibility derives from inStock at the online
+  // location directly — see listFeaturedAtLocation).
+  const nextFeatured = nextInStock && requestedFeatured;
 
-  if (nextAvailableOnline || nextAvailablePickup) {
+  // Compliance guard: still honors the legacy availableOnline === true intent
+  // so admin actions that haven't been migrated (#233) keep their safety net.
+  const requestsOnlineIntent = patch.availableOnline === true && nextInStock;
+  if (requestsOnlineIntent || nextAvailablePickup) {
     // Intentional cross-collection read: this compliance guard must be
-    // co‑located with the write to avoid a circular dependency between repos.
+    // co-located with the write to avoid a circular dependency between repos.
     const productDoc = await db.collection('products').doc(productId).get();
     if (productDoc.exists && productDoc.data()?.status === 'compliance-hold') {
       throw new Error(
@@ -282,7 +306,6 @@ export async function setInventoryItem(
     locationId,
     quantity: nextQuantity,
     inStock: nextInStock,
-    availableOnline: nextAvailableOnline,
     availablePickup: nextAvailablePickup,
     featured: nextFeatured,
     ...(patch.notes !== undefined && { notes: patch.notes }),
@@ -298,8 +321,6 @@ export async function setInventoryItem(
     const changedFields: InventoryAdjustment['changedFields'] = [];
     if (nextQuantity !== currentQuantity) changedFields.push('quantity');
     if (nextInStock !== currentInStock) changedFields.push('inStock');
-    if (nextAvailableOnline !== currentAvailableOnline)
-      changedFields.push('availableOnline');
     if (nextAvailablePickup !== currentAvailablePickup)
       changedFields.push('availablePickup');
     if (nextFeatured !== currentFeatured) changedFields.push('featured');
@@ -325,8 +346,9 @@ export async function setInventoryItem(
       deltaQuantity: nextQuantity - currentQuantity,
       previousInStock: currentInStock,
       nextInStock,
-      previousAvailableOnline: currentAvailableOnline,
-      nextAvailableOnline,
+      // Legacy schema fields — always false since availableOnline is retired (#232).
+      previousAvailableOnline: false,
+      nextAvailableOnline: false,
       previousAvailablePickup: currentAvailablePickup,
       nextAvailablePickup,
       previousFeatured: currentFeatured,
@@ -353,15 +375,13 @@ function docToInventoryItem(
 ): InventoryItem {
   const quantity = normalizeQuantity(d.quantity, d.inStock ?? false);
   const inStock = quantity > 0;
-  const availableOnline = inStock ? (d.availableOnline ?? false) : false;
 
   return {
     productId: id,
     locationId: d.locationId,
     inStock,
-    availableOnline,
     availablePickup: inStock ? (d.availablePickup ?? false) : false,
-    // featured requires inStock; for hub it also requires availableOnline
+    // featured requires inStock at every location.
     featured: inStock ? (d.featured ?? false) : false,
     quantity,
     variantPricing: docToVariantPricing(d.variantPricing),

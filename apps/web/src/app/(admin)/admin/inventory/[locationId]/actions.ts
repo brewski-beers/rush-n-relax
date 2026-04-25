@@ -8,18 +8,17 @@ import type { InventoryItem } from '@/types/inventory';
 /**
  * Result returned by {@link updateInventoryItem}.
  *
- * `blocked` describes availability flags that the caller asked to enable
- * but which the inventory cascade silently forced to `false` (e.g. because
- * quantity is 0 → inStock=false → availableOnline/availablePickup=false).
- * Consumers should surface an inline toast when any blocked flag is set;
- * the underlying patch is NOT auto-restored.
+ * Success returns the saved item. Failure returns an error string
+ * (400-style client error — e.g. invariant violation).
+ *
+ * @deprecated `blocked` is a transitional compat field retained so the
+ * existing admin UI (InventoryTable) keeps compiling while issue #234
+ * redesigns the consumer. It is always an empty object and will be
+ * removed in #234.
  */
-export interface UpdateInventoryItemResult {
-  blocked?: {
-    availableOnline?: true;
-    availablePickup?: true;
-  };
-}
+export type UpdateInventoryItemResult =
+  | { ok: true; data: InventoryItem; blocked?: Record<string, never> }
+  | { ok: false; error: string; blocked?: Record<string, never> };
 
 export async function updateInventoryItem(
   locationId: string,
@@ -27,12 +26,25 @@ export async function updateInventoryItem(
   patch: {
     inStock?: boolean;
     quantity?: number;
-    availableOnline?: boolean;
     availablePickup?: boolean;
     featured?: boolean;
   }
 ): Promise<UpdateInventoryItemResult> {
   const actor = await requireRole('owner');
+
+  // Invariant: featured=true requires inStock=true in the same patch
+  // (or already-true on the saved doc). Reject eagerly rather than
+  // silently writing a broken state.
+  if (patch.featured === true && patch.inStock !== true) {
+    const current =
+      patch.inStock === false ? null : await getInventoryItem(locationId, productId);
+    if (!current || current.inStock !== true) {
+      return {
+        ok: false,
+        error: 'Cannot feature an item that is not in stock.',
+      };
+    }
+  }
 
   const reason =
     patch.quantity !== undefined
@@ -41,9 +53,7 @@ export async function updateInventoryItem(
         ? 'toggle-stock'
         : patch.featured !== undefined
           ? 'toggle-featured'
-          : patch.availablePickup !== undefined
-            ? 'toggle-pickup'
-            : 'toggle-online';
+          : 'toggle-pickup';
 
   await setInventoryItem(
     locationId,
@@ -51,9 +61,6 @@ export async function updateInventoryItem(
     {
       ...(patch.inStock !== undefined && { inStock: patch.inStock }),
       ...(patch.quantity !== undefined && { quantity: patch.quantity }),
-      ...(patch.availableOnline !== undefined && {
-        availableOnline: patch.availableOnline,
-      }),
       ...(patch.availablePickup !== undefined && {
         availablePickup: patch.availablePickup,
       }),
@@ -66,34 +73,21 @@ export async function updateInventoryItem(
     }
   );
 
-  // Detect invariant cascade: if the caller tried to enable an availability
-  // flag, re-read the item and see whether the cascade forced it back to false.
-  const result: UpdateInventoryItemResult = {};
-  const wantsAvailableOnline = patch.availableOnline === true;
-  const wantsAvailablePickup = patch.availablePickup === true;
-
-  if (wantsAvailableOnline || wantsAvailablePickup) {
-    const saved = await getInventoryItem(locationId, productId);
-    if (saved) {
-      const blocked: UpdateInventoryItemResult['blocked'] = {};
-      if (wantsAvailableOnline && saved.availableOnline === false) {
-        blocked.availableOnline = true;
-      }
-      if (wantsAvailablePickup && saved.availablePickup === false) {
-        blocked.availablePickup = true;
-      }
-      if (blocked.availableOnline || blocked.availablePickup) {
-        result.blocked = blocked;
-      }
-    }
-  }
+  const saved = await getInventoryItem(locationId, productId);
 
   revalidatePath(`/admin/inventory/${locationId}`);
   revalidatePath('/admin/inventory');
   revalidatePath('/');
   revalidatePath('/products');
 
-  return result;
+  if (!saved) {
+    return {
+      ok: false,
+      error: 'Inventory item not found after write.',
+    };
+  }
+
+  return { ok: true, data: saved, blocked: {} };
 }
 
 export async function updateVariantPricing(
