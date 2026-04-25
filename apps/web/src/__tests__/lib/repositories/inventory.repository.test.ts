@@ -79,6 +79,7 @@ vi.mock('@/lib/firebase/admin', () => ({
   toDate: (value: Date | string | undefined) =>
     value ? new Date(value) : new Date(0),
   HUB_LOCATION_ID: 'hub',
+  ONLINE_LOCATION_ID: 'online',
 }));
 
 import { setInventoryItem } from '@/lib/repositories/inventory.repository';
@@ -111,7 +112,7 @@ describe('inventory.repository — normalizeQuantity invariants', () => {
   describe('given quantity: -5 on a new item', () => {
     it('clamps to 0 and sets inStock = false', async () => {
       stubCurrentItem(null);
-      stubProduct(null); // no compliance check needed (online=false)
+      stubProduct(null);
 
       await setInventoryItem('oak-ridge', 'product-a', { quantity: -5 });
 
@@ -137,31 +138,68 @@ describe('inventory.repository — normalizeQuantity invariants', () => {
   });
 });
 
-// ── setInventoryItem — zero-quantity invariants ───────────────────────────
+// ── setInventoryItem — availableOnline retirement (#232) ──────────────────
 
-describe('setInventoryItem — quantity: 0 clears all availability flags', () => {
+describe('setInventoryItem — availableOnline is no longer persisted', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('given an item currently in stock with all flags true', () => {
-    it('when quantity is set to 0, inStock / availableOnline / availablePickup / featured all become false', async () => {
+  describe('given an item with availableOnline: true requested', () => {
+    it('omits availableOnline from the written item payload', async () => {
+      stubCurrentItem({
+        quantity: 5,
+        inStock: true,
+        availablePickup: false,
+        featured: false,
+        locationId: 'online',
+      });
+      stubProduct(null); // no compliance status → no throw
+
+      await setInventoryItem(
+        'online',
+        'product-a',
+        { availableOnline: true },
+        {
+          reason: 'toggle-online',
+          updatedBy: 'admin@example.com',
+          source: 'admin-ui',
+        }
+      );
+
+      expect(batchCommitMock).toHaveBeenCalledOnce();
+      const [, itemPayload] = batchSetMock.mock.calls[0] as [
+        unknown,
+        Record<string, unknown>,
+      ];
+      expect(itemPayload).not.toHaveProperty('availableOnline');
+    });
+  });
+});
+
+// ── setInventoryItem — zero-quantity invariants ───────────────────────────
+
+describe('setInventoryItem — quantity: 0 clears availability flags', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given an item currently in stock with flags true', () => {
+    it('when quantity is set to 0, inStock / availablePickup / featured all become false', async () => {
       stubCurrentItem({
         quantity: 10,
         inStock: true,
-        availableOnline: true,
         availablePickup: true,
         featured: true,
-        locationId: 'hub',
+        locationId: 'online',
       });
-      // No compliance check needed because nextAvailableOnline will be false
       productGetMock.mockResolvedValue({
         exists: false,
         data: () => undefined,
       });
 
       await setInventoryItem(
-        'hub',
+        'online',
         'product-a',
         { quantity: 0 },
         {
@@ -172,36 +210,33 @@ describe('setInventoryItem — quantity: 0 clears all availability flags', () =>
       );
 
       expect(batchCommitMock).toHaveBeenCalledOnce();
-      // First batchSet call is the item; second is the adjustment log
       const [, itemPayload] = batchSetMock.mock.calls[0] as [
         unknown,
         Record<string, unknown>,
       ];
       expect(itemPayload.quantity).toBe(0);
       expect(itemPayload.inStock).toBe(false);
-      expect(itemPayload.availableOnline).toBe(false);
       expect(itemPayload.availablePickup).toBe(false);
       expect(itemPayload.featured).toBe(false);
     });
   });
 });
 
-// ── setInventoryItem — hub featured invariant ─────────────────────────────
+// ── setInventoryItem — featured requires inStock (all locations) ──────────
 
-describe('setInventoryItem — hub: featured forced to false when availableOnline is false', () => {
+describe('setInventoryItem — featured requires inStock at every location', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('given hub location with availableOnline: false and featured: true requested', () => {
-    it('persists featured = false', async () => {
+  describe('given an online-store item inStock with featured: true requested', () => {
+    it('persists featured = true (availableOnline is no longer a precondition)', async () => {
       stubCurrentItem({
         quantity: 5,
         inStock: true,
-        availableOnline: false,
         availablePickup: false,
         featured: false,
-        locationId: 'hub',
+        locationId: 'online',
       });
       productGetMock.mockResolvedValue({
         exists: false,
@@ -209,9 +244,9 @@ describe('setInventoryItem — hub: featured forced to false when availableOnlin
       });
 
       await setInventoryItem(
-        'hub',
+        'online',
         'product-b',
-        { availableOnline: false, featured: true },
+        { featured: true },
         {
           reason: 'toggle-featured',
           updatedBy: 'admin@example.com',
@@ -224,7 +259,7 @@ describe('setInventoryItem — hub: featured forced to false when availableOnlin
         unknown,
         Record<string, unknown>,
       ];
-      expect(itemPayload.featured).toBe(false);
+      expect(itemPayload.featured).toBe(true);
     });
   });
 });
@@ -237,20 +272,19 @@ describe('setInventoryItem — compliance-hold blocks availableOnline / availabl
   });
 
   describe('given a product on compliance-hold when availableOnline: true is requested', () => {
-    it('throws without writing any document', async () => {
+    it('throws without writing any document (legacy intent still gated)', async () => {
       stubCurrentItem({
         quantity: 5,
         inStock: true,
-        availableOnline: false,
         availablePickup: false,
         featured: false,
-        locationId: 'hub',
+        locationId: 'online',
       });
       stubProduct('compliance-hold');
 
       await expect(
         setInventoryItem(
-          'hub',
+          'online',
           'product-hold',
           { availableOnline: true },
           {
@@ -273,7 +307,6 @@ describe('setInventoryItem — compliance-hold blocks availableOnline / availabl
       stubCurrentItem({
         quantity: 5,
         inStock: true,
-        availableOnline: false,
         availablePickup: false,
         featured: false,
         locationId: 'oak-ridge',
@@ -311,7 +344,6 @@ describe('setInventoryItem — audit log written atomically with item update', (
       stubCurrentItem({
         quantity: 3,
         inStock: true,
-        availableOnline: false,
         availablePickup: false,
         featured: false,
         locationId: 'oak-ridge',
@@ -332,13 +364,9 @@ describe('setInventoryItem — audit log written atomically with item update', (
         }
       );
 
-      // batch.commit() must be called exactly once
       expect(batchCommitMock).toHaveBeenCalledOnce();
-
-      // Two batch.set() calls: item payload + audit log entry
       expect(batchSetMock).toHaveBeenCalledTimes(2);
 
-      // The second batch.set() is the audit log entry
       const [, logPayload] = batchSetMock.mock.calls[1] as [
         unknown,
         Record<string, unknown>,
@@ -350,6 +378,12 @@ describe('setInventoryItem — audit log written atomically with item update', (
       expect(logPayload.reason).toBe('manual-count');
       expect(logPayload.source).toBe('admin-ui');
       expect(logPayload.changedFields as string[]).toContain('quantity');
+      // availableOnline is retired — always false in audit log
+      expect(logPayload.previousAvailableOnline).toBe(false);
+      expect(logPayload.nextAvailableOnline).toBe(false);
+      expect(logPayload.changedFields as string[]).not.toContain(
+        'availableOnline'
+      );
     });
   });
 
@@ -372,9 +406,7 @@ describe('setInventoryItem — audit log written atomically with item update', (
   });
 });
 
-// ── docToInventoryItem mapping (tested indirectly through setInventoryItem +
-//    listInventoryForLocation, but we verify the key field mappings here via
-//    a stub of listInventoryForLocation's underlying .get() call) ──────────
+// ── docToInventoryItem mapping ────────────────────────────────────────────
 
 describe('inventory.repository — docToInventoryItem mapping', () => {
   beforeEach(() => {
@@ -383,9 +415,6 @@ describe('inventory.repository — docToInventoryItem mapping', () => {
 
   describe('given a Firestore doc with all fields present', () => {
     it('maps productId from doc.id, not d.productId', async () => {
-      // We exercise the mapping by reading back via getInventoryItem path.
-      // The snapshot must carry `id` because docToInventoryItem(doc.id, doc.data())
-      // reads the document id from the snapshot object itself.
       itemGetMock.mockResolvedValue({
         id: 'product-xyz',
         exists: true,
@@ -393,7 +422,6 @@ describe('inventory.repository — docToInventoryItem mapping', () => {
           locationId: 'oak-ridge',
           quantity: 7,
           inStock: true,
-          availableOnline: false,
           availablePickup: true,
           featured: true,
           notes: 'low stock',
@@ -402,9 +430,9 @@ describe('inventory.repository — docToInventoryItem mapping', () => {
         }),
       });
 
-      // getInventoryItem is a direct Firestore read — import it to verify mapping
-      const { getInventoryItem } =
-        await import('@/lib/repositories/inventory.repository');
+      const { getInventoryItem } = await import(
+        '@/lib/repositories/inventory.repository'
+      );
       const item = await getInventoryItem('oak-ridge', 'product-xyz');
 
       expect(item).not.toBeNull();
@@ -416,30 +444,31 @@ describe('inventory.repository — docToInventoryItem mapping', () => {
       expect(item!.featured).toBe(true);
       expect(item!.notes).toBe('low stock');
       expect(item!.updatedBy).toBe('admin@rushnrelax.com');
+      // availableOnline is no longer read/returned by the mapper
+      expect(item!.availableOnline).toBeUndefined();
     });
   });
 
   describe('given a Firestore doc with inStock: false', () => {
-    it('forces availableOnline, availablePickup, and featured to false regardless of stored values', async () => {
+    it('forces availablePickup and featured to false regardless of stored values', async () => {
       itemGetMock.mockResolvedValue({
         id: 'product-out',
         exists: true,
         data: () => ({
-          locationId: 'hub',
+          locationId: 'online',
           quantity: 0,
           inStock: false,
-          availableOnline: true, // stored as true — must be overridden
-          availablePickup: true, // stored as true — must be overridden
-          featured: true, // stored as true — must be overridden
+          availablePickup: true,
+          featured: true,
         }),
       });
 
-      const { getInventoryItem } =
-        await import('@/lib/repositories/inventory.repository');
-      const item = await getInventoryItem('hub', 'product-out');
+      const { getInventoryItem } = await import(
+        '@/lib/repositories/inventory.repository'
+      );
+      const item = await getInventoryItem('online', 'product-out');
 
       expect(item!.inStock).toBe(false);
-      expect(item!.availableOnline).toBe(false);
       expect(item!.availablePickup).toBe(false);
       expect(item!.featured).toBe(false);
     });
