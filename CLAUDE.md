@@ -63,10 +63,58 @@ When any of these files change → `docs/engineering/` must be reviewed and upda
 
 ## BrewCortex Agents (globally available)
 
-| Agent         | When to spawn                                                              |
-| ------------- | -------------------------------------------------------------------------- |
-| `strategist`  | Product direction, prioritization, what's next                             |
-| `research`    | Web lookups, library comparisons, doc fetches (runs on Haiku — fast/cheap) |
-| `engineering` | Complex multi-file code changes, refactors, bug hunts                      |
-| `architect`   | System design, schema decisions, architectural trade-offs                  |
-| `qa`          | Test strategy, coverage audits, BDD validation, missing test scenarios     |
+Source of truth: `~/Developer/BrewCortex/.claude/agents/`. Current roster (16 agents):
+
+| Agent          | When to spawn (RnR-specific notes)                                                                |
+| -------------- | ------------------------------------------------------------------------------------------------- |
+| `strategist`   | Product direction, prioritization, what's next for RnR                                            |
+| `architect`    | System design, Firestore schema decisions, infra trade-offs                                       |
+| `engineering`  | Multi-file code changes, refactors, bug hunts (default for code work)                             |
+| `qa`           | Test strategy, coverage audits, BDD validation, missing scenarios                                 |
+| `research`     | Web lookups, library comparisons, doc fetches (Haiku — fast/cheap)                                |
+| `website`      | UI audit, component generation, a11y, SEO, CSS architecture for the storefront                    |
+| `copy`         | Landing page copy, CTAs, product descriptions, email/SMS messaging                                |
+| `firebase`     | Firestore rules, Auth config, Cloud Functions, Storage rules, emulator, security audits           |
+| `vercel`       | Vercel config, env vars, build settings, edge functions, domain wiring                            |
+| `monitoring`   | Vercel deployment health, function errors, Cloudflare DNS/CDN, prod incident triage               |
+| `github`       | GitHub Actions spend, CI/CD health, Dependabot PRs, workflow auth (WIF)                           |
+| `partner`      | Not typically used for RnR (client-facing proposals/SOWs)                                         |
+| `mobile`       | **Not applicable** — RnR has no native app. Skip.                                                 |
+| `worker`       | Issue-queue automation; invoked via `/work`. Never bypass for issue-driven work.                  |
+| `orchestrator` | Multi-agent coordination across long-running initiatives                                          |
+| `heartbeat`    | Scheduled / cron-triggered checks                                                                 |
+
+## Parallel Work
+
+For batched issue work, use `/work-parallel` — fans out multiple worker agents over independent worktrees, each opening its own PR. Use when 2+ unrelated issues are queued and won't conflict on the same files. Single-ticket work still goes through `/work`.
+
+---
+
+## Vault Knowledge to Load
+
+On session start, load these for context (see global CLAUDE.md for the `cat $KNOWLEDGE/$domain.md` pattern):
+
+**Cross-project domain knowledge** (`/Users/kb/Documents/Obsidian Vault/knowledge/`):
+
+- `firebase.md` — Admin SDK, Firestore, Functions, emulator patterns
+- `nextjs.md` — App Router, Server Components, Server Actions
+- `react.md` — React 19 patterns
+- `typescript.md` — strict-mode patterns, no-any conventions
+- `testing.md` — Vitest + Playwright patterns
+- `vercel.md` / `vercel-cloudflare.md` — hosting + DNS
+- `ci-github-actions.md` — workflow patterns, WIF
+- `secrets-rotation.md` — credentials lifecycle (RnR uses WIF + `vercel-runtime` SA)
+- `seo.md`, `css-design.md` — storefront work
+
+**Project-specific** (`/Users/kb/Documents/Obsidian Vault/projects/rush-n-relax/`):
+
+- `patterns.md` — accumulated RnR patterns and gotchas
+- `codex.md` — RnR architecture codex
+- `firebase-credentials-architecture.md` — WIF + runtime SA design
+- `snapshot.md` — current state snapshot
+- `handoff-*.md` — open handoff notes (see Active Handoffs below)
+
+## Active Handoffs
+
+- [[handoff-self-documentation]]
+
