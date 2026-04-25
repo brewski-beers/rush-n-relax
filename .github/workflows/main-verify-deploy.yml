@@ -25,9 +25,11 @@ jobs:
     if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
     env:
       FIREBASE_PROJECT_ID: rush-n-relax
-      FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -35,11 +37,12 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Setup Firebase auth
+      - name: Setup Firebase auth via WIF
         id: auth
-        uses: ./.github/actions/firebase-auth-setup
+        uses: ./.github/actions/firebase-auth-wif
         with:
-          service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
+          workload_identity_provider: projects/556383052079/locations/global/workloadIdentityPools/rush-n-relax-wif/providers/github-provider
+          service_account: firebase-adminsdk-fbsvc@rush-n-relax.iam.gserviceaccount.com
 
       - name: Validate Functions secret access
         env:
@@ -136,8 +139,10 @@ jobs:
     if: github.event.pull_request.merged == true && needs.changes.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
     env:
-      FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RUSH_N_RELAX }}
       FIREBASE_PROJECT_ID: rush-n-relax
     steps:
       - name: Checkout code
@@ -148,11 +153,12 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Setup Firebase auth
+      - name: Setup Firebase auth via WIF
         id: auth
-        uses: ./.github/actions/firebase-auth-setup
+        uses: ./.github/actions/firebase-auth-wif
         with:
-          service-account-json: ${{ env.FIREBASE_DEPLOY_SERVICE_ACCOUNT_JSON }}
+          workload_identity_provider: projects/556383052079/locations/global/workloadIdentityPools/rush-n-relax-wif/providers/github-provider
+          service_account: firebase-adminsdk-fbsvc@rush-n-relax.iam.gserviceaccount.com
 
       - name: Build Cloud Functions
         run: cd functions && npm ci && npm run build

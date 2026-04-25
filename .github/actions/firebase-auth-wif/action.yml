@@ -1,0 +1,40 @@
+name: 'Firebase Auth via Workload Identity Federation'
+description: 'Exchange GitHub OIDC token for Firebase service account credentials via WIF'
+
+inputs:
+  workload_identity_provider:
+    description: 'GCP Workload Identity Provider resource name'
+    required: true
+  service_account:
+    description: 'Firebase service account email'
+    required: true
+
+outputs:
+  credentials_path:
+    description: 'Absolute path to generated credentials file (short-lived access token)'
+    value: ${{ steps.wif.outputs.credentials_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Authenticate to Google Cloud via WIF
+      id: wif
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        service_account: ${{ inputs.service_account }}
+        token_format: 'access_token'
+        access_token_lifetime: '1200s'
+
+    - name: Export ADC and credentials path
+      shell: bash
+      run: |
+        # The auth action sets GOOGLE_APPLICATION_CREDENTIALS in the environment.
+        # For Firebase CLI compatibility, we also export the access token path.
+        CREDENTIALS_PATH="${{ steps.wif.outputs.credentials_file }}"
+        if [ -z "$CREDENTIALS_PATH" ]; then
+          echo "::error::WIF auth failed to produce credentials file"
+          exit 1
+        fi
+        echo "credentials_path=$CREDENTIALS_PATH" >> "$GITHUB_OUTPUT"
+        echo "Access token path: $CREDENTIALS_PATH"
