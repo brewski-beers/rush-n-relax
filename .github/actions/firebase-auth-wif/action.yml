@@ -31,7 +31,7 @@ runs:
       run: |
         # The auth action sets GOOGLE_APPLICATION_CREDENTIALS in the environment.
         # For Firebase CLI compatibility, we also export the access token path.
-        CREDENTIALS_PATH="${{ steps.wif.outputs.credentials_file }}"
+        CREDENTIALS_PATH="${{ steps.wif.outputs.credentials_file_path }}"
         if [ -z "$CREDENTIALS_PATH" ]; then
           echo "::error::WIF auth failed to produce credentials file"
           exit 1
