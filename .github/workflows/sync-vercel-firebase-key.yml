@@ -1,0 +1,145 @@
+name: Sync Firebase Service Account Key to Vercel
+
+on:
+  workflow_dispatch:
+    inputs:
+      sa_email:
+        description: 'Service Account email (e.g., vercel-runtime@rush-n-relax.iam.gserviceaccount.com)'
+        required: true
+        type: string
+      sa_key_json:
+        description: 'Service Account JSON key (paste the entire JSON object)'
+        required: true
+        type: string
+
+jobs:
+  sync-to-vercel:
+    name: Update Vercel FIREBASE_SERVICE_ACCOUNT_JSON
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Service Account JSON
+        id: validate
+        run: |
+          # Parse and validate the JSON
+          echo "${{ inputs.sa_key_json }}" | jq empty 2>/dev/null
+          if [ $? -ne 0 ]; then
+            echo "ERROR: Invalid JSON provided" >&2
+            exit 1
+          fi
+
+          # Extract key ID and project ID for logging
+          KEY_ID=$(echo "${{ inputs.sa_key_json }}" | jq -r '.private_key_id')
+          PROJECT_ID=$(echo "${{ inputs.sa_key_json }}" | jq -r '.project_id')
+          echo "key_id=$KEY_ID" >> $GITHUB_OUTPUT
+          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+          echo "Validated SA: ${{ inputs.sa_email }} (project: $PROJECT_ID)"
+
+      - name: Update Vercel Environment Variables
+        id: update_vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          SA_JSON: ${{ inputs.sa_key_json }}
+        run: |
+          # Use Vercel API to update env vars across Production, Preview, and Development
+          # Docs: https://vercel.com/docs/rest-api/endpoints#create-an-environment-variable
+
+          # First, list existing env vars to find IDs to update
+          echo "Fetching existing environment variables..."
+          curl -s "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_ORG_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            > /tmp/env_vars.json
+
+          # Extract IDs of FIREBASE_SERVICE_ACCOUNT_JSON entries
+          PROD_ID=$(jq -r '.envs[] | select(.key == "FIREBASE_SERVICE_ACCOUNT_JSON" and .target == ["production"]) | .id' /tmp/env_vars.json | head -1)
+          PREVIEW_ID=$(jq -r '.envs[] | select(.key == "FIREBASE_SERVICE_ACCOUNT_JSON" and .target == ["preview"]) | .id' /tmp/env_vars.json | head -1)
+          DEV_ID=$(jq -r '.envs[] | select(.key == "FIREBASE_SERVICE_ACCOUNT_JSON" and .target == ["development"]) | .id' /tmp/env_vars.json | head -1)
+
+          echo "Found env var IDs: PROD=$PROD_ID, PREVIEW=$PREVIEW_ID, DEV=$DEV_ID"
+
+          # Update Production (DELETE old, CREATE new)
+          if [ ! -z "$PROD_ID" ] && [ "$PROD_ID" != "null" ]; then
+            echo "Deleting old Production env var..."
+            curl -s -X DELETE "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env/$PROD_ID?teamId=$VERCEL_ORG_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" | jq .
+            sleep 1
+          fi
+
+          echo "Creating new Production env var..."
+          curl -s -X POST "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_ORG_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"key\": \"FIREBASE_SERVICE_ACCOUNT_JSON\",
+              \"value\": $(echo "$SA_JSON" | jq -c .),
+              \"target\": [\"production\"],
+              \"type\": \"encrypted\"
+            }" | jq .
+
+          # Update Preview (DELETE old, CREATE new)
+          if [ ! -z "$PREVIEW_ID" ] && [ "$PREVIEW_ID" != "null" ]; then
+            echo "Deleting old Preview env var..."
+            curl -s -X DELETE "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env/$PREVIEW_ID?teamId=$VERCEL_ORG_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" | jq .
+            sleep 1
+          fi
+
+          echo "Creating new Preview env var..."
+          curl -s -X POST "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_ORG_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"key\": \"FIREBASE_SERVICE_ACCOUNT_JSON\",
+              \"value\": $(echo "$SA_JSON" | jq -c .),
+              \"target\": [\"preview\"],
+              \"type\": \"encrypted\"
+            }" | jq .
+
+          # Update Development (DELETE old, CREATE new)
+          if [ ! -z "$DEV_ID" ] && [ "$DEV_ID" != "null" ]; then
+            echo "Deleting old Development env var..."
+            curl -s -X DELETE "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env/$DEV_ID?teamId=$VERCEL_ORG_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" | jq .
+            sleep 1
+          fi
+
+          echo "Creating new Development env var..."
+          curl -s -X POST "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_ORG_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"key\": \"FIREBASE_SERVICE_ACCOUNT_JSON\",
+              \"value\": $(echo "$SA_JSON" | jq -c .),
+              \"target\": [\"development\"],
+              \"type\": \"encrypted\"
+            }" | jq .
+
+          echo "Environment variables updated successfully"
+
+      - name: Trigger Vercel Redeploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "Triggering Vercel production redeploy..."
+          curl -s -X POST "https://api.vercel.com/v13/deployments?teamId=$VERCEL_ORG_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"projectId\": \"$VERCEL_PROJECT_ID\",
+              \"source\": \"github\",
+              \"gitSource\": {
+                \"type\": \"github\",
+                \"repo\": \"${{ github.repository }}\"
+              }
+            }" | jq '{ status: .status, url: .url }'
+
+          echo "Redeploy triggered. Monitor at: https://vercel.com/brewski-beers-projects/rush-n-relax"
+
+      - name: Cleanup
+        run: |
+          # Clean up any sensitive data from environment
+          unset SA_JSON
+          echo "✓ Workflow complete. Next: test Production/Preview deploy to verify new SA key is working."
