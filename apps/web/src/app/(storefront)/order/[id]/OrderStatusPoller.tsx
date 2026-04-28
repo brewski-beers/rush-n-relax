@@ -6,7 +6,7 @@ import type { OrderStatus } from '@/types';
 
 interface OrderStatusPollerProps {
   orderId: string;
-  /** Initial status from server render — only 'pending' or 'processing' triggers polling */
+  /** Initial status from server render — only awaiting_payment triggers polling */
   initialStatus: OrderStatus;
 }
 
@@ -21,9 +21,13 @@ async function fetchOrderStatus(orderId: string): Promise<OrderStatus | null> {
   return data.status;
 }
 
+const POLLING_STATES: ReadonlySet<OrderStatus> = new Set([
+  'awaiting_payment',
+]);
+
 /**
- * Client island that polls /api/order/[id]/status until the order leaves pending/processing.
- * Clears the cart on 'paid'.
+ * Client island that polls /api/order/[id]/status until the order leaves
+ * the awaiting_payment state. Clears the cart on 'paid'.
  */
 export function OrderStatusPoller({
   orderId,
@@ -33,8 +37,7 @@ export function OrderStatusPoller({
   const [status, setStatus] = useState<OrderStatus>(initialStatus);
   const [pollCount, setPollCount] = useState(0);
 
-  const isPolling =
-    (status === 'pending' || status === 'processing') && pollCount < MAX_POLLS;
+  const isPolling = POLLING_STATES.has(status) && pollCount < MAX_POLLS;
 
   useEffect(() => {
     if (!isPolling) {

@@ -55,8 +55,8 @@ export type {
   Order,
   OrderItem,
   OrderStatus,
-  FulfillmentType,
   ShippingAddress,
 } from './order';
+export { ALLOWED_TRANSITIONS } from './order';
 export type { CoaDocument } from './coa';
 export type { VariantTemplate } from './variant-template';

@@ -41,6 +41,7 @@ const EVENT_TO_STATUS: Record<string, OrderStatus> = {
   'payment.succeeded': 'paid',
   'payment.failed': 'failed',
   'payment.refunded': 'refunded',
+  'payment.voided': 'cancelled',
 };
 
 export async function POST(req: NextRequest) {

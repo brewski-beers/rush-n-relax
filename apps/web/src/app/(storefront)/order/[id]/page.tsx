@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getOrder } from '@/lib/repositories';
 import { formatCents } from '@/utils/currency';
+import type { OrderStatus } from '@/types';
 import { OrderStatusPoller } from './OrderStatusPoller';
 
 interface Props {
@@ -10,20 +11,37 @@ interface Props {
 
 export const dynamic = 'force-dynamic';
 
+const IN_PROGRESS_STATES: ReadonlySet<OrderStatus> = new Set([
+  'paid',
+  'preparing',
+  'out_for_delivery',
+]);
+
+const TERMINATED_STATES: ReadonlySet<OrderStatus> = new Set([
+  'cancelled',
+  'id_rejected',
+]);
+
 export default async function OrderConfirmationPage({ params }: Props) {
   const { id } = await params;
   const order = await getOrder(id);
 
   if (!order) notFound();
 
-  const isPendingOrProcessing =
-    order.status === 'pending' || order.status === 'processing';
+  const showPoller =
+    order.status === 'pending_id_verification' ||
+    order.status === 'awaiting_payment';
+  const showInProgress = IN_PROGRESS_STATES.has(order.status);
+  const showCompleted = order.status === 'completed';
+  const showFailed = order.status === 'failed';
+  const showTerminated = TERMINATED_STATES.has(order.status);
+  const showRefunded = order.status === 'refunded';
 
   return (
     <main className="order-confirmation-page">
       <div className="container">
-        {/* ── Pending / Processing ──────────────────────────────── */}
-        {isPendingOrProcessing && (
+        {/* ── Awaiting payment / verification ─────────────────────── */}
+        {showPoller && (
           <section className="order-status order-status--pending">
             <h1>Order Received</h1>
             <p>
@@ -37,13 +55,17 @@ export default async function OrderConfirmationPage({ params }: Props) {
           </section>
         )}
 
-        {/* ── Paid ─────────────────────────────────────────────── */}
-        {order.status === 'paid' && (
+        {/* ── Paid / Preparing / Out for delivery ─────────────────── */}
+        {showInProgress && (
           <section className="order-status order-status--paid">
             <h1>Order Confirmed!</h1>
             <p className="order-confirmation-msg">
               Thank you for your order. Your order ID is{' '}
               <strong>{order.id}</strong>.
+            </p>
+            <p className="order-status-stage">
+              Current status:{' '}
+              <strong>{order.status.replace(/_/g, ' ')}</strong>
             </p>
 
             <table className="order-items-table">
@@ -84,8 +106,19 @@ export default async function OrderConfirmationPage({ params }: Props) {
           </section>
         )}
 
+        {/* ── Completed ───────────────────────────────────────────── */}
+        {showCompleted && (
+          <section className="order-status order-status--paid">
+            <h1>Delivered</h1>
+            <p>Your order was delivered. Thanks for shopping with us.</p>
+            <Link href="/products" className="btn btn-primary">
+              Shop Again
+            </Link>
+          </section>
+        )}
+
         {/* ── Failed ───────────────────────────────────────────── */}
-        {order.status === 'failed' && (
+        {showFailed && (
           <section className="order-status order-status--failed">
             <h1>Payment Failed</h1>
             <p>
@@ -98,16 +131,32 @@ export default async function OrderConfirmationPage({ params }: Props) {
           </section>
         )}
 
-        {/* ── Voided / Refunded ─────────────────────────────────── */}
-        {(order.status === 'voided' || order.status === 'refunded') && (
+        {/* ── Cancelled / ID rejected ─────────────────────────────── */}
+        {showTerminated && (
           <section className="order-status order-status--voided">
             <h1>
-              {order.status === 'voided' ? 'Order Voided' : 'Order Refunded'}
+              {order.status === 'id_rejected'
+                ? 'ID Verification Failed'
+                : 'Order Cancelled'}
             </h1>
             <p>
-              {order.status === 'voided'
-                ? 'This order has been voided and no charge was made.'
-                : 'Your refund has been processed. Please allow a few business days for it to appear.'}
+              {order.status === 'id_rejected'
+                ? 'We were unable to verify your ID. No charge was made.'
+                : 'This order has been cancelled and no charge was made.'}
+            </p>
+            <Link href="/products" className="btn btn-secondary">
+              Browse Products
+            </Link>
+          </section>
+        )}
+
+        {/* ── Refunded ────────────────────────────────────────────── */}
+        {showRefunded && (
+          <section className="order-status order-status--voided">
+            <h1>Order Refunded</h1>
+            <p>
+              Your refund has been processed. Please allow a few business days
+              for it to appear.
             </p>
             <Link href="/products" className="btn btn-secondary">
               Browse Products
