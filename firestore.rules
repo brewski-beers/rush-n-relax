@@ -52,6 +52,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Order events: Admin SDK only — append-only audit log of status transitions.
+    match /order-events/{orderId}/events/{eventId} {
+      allow read, write: if false;
+    }
+
     // Vendors: Admin SDK only
     match /vendors/{docId} {
       allow read, write: if false;
