@@ -9,8 +9,9 @@ import {
   AgeCheckerModal,
   type AgeCheckOutcome,
 } from '@/components/AgeCheckerModal/AgeCheckerModal';
-import { SHIPPING_STATES, canShipToState } from '@/constants/shipping';
+import { canShipToState } from '@/constants/shipping';
 import type { ShippingAddress } from '@/types';
+import { DeliveryDetailsForm } from './DeliveryDetailsForm';
 
 const EMPTY_ADDRESS: ShippingAddress = {
   name: '',
@@ -20,6 +21,8 @@ const EMPTY_ADDRESS: ShippingAddress = {
   state: '',
   zip: '',
 };
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function CartPage() {
   const router = useRouter();
@@ -42,7 +45,8 @@ export default function CartPage() {
     !!deliveryAddress.state &&
     !!deliveryAddress.zip;
 
-  const canCheckout = stateAllowed && addressComplete;
+  const emailValid = EMAIL_RE.test(email);
+  const canCheckout = stateAllowed && addressComplete && emailValid;
 
   const TAX_RATE = 0.0925;
   const taxEstimate = Math.round(subtotal * TAX_RATE);
@@ -227,97 +231,11 @@ export default function CartPage() {
               </div>
             </dl>
 
-            <fieldset className="cart-shipping-form">
-              <legend>Delivery Address</legend>
-              <label htmlFor="ship-name">Full name</label>
-              <input
-                id="ship-name"
-                value={deliveryAddress.name}
-                onChange={e =>
-                  setDeliveryAddress({
-                    ...deliveryAddress,
-                    name: e.target.value,
-                  })
-                }
-              />
-              <label htmlFor="ship-line1">Street address</label>
-              <input
-                id="ship-line1"
-                value={deliveryAddress.line1}
-                onChange={e =>
-                  setDeliveryAddress({
-                    ...deliveryAddress,
-                    line1: e.target.value,
-                  })
-                }
-              />
-              <label htmlFor="ship-line2">Apt / Suite (optional)</label>
-              <input
-                id="ship-line2"
-                value={deliveryAddress.line2 ?? ''}
-                onChange={e =>
-                  setDeliveryAddress({
-                    ...deliveryAddress,
-                    line2: e.target.value,
-                  })
-                }
-              />
-              <label htmlFor="ship-city">City</label>
-              <input
-                id="ship-city"
-                value={deliveryAddress.city}
-                onChange={e =>
-                  setDeliveryAddress({
-                    ...deliveryAddress,
-                    city: e.target.value,
-                  })
-                }
-              />
-              <label htmlFor="ship-state">State</label>
-              <select
-                id="ship-state"
-                value={deliveryAddress.state}
-                onChange={e =>
-                  setDeliveryAddress({
-                    ...deliveryAddress,
-                    state: e.target.value,
-                  })
-                }
-              >
-                <option value="">— Select —</option>
-                {SHIPPING_STATES.map(s => (
-                  <option key={s.code} value={s.code} disabled={!s.allowed}>
-                    {s.name}
-                    {!s.allowed ? ' — not available' : ''}
-                  </option>
-                ))}
-              </select>
-              <label htmlFor="ship-zip">ZIP</label>
-              <input
-                id="ship-zip"
-                value={deliveryAddress.zip}
-                onChange={e =>
-                  setDeliveryAddress({
-                    ...deliveryAddress,
-                    zip: e.target.value,
-                  })
-                }
-              />
-              {deliveryAddress.state &&
-                !canShipToState(deliveryAddress.state) && (
-                  <p className="cart-shipping-blocked">
-                    We can&apos;t deliver to this state. Please choose a
-                    different address.
-                  </p>
-                )}
-            </fieldset>
-
-            <label htmlFor="cart-email">Email (for receipt)</label>
-            <input
-              id="cart-email"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+            <DeliveryDetailsForm
+              address={deliveryAddress}
+              email={email}
+              onAddressChange={setDeliveryAddress}
+              onEmailChange={setEmail}
             />
 
             {checkoutError && (
