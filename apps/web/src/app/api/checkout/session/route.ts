@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createOrder } from '@/lib/repositories/order.repository';
 import { createCloverCheckoutSession } from '@/lib/clover/checkout';
 import { canShipToState, getShippingBlockReason } from '@/constants/shipping';
-import type { FulfillmentType, OrderItem, ShippingAddress } from '@/types';
+import type { OrderItem, ShippingAddress } from '@/types';
 
 interface CheckoutRequest {
   items: OrderItem[];
@@ -10,10 +10,11 @@ interface CheckoutRequest {
   tax: number;
   total: number;
   locationId: string;
-  fulfillmentType: FulfillmentType;
-  ageVerificationId: string;
+  /** Required — orders are delivery-only. */
+  deliveryAddress: ShippingAddress;
+  /** AgeChecker session id (verification confirmed pre-checkout). */
+  agecheckerSessionId: string;
   customerEmail?: string;
-  shippingAddress?: ShippingAddress;
 }
 
 export async function POST(req: NextRequest) {
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  if (!body.ageVerificationId) {
+  if (!body.agecheckerSessionId) {
     return NextResponse.json(
       { error: 'Age verification is required before checkout.' },
       { status: 400 }
@@ -35,23 +36,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Cart is empty.' }, { status: 400 });
   }
 
-  if (body.fulfillmentType === 'shipping') {
-    const addr = body.shippingAddress;
-    if (!addr?.state) {
-      return NextResponse.json(
-        { error: 'Shipping address with state is required.' },
-        { status: 400 }
-      );
-    }
-    if (!canShipToState(addr.state)) {
-      return NextResponse.json(
-        {
-          error:
-            getShippingBlockReason(addr.state) ?? 'Cannot ship to this state.',
-        },
-        { status: 422 }
-      );
-    }
+  const addr = body.deliveryAddress;
+  if (!addr?.state) {
+    return NextResponse.json(
+      { error: 'Delivery address with state is required.' },
+      { status: 400 }
+    );
+  }
+  if (!canShipToState(addr.state)) {
+    return NextResponse.json(
+      {
+        error:
+          getShippingBlockReason(addr.state) ?? 'Cannot deliver to this state.',
+      },
+      { status: 422 }
+    );
   }
 
   const orderId = await createOrder({
@@ -60,11 +59,11 @@ export async function POST(req: NextRequest) {
     tax: body.tax,
     total: body.total,
     locationId: body.locationId,
-    fulfillmentType: body.fulfillmentType,
-    status: 'pending',
-    ageVerificationId: body.ageVerificationId,
+    deliveryAddress: addr,
+    // ID was just verified via AgeChecker; payment session follows.
+    status: 'awaiting_payment',
+    agecheckerSessionId: body.agecheckerSessionId,
     customerEmail: body.customerEmail,
-    shippingAddress: body.shippingAddress,
   });
 
   const session = await createCloverCheckoutSession({

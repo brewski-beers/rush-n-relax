@@ -1,30 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/useCart';
 import { formatCents } from '@/utils/currency';
-import { LOCATIONS } from '@/constants/locations';
 import {
   AgeCheckerModal,
   type AgeCheckOutcome,
 } from '@/components/AgeCheckerModal/AgeCheckerModal';
 import { SHIPPING_STATES, canShipToState } from '@/constants/shipping';
 import type { ShippingAddress } from '@/types';
-
-type FulfillmentType = 'pickup' | 'shipping';
-
-interface LocationAvailability {
-  available: boolean;
-  unavailableItems: string[];
-}
-
-interface AvailabilityResult {
-  locations: Record<string, LocationAvailability>;
-}
-
-const RETAIL_LOCATION_SLUGS = new Set(LOCATIONS.map(l => l.slug));
 
 const EMPTY_ADDRESS: ShippingAddress = {
   name: '',
@@ -38,75 +24,25 @@ const EMPTY_ADDRESS: ShippingAddress = {
 export default function CartPage() {
   const router = useRouter();
   const { items, removeItem, updateQty, subtotal, clearCart } = useCart();
-  const [fulfillment, setFulfillment] = useState<FulfillmentType | null>(null);
-  const [pickupLocation, setPickupLocation] = useState<string>('');
-  const [shippingAddress, setShippingAddress] =
+  const [deliveryAddress, setDeliveryAddress] =
     useState<ShippingAddress>(EMPTY_ADDRESS);
   const [email, setEmail] = useState('');
-
-  const [availabilityLoading, setAvailabilityLoading] = useState(false);
-  const [availability, setAvailability] = useState<AvailabilityResult | null>(
-    null
-  );
-  const [availabilityError, setAvailabilityError] = useState(false);
 
   const [ageCheckOpen, setAgeCheckOpen] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-  const eligibleLocations = LOCATIONS.filter(
-    loc =>
-      RETAIL_LOCATION_SLUGS.has(loc.slug) &&
-      availability?.locations[loc.slug]?.available === true
-  );
+  const stateAllowed =
+    deliveryAddress.state !== '' && canShipToState(deliveryAddress.state);
 
-  const checkAvailability = useCallback(async () => {
-    setAvailabilityLoading(true);
-    setAvailabilityError(false);
-    setAvailability(null);
-    setPickupLocation('');
-    try {
-      const payload = items.map(i => ({
-        productId: i.productId,
-        variantId: i.variantId,
-      }));
-      const res = await fetch(
-        `/api/cart/availability?items=${encodeURIComponent(JSON.stringify(payload))}`
-      );
-      if (!res.ok) throw new Error('Availability check failed');
-      const data = (await res.json()) as AvailabilityResult;
-      setAvailability(data);
-    } catch {
-      setAvailabilityError(true);
-    } finally {
-      setAvailabilityLoading(false);
-    }
-  }, [items]);
+  const addressComplete =
+    !!deliveryAddress.name &&
+    !!deliveryAddress.line1 &&
+    !!deliveryAddress.city &&
+    !!deliveryAddress.state &&
+    !!deliveryAddress.zip;
 
-  useEffect(() => {
-    if (fulfillment === 'pickup') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- async call sets state after network; not a sync cascade
-      void checkAvailability();
-    }
-  }, [fulfillment, checkAvailability]);
-
-  const shippingStateAllowed =
-    fulfillment !== 'shipping' ||
-    (shippingAddress.state !== '' && canShipToState(shippingAddress.state));
-
-  const shippingAddressComplete =
-    fulfillment !== 'shipping' ||
-    (shippingAddress.name &&
-      shippingAddress.line1 &&
-      shippingAddress.city &&
-      shippingAddress.state &&
-      shippingAddress.zip);
-
-  const canCheckout =
-    (fulfillment === 'pickup' && pickupLocation !== '') ||
-    (fulfillment === 'shipping' &&
-      shippingStateAllowed &&
-      shippingAddressComplete);
+  const canCheckout = stateAllowed && addressComplete;
 
   const TAX_RATE = 0.0925;
   const taxEstimate = Math.round(subtotal * TAX_RATE);
@@ -127,7 +63,6 @@ export default function CartPage() {
 
       setCheckoutLoading(true);
       try {
-        const locationId = fulfillment === 'pickup' ? pickupLocation : 'online';
         const orderItems = items.map(i => ({
           productId: i.productId,
           productName: i.name,
@@ -144,12 +79,10 @@ export default function CartPage() {
             subtotal,
             tax: taxEstimate,
             total,
-            locationId,
-            fulfillmentType: fulfillment,
-            ageVerificationId: result.verificationId,
+            locationId: 'online',
+            deliveryAddress,
+            agecheckerSessionId: result.verificationId,
             customerEmail: email || undefined,
-            shippingAddress:
-              fulfillment === 'shipping' ? shippingAddress : undefined,
           }),
         });
         const data = (await res.json()) as {
@@ -169,13 +102,11 @@ export default function CartPage() {
       }
     },
     [
-      fulfillment,
-      pickupLocation,
       items,
       subtotal,
       taxEstimate,
       total,
-      shippingAddress,
+      deliveryAddress,
       email,
       clearCart,
       router,
@@ -296,168 +227,90 @@ export default function CartPage() {
               </div>
             </dl>
 
-            <fieldset className="cart-fulfillment">
-              <legend>How would you like your order?</legend>
-              <div className="cart-fulfillment-options">
-                <button
-                  type="button"
-                  className={`cart-fulfillment-card${fulfillment === 'pickup' ? ' cart-fulfillment-card--active' : ''}`}
-                  aria-pressed={fulfillment === 'pickup'}
-                  onClick={() => setFulfillment('pickup')}
-                >
-                  <span className="cart-fulfillment-icon" aria-hidden="true">
-                    🏪
-                  </span>
-                  <span className="cart-fulfillment-label">Pick Up</span>
-                  <span className="cart-fulfillment-sub">In-store</span>
-                </button>
-                <button
-                  type="button"
-                  className={`cart-fulfillment-card${fulfillment === 'shipping' ? ' cart-fulfillment-card--active' : ''}`}
-                  aria-pressed={fulfillment === 'shipping'}
-                  onClick={() => setFulfillment('shipping')}
-                >
-                  <span className="cart-fulfillment-icon" aria-hidden="true">
-                    📦
-                  </span>
-                  <span className="cart-fulfillment-label">Ship to Me</span>
-                  <span className="cart-fulfillment-sub">Delivery</span>
-                </button>
-              </div>
-            </fieldset>
-
-            {fulfillment === 'pickup' && (
-              <div className="cart-pickup-location">
-                {availabilityLoading && (
-                  <p className="cart-pickup-status">Checking availability…</p>
-                )}
-                {!availabilityLoading && availabilityError && (
-                  <p className="cart-pickup-status cart-pickup-status--error">
-                    Couldn&apos;t check availability.{' '}
-                    <button
-                      type="button"
-                      className="cart-pickup-retry"
-                      onClick={() => void checkAvailability()}
-                    >
-                      Try again
-                    </button>
+            <fieldset className="cart-shipping-form">
+              <legend>Delivery Address</legend>
+              <label htmlFor="ship-name">Full name</label>
+              <input
+                id="ship-name"
+                value={deliveryAddress.name}
+                onChange={e =>
+                  setDeliveryAddress({
+                    ...deliveryAddress,
+                    name: e.target.value,
+                  })
+                }
+              />
+              <label htmlFor="ship-line1">Street address</label>
+              <input
+                id="ship-line1"
+                value={deliveryAddress.line1}
+                onChange={e =>
+                  setDeliveryAddress({
+                    ...deliveryAddress,
+                    line1: e.target.value,
+                  })
+                }
+              />
+              <label htmlFor="ship-line2">Apt / Suite (optional)</label>
+              <input
+                id="ship-line2"
+                value={deliveryAddress.line2 ?? ''}
+                onChange={e =>
+                  setDeliveryAddress({
+                    ...deliveryAddress,
+                    line2: e.target.value,
+                  })
+                }
+              />
+              <label htmlFor="ship-city">City</label>
+              <input
+                id="ship-city"
+                value={deliveryAddress.city}
+                onChange={e =>
+                  setDeliveryAddress({
+                    ...deliveryAddress,
+                    city: e.target.value,
+                  })
+                }
+              />
+              <label htmlFor="ship-state">State</label>
+              <select
+                id="ship-state"
+                value={deliveryAddress.state}
+                onChange={e =>
+                  setDeliveryAddress({
+                    ...deliveryAddress,
+                    state: e.target.value,
+                  })
+                }
+              >
+                <option value="">— Select —</option>
+                {SHIPPING_STATES.map(s => (
+                  <option key={s.code} value={s.code} disabled={!s.allowed}>
+                    {s.name}
+                    {!s.allowed ? ' — not available' : ''}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="ship-zip">ZIP</label>
+              <input
+                id="ship-zip"
+                value={deliveryAddress.zip}
+                onChange={e =>
+                  setDeliveryAddress({
+                    ...deliveryAddress,
+                    zip: e.target.value,
+                  })
+                }
+              />
+              {deliveryAddress.state &&
+                !canShipToState(deliveryAddress.state) && (
+                  <p className="cart-shipping-blocked">
+                    We can&apos;t deliver to this state. Please choose a
+                    different address.
                   </p>
                 )}
-                {!availabilityLoading && availability && (
-                  <>
-                    {eligibleLocations.length === 0 ? (
-                      <p className="cart-pickup-status cart-pickup-status--unavailable">
-                        Your cart items aren&apos;t available for pickup at any
-                        location right now. Choose shipping or{' '}
-                        <Link href="/locations">visit us in store</Link>.
-                      </p>
-                    ) : (
-                      <>
-                        <label htmlFor="pickup-location">Select location</label>
-                        <select
-                          id="pickup-location"
-                          value={pickupLocation}
-                          onChange={e => setPickupLocation(e.target.value)}
-                        >
-                          <option value="">— Choose a location —</option>
-                          {eligibleLocations.map(loc => (
-                            <option key={loc.slug} value={loc.slug}>
-                              {loc.name}
-                            </option>
-                          ))}
-                        </select>
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {fulfillment === 'shipping' && (
-              <div className="cart-shipping-form">
-                <label htmlFor="ship-name">Full name</label>
-                <input
-                  id="ship-name"
-                  value={shippingAddress.name}
-                  onChange={e =>
-                    setShippingAddress({
-                      ...shippingAddress,
-                      name: e.target.value,
-                    })
-                  }
-                />
-                <label htmlFor="ship-line1">Street address</label>
-                <input
-                  id="ship-line1"
-                  value={shippingAddress.line1}
-                  onChange={e =>
-                    setShippingAddress({
-                      ...shippingAddress,
-                      line1: e.target.value,
-                    })
-                  }
-                />
-                <label htmlFor="ship-line2">Apt / Suite (optional)</label>
-                <input
-                  id="ship-line2"
-                  value={shippingAddress.line2 ?? ''}
-                  onChange={e =>
-                    setShippingAddress({
-                      ...shippingAddress,
-                      line2: e.target.value,
-                    })
-                  }
-                />
-                <label htmlFor="ship-city">City</label>
-                <input
-                  id="ship-city"
-                  value={shippingAddress.city}
-                  onChange={e =>
-                    setShippingAddress({
-                      ...shippingAddress,
-                      city: e.target.value,
-                    })
-                  }
-                />
-                <label htmlFor="ship-state">State</label>
-                <select
-                  id="ship-state"
-                  value={shippingAddress.state}
-                  onChange={e =>
-                    setShippingAddress({
-                      ...shippingAddress,
-                      state: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">— Select —</option>
-                  {SHIPPING_STATES.map(s => (
-                    <option key={s.code} value={s.code} disabled={!s.allowed}>
-                      {s.name}
-                      {!s.allowed ? ' — not available' : ''}
-                    </option>
-                  ))}
-                </select>
-                <label htmlFor="ship-zip">ZIP</label>
-                <input
-                  id="ship-zip"
-                  value={shippingAddress.zip}
-                  onChange={e =>
-                    setShippingAddress({
-                      ...shippingAddress,
-                      zip: e.target.value,
-                    })
-                  }
-                />
-                {shippingAddress.state &&
-                  !canShipToState(shippingAddress.state) && (
-                    <p className="cart-shipping-blocked">
-                      We can&apos;t ship to this state. Please choose pickup or
-                      a different address.
-                    </p>
-                  )}
-              </div>
-            )}
+            </fieldset>
 
             <label htmlFor="cart-email">Email (for receipt)</label>
             <input

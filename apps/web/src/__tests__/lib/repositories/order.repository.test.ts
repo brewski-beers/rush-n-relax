@@ -66,9 +66,15 @@ const baseOrderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
   subtotal: 3000,
   tax: 270,
   total: 3270,
-  locationId: 'oak-ridge',
-  fulfillmentType: 'pickup',
-  status: 'pending',
+  locationId: 'online',
+  deliveryAddress: {
+    name: 'Test Buyer',
+    line1: '123 Main St',
+    city: 'Knoxville',
+    state: 'TN',
+    zip: '37902',
+  },
+  status: 'awaiting_payment',
 };
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -114,20 +120,22 @@ describe('order.repository', () => {
       const order = await getOrder('order-abc');
       expect(order).not.toBeNull();
       expect(order!.id).toBe('order-abc');
-      expect(order!.status).toBe('pending');
+      expect(order!.status).toBe('awaiting_payment');
       expect(order!.total).toBe(3270);
       expect(order!.items).toHaveLength(1);
+      expect(order!.deliveryAddress.state).toBe('TN');
     });
   });
 
   describe('updateOrderStatus', () => {
-    it('updates status and updatedAt', async () => {
+    it('updates status and updatedAt and stamps the lifecycle timestamp', async () => {
       await updateOrderStatus('order-abc', 'paid');
 
       expect(docUpdateMock).toHaveBeenCalledOnce();
       const [payload] = docUpdateMock.mock.calls[0];
       expect(payload.status).toBe('paid');
       expect(payload.updatedAt).toBeInstanceOf(Date);
+      expect(payload.paidAt).toBeInstanceOf(Date);
       expect(payload.cloverPaymentId).toBeUndefined();
     });
 
