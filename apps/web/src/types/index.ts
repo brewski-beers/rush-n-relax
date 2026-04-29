@@ -58,5 +58,6 @@ export type {
   ShippingAddress,
 } from './order';
 export { ALLOWED_TRANSITIONS } from './order';
+export type { OrderEvent } from './order-event';
 export type { CoaDocument } from './coa';
 export type { VariantTemplate } from './variant-template';

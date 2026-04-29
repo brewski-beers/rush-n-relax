@@ -69,3 +69,24 @@ Stamped by `updateOrderStatus` when the destination state matches:
 
 `(status ASC, createdAt DESC)` — admin order queues filter-by-status and
 sort newest-first. Defined in `firestore.indexes.json`.
+
+## Event log (audit subcollection)
+
+Every status transition appends a record to `order-events/{orderId}/events/{eventId}`.
+Defined by `OrderEvent` in `apps/web/src/types/order-event.ts`. Admin SDK only —
+clients have no access (`firestore.rules` denies read/write).
+
+| Field       | Type                                  | Notes                                              |
+| ----------- | ------------------------------------- | -------------------------------------------------- |
+| `id`        | `string`                              | Event doc id.                                      |
+| `orderId`   | `string`                              | Parent order id (denormalized for collection-group queries). |
+| `from`      | `OrderStatus \| null`                 | Previous status. `null` only for the create event. |
+| `to`        | `OrderStatus`                         | New status.                                        |
+| `actor`     | `'system' \| 'webhook:agechecker' \| 'webhook:clover' \| `admin:${uid}`` | Origin of the transition. |
+| `meta`      | `Record<string, unknown>?`            | Provider payload (webhook id, refund reason, etc.). |
+| `createdAt` | `Date`                                | Server timestamp.                                  |
+
+All writers (webhook handlers, admin actions, scheduled jobs) MUST append an
+event when they mutate `orders/{id}.status`. The order doc remains the
+canonical state; the event log lets us reconstruct the lifecycle for support
+and dispute investigations.
