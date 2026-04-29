@@ -237,16 +237,14 @@ async function persistEmailTemplate(
   await batch.commit();
 }
 
+// Allow legacy ContactSubmissionPayload keys plus any dot-notation path
+// composed of word characters (e.g. `order.id`, `customer.name`,
+// `deliveryAddress.line1`). Anything else falls back to `'message'` so
+// stored data never contains shapes the renderer cannot handle.
+const VALUE_PATH_PATTERN = /^[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*$/;
+
 function sanitizeValuePath(value: unknown): EmailTemplateValuePath {
-  if (
-    value === 'submissionId' ||
-    value === 'name' ||
-    value === 'email' ||
-    value === 'phone' ||
-    value === 'message' ||
-    value === 'submittedAtIso' ||
-    value === 'userAgent'
-  ) {
+  if (typeof value === 'string' && VALUE_PATH_PATTERN.test(value)) {
     return value;
   }
 

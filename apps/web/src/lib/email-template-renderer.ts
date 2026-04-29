@@ -5,16 +5,41 @@ type RenderableTemplate = Pick<
   'id' | 'subjectTemplate' | 'theme' | 'containers'
 >;
 
-function isValuePath(token: string): token is keyof ContactSubmissionPayload {
-  return (
-    token === 'name' ||
-    token === 'email' ||
-    token === 'phone' ||
-    token === 'message' ||
-    token === 'submittedAtIso' ||
-    token === 'submissionId' ||
-    token === 'userAgent'
-  );
+/**
+ * Generic template render context.
+ *
+ * Supports nested objects so templates can reference dot-paths like
+ * `{{ order.id }}`, `{{ customer.name }}`, `{{ deliveryAddress.line1 }}`,
+ * etc. `ContactSubmissionPayload` is structurally compatible (flat keys).
+ */
+export type EmailTemplateContext = Record<string, unknown>;
+
+/**
+ * Order-context payload supplied for order-lifecycle emails. Keep this
+ * intentionally lean — the renderer resolves arbitrary dot-paths off the
+ * raw context object, so additional fields can be added without renderer
+ * changes. Expand only as new templates require new tokens.
+ */
+export interface OrderEmailPayload extends Record<string, unknown> {
+  order: {
+    id: string;
+    total?: number;
+    paidAt?: string | Date;
+    [key: string]: unknown;
+  };
+  customer: {
+    name: string;
+    email: string;
+    [key: string]: unknown;
+  };
+  deliveryAddress?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    [key: string]: unknown;
+  };
 }
 
 function escapeHtml(value: string): string {
@@ -26,72 +51,214 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function resolveValue(
-  payload: ContactSubmissionPayload,
-  path: keyof ContactSubmissionPayload
-): string {
-  const value = payload[path];
-  if (typeof value === 'string' && value.trim()) {
-    return value;
+/**
+ * Resolve a dot-notation path (`a.b.c`) against a context object.
+ * Returns `undefined` if any segment is missing.
+ */
+function getByPath(context: EmailTemplateContext, path: string): unknown {
+  const segments = path.split('.');
+  let cursor: unknown = context;
+  for (const segment of segments) {
+    if (cursor === null || cursor === undefined) return undefined;
+    if (typeof cursor !== 'object') return undefined;
+    cursor = (cursor as Record<string, unknown>)[segment];
   }
+  return cursor;
+}
 
+function formatMoney(value: unknown): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+  }
+  if (typeof value === 'string' && value.trim() !== '' && !Number.isNaN(Number(value))) {
+    return Number(value).toLocaleString('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    });
+  }
   return 'N/A';
 }
 
-export function renderEmailSubject(
-  template: Pick<RenderableTemplate, 'subjectTemplate'>,
-  payload: ContactSubmissionPayload
-): string {
-  return template.subjectTemplate.replace(
-    /\{\{\s*(\w+)\s*\}\}/g,
-    (_match, token) => {
-      const normalizedToken = String(token);
-      if (isValuePath(normalizedToken)) {
-        return resolveValue(payload, normalizedToken);
-      }
+function formatDate(value: unknown): string {
+  let date: Date | undefined;
+  if (value instanceof Date) date = value;
+  else if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) date = parsed;
+  } else if (typeof value === 'number' && Number.isFinite(value)) {
+    date = new Date(value);
+  }
+  if (!date) return 'N/A';
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
 
+function applyFilter(value: unknown, filter: string): string {
+  switch (filter) {
+    case 'money':
+      return formatMoney(value);
+    case 'date':
+      return formatDate(value);
+    default:
+      // Unknown filter — fall back to safe string coercion.
+      if (value === undefined || value === null) return '';
+      if (typeof value === 'string') return value;
+      if (typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
+      }
+      return '';
+  }
+}
+
+/**
+ * Render a template string, substituting `{{ token }}` and
+ * `{{ token | filter }}` expressions against the given context.
+ *
+ * - Token resolution supports dot-notation: `{{ order.id }}`.
+ * - Supported filters: `money`, `date`.
+ * - Missing keys resolve to an empty string (subject) or 'N/A' (block values
+ *   via `resolveBlockValue`); see callers for which behavior applies.
+ */
+export function renderTemplateString(
+  template: string,
+  context: EmailTemplateContext
+): string {
+  return template.replace(
+    /\{\{\s*([\w.]+)(?:\s*\|\s*(\w+))?\s*\}\}/g,
+    (_match, rawPath: string, filter: string | undefined) => {
+      const value = getByPath(context, rawPath);
+      if (filter) {
+        return applyFilter(value, filter);
+      }
+      if (value === undefined || value === null) return '';
+      if (typeof value === 'string') return value;
+      if (typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
+      }
+      // Refuse to stringify objects/arrays — would emit "[object Object]".
       return '';
     }
   );
 }
 
-export function renderContactSubmissionEmailHtml(
-  payload: ContactSubmissionPayload,
-  template: Pick<RenderableTemplate, 'theme' | 'containers'>
+/**
+ * Resolve a single block value (keyValue / message body) against a context,
+ * returning 'N/A' for missing or empty values. Mirrors the legacy
+ * `resolveValue` semantics for ContactSubmissionPayload.
+ */
+function resolveBlockValue(
+  context: EmailTemplateContext,
+  path: string
 ): string {
-  const content = template.containers
+  const value = getByPath(context, path);
+  if (typeof value === 'string') return value.trim() ? value : 'N/A';
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'N/A';
+  if (value instanceof Date) return value.toISOString();
+  if (value === undefined || value === null) return 'N/A';
+  if (typeof value === 'boolean') return String(value);
+  return 'N/A';
+}
+
+/**
+ * Render an email subject from a template and a generic context.
+ *
+ * Backward compatible with the legacy `ContactSubmissionPayload`-typed call
+ * sites: any object satisfies `EmailTemplateContext`.
+ */
+export function renderEmailSubject(
+  template: Pick<RenderableTemplate, 'subjectTemplate'>,
+  context: EmailTemplateContext | ContactSubmissionPayload
+): string {
+  return renderTemplateString(
+    template.subjectTemplate,
+    context as EmailTemplateContext
+  );
+}
+
+function renderBlocksHtml(
+  template: Pick<RenderableTemplate, 'theme' | 'containers'>,
+  context: EmailTemplateContext,
+  // For 'message' block: if the context has a top-level `message` string
+  // (legacy ContactSubmissionPayload), use it. Otherwise fall back to ''.
+  legacyMessage?: string
+): string {
+  const { theme } = template;
+  return template.containers
     .map(container => {
       const blocksHtml = container.blocks
         .map(block => {
           if (block.type === 'heading') {
-            return `<h2 style="margin:0 0 10px;font-size:22px;line-height:1.3;color:${escapeHtml(template.theme.accentColor)};">${escapeHtml(block.text)}</h2>`;
+            return `<h2 style="margin:0 0 10px;font-size:22px;line-height:1.3;color:${escapeHtml(theme.accentColor)};">${escapeHtml(block.text)}</h2>`;
           }
-
           if (block.type === 'paragraph') {
-            return `<p style="margin:0 0 10px;color:${escapeHtml(template.theme.mutedTextColor)};font-size:14px;line-height:1.6;">${escapeHtml(block.text)}</p>`;
+            // Render paragraph text through the template engine so
+            // {{ tokens }} (with optional filters) can be embedded inline.
+            const rendered = renderTemplateString(block.text, context);
+            return `<p style="margin:0 0 10px;color:${escapeHtml(theme.mutedTextColor)};font-size:14px;line-height:1.6;">${escapeHtml(rendered)}</p>`;
           }
-
           if (block.type === 'keyValue') {
-            return `<p style="margin:0 0 8px;color:${escapeHtml(template.theme.textColor)};"><span style="color:${escapeHtml(template.theme.mutedTextColor)};">${escapeHtml(block.label)}:</span> ${escapeHtml(resolveValue(payload, block.valuePath))}</p>`;
+            return `<p style="margin:0 0 8px;color:${escapeHtml(theme.textColor)};"><span style="color:${escapeHtml(theme.mutedTextColor)};">${escapeHtml(block.label)}:</span> ${escapeHtml(resolveBlockValue(context, block.valuePath))}</p>`;
           }
-
           if (block.type === 'message') {
-            return `<div style="margin-top:12px;padding:12px;border:1px solid ${escapeHtml(template.theme.borderColor)};border-radius:10px;background:${escapeHtml(template.theme.backgroundColor)};"><p style="margin:0 0 8px;color:${escapeHtml(template.theme.mutedTextColor)};font-size:13px;">${escapeHtml(block.label)}</p><p style="margin:0;white-space:pre-wrap;line-height:1.6;color:${escapeHtml(template.theme.textColor)};">${escapeHtml(payload.message)}</p></div>`;
+            const messageValue =
+              legacyMessage !== undefined
+                ? legacyMessage
+                : (() => {
+                    const v = getByPath(context, 'message');
+                    return typeof v === 'string' ? v : '';
+                  })();
+            return `<div style="margin-top:12px;padding:12px;border:1px solid ${escapeHtml(theme.borderColor)};border-radius:10px;background:${escapeHtml(theme.backgroundColor)};"><p style="margin:0 0 8px;color:${escapeHtml(theme.mutedTextColor)};font-size:13px;">${escapeHtml(block.label)}</p><p style="margin:0;white-space:pre-wrap;line-height:1.6;color:${escapeHtml(theme.textColor)};">${escapeHtml(messageValue)}</p></div>`;
           }
-
           if (block.type === 'divider') {
-            return `<hr style="border:none;border-top:1px solid ${escapeHtml(template.theme.borderColor)};margin:12px 0;" />`;
+            return `<hr style="border:none;border-top:1px solid ${escapeHtml(theme.borderColor)};margin:12px 0;" />`;
           }
-
           return `<div style="height:${Math.max(4, block.heightPx)}px"></div>`;
         })
         .join('');
-
       return `<section style="margin-bottom:14px;">${blocksHtml}</section>`;
     })
     .join('');
+}
 
-  return `<div style="background:${escapeHtml(template.theme.backgroundColor)};padding:24px;font-family:${escapeHtml(template.theme.fontFamily)};color:${escapeHtml(template.theme.textColor)};"><div style="max-width:680px;margin:0 auto;background:${escapeHtml(template.theme.panelColor)};border:1px solid ${escapeHtml(template.theme.borderColor)};border-radius:${template.theme.borderRadiusPx}px;overflow:hidden;padding:20px;">${content}</div></div>`;
+function wrapHtml(
+  theme: EmailTemplate['theme'],
+  content: string
+): string {
+  return `<div style="background:${escapeHtml(theme.backgroundColor)};padding:24px;font-family:${escapeHtml(theme.fontFamily)};color:${escapeHtml(theme.textColor)};"><div style="max-width:680px;margin:0 auto;background:${escapeHtml(theme.panelColor)};border:1px solid ${escapeHtml(theme.borderColor)};border-radius:${theme.borderRadiusPx}px;overflow:hidden;padding:20px;">${content}</div></div>`;
+}
+
+/**
+ * Render the HTML body for an email template against a generic context.
+ * Use this for order-lifecycle templates (and any future contexts).
+ */
+export function renderEmailHtml(
+  template: Pick<RenderableTemplate, 'theme' | 'containers'>,
+  context: EmailTemplateContext
+): string {
+  const content = renderBlocksHtml(template, context);
+  return wrapHtml(template.theme, content);
+}
+
+/**
+ * Backward-compatible HTML renderer for contact-submission emails.
+ * Preserves legacy semantics: the `message` block uses `payload.message`.
+ */
+export function renderContactSubmissionEmailHtml(
+  payload: ContactSubmissionPayload,
+  template: Pick<RenderableTemplate, 'theme' | 'containers'>
+): string {
+  const content = renderBlocksHtml(
+    template,
+    payload as unknown as EmailTemplateContext,
+    payload.message
+  );
+  return wrapHtml(template.theme, content);
 }
 
 export function createEmailPreviewDocument(html: string): string {

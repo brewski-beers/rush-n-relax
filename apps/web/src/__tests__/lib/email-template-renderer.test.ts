@@ -237,3 +237,145 @@ describe('renderContactSubmissionEmailHtml', () => {
     });
   });
 });
+
+// ── Generic context: nested keys + filters ─────────────────────────────────
+
+import {
+  renderEmailHtml,
+  renderTemplateString,
+} from '@/lib/email-template-renderer';
+
+describe('renderTemplateString — nested keys & filters', () => {
+  describe('given a template referencing a nested dot-path', () => {
+    it('resolves {{ order.id }} from a nested order object', () => {
+      const result = renderTemplateString('Order #{{ order.id }}', {
+        order: { id: 'ord_abc' },
+      });
+      expect(result).toBe('Order #ord_abc');
+    });
+
+    it('resolves {{ customer.name }} from a nested customer object', () => {
+      const result = renderTemplateString('Hi {{ customer.name }}', {
+        customer: { name: 'Jane' },
+      });
+      expect(result).toBe('Hi Jane');
+    });
+
+    it('resolves a deeply nested key', () => {
+      const result = renderTemplateString(
+        'Ship to {{ deliveryAddress.line1 }}',
+        { deliveryAddress: { line1: '123 Oak St' } }
+      );
+      expect(result).toBe('Ship to 123 Oak St');
+    });
+  });
+
+  describe('given a token with the | money filter', () => {
+    it('formats a numeric value as USD currency', () => {
+      const result = renderTemplateString(
+        'Total: {{ order.total | money }}',
+        { order: { total: 84.5 } }
+      );
+      expect(result).toContain('$84.50');
+    });
+
+    it('returns "N/A" when the value is missing', () => {
+      const result = renderTemplateString(
+        'Total: {{ order.total | money }}',
+        { order: {} }
+      );
+      expect(result).toBe('Total: N/A');
+    });
+  });
+
+  describe('given a token with the | date filter', () => {
+    it('formats an ISO string as a human-readable date', () => {
+      const result = renderTemplateString(
+        'Paid {{ order.paidAt | date }}',
+        { order: { paidAt: '2026-04-27T12:00:00.000Z' } }
+      );
+      expect(result).toMatch(/Apr/);
+      expect(result).toMatch(/2026/);
+    });
+
+    it('returns "N/A" when the value is missing', () => {
+      const result = renderTemplateString(
+        'Paid {{ order.paidAt | date }}',
+        { order: {} }
+      );
+      expect(result).toBe('Paid N/A');
+    });
+  });
+
+  describe('given a missing nested key without a filter', () => {
+    it('replaces the token with an empty string', () => {
+      const result = renderTemplateString('A{{ missing.key }}B', {});
+      expect(result).toBe('AB');
+    });
+  });
+});
+
+describe('renderEmailHtml — generic context', () => {
+  const theme = {
+    backgroundColor: '#ffffff',
+    panelColor: '#f9f9f9',
+    textColor: '#111111',
+    mutedTextColor: '#888888',
+    accentColor: '#00aa00',
+    borderColor: '#dddddd',
+    fontFamily: 'sans-serif',
+    borderRadiusPx: 8,
+  };
+
+  describe('given a paragraph block referencing nested order tokens', () => {
+    it('substitutes the nested values into the rendered paragraph', () => {
+      const html = renderEmailHtml(
+        {
+          theme,
+          containers: [
+            {
+              id: 'c1',
+              label: 'Body',
+              blocks: [
+                {
+                  id: 'b1',
+                  type: 'paragraph',
+                  text: 'Order {{ order.id }} for {{ order.total | money }}',
+                },
+              ],
+            },
+          ],
+        },
+        { order: { id: 'ord_xyz', total: 25 } }
+      );
+      expect(html).toContain('Order ord_xyz');
+      expect(html).toContain('$25.00');
+    });
+  });
+
+  describe('given a keyValue block whose nested valuePath is missing', () => {
+    it('renders "N/A" for the missing nested field', () => {
+      const html = renderEmailHtml(
+        {
+          theme,
+          containers: [
+            {
+              id: 'c1',
+              label: 'Body',
+              blocks: [
+                {
+                  id: 'b1',
+                  type: 'keyValue',
+                  label: 'City',
+                  valuePath: 'deliveryAddress.city',
+                },
+              ],
+            },
+          ],
+        },
+        { order: { id: 'x' } }
+      );
+      expect(html).toContain('N/A');
+    });
+  });
+});
