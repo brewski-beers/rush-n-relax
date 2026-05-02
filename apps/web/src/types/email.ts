@@ -50,7 +50,17 @@ export interface EmailTemplateTheme {
   borderRadiusPx: number;
 }
 
-export type EmailTemplateValuePath = keyof ContactSubmissionPayload;
+/**
+ * Path used by `keyValue` blocks to resolve a value from the render
+ * context. Supports legacy ContactSubmissionPayload keys (`name`,
+ * `email`, ...) as well as nested dot-notation paths for richer
+ * contexts such as order emails (`order.id`, `customer.name`,
+ * `deliveryAddress.line1`). The renderer treats any unresolved path
+ * as `N/A`.
+ */
+export type EmailTemplateValuePath =
+  | keyof ContactSubmissionPayload
+  | (string & { readonly __nestedPath?: never });
 
 export type EmailTemplateBlock =
   | {
