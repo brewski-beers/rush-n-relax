@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'node:crypto';
-import { updateOrderStatus } from '@/lib/repositories/order.repository';
+import {
+  transitionStatus,
+  InvalidTransitionError,
+} from '@/lib/repositories/order.repository';
 import type { OrderStatus } from '@/types';
 
 /**
@@ -69,6 +72,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing orderId' }, { status: 400 });
   }
 
-  await updateOrderStatus(orderId, status, paymentId);
+  try {
+    await transitionStatus(orderId, status, 'webhook:clover', {
+      eventType: event.type,
+      ...(paymentId ? { cloverPaymentId: paymentId } : {}),
+    });
+  } catch (err) {
+    if (err instanceof InvalidTransitionError) {
+      // Webhook re-delivery for an already-applied event — ack as received
+      // but flag as not handled so we surface anomalies in logs.
+      return NextResponse.json({ received: true, handled: false });
+    }
+    throw err;
+  }
   return NextResponse.json({ received: true, handled: true });
 }

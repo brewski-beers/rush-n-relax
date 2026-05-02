@@ -82,7 +82,14 @@ export {
   setVendorActive,
 } from './vendor.repository';
 
-export { createOrder, getOrder, updateOrderStatus } from './order.repository';
+export {
+  createOrder,
+  getOrder,
+  InvalidTransitionError,
+  listOrders,
+  transitionStatus,
+} from './order.repository';
+export type { ListOrdersOptions, ListOrdersResult } from './order.repository';
 
 export { listCoaDocuments } from './coa.repository';
 
