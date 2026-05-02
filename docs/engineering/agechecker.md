@@ -52,7 +52,7 @@ These are the issue-271 acceptance items that we cannot answer from public sourc
 ### 1. Session TTL **[GAP]**
 
 - Only public TTL: **20-minute re-verify window** after a forced page reload.
-- Unknown: lifetime of a *successful* verification token / session as seen by the merchant. Likely options based on industry norms: (a) one-shot token bound to a single order, (b) cookie/session bound to browser for N days, (c) server-side record keyed on customer identity that the merchant queries each checkout.
+- Unknown: lifetime of a _successful_ verification token / session as seen by the merchant. Likely options based on industry norms: (a) one-shot token bound to a single order, (b) cookie/session bound to browser for N days, (c) server-side record keyed on customer identity that the merchant queries each checkout.
 - AgeChecker's "verified once, verified across the network" copy suggests the canonical record is **server-side and identity-keyed**, not a short-lived session token. Merchants likely query verification status by `(email | customer_id | metadata)` per checkout.
 - **Action:** confirm via API docs — specifically the GET-verification-status endpoint and any token expiry on the popup-issued artifact.
 
@@ -97,3 +97,75 @@ Until the gaps are closed, design assumptions we should bake in:
 - [ ] Pull the API docs PDF/page from the Install tab; commit a redacted excerpt (event names, payload schema, signing) into this file under a "Confirmed from merchant docs" section.
 - [ ] Email `contact@agechecker.net` with the four **[GAP]** questions above if the docs are still ambiguous.
 - [ ] Once confirmed, unblock #6 (webhook handler) and #8 (storefront flow).
+
+---
+
+## Webhook Handler — Current Behavior
+
+> Implemented in `apps/web/src/app/api/webhooks/agechecker/route.ts` (#275). Authoritative outcome for ID verification — drives the `pending_id_verification → id_verified | id_rejected` transition.
+
+### Flow
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#0b0f17', 'primaryColor': '#111827', 'primaryTextColor': '#e6edf3', 'primaryBorderColor': '#22d3ee', 'lineColor': '#94a3b8', 'secondaryColor': '#0f172a', 'tertiaryColor': '#111827', 'clusterBkg': '#0f172a', 'clusterBorder': '#22d3ee', 'fontFamily': 'Avenir Next, Avenir, Segoe UI, sans-serif'}}}%%
+flowchart TD
+    AC[AGECHECKER] -->|POST raw JSON + X-Agechecker-Signature| RT["api/webhooks/agechecker/route.ts"]
+    RT --> SIG{"verifyAgeCheckerSignature?"}
+    SIG -->|fail| R401["401 Invalid signature"]
+    SIG -->|pass| ST{"event.status?"}
+    ST -->|pass| TV["transitionStatus → id_verified"]
+    TV --> INV["decrementInventoryItems (atomic tx)"]
+    INV -->|ok| R200H["200 handled:true"]
+    INV -->|InsufficientStock| R409["409 Insufficient stock"]
+    ST -->|deny / underage| TR["transitionStatus → id_rejected"]
+    TR --> R200H2["200 handled:true"]
+    ST -->|manual_review / pending| LOG1["console.warn — no transition"]
+    LOG1 --> R200N["200 handled:false"]
+    ST -->|unknown| LOG2["console.warn — no transition"]
+    LOG2 --> R200N
+
+    classDef warn fill:#7f1d1d,color:#fff;
+    classDef complete fill:#166534,color:#fff;
+    class R401,R409,LOG1,LOG2 warn
+    class R200H,R200H2 complete
+```
+
+### Status → Action Matrix
+
+| AgeChecker `status`        | Order transition     | Side effect                                       | HTTP |
+| -------------------------- | -------------------- | ------------------------------------------------- | ---- |
+| `pass`                     | `id_verified`        | Atomic inventory decrement.                       | 200  |
+| `pass` (already processed) | (none)               | Idempotency — InvalidTransitionError swallowed.   | 200  |
+| `pass` + oversell          | `id_verified` (kept) | Inventory tx rolled back; ops must refund/cancel. | 409  |
+| `deny`                     | `id_rejected`        | None.                                             | 200  |
+| `underage`                 | `id_rejected`        | None.                                             | 200  |
+| `manual_review`            | (none)               | `console.warn` log only.                          | 200  |
+| `pending`                  | (none)               | `console.warn` log only.                          | 200  |
+| terminal w/o `orderId`     | (none)               | `console.warn` — cannot bind.                     | 200  |
+| unknown                    | (none)               | `console.warn` — ack to stop retries.             | 200  |
+
+### Idempotency
+
+AgeChecker may retry on transient failures. The handler relies on `transitionStatus` throwing `InvalidTransitionError` when the order has already moved past `pending_id_verification` — that error is caught and converted to a 200 with `handled: false, reason: 'already_processed'` so the provider stops retrying.
+
+### Inventory Decrement (post-#275)
+
+On `pass`, after the order transitions to `id_verified`, `decrementInventoryItems(locationId, items)` runs in a Firestore transaction. Any line short on stock throws `InsufficientStockError` and the **entire** decrement rolls back. The order is **left in `id_verified`** (the ID itself is valid) — operations must reconcile out of band by refunding or cancelling. The handler returns 409 with `{ productId, available, requested }` for ops visibility.
+
+### Configuration
+
+| Var                         | Purpose                                          | Where set       |
+| --------------------------- | ------------------------------------------------ | --------------- |
+| `AGECHECKER_WEBHOOK_SECRET` | HMAC secret for `x-agechecker-signature` verify. | Vercel env vars |
+| `AGECHECKER_API_KEY`        | Server-to-server status fetch (when needed).     | Vercel env vars |
+
+| Setting          | Value                                                      |
+| ---------------- | ---------------------------------------------------------- |
+| Webhook URL      | `https://<host>/api/webhooks/agechecker`                   |
+| Signature header | `x-agechecker-signature` (HMAC-SHA256 hex of raw body)     |
+| Test mode        | AgeChecker merchant dashboard → Install → Test Mode toggle |
+| Method           | `POST` with raw JSON body                                  |
+
+### Local Testing
+
+The handler reads the raw body before JSON.parse so signature verification works against the byte stream. To test locally, compute the HMAC against `AGECHECKER_WEBHOOK_SECRET` and POST to `http://localhost:3000/api/webhooks/agechecker` with the `x-agechecker-signature` header set.
