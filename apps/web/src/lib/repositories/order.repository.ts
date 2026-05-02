@@ -52,6 +52,26 @@ export async function createOrder(
 }
 
 /**
+ * Patch provider session ids onto an order. Used by the storefront flow when
+ * we receive a session/checkout id from AgeChecker or Clover and need to
+ * persist it without a status change.
+ */
+export async function setOrderProviderRefs(
+  orderId: string,
+  refs: { agecheckerSessionId?: string; cloverCheckoutSessionId?: string }
+): Promise<void> {
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (refs.agecheckerSessionId !== undefined) {
+    patch.agecheckerSessionId = refs.agecheckerSessionId;
+  }
+  if (refs.cloverCheckoutSessionId !== undefined) {
+    patch.cloverCheckoutSessionId = refs.cloverCheckoutSessionId;
+  }
+  if (Object.keys(patch).length === 1) return; // only updatedAt — skip
+  await ordersCol().doc(orderId).update(patch);
+}
+
+/**
  * Status-specific milestone fields (see `Order` type). When a status update
  * matches one of these, we stamp the corresponding timestamp alongside
  * `updatedAt`.
