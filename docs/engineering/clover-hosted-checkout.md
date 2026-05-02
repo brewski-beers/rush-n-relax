@@ -7,6 +7,36 @@
 
 ---
 
+## 0. Path A vs Path B — credentials matter
+
+Clover supports two authentication paths, and they have **completely different webhook stories**. Be sure which one applies before touching webhook code.
+
+| Path | Acquisition | Webhook support | Our prod state | Our sandbox state |
+|---|---|---|---|---|
+| **A — Developer App (OAuth)** | TBB builds an App in the Clover Developer Dashboard → merchant installs it → app gets per-merchant token via OAuth. | **Yes** — app-level webhook URL + HMAC secret (`X-Clover-Auth`), one secret per app, fires for every merchant where the app is installed. | Not yet (see issue #302) | Sandbox App `NTVE7RZRR13N4` exists, not used for webhooks |
+| **B — Merchant-issued private token** | Merchant logs into their Clover dashboard → Setup → API Tokens → generates a per-merchant token → hands it to TBB. | **No app-level webhooks.** Merchant-managed webhooks may exist on some plan tiers but are unreliable. | ✅ Live (private token + 13-char merchant ID) | ✅ Live (sandbox merchant `FFG76YKEA9QK1` + Web API token) |
+
+**We are on Path B for both prod and sandbox today.** Implications:
+- Payment confirmation cannot rely on webhooks — see issue #279 (return-URL reconciliation + 5-min recovery cron)
+- Refunds still work (`POST /v1/refunds`) — Path B is fully launch-viable
+- Path A is tracked as an ops-quality upgrade (issue #302) — once the client installs a TBB-built App, we can switch the existing `/api/webhooks/clover` stub to a real handler
+
+The rest of this doc describes Clover's webhook capabilities for completeness and to inform the Path A upgrade. **None of it applies to our current Path B integration.**
+
+### Dynamic preview URL caveat
+Vercel preview deploys get per-deploy hostnames (e.g. `rush-n-relax-jgj5i8w80-…vercel.app`). The Clover Hosted Checkout `redirectUrl` is per-session (passed in the request body), so dynamic preview URLs work fine for the redirect itself. However, if Clover ever requires redirect-URL allowlisting on their end (some payment providers do), preview deploys would break. Watch for this during sandbox testing.
+
+### Environment variables (current state)
+
+| Var | Production | Preview | Notes |
+|---|---|---|---|
+| `CLOVER_MERCHANT_ID` | ✅ client's prod merchant | ✅ `FFG76YKEA9QK1` (TBB sandbox) | 13-char alphanumeric |
+| `CLOVER_API_KEY` | ✅ client's prod private token | ✅ TBB sandbox Web API Token | Used as `Authorization: Bearer <token>` |
+| `CLOVER_BASE_URL` | ✅ `https://api.clover.com` | ✅ `https://apisandbox.dev.clover.com` | |
+| `CLOVER_WEBHOOK_SECRET` | ❌ N/A on Path B | ❌ N/A on Path B | Only set when we move to Path A (#302) |
+
+---
+
 ## TL;DR
 
 | Capability | Answer | Confidence |
