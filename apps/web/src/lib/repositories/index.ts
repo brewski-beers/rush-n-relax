@@ -87,6 +87,7 @@ export {
   getOrder,
   InvalidTransitionError,
   listOrders,
+  listOrderEvents,
   transitionStatus,
 } from './order.repository';
 export type { ListOrdersOptions, ListOrdersResult } from './order.repository';

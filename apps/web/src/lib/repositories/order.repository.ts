@@ -206,6 +206,34 @@ export async function listOrders(
   return { orders, nextCursor };
 }
 
+/**
+ * List `OrderEvent`s for a single order, oldest first. Admin SDK only.
+ *
+ * Reads from `order-events/{orderId}/events`. Used by admin order-detail
+ * pages to render the audit-log timeline.
+ */
+export async function listOrderEvents(orderId: string): Promise<OrderEvent[]> {
+  const snap = await orderEventsCol(orderId).orderBy('createdAt', 'asc').get();
+  return snap.docs.map(d => docToOrderEvent(d.id, d.data()));
+}
+
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
+function docToOrderEvent(
+  id: string,
+  d: FirebaseFirestore.DocumentData
+): OrderEvent {
+  return {
+    id,
+    orderId: d.orderId ?? '',
+    from: (d.from ?? null) as OrderEvent['from'],
+    to: d.to as OrderEvent['to'],
+    actor: d.actor as OrderEvent['actor'],
+    ...(d.meta ? { meta: d.meta as Record<string, unknown> } : {}),
+    createdAt: toDate(d.createdAt),
+  } satisfies OrderEvent;
+}
+/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
+
 const EMPTY_ADDRESS: ShippingAddress = {
   name: '',
   line1: '',
