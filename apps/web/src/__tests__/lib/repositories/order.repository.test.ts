@@ -30,6 +30,8 @@ const {
   queryGetMock,
   eventsCollectionDocMock,
   eventDocId,
+  outboundEmailDocMock,
+  outboundEmailDocId,
 } = vi.hoisted(() => {
   const docGetMock = vi.fn();
   const docSetMock = vi.fn().mockResolvedValue(undefined);
@@ -67,6 +69,9 @@ const {
   const eventDocId = 'event-id-123';
   const eventsCollectionDocMock = vi.fn(() => ({ id: eventDocId }));
 
+  const outboundEmailDocId = 'email-job-id-123';
+  const outboundEmailDocMock = vi.fn(() => ({ id: outboundEmailDocId }));
+
   const ordersDoc = vi.fn((id?: string) => ({
     id: id ?? docRefIdMock,
     get: docGetMock,
@@ -94,6 +99,9 @@ const {
         })),
       };
     }
+    if (name === 'outbound-emails') {
+      return { doc: outboundEmailDocMock };
+    }
     return { doc: ordersDoc };
   });
 
@@ -120,6 +128,8 @@ const {
     queryGetMock,
     eventsCollectionDocMock,
     eventDocId,
+    outboundEmailDocMock,
+    outboundEmailDocId,
   };
 });
 
@@ -362,6 +372,98 @@ describe('order.repository', () => {
       const res = await listOrders({ limit: 2 });
       expect(res.orders).toHaveLength(2);
       expect(res.nextCursor).toBe('order-1');
+    });
+  });
+
+  describe('transitionStatus — email enqueue (#281)', () => {
+    it('emits exactly one outbound-emails job with mapped templateId for paid → preparing (customerEmail present)', async () => {
+      txGetMock.mockResolvedValueOnce(
+        makeOrderSnap('order-em1', 'paid', {
+          customerEmail: 'buyer@example.com',
+        })
+      );
+
+      await transitionStatus('order-em1', 'preparing', 'admin:user');
+
+      // 2 tx.set calls: 1 event log + 1 email job
+      expect(txSetMock).toHaveBeenCalledTimes(2);
+      const emailCall = txSetMock.mock.calls[1];
+      const [emailRef, emailDoc] = emailCall as [
+        { id: string },
+        Record<string, unknown>,
+      ];
+      expect(emailRef.id).toBe(outboundEmailDocId);
+      expect(emailDoc.to).toBe('buyer@example.com');
+      expect(emailDoc.templateId).toBe('order_preparing');
+      expect(emailDoc.status).toBe('pending');
+      expect(emailDoc.createdAt).toBeInstanceOf(Date);
+
+      const vars = emailDoc.vars as {
+        order: { id: string; status: string };
+        customer: { name: string; email: string };
+        deliveryAddress: { state: string };
+      };
+      expect(vars.order.id).toBe('order-em1');
+      expect(vars.order.status).toBe('preparing');
+      expect(vars.customer).toEqual({
+        name: 'Test Buyer',
+        email: 'buyer@example.com',
+      });
+      expect(vars.deliveryAddress.state).toBe('TN');
+    });
+
+    it.each([
+      ['pending_id_verification', 'id_verified', 'id_verified'],
+      ['pending_id_verification', 'id_rejected', 'id_rejected'],
+      ['awaiting_payment', 'paid', 'payment_confirmed'],
+      ['paid', 'preparing', 'order_preparing'],
+      ['preparing', 'out_for_delivery', 'order_out_for_delivery'],
+      ['out_for_delivery', 'completed', 'order_completed'],
+      ['paid', 'cancelled', 'order_cancelled'],
+      ['completed', 'refunded', 'order_refunded'],
+    ] as const)(
+      '%s → %s emits templateId=%s',
+      async (from, to, expectedTemplateId) => {
+        txGetMock.mockResolvedValueOnce(
+          makeOrderSnap('order-each', from, {
+            customerEmail: 'buyer@example.com',
+          })
+        );
+
+        await transitionStatus('order-each', to, 'system');
+
+        const emailDoc = txSetMock.mock.calls[1][1] as { templateId: string };
+        expect(emailDoc.templateId).toBe(expectedTemplateId);
+      }
+    );
+
+    it('skips email enqueue when order has no customerEmail but still transitions + logs event', async () => {
+      txGetMock.mockResolvedValueOnce(makeOrderSnap('order-em2', 'paid'));
+
+      const result = await transitionStatus(
+        'order-em2',
+        'preparing',
+        'admin:user'
+      );
+
+      // Only the event log was written — no email job
+      expect(txSetMock).toHaveBeenCalledOnce();
+      // Status still moved
+      expect(txUpdateMock).toHaveBeenCalledOnce();
+      expect(result.status).toBe('preparing');
+    });
+
+    it('emits no email for unmapped status (id_verified → awaiting_payment)', async () => {
+      txGetMock.mockResolvedValueOnce(
+        makeOrderSnap('order-em3', 'id_verified', {
+          customerEmail: 'buyer@example.com',
+        })
+      );
+
+      await transitionStatus('order-em3', 'awaiting_payment', 'system');
+
+      // Only the event log was written — `awaiting_payment` has no template
+      expect(txSetMock).toHaveBeenCalledOnce();
     });
   });
 });
