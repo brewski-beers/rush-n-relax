@@ -426,3 +426,93 @@ function normalizeQuantity(value: unknown, fallbackInStock: boolean): number {
 
   return fallbackInStock ? 1 : 0;
 }
+
+// ── Atomic decrement (transactional) ──────────────────────────────────────
+
+export class InsufficientStockError extends Error {
+  readonly productId: string;
+  readonly locationId: string;
+  readonly available: number;
+  readonly requested: number;
+
+  constructor(
+    locationId: string,
+    productId: string,
+    available: number,
+    requested: number
+  ) {
+    super(
+      `Insufficient stock for '${productId}' at '${locationId}': have ${available}, need ${requested}`
+    );
+    this.name = 'InsufficientStockError';
+    this.productId = productId;
+    this.locationId = locationId;
+    this.available = available;
+    this.requested = requested;
+  }
+}
+
+/**
+ * Atomically decrement inventory for a list of items at one location.
+ *
+ * Runs in a single Firestore transaction: reads every referenced item,
+ * verifies sufficient stock, then writes the new quantities. Throws
+ * `InsufficientStockError` on any shortage — the transaction is rolled
+ * back so no partial writes survive.
+ *
+ * Caller is responsible for choosing the source location (typically the
+ * order's `locationId`).
+ */
+export async function decrementInventoryItems(
+  locationId: string,
+  items: { productId: string; quantity: number }[]
+): Promise<void> {
+  if (items.length === 0) return;
+
+  const db = getAdminFirestore();
+  const col = inventoryItemsCol(locationId);
+
+  await db.runTransaction(async tx => {
+    const refs = items.map(i => col.doc(i.productId));
+    const snaps = await Promise.all(refs.map(r => tx.get(r)));
+
+    const now = new Date();
+
+    for (let i = 0; i < items.length; i++) {
+      const { productId, quantity } = items[i];
+      const snap = snaps[i];
+      const data = snap.exists ? snap.data() : undefined;
+      const currentQuantity = normalizeQuantity(
+        data?.quantity,
+        data?.inStock ?? false
+      );
+
+      if (currentQuantity < quantity) {
+        throw new InsufficientStockError(
+          locationId,
+          productId,
+          currentQuantity,
+          quantity
+        );
+      }
+
+      const nextQuantity = currentQuantity - quantity;
+      const nextInStock = nextQuantity > 0;
+
+      tx.set(
+        refs[i],
+        {
+          productId,
+          locationId,
+          quantity: nextQuantity,
+          inStock: nextInStock,
+          // Mirror the invariants enforced in setInventoryItem: when a SKU
+          // sells out, it cannot remain pickup-available or featured.
+          ...(nextInStock ? {} : { availablePickup: false, featured: false }),
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+    }
+  });
+}

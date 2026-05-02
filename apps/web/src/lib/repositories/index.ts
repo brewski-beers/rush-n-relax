@@ -37,6 +37,8 @@ export {
   listFeaturedInventory,
   getOnlineInStockSet,
   setInventoryItem,
+  decrementInventoryItems,
+  InsufficientStockError,
 } from './inventory.repository';
 
 export {
