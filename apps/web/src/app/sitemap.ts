@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/constants/site';
 import { LOCATIONS } from '@/constants/locations';
-import { HUB_LOCATION_ID, ONLINE_LOCATION_ID } from '@/constants/location-ids';
+import { ONLINE_LOCATION_ID } from '@/constants/location-ids';
 import {
   listOnlineAvailableInventory,
   listProductsByIds,
@@ -13,7 +13,7 @@ import {
  *
  * Includes:
  *  - Static marketing/legal pages
- *  - Retail location detail pages (virtual hub/online locations excluded)
+ *  - Retail location detail pages (virtual online location excluded)
  *  - Online-visible product detail pages (same filter as Explore More — products
  *    present in inventory/online with inStock: true)
  *  - Active vendor detail pages
@@ -39,10 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Retail locations only — exclude virtual inventory-only IDs defensively.
-  const virtualLocationIds = new Set<string>([
-    HUB_LOCATION_ID,
-    ONLINE_LOCATION_ID,
-  ]);
+  const virtualLocationIds = new Set<string>([ONLINE_LOCATION_ID]);
   const locationRoutes: MetadataRoute.Sitemap = LOCATIONS.filter(
     loc => !virtualLocationIds.has(loc.slug)
   ).map(loc => ({
@@ -71,7 +68,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
     }));
   } catch (err) {
-    console.error('[sitemap] Firestore unavailable — omitting dynamic routes:', err);
+    console.error(
+      '[sitemap] Firestore unavailable — omitting dynamic routes:',
+      err
+    );
   }
 
   return [

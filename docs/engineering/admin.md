@@ -81,10 +81,10 @@ flowchart LR
     DASH --> EMAIL_TPL["/admin/email-templates\nTemplate CMS"]
     DASH --> EMAIL_Q["/admin/email-queue\nQueue monitor"]
 
-    INV --> HUB["/admin/inventory/hub\nRnR Hub"]:::active
+    INV --> ONLINE["/admin/inventory/online\nOnline Store"]:::active
     INV --> RETAIL["/admin/inventory/locationId\nRetail location"]
 
-    HUB --> HUB_COLS["In-Stock toggle\nAvailable Online toggle"]
+    ONLINE --> ONLINE_COLS["In-Stock toggle\nFeatured toggle"]
     RETAIL --> RETAIL_COLS["In-Stock toggle\nAvailable Pickup toggle"]
 
     subgraph FS["Firestore"]
@@ -105,7 +105,7 @@ flowchart LR
     VENDORS --> FS_VENDORS
     CAT --> FS_CAT
     PROMO --> FS_PROMO
-    HUB --> FS_INV
+    ONLINE --> FS_INV
     RETAIL --> FS_INV
     USERS --> FS_INVITES
     EMAIL_TPL --> FS_EMAIL_TPL
@@ -120,20 +120,20 @@ flowchart LR
 
 ### Legend
 
-| Abbrev    | Meaning                                                               |
-| --------- | --------------------------------------------------------------------- |
-| DASH      | `/admin/dashboard` — navigation hub                                   |
-| LOC       | Locations CMS page                                                    |
-| PROD      | Products CMS page                                                     |
-| CAT       | Categories CMS page                                                   |
-| PROMO     | Promos CMS page                                                       |
-| INV       | Inventory module — Phase 2                                            |
-| USERS     | Users module — owner-only invite + custom-claim role assignments      |
-| VENDORS   | Vendors CMS page — owner-only                                         |
-| EMAIL_TPL | Email template CMS — owner-only live editor + preview                 |
-| EMAIL_Q   | Outbound email queue monitor — owner-only operational console         |
-| HUB       | RnR Hub — non-physical warehouse location (`HUB_LOCATION_ID = 'hub'`) |
-| FS        | Firestore database                                                    |
+| Abbrev    | Meaning                                                           |
+| --------- | ----------------------------------------------------------------- |
+| DASH      | `/admin/dashboard` — navigation hub                               |
+| LOC       | Locations CMS page                                                |
+| PROD      | Products CMS page                                                 |
+| CAT       | Categories CMS page                                               |
+| PROMO     | Promos CMS page                                                   |
+| INV       | Inventory module — Phase 2                                        |
+| USERS     | Users module — owner-only invite + custom-claim role assignments  |
+| VENDORS   | Vendors CMS page — owner-only                                     |
+| EMAIL_TPL | Email template CMS — owner-only live editor + preview             |
+| EMAIL_Q   | Outbound email queue monitor — owner-only operational console     |
+| ONLINE    | Online Store — virtual location (`ONLINE_LOCATION_ID = 'online'`) |
+| FS        | Firestore database                                                |
 
 ### Key Paths
 
@@ -149,7 +149,6 @@ flowchart LR
 - Restoring a template revision writes the selected snapshot back to the live template and records a new `source = restore` revision for auditability.
 - Email queue monitor is owner-only at `/admin/email-queue`; it surfaces queue state and allows manual requeue of `failed`/`dead-letter` jobs.
 - Inventory is the only module with a nested route (`[locationId]`).
-- Hub inventory items have an `availableOnline` flag — toggles online shipping availability (Phase 3A).
 - Retail inventory items have an `availablePickup` flag — toggles buy-online / pick-up-in-store (Phase 3A).
 - Compliance guard: setting either flag is blocked if the product's status is `compliance-hold`.
 - Vendors admin is owner-only at `/admin/vendors`; full CRUD — list, create (`/new`), edit (`/[slug]/edit`), archive/restore toggle. Vendors are stored in `vendors/{slug}` (doc ID = slug, immutable after creation). Each vendor has `name`, `slug`, `website`, `logoUrl`, `description`, `categories` (string array), and `isActive`. Archiving sets `isActive: false` — vendor remains in Firestore for history but is hidden from storefront queries (`listVendors()` filters to active only).
@@ -180,6 +179,6 @@ flowchart LR
 - Inventory writes now append an immutable adjustment log at
   `inventory/{locationId}/items/{productId}/adjustments/{adjustmentId}` in the same batch as the item write.
 - Adjustment payload includes before/after snapshots (`previous*`/`next*`), computed delta (`deltaQuantity`), `changedFields`, `reason`, `source`, `updatedBy`, and `createdAt`.
-- `InventoryItem.variantPricing` is a map of `variantId → { price, compareAtPrice?, inStock? }`. Keys correspond to `ProductVariant.variantId` values from `Product.variants`. Pricing is per-location — the same product can have different prices at hub vs. retail.
+- `InventoryItem.variantPricing` is a map of `variantId → { price, compareAtPrice?, inStock? }`. Keys correspond to `ProductVariant.variantId` values from `Product.variants`. Pricing is per-location — the same product can have different prices at online vs. retail.
 - `setInventoryItem` accepts `variantPricing` in the patch object. When present, it is merged atomically with the item write and `'variantPricing'` is added to `changedFields` in the audit record.
 - The `'price-update'` reason is available in `InventoryAdjustmentReason` for pricing-only audit records.
