@@ -85,6 +85,7 @@ export {
 export {
   createOrder,
   getOrder,
+  setOrderProviderRefs,
   InvalidTransitionError,
   listOrders,
   transitionStatus,
