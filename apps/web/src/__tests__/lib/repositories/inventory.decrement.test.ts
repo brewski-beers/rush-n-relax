@@ -9,7 +9,12 @@ const { runTransactionMock, collectionMock, txGetMock, txSetMock, docMap } =
     const txSetMock = vi.fn();
 
     const runTransactionMock = vi.fn(
-      async (fn: (tx: { get: typeof txGetMock; set: typeof txSetMock }) => Promise<void>) => {
+      async (
+        fn: (tx: {
+          get: typeof txGetMock;
+          set: typeof txSetMock;
+        }) => Promise<void>
+      ) => {
         await fn({ get: txGetMock, set: txSetMock });
       }
     );
@@ -28,7 +33,6 @@ vi.mock('@/lib/firebase/admin', () => ({
     runTransaction: runTransactionMock,
   }),
   toDate: (v: Date | string | undefined) => (v ? new Date(v) : new Date(0)),
-  HUB_LOCATION_ID: 'hub',
   ONLINE_LOCATION_ID: 'online',
 }));
 
@@ -41,9 +45,7 @@ function snapFor(quantity: number | undefined, exists = true) {
   return {
     exists,
     data: () =>
-      exists
-        ? { quantity, inStock: (quantity ?? 0) > 0 }
-        : undefined,
+      exists ? { quantity, inStock: (quantity ?? 0) > 0 } : undefined,
   };
 }
 

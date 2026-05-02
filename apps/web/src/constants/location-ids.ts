@@ -4,12 +4,6 @@
  */
 
 /**
- * Reserved inventory location ID for the RnR Hub (warehouse/non-physical).
- * Hub items can be flagged availableOnline: true to promote to the storefront.
- */
-export const HUB_LOCATION_ID = 'hub';
-
-/**
  * Virtual location ID for online/e-commerce inventory.
  * Storefront pricing and availability is read from inventory/online/items/{productId}.
  */

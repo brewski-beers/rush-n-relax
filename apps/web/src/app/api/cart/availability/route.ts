@@ -33,8 +33,8 @@ interface CartItemInput {
   variantId: string;
 }
 
-// Retail slugs only — hub and online are not pickup locations
-const RETAIL_SLUGS = LOCATION_SLUGS.filter(s => s !== 'hub' && s !== 'online');
+// Retail slugs only — online is not a pickup location
+const RETAIL_SLUGS = LOCATION_SLUGS.filter(s => s !== 'online');
 
 export async function GET(req: NextRequest) {
   const raw = req.nextUrl.searchParams.get('items');

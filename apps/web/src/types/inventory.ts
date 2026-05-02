@@ -2,8 +2,6 @@
  * Inventory item — tracks stock status for a single product at a single location.
  * Lives at: inventory/{locationId}/items/{productId}
  *
- * locationId can be a retail location slug or HUB_LOCATION_ID ('hub').
- *
  * Storefront visibility is now derived from `inStock` at the online location
  * (see location-ids.ts — ONLINE_LOCATION_ID). The legacy `availableOnline`
  * flag has been retired; the persisted field was dropped by migration #231.
@@ -11,7 +9,7 @@
 export interface InventoryItem {
   /** References products/{productId} */
   productId: string;
-  /** Retail location doc ID or HUB_LOCATION_ID */
+  /** Retail location doc ID or ONLINE_LOCATION_ID */
   locationId: string;
   /** Whether this product is currently in stock at this location */
   inStock: boolean;

@@ -54,7 +54,7 @@ function stubSavedItem(overrides: {
 }) {
   getInventoryItemMock.mockResolvedValue({
     productId: 'p',
-    locationId: 'hub',
+    locationId: 'oak-ridge',
     inStock: overrides.inStock ?? false,
     availableOnline: overrides.availableOnline ?? false,
     availablePickup: overrides.availablePickup ?? false,
@@ -77,7 +77,7 @@ describe('updateInventoryItem server action', () => {
       stubUnauthorised();
 
       await expect(
-        updateInventoryItem('hub', 'product-a', { inStock: true })
+        updateInventoryItem('oak-ridge', 'product-a', { inStock: true })
       ).rejects.toThrow('NEXT_REDIRECT:/admin/login');
 
       expect(setInventoryItemMock).not.toHaveBeenCalled();
@@ -89,7 +89,7 @@ describe('updateInventoryItem server action', () => {
     it('calls setInventoryItem with toggle-stock reason and the actor email', async () => {
       stubAuthorisedActor();
 
-      await updateInventoryItem('hub', 'product-a', { inStock: true });
+      await updateInventoryItem('oak-ridge', 'product-a', { inStock: true });
 
       expect(setInventoryItemMock).toHaveBeenCalledOnce();
       const [locId, prodId, patch, adjustment] = setInventoryItemMock.mock
@@ -100,7 +100,7 @@ describe('updateInventoryItem server action', () => {
         Record<string, unknown>,
       ];
 
-      expect(locId).toBe('hub');
+      expect(locId).toBe('oak-ridge');
       expect(prodId).toBe('product-a');
       expect(patch.inStock).toBe(true);
       expect(adjustment.reason).toBe('toggle-stock');
@@ -130,7 +130,7 @@ describe('updateInventoryItem server action', () => {
       stubAuthorisedActor();
       stubSavedItem({ inStock: true, availablePickup: true, quantity: 5 });
 
-      await updateInventoryItem('hub', 'product-c', { featured: true });
+      await updateInventoryItem('oak-ridge', 'product-c', { featured: true });
 
       const [, , , adjustment] = setInventoryItemMock.mock.calls[0] as [
         string,
@@ -164,9 +164,11 @@ describe('updateInventoryItem server action', () => {
     it('revalidates the expected paths', async () => {
       stubAuthorisedActor();
 
-      await updateInventoryItem('hub', 'product-f', { inStock: false });
+      await updateInventoryItem('oak-ridge', 'product-f', { inStock: false });
 
-      expect(revalidatePathMock).toHaveBeenCalledWith('/admin/inventory/hub');
+      expect(revalidatePathMock).toHaveBeenCalledWith(
+        '/admin/inventory/oak-ridge'
+      );
       expect(revalidatePathMock).toHaveBeenCalledWith('/admin/inventory');
       expect(revalidatePathMock).toHaveBeenCalledWith('/');
       expect(revalidatePathMock).toHaveBeenCalledWith('/products');
@@ -183,7 +185,7 @@ describe('updateInventoryItem server action', () => {
       );
 
       await expect(
-        updateInventoryItem('hub', 'product-hold', { inStock: true })
+        updateInventoryItem('oak-ridge', 'product-hold', { inStock: true })
       ).rejects.toThrow('compliance-hold');
 
       expect(revalidatePathMock).not.toHaveBeenCalled();
@@ -202,7 +204,7 @@ describe('updateInventoryItem server action', () => {
         quantity: 0,
       });
 
-      const result = await updateInventoryItem('hub', 'product-k', {
+      const result = await updateInventoryItem('oak-ridge', 'product-k', {
         featured: true,
       });
 
@@ -227,7 +229,7 @@ describe('updateVariantPricing server action', () => {
       stubUnauthorised();
 
       await expect(
-        updateVariantPricing('hub', 'flower', { '1g': { price: 1000 } })
+        updateVariantPricing('oak-ridge', 'flower', { '1g': { price: 1000 } })
       ).rejects.toThrow('NEXT_REDIRECT:/admin/login');
 
       expect(setInventoryItemMock).not.toHaveBeenCalled();

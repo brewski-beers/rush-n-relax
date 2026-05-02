@@ -54,12 +54,12 @@ describe('InventoryTable — qty=0 cascade toast (issue #198)', () => {
       render(
         <InventoryTable
           rows={[baseRow({ availableOnline: true })]}
-          locationId="hub"
+          locationId="oak-ridge"
           isOnline
         />
       );
       const qty = screen.getByLabelText(/Quantity for Test Flower/i);
-      await act(async () => {
+      act(() => {
         fireEvent.change(qty, { target: { value: '0' } });
         fireEvent.blur(qty);
       });
@@ -67,7 +67,7 @@ describe('InventoryTable — qty=0 cascade toast (issue #198)', () => {
         expect(screen.getByText(TOAST_COPY)).toBeInTheDocument();
       });
       expect(updateInventoryItemMock).toHaveBeenCalledWith(
-        'hub',
+        'oak-ridge',
         'prod-1',
         expect.objectContaining({ quantity: 0 })
       );
@@ -86,12 +86,12 @@ describe('InventoryTable — qty=0 cascade toast (issue #198)', () => {
               featured: false,
             }),
           ]}
-          locationId="hub"
+          locationId="oak-ridge"
           isOnline
         />
       );
       const qty = screen.getByLabelText(/Quantity for Test Flower/i);
-      await act(async () => {
+      act(() => {
         fireEvent.change(qty, { target: { value: '0' } });
         fireEvent.blur(qty);
       });
@@ -107,12 +107,12 @@ describe('InventoryTable — qty=0 cascade toast (issue #198)', () => {
       render(
         <InventoryTable
           rows={[baseRow({ availableOnline: true })]}
-          locationId="hub"
+          locationId="oak-ridge"
           isOnline
         />
       );
       const inStock = screen.getByLabelText(/In stock for Test Flower/i);
-      await act(async () => {
+      act(() => {
         fireEvent.click(inStock);
       });
       await waitFor(() => {
@@ -134,19 +134,24 @@ describe('InventoryTable — qty=0 cascade toast (issue #198)', () => {
               featured: false,
             }),
           ]}
-          locationId="hub"
+          locationId="oak-ridge"
           isOnline
         />
       );
       const qty = screen.getByLabelText(/Quantity for Test Flower/i);
-      await act(async () => {
+      act(() => {
         fireEvent.change(qty, { target: { value: '5' } });
         fireEvent.blur(qty);
       });
       await waitFor(() => {
         expect(updateInventoryItemMock).toHaveBeenCalled();
       });
-      const [, , patch] = updateInventoryItemMock.mock.calls[0];
+      const call = updateInventoryItemMock.mock.calls[0] as [
+        string,
+        string,
+        Record<string, unknown>,
+      ];
+      const patch = call[2];
       expect(patch.availableOnline).toBeUndefined();
       expect(patch).not.toHaveProperty('availableOnline', true);
       expect(screen.queryByText(TOAST_COPY)).not.toBeInTheDocument();

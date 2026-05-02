@@ -47,7 +47,7 @@ const {
   const collectionMock = vi.fn((path: string) => ({
     doc: vi.fn((id: string) => {
       if (path === 'products') return makeProductRef();
-      // inventory subcollection path looks like "inventory/hub/items"
+      // inventory subcollection path looks like "inventory/oak-ridge/items"
       return makeItemRef(id);
     }),
     where: vi.fn().mockReturnThis(),
@@ -78,7 +78,6 @@ vi.mock('@/lib/firebase/admin', () => ({
   getAdminFirestore: getAdminFirestoreMock,
   toDate: (value: Date | string | undefined) =>
     value ? new Date(value) : new Date(0),
-  HUB_LOCATION_ID: 'hub',
   ONLINE_LOCATION_ID: 'online',
 }));
 
@@ -430,9 +429,8 @@ describe('inventory.repository — docToInventoryItem mapping', () => {
         }),
       });
 
-      const { getInventoryItem } = await import(
-        '@/lib/repositories/inventory.repository'
-      );
+      const { getInventoryItem } =
+        await import('@/lib/repositories/inventory.repository');
       const item = await getInventoryItem('oak-ridge', 'product-xyz');
 
       expect(item).not.toBeNull();
@@ -463,9 +461,8 @@ describe('inventory.repository — docToInventoryItem mapping', () => {
         }),
       });
 
-      const { getInventoryItem } = await import(
-        '@/lib/repositories/inventory.repository'
-      );
+      const { getInventoryItem } =
+        await import('@/lib/repositories/inventory.repository');
       const item = await getInventoryItem('online', 'product-out');
 
       expect(item!.inStock).toBe(false);

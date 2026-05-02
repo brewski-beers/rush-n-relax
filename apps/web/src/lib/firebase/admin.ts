@@ -130,7 +130,4 @@ export function toDate(value: Timestamp | Date | string | undefined): Date {
 }
 
 // Re-exported here for backward compatibility — canonical source is src/constants/location-ids.ts
-export {
-  HUB_LOCATION_ID,
-  ONLINE_LOCATION_ID,
-} from '../../constants/location-ids';
+export { ONLINE_LOCATION_ID } from '../../constants/location-ids';
