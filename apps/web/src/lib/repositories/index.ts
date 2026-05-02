@@ -37,6 +37,8 @@ export {
   listFeaturedInventory,
   getOnlineInStockSet,
   setInventoryItem,
+  decrementInventoryItems,
+  InsufficientStockError,
 } from './inventory.repository';
 
 export {
@@ -85,8 +87,10 @@ export {
 export {
   createOrder,
   getOrder,
+  setOrderProviderRefs,
   InvalidTransitionError,
   listOrders,
+  listOrderEvents,
   transitionStatus,
 } from './order.repository';
 export type { ListOrdersOptions, ListOrdersResult } from './order.repository';

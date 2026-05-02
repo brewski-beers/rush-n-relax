@@ -1,23 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOrder } from '@/lib/repositories/order.repository';
+import {
+  getOrder,
+  setOrderProviderRefs,
+  transitionStatus,
+  InvalidTransitionError,
+} from '@/lib/repositories';
 import { createCloverCheckoutSession } from '@/lib/clover/checkout';
-import { canShipToState, getShippingBlockReason } from '@/constants/shipping';
-import type { OrderItem, ShippingAddress } from '@/types';
 
 interface CheckoutRequest {
-  items: OrderItem[];
-  subtotal: number;
-  tax: number;
-  total: number;
-  locationId: string;
-  /** Required — orders are delivery-only. */
-  deliveryAddress: ShippingAddress;
-  /** AgeChecker session id (verification confirmed pre-checkout). */
-  agecheckerSessionId: string;
-  customerEmail?: string;
+  orderId: string;
 }
 
-export async function POST(req: NextRequest) {
+/**
+ * POST /api/checkout/session
+ *
+ * Second leg of the storefront flow. Only callable once the order is
+ * `id_verified` (AgeChecker webhook fired). Transitions the order to
+ * `awaiting_payment`, opens a Clover hosted-checkout session, persists the
+ * Clover session id, and returns the redirect URL.
+ *
+ * Server-side guard: the status check is enforced via
+ * `transitionStatus(... 'awaiting_payment' ...)` which throws
+ * `InvalidTransitionError` when the order is not `id_verified`.
+ */
+export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: CheckoutRequest;
   try {
     body = (await req.json()) as CheckoutRequest;
@@ -25,55 +31,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  if (!body.agecheckerSessionId) {
+  if (!body.orderId) {
     return NextResponse.json(
-      { error: 'Age verification is required before checkout.' },
+      { error: 'orderId is required.' },
       { status: 400 }
     );
   }
 
-  if (!body.items?.length) {
-    return NextResponse.json({ error: 'Cart is empty.' }, { status: 400 });
+  const order = await getOrder(body.orderId);
+  if (!order) {
+    return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
   }
 
-  const addr = body.deliveryAddress;
-  if (!addr?.state) {
-    return NextResponse.json(
-      { error: 'Delivery address with state is required.' },
-      { status: 400 }
-    );
-  }
-  if (!canShipToState(addr.state)) {
+  if (order.status !== 'id_verified') {
     return NextResponse.json(
       {
-        error:
-          getShippingBlockReason(addr.state) ?? 'Cannot deliver to this state.',
+        error: `Order is in status "${order.status}"; payment can only be initiated once ID is verified.`,
       },
-      { status: 422 }
+      { status: 409 }
     );
   }
 
-  const orderId = await createOrder({
-    items: body.items,
-    subtotal: body.subtotal,
-    tax: body.tax,
-    total: body.total,
-    locationId: body.locationId,
-    deliveryAddress: addr,
-    // ID was just verified via AgeChecker; payment session follows.
-    status: 'awaiting_payment',
-    agecheckerSessionId: body.agecheckerSessionId,
-    customerEmail: body.customerEmail,
-  });
+  try {
+    await transitionStatus(order.id, 'awaiting_payment', 'system');
+  } catch (err) {
+    if (err instanceof InvalidTransitionError) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
+    throw err;
+  }
 
   const session = await createCloverCheckoutSession({
-    orderId,
-    amount: body.total,
-    customerEmail: body.customerEmail,
+    orderId: order.id,
+    amount: order.total,
+    customerEmail: order.customerEmail,
+  });
+
+  await setOrderProviderRefs(order.id, {
+    cloverCheckoutSessionId: session.redirectUrl,
   });
 
   return NextResponse.json({
-    orderId,
+    orderId: order.id,
     redirectUrl: session.redirectUrl,
     provider: session.provider,
   });

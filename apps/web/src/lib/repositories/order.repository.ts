@@ -52,6 +52,26 @@ export async function createOrder(
 }
 
 /**
+ * Patch provider session ids onto an order. Used by the storefront flow when
+ * we receive a session/checkout id from AgeChecker or Clover and need to
+ * persist it without a status change.
+ */
+export async function setOrderProviderRefs(
+  orderId: string,
+  refs: { agecheckerSessionId?: string; cloverCheckoutSessionId?: string }
+): Promise<void> {
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (refs.agecheckerSessionId !== undefined) {
+    patch.agecheckerSessionId = refs.agecheckerSessionId;
+  }
+  if (refs.cloverCheckoutSessionId !== undefined) {
+    patch.cloverCheckoutSessionId = refs.cloverCheckoutSessionId;
+  }
+  if (Object.keys(patch).length === 1) return; // only updatedAt — skip
+  await ordersCol().doc(orderId).update(patch);
+}
+
+/**
  * Status-specific milestone fields (see `Order` type). When a status update
  * matches one of these, we stamp the corresponding timestamp alongside
  * `updatedAt`.
@@ -259,6 +279,34 @@ export async function listOrders(
 
   return { orders, nextCursor };
 }
+
+/**
+ * List `OrderEvent`s for a single order, oldest first. Admin SDK only.
+ *
+ * Reads from `order-events/{orderId}/events`. Used by admin order-detail
+ * pages to render the audit-log timeline.
+ */
+export async function listOrderEvents(orderId: string): Promise<OrderEvent[]> {
+  const snap = await orderEventsCol(orderId).orderBy('createdAt', 'asc').get();
+  return snap.docs.map(d => docToOrderEvent(d.id, d.data()));
+}
+
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
+function docToOrderEvent(
+  id: string,
+  d: FirebaseFirestore.DocumentData
+): OrderEvent {
+  return {
+    id,
+    orderId: d.orderId ?? '',
+    from: (d.from ?? null) as OrderEvent['from'],
+    to: d.to as OrderEvent['to'],
+    actor: d.actor as OrderEvent['actor'],
+    ...(d.meta ? { meta: d.meta as Record<string, unknown> } : {}),
+    createdAt: toDate(d.createdAt),
+  } satisfies OrderEvent;
+}
+/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 
 const EMPTY_ADDRESS: ShippingAddress = {
   name: '',

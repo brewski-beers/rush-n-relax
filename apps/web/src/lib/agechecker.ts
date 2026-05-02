@@ -55,3 +55,50 @@ export function verifyAgeCheckerSignature(
     return false;
   }
 }
+
+// ─── Session start ───────────────────────────────────────────────────
+
+export interface AgeCheckerSessionInput {
+  orderId: string;
+  customerEmail?: string;
+  /** Where AgeChecker should redirect the user once verification finishes. */
+  returnUrl: string;
+}
+
+export interface AgeCheckerSession {
+  /** AgeChecker session id we persist on the order for webhook correlation. */
+  sessionId: string;
+  /** URL the storefront should redirect the user to. */
+  redirectUrl: string;
+  provider: 'agechecker' | 'stub';
+}
+
+/**
+ * Start an AgeChecker hosted verification session.
+ *
+ * ⚠️  STUBBED until production keys + endpoint contract are confirmed. When
+ *     AGECHECKER_API_KEY is absent we return a deterministic stub so the rest
+ *     of the storefront flow is exercisable end-to-end. Mirrors the pattern
+ *     used by `createCloverCheckoutSession`.
+ */
+export function startAgeCheckerSession(
+  input: AgeCheckerSessionInput
+): Promise<AgeCheckerSession> {
+  const apiKey = process.env.AGECHECKER_API_KEY;
+  const merchantId = process.env.AGECHECKER_MERCHANT_ID;
+
+  if (!apiKey || !merchantId) {
+    return Promise.resolve({
+      sessionId: `stub-ac-${input.orderId}`,
+      redirectUrl: `/checkout/agecheck-stub?order=${encodeURIComponent(input.orderId)}`,
+      provider: 'stub',
+    });
+  }
+
+  // Real provider call lands here once contract is finalized.
+  return Promise.resolve({
+    sessionId: `stub-ac-${input.orderId}`,
+    redirectUrl: `/checkout/agecheck-stub?order=${encodeURIComponent(input.orderId)}`,
+    provider: 'stub',
+  });
+}
