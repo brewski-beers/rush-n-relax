@@ -86,6 +86,31 @@ const STATUS_TIMESTAMP_FIELD: Partial<Record<OrderStatus, keyof Order>> = {
 };
 
 /**
+ * Order status → email template id map. When `transitionStatus` moves an
+ * order into a status with an entry here, an `outbound-emails/{auto}` job
+ * is enqueued in the same transaction so the existing Cloud Functions
+ * worker (`functions/index.ts`) can render + deliver via Resend.
+ *
+ * Statuses without an entry (e.g. `awaiting_payment`, `failed`) emit no
+ * email — they are intermediate or admin-only states.
+ */
+const STATUS_TO_EMAIL_TEMPLATE: Partial<Record<OrderStatus, string>> = {
+  pending_id_verification: 'order_received',
+  id_verified: 'id_verified',
+  id_rejected: 'id_rejected',
+  paid: 'payment_confirmed',
+  preparing: 'order_preparing',
+  out_for_delivery: 'order_out_for_delivery',
+  completed: 'order_completed',
+  cancelled: 'order_cancelled',
+  refunded: 'order_refunded',
+};
+
+function outboundEmailsCol() {
+  return getAdminFirestore().collection('outbound-emails');
+}
+
+/**
  * Atomically transition an order from its current status to `to`, append an
  * `OrderEvent` to the audit log, and return the fresh `Order`.
  *
@@ -141,6 +166,35 @@ export async function transitionStatus(
       createdAt: now,
     };
     tx.set(eventRef, event);
+
+    // Enqueue lifecycle email if the destination status has a mapped
+    // template AND the order has a customer email on file. The CF
+    // trigger on `outbound-emails/{jobId}` renders + delivers via
+    // Resend (see functions/index.ts). Orders without `customerEmail`
+    // still transition normally — the email step is best-effort.
+    const templateId = STATUS_TO_EMAIL_TEMPLATE[to];
+    const customerEmail =
+      typeof data.customerEmail === 'string' ? data.customerEmail : undefined;
+    if (templateId && customerEmail) {
+      const emailRef = outboundEmailsCol().doc();
+      // Justified cast: Firestore DocumentData; deliveryAddress is always
+      // written by createOrder via the Order type.
+      const deliveryAddress =
+        (data.deliveryAddress as Order['deliveryAddress'] | undefined) ??
+        undefined;
+      const customerName = deliveryAddress?.name ?? '';
+      tx.set(emailRef, {
+        to: customerEmail,
+        templateId,
+        vars: {
+          order: { ...data, id: orderId, status: to },
+          customer: { name: customerName, email: customerEmail },
+          deliveryAddress,
+        },
+        status: 'pending',
+        createdAt: now,
+      });
+    }
 
     return { ...data, ...patch, id: orderId };
   });
