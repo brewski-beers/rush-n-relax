@@ -14,7 +14,6 @@ const { getAllMock, collectionMock, getAdminFirestoreMock } = vi.hoisted(() => {
 vi.mock('@/lib/firebase/admin', () => ({
   getAdminFirestore: getAdminFirestoreMock,
   toDate: (v: Date | string | undefined) => (v ? new Date(v) : new Date(0)),
-  HUB_LOCATION_ID: 'hub',
   ONLINE_LOCATION_ID: 'online',
 }));
 

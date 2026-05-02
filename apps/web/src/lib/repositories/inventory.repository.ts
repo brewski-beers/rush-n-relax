@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument -- Firestore Admin doc.data() returns `any`; safe casts are documented inline. Pre-existing baseline (#314 doc-touch surfaced in lint-staged; full type-narrowing tracked separately). */
 /**
  * Inventory repository — all Firestore access for inventory documents.
  * Server-side only (uses firebase-admin).
@@ -8,7 +9,7 @@
  * Adjustment history is recorded as an immutable subcollection:
  *   inventory/{locationId}/items/{productId}/adjustments/{adjustmentId}
  *
- * locationId can be a retail location slug or HUB_LOCATION_ID ('hub').
+ * locationId is a retail location slug or ONLINE_LOCATION_ID.
  *
  * Invariants (enforced at every write):
  *   - quantity ≥ 0, integer

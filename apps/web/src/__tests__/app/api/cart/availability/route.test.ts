@@ -16,9 +16,9 @@ vi.mock('@/lib/firebase/admin', () => ({
   }),
 }));
 
-// Stub LOCATION_SLUGS to only retail slugs so tests are deterministic
+// Stub LOCATION_SLUGS to only retail + online slugs so tests are deterministic
 vi.mock('@/lib/fixtures/storefront', () => ({
-  LOCATION_SLUGS: ['oak-ridge', 'maryville', 'seymour', 'hub', 'online'],
+  LOCATION_SLUGS: ['oak-ridge', 'maryville', 'seymour', 'online'],
 }));
 
 import { GET } from '@/app/api/cart/availability/route';
