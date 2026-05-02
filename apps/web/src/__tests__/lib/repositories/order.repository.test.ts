@@ -466,4 +466,136 @@ describe('order.repository', () => {
       expect(txSetMock).toHaveBeenCalledOnce();
     });
   });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // BDD: full ALLOWED_TRANSITIONS matrix coverage (#284)
+  //
+  // For every (from, to) pair in ALLOWED_TRANSITIONS we assert the move
+  // succeeds and writes the order-event audit row. For every (from, to)
+  // pair NOT in the table we assert InvalidTransitionError is thrown and
+  // no Firestore write occurs.
+  // ────────────────────────────────────────────────────────────────────────
+
+  describe('ALLOWED_TRANSITIONS — every legal move (BDD matrix)', () => {
+    const allowed: Array<[OrderStatus, OrderStatus]> = [
+      ['pending_id_verification', 'id_verified'],
+      ['pending_id_verification', 'id_rejected'],
+      ['pending_id_verification', 'cancelled'],
+      ['pending_id_verification', 'failed'],
+      ['id_verified', 'awaiting_payment'],
+      ['id_verified', 'cancelled'],
+      ['id_verified', 'failed'],
+      ['id_rejected', 'cancelled'],
+      ['awaiting_payment', 'paid'],
+      ['awaiting_payment', 'failed'],
+      ['awaiting_payment', 'cancelled'],
+      ['paid', 'preparing'],
+      ['paid', 'refunded'],
+      ['paid', 'cancelled'],
+      ['preparing', 'out_for_delivery'],
+      ['preparing', 'cancelled'],
+      ['preparing', 'refunded'],
+      ['out_for_delivery', 'completed'],
+      ['out_for_delivery', 'refunded'],
+      ['completed', 'refunded'],
+      ['failed', 'cancelled'],
+    ];
+
+    it.each(allowed)(
+      'GIVEN an order in %s WHEN transitionStatus(%s) THEN it succeeds and logs an order-event',
+      async (from, to) => {
+        txGetMock.mockResolvedValueOnce(makeOrderSnap('order-allow', from));
+
+        const result = await transitionStatus('order-allow', to, 'system');
+
+        expect(txUpdateMock).toHaveBeenCalledOnce();
+        const [, patch] = txUpdateMock.mock.calls[0];
+        expect(patch.status).toBe(to);
+        expect(patch.updatedAt).toBeInstanceOf(Date);
+
+        // Event-log entry is always the FIRST tx.set call.
+        const [, event] = txSetMock.mock.calls[0];
+        expect(event).toMatchObject({
+          orderId: 'order-allow',
+          from,
+          to,
+          actor: 'system',
+        });
+        expect(result.status).toBe(to);
+      }
+    );
+  });
+
+  describe('ALLOWED_TRANSITIONS — disallowed moves (BDD matrix)', () => {
+    // A representative cross-section of moves that violate the lifecycle.
+    // Includes terminal-state escapes, skip-ahead, and reverse moves.
+    const disallowed: Array<[OrderStatus, OrderStatus]> = [
+      ['pending_id_verification', 'paid'],
+      ['pending_id_verification', 'preparing'],
+      ['pending_id_verification', 'out_for_delivery'],
+      ['pending_id_verification', 'completed'],
+      ['id_verified', 'paid'],
+      ['id_verified', 'preparing'],
+      ['id_rejected', 'id_verified'],
+      ['id_rejected', 'paid'],
+      ['awaiting_payment', 'preparing'],
+      ['awaiting_payment', 'completed'],
+      ['paid', 'out_for_delivery'],
+      ['paid', 'completed'],
+      ['paid', 'awaiting_payment'],
+      ['preparing', 'paid'],
+      ['preparing', 'completed'],
+      ['out_for_delivery', 'paid'],
+      ['out_for_delivery', 'preparing'],
+      ['completed', 'cancelled'],
+      ['completed', 'paid'],
+      ['cancelled', 'paid'],
+      ['cancelled', 'refunded'],
+      ['refunded', 'paid'],
+      ['refunded', 'completed'],
+      ['failed', 'paid'],
+      ['failed', 'id_verified'],
+    ];
+
+    it.each(disallowed)(
+      'GIVEN an order in %s WHEN transitionStatus(%s) THEN it throws InvalidTransitionError and writes nothing',
+      async (from, to) => {
+        txGetMock.mockResolvedValueOnce(makeOrderSnap('order-deny', from));
+
+        await expect(
+          transitionStatus('order-deny', to, 'system')
+        ).rejects.toBeInstanceOf(InvalidTransitionError);
+
+        expect(txUpdateMock).not.toHaveBeenCalled();
+        expect(txSetMock).not.toHaveBeenCalled();
+      }
+    );
+
+    it('GIVEN an order with no status field WHEN transitionStatus is called THEN throws InvalidTransitionError(from=null)', async () => {
+      txGetMock.mockResolvedValueOnce({
+        exists: true,
+        id: 'order-nostatus',
+        data: () => ({ ...baseOrderData, status: undefined }),
+      });
+
+      let caught: unknown;
+      try {
+        await transitionStatus('order-nostatus', 'paid', 'system');
+      } catch (e) {
+        caught = e;
+      }
+      expect(caught).toBeInstanceOf(InvalidTransitionError);
+      const err = caught as InvalidTransitionError;
+      expect(err.from).toBeNull();
+      expect(err.to).toBe('paid');
+    });
+
+    it('GIVEN the order does not exist WHEN transitionStatus is called THEN throws a not-found error', async () => {
+      txGetMock.mockResolvedValueOnce({ exists: false });
+      await expect(
+        transitionStatus('order-missing', 'paid', 'system')
+      ).rejects.toThrow(/not found/);
+      expect(txUpdateMock).not.toHaveBeenCalled();
+    });
+  });
 });
