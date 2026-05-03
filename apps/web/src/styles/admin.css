@@ -15,7 +15,7 @@
   --admin-text-subtle: #7f8ca5;
   --admin-border: rgba(186, 201, 230, 0.2);
   --admin-border-strong: rgba(186, 201, 230, 0.34);
-  --admin-accent: #d5b36a;
+  --admin-accent: var(--color-accent);
   --admin-accent-strong: #ebc980;
   --admin-link: #f6d997;
   --admin-success: #2fb27c;
