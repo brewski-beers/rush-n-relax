@@ -1,254 +1,133 @@
-﻿# Rush n Relax - Cannabis Retail PWA
+# Rush N Relax
 
-A modern, mobile-first Progressive Web App for cannabis retail operations and staff POS management built with TypeScript, Vite, and Firebase.
+E-commerce + admin platform for a 3-location TN dispensary chain (Oak Ridge, Maryville, Seymour) plus an online store.
 
-## Features
+| | |
+|---|---|
+| **Stack** | Next.js 15 App Router · React 19 · TypeScript (strict) · Firebase (Firestore via Admin SDK, Functions v2, Storage, Auth) · Tailwind CSS |
+| **Hosting** | Vercel (PR previews + production) |
+| **Payments** | Clover Hosted Checkout (Path B — merchant private token + return-URL reconciliation) |
+| **ID verification** | AgeChecker.Net (HMAC-signed webhook) |
+| **Email** | Resend, dispatched via Firebase Cloud Functions |
+| **Testing** | Vitest (unit + BDD) · Playwright + playwright-bdd (E2E against Firebase emulators) |
+| **CI/CD** | GitHub Actions — lint → typecheck → unit tests → E2E → deploy on merge to `main` |
 
-- **Mobile-First Design** - Optimized for mobile devices with progressive enhancement for larger screens
-- **PWA Support** - Offline functionality, installable, fast loading
-- **Firebase Integration** - Real-time Firestore database with secure rules
-- **POS Mode** - Staff point-of-sale functionality for retail operations
-- **Customer Ordering** - E-commerce interface for product browsing and orders
-- **Real-Time Sync** - Live inventory and order updates
+---
 
-## Project Structure
+## Repo layout
 
-\\\
+```
 rush-n-relax/
-src/ # TypeScript source code
-main.ts # Application entry point
-firebase.ts # Firebase initialization
-style.css # Global styles (mobile-first)
-components/ # UI components
-utils/
-auth.ts # Authentication utilities
-public/ # Static assets
-manifest.json # PWA manifest
-functions/ # Cloud Functions
-src/
-index.ts # Functions entry point
-package.json
-tsconfig.json
-vite.config.ts # Vite configuration
-tsconfig.json # TypeScript configuration
-firebase.json # Firebase hosting config
-firestore.rules # Firestore security rules
-package.json
-index.html # HTML entry point
-\\\
+├── apps/
+│   └── web/              # Next.js app — storefront + admin
+│       └── src/
+│           ├── app/      # App Router routes
+│           ├── components/
+│           ├── constants/
+│           ├── contexts/
+│           ├── hooks/
+│           ├── lib/      # Repos (Firestore Admin SDK), helpers
+│           ├── types/    # Shared schema types
+│           └── __tests__/
+├── functions/            # Firebase Cloud Functions (v2)
+├── tools/                # Project scripts (seed, purge, prune, etc.)
+├── firestore.rules       # Firestore security rules
+├── firestore.indexes.json
+├── storage.rules         # Storage security rules
+├── firebase.json         # Emulator + deploy config
+└── docs/
+    ├── architecture.md   # High-level architecture (engineering deep-docs are in Obsidian)
+    └── launch-runbook.md # Pre-launch checklist
+```
 
-## Development
+---
+
+## Engineering docs
+
+All deep engineering documentation lives in the **Obsidian vault** at `~/Documents/Obsidian Vault/projects/rush-n-relax/`. Highlights:
+
+- `architecture.md` — system architecture, layer/tier boundaries, deploy topology
+- `orders.md` — order lifecycle, state machine, event log
+- `products.md` — product schema, variants, per-location stock
+- `agechecker.md` — AgeChecker.Net runbook
+- `clover-hosted-checkout.md` — Clover Path A vs B, current handler state
+- `firebase-deploy-iam.md` — GHA WIF + Vercel runtime SA roles + rotation runbook
+- `firebase-credentials-architecture.md` — full credential migration history
+
+The vault uses Obsidian's wikilinks, Canvas, and Mermaid plugins for diagrams + cross-references that GitHub markdown can't render properly.
+
+---
+
+## Local development
 
 ### Prerequisites
+- Node 22.x · pnpm 9.x · Firebase CLI · `gcloud` CLI (for IAM operations)
 
-- Node.js 16+
-- Firebase CLI
-- npm or pnpm
-
-### Setup
-
-\\\ash
-npm install
+### First-time setup
+```bash
+pnpm install
 firebase login
-\\\
-
-### Running Locally
-
-\\\ash
-
-# Start Next.js and Firebase emulators
-
-npm run dev:all
-
-# In another terminal, generate deterministic emulator artifacts
-
-# and seed Firestore + Auth + storage fixtures
-
-npm run dev:seed
-\\\
-
-### Building
-
-\\\ash
-npm run build
-\\\
-
-### Testing
-
-Rush n Relax uses a two-layer test strategy: fast **unit tests** via Vitest and
-real-browser **E2E tests** via Playwright.
-
-#### Unit Tests (Vitest)
-
-```bash
-npm test              # Run all unit tests
-npm run test:ui       # Interactive Vitest UI
-npm run test:coverage # Generate coverage report
+firebase use rush-n-relax
 ```
 
-Unit tests live alongside source files (`*.test.ts` / `*.test.tsx`) and cover
-pure logic — route matching, branding constants, component rendering, age-gate
-validation.
-
-#### E2E Tests (Playwright)
-
-E2E tests are split into three tiers controlled by the `TEST_MODE` env var.
-This keeps local feedback loops fast while CI validates everything.
-
-| Tier      | Command                  | What it runs                                  | When to use             |
-| --------- | ------------------------ | --------------------------------------------- | ----------------------- |
-| **Smoke** | `npm run test:e2e:smoke` | Age gate only (Chromium)                      | Every save / pre-commit |
-| **Core**  | `npm run test:e2e:core`  | Age gate + journeys + app (Chromium + Mobile) | Before pushing a branch |
-| **Full**  | `npm run test:e2e:full`  | All specs, all browsers                       | Manual release gate     |
-
+### Run with emulators (default)
 ```bash
-# Generate deterministic Firestore/Auth emulator artifacts
-npm run emulators:artifacts
-
-# Quick check — runs in < 15s
-npm run test:e2e:smoke
-
-# Broader validation — runs in ~30s
-npm run test:e2e:core
-
-# Exhaustive — run before major releases
-npm run test:e2e:full
+pnpm dev:emulators   # spawns Firestore + Auth + Functions + Storage emulators
+pnpm dev             # in another terminal — Next.js on http://localhost:3000
 ```
 
-#### E2E Architecture & Conventions
+The app refuses to talk to production Firebase from local dev; emulator URLs are wired in `apps/web/src/lib/firebase/admin.ts`.
 
-All E2E specs follow a standardized pattern:
+### Tests
+```bash
+pnpm test          # Vitest — unit + component + BDD (835 tests as of 2026-05-02)
+pnpm test:e2e      # Playwright BDD against emulators
+pnpm typecheck
+pnpm lint
+```
 
-1. **Shared fixtures** — Import helpers from `e2e/fixtures.ts`:
-   - `verifyAge(page)` — UI-based age verification (fills form, submits, waits
-     for overlay to dismiss). Use when testing the gate-to-app transition.
-   - `preVerifyAge(page)` — Injects `localStorage.setItem('ageVerified', 'true')`
-     via `addInitScript`. Fastest path — **use this by default** when age-gate
-     verification is not the thing under test.
+---
 
-2. **No `networkidle`** — The app loads with zero startup network calls
-   (products, locations, and categories are static constants). Wait for a
-   visible DOM element instead:
+## Engineering principles
 
-   ```ts
-   // BAD  — hangs for 30+ seconds
-   await page.waitForLoadState('networkidle');
+Apply project-wide. Defaults from KB's global `CLAUDE.md` + RnR-specific:
 
-   // GOOD — resolves in <500ms
-   await page.locator('main').waitFor({ state: 'visible', timeout: 5000 });
-   ```
+1. **KISS · YAGNI · SOLID · Scan-before-build** — search for existing implementations first
+2. **BDD** — tests describe user/system behavior, not implementation details
+3. **Emulator-first** — all dev and CI work uses Firebase emulators; never hit production Firestore for dev/test
+4. **Branch → PR → main** — direct pushes to `main` are blocked
+5. **Repository pattern** — Firestore access only via `apps/web/src/lib/repositories/*`. Never inline `getFirestore()` in pages, components, or API routes
+6. **No `any`** — every TypeScript escape hatch (`any`, `as`, `!`) requires an inline justification
+7. **`satisfies`** on Firestore mappings — every `docToX()` returns with `satisfies TypeName`
 
-3. **Tight timeouts** — Static pages render in under 2 seconds. Never exceed
-   `8000ms` for a selector wait; prefer `5000ms`.
+See [`CLAUDE.md`](./CLAUDE.md) for the project's Doc Update Rule and full agent routing guidance.
 
-4. **No redundant coverage** — Each spec owns a clear domain:
-   | Spec file | Domain |
-   |-----------|--------|
-   | `age-gate.spec.ts` | Age-gate UX: valid/invalid dates, persistence, error states |
-   | `user-journey.spec.ts` | Post-verification navigation, page transitions, layout |
-   | `app.spec.ts` | Product browsing, category navigation, a11y, performance |
-   | `health-checks.spec.ts` | Page loads, SEO, responsive, contact form, web vitals |
+---
 
-5. **Mock external calls** — The only network dependency is the contact form's
-   Firestore write (`addDoc`). Mock it with `page.route()`:
+## Deployment
 
-   ```ts
-   await page.route('**/firestore.googleapis.com/**', route =>
-     route.fulfill({ status: 200, body: '{}' })
-   );
-   ```
+Production deploys on merge to `main` via the **Main — Verify & Deploy** workflow:
+1. `verify` — lint, typecheck, unit tests
+2. `deploy` — Firestore rules + indexes, Storage rules (via WIF auth)
+3. Vercel — automatic on push (separate from the GHA workflow)
 
-6. **Browser matrix** — Local dev runs Chromium + Mobile Chrome (2 browsers).
-   Full CI adds Firefox, Safari, and tablet viewports.
+For credential rotation, IAM troubleshooting, and the Vercel SA key runbook, see [`firebase-deploy-iam.md`](file:///Users/kb/Documents/Obsidian%20Vault/projects/rush-n-relax/firebase-deploy-iam.md) in the vault.
 
-### Deployment
+---
 
-\\\ash
-npm run deploy
-\\\
+## Locations
 
-### CI Release Lifecycle
+| Slug | Type |
+|------|------|
+| `oak-ridge` | Physical retail (Clover POS) |
+| `maryville` | Physical retail (Clover POS) |
+| `seymour` | Physical retail (Clover POS) |
+| `online` | E-commerce only |
 
-- PRs to `main` run verify checks, then deploy Hosting preview to deterministic channel `pr-<number>`.
-- On merged PRs, release workflow runs verify + grouped service deploys (Firestore rules/indexes + Storage, then Functions).
-- The merged workflow reuses the existing PR preview URL for smoke tests using `PLAYWRIGHT_BASE_URL`.
-- If smoke passes, CI promotes that exact preview artifact to `live`.
-- If smoke fails, CI does **not** promote to `live` and retains the preview channel for debugging.
-- Preview channel is deleted only after successful promotion to `live`.
-- A scheduled cleanup workflow removes stale retained PR preview channels older than the retention window (default: 3 days).
-- A manual workflow (`Manual Deploy — Firebase Service`) supports on-demand deploys using additive booleans (`deploy_all`, `deploy_hosting`, `deploy_functions`, `deploy_firestore`, `deploy_firestore_rules`, `deploy_firestore_indexes`, `deploy_storage_rules`).
+Each is a fully independent entity — separate inventory, separate Clover merchant. No central warehouse.
 
-## Architecture Principles
+---
 
-### SOLID
+## Status
 
-- **S**ingle Responsibility: Each module has one reason to change
-- **O**pen/Closed: Open for extension, closed for modification
-- **L**iskov Substitution: Subtypes are substitutable for base types
-- **I**nterface Segregation: Specific interfaces over general ones
-- **D**ependency Inversion: Depend on abstractions, not concretions
-
-### DRY (Don't Repeat Yourself)
-
-- Reusable utilities and components
-- Shared logic in dedicated modules
-- No code duplication
-
-### YAGNI (You Aren't Gonna Need It)
-
-- Build what's needed now
-- Avoid speculative features
-- Embrace incremental development
-
-### KISS (Keep It Simple, Stupid)
-
-- Simple, readable code
-- Straightforward solutions
-- Avoid unnecessary complexity
-
-### Mobile-First UI
-
-- Design for smallest screen first
-- Progressive enhancement for larger screens
-- Touch-friendly interactions
-- Performance optimized for mobile networks
-
-### Controlled Asymmetry (Yin/Yang Flow)
-
-- Pattern: for major triads (cards/sections/CTAs), use **2 stable + 1 anchor**
-- Stability: neutral, predictable structure/spacing/typography for two elements
-- Anchor: one intentional contrast element to direct attention (weight, contrast, or motion)
-- Accent usage: keep accent color sparse (roughly 5-10% of visible UI)
-- Motion usage: default static; reserve motion for conversion-critical elements only
-- Intent: strategic imbalance to improve scan flow and action clarity, not decoration
-
-### BDD/Value-Added Tests
-
-- Test behavior, not implementation
-- Only tests that provide real value
-- No bloat or trivial assertions
-- Focus on user-visible functionality
-
-## Firebase Configuration
-
-### Firestore Rules
-
-Security rules enforce:
-
-- Authentication requirements
-- Role-based access (admin, staff, user)
-- Location-based access for staff
-- Data ownership validation
-
-### Cloud Functions
-
-Handles:
-
-- Order processing
-- Inventory management
-- Payment processing
-- Email notifications
-
-## License
-
-MIT
+Active development. Order flow + admin order tracker are landed. In-flight: per-variant inventory rewrite (#304 chain). See open GitHub issues + the vault `snapshot.md` for current state.
