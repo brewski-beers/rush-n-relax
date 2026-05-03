@@ -4,7 +4,6 @@ import { hasAdminSession } from '@/lib/admin-auth';
 import { NavigationProvider } from '@/contexts/NavigationContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { StorefrontContent } from './StorefrontContent';
-import { TestModeBanner } from '@/components/TestModeBanner';
 
 export default async function StorefrontLayout({
   children,
@@ -17,7 +16,6 @@ export default async function StorefrontLayout({
 
   return (
     <NavigationProvider>
-      <TestModeBanner />
       <CartProvider>
         <StorefrontContent
           initiallyVerified={initiallyVerified}

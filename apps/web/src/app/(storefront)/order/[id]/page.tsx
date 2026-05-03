@@ -4,6 +4,7 @@ import { getOrder } from '@/lib/repositories';
 import { formatCents } from '@/utils/currency';
 import type { OrderStatus } from '@/types';
 import { OrderStatusPoller } from './OrderStatusPoller';
+import { TestModeBanner } from '@/components/TestModeBanner';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -39,6 +40,7 @@ export default async function OrderConfirmationPage({ params }: Props) {
 
   return (
     <main className="order-confirmation-page">
+      <TestModeBanner />
       <div className="container">
         {/* ── Awaiting payment / verification ─────────────────────── */}
         {showPoller && (
@@ -64,8 +66,7 @@ export default async function OrderConfirmationPage({ params }: Props) {
               <strong>{order.id}</strong>.
             </p>
             <p className="order-status-stage">
-              Current status:{' '}
-              <strong>{order.status.replace(/_/g, ' ')}</strong>
+              Current status: <strong>{order.status.replace(/_/g, ' ')}</strong>
             </p>
 
             <table className="order-items-table">
