@@ -1,16 +1,54 @@
 /* ============================================================
    AMBIENT OVERLAY COMPONENT
-   Background video and overlay effects
+   Two full-viewport video layers stacked. The base layer plays
+   the ambient smoke clip; a second identical layer is overlaid
+   horizontally mirrored and blended via `screen` so highlights
+   from both orientations combine into a symmetric kaleidoscope
+   field without a visible seam. Each layer is double-buffered
+   to crossfade across the loop boundary. See issue #188.
    ============================================================ */
 
-.ambient-video {
+.ambient-stage {
   position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ambient-pane {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.ambient-pane--mirrored {
+  transform: scaleX(-1);
+  mix-blend-mode: screen;
+  opacity: 0.6;
+}
+
+.ambient-video {
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  z-index: 0;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 1200ms ease-in-out;
+}
+
+.ambient-video.is-active {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-video {
+    transition: none;
+  }
 }
