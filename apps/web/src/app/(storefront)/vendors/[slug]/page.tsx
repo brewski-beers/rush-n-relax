@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Card } from '@/components/Card';
 import { CardGrid } from '@/components/CardGrid';
 import { ProductImage } from '@/components/ProductImage';
+import { getStorageUrl } from '@/lib/storage/url-cache';
 import { buildMetadata } from '@/lib/seo/metadata.factory';
 import {
   getOnlineInStockSet,
@@ -107,9 +108,10 @@ export default async function VendorDetailPage({ params }: Props) {
                     motion={index % 3 === 1}
                   >
                     <ProductImage
-                      slug={product.slug}
                       alt={product.name}
-                      path={product.image}
+                      src={
+                        product.image ? getStorageUrl(product.image) : undefined
+                      }
                     />
                     <div className="product-card-content">
                       <div className="product-category">{product.category}</div>

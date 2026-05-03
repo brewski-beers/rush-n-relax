@@ -26,6 +26,7 @@ import { useState, useActionState } from 'react';
 import Link from 'next/link';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { ProductImage } from '@/components/ProductImage';
+import { getStorageUrl } from '@/lib/storage/url-cache';
 import { CoaSelector } from '@/components/admin/CoaSelector';
 import { TagInput } from '@/components/admin/TagInput';
 import { VariantEditor } from '@/components/admin/VariantEditor';
@@ -149,7 +150,9 @@ export function ProductWizardForm({
   // Controlled inputs that need auto-suggest or inter-field logic
   const [name, setName] = useState(product?.name ?? '');
   const [slug, setSlug] = useState(product?.slug ?? '');
-  const [selectedVendorSlug, setSelectedVendorSlug] = useState(product?.vendorSlug ?? '');
+  const [selectedVendorSlug, setSelectedVendorSlug] = useState(
+    product?.vendorSlug ?? ''
+  );
 
   // Track selected category to gate form sections by contract flags.
   // Edit mode pre-selects via initialCategory; create mode starts undefined.
@@ -176,17 +179,23 @@ export function ProductWizardForm({
     );
     if (nextStep === TOTAL_STEPS && form) {
       const v = (n: string) =>
-        (form.elements.namedItem(n) as HTMLInputElement | null)?.value?.trim() ?? '';
+        (
+          form.elements.namedItem(n) as HTMLInputElement | null
+        )?.value?.trim() ?? '';
       const variantJson = v('variantGroups');
       let variantCount = '0';
       try {
-        const groups = JSON.parse(variantJson) as Array<{ options?: unknown[] }>;
+        const groups = JSON.parse(variantJson) as Array<{
+          options?: unknown[];
+        }>;
         const skuCount = groups.reduce(
           (acc, g) => acc * ((g.options?.length ?? 0) || 1),
           groups.length > 0 ? 1 : 0
         );
         variantCount = skuCount > 0 ? String(skuCount) : '0';
-      } catch { /* no variants defined */ }
+      } catch {
+        /* no variants defined */
+      }
       setReview({
         category: selectedCategory?.label ?? v('category'),
         name: v('name'),
@@ -237,7 +246,8 @@ export function ProductWizardForm({
 
   // Contract flags derived from the selected category.
   // Default false when no category selected yet (create mode, step 2 not yet reached).
-  const showCannabisProfile = selectedCategory?.requiresCannabisProfile ?? false;
+  const showCannabisProfile =
+    selectedCategory?.requiresCannabisProfile ?? false;
   const showNutritionFacts = selectedCategory?.requiresNutritionFacts ?? false;
   const showCOA = selectedCategory?.requiresCOA ?? false;
 
@@ -555,9 +565,7 @@ export function ProductWizardForm({
           <ProductImageUpload
             slug={slug || product?.slug || ''}
             initialFeaturedPath={mode === 'edit' ? product?.image : undefined}
-            initialGalleryPaths={
-              mode === 'edit' ? product?.images : undefined
-            }
+            initialGalleryPaths={mode === 'edit' ? product?.images : undefined}
             onUploadingChange={setImageUploading}
           />
         </fieldset>
@@ -575,9 +583,12 @@ export function ProductWizardForm({
             {/* Product card preview — mirrors the storefront card */}
             <div className="wizard-review-card">
               <ProductImage
-                slug={review.slug || 'preview'}
                 alt={review.name}
-                path={review.featuredImagePath || undefined}
+                src={
+                  review.featuredImagePath
+                    ? getStorageUrl(review.featuredImagePath)
+                    : undefined
+                }
               />
               <div className="product-card-content">
                 <div className="product-category">{review.category}</div>
@@ -596,21 +607,65 @@ export function ProductWizardForm({
 
             {/* Detail table */}
             <dl className="admin-review-list">
-              <dt>Slug</dt><dd>{review.slug || '—'}</dd>
-              {review.vendor && <><dt>Vendor</dt><dd>{review.vendor}</dd></>}
+              <dt>Slug</dt>
+              <dd>{review.slug || '—'}</dd>
+              {review.vendor && (
+                <>
+                  <dt>Vendor</dt>
+                  <dd>{review.vendor}</dd>
+                </>
+              )}
               <dt>Description</dt>
-              <dd>{review.details ? `${review.details.slice(0, 160)}${review.details.length > 160 ? '…' : ''}` : '—'}</dd>
-              {review.effects && <><dt>Effects</dt><dd>{review.effects}</dd></>}
-              {review.flavors && <><dt>Flavors</dt><dd>{review.flavors}</dd></>}
-              {review.coaUrl && <><dt>COA</dt><dd>✓ Uploaded</dd></>}
-              {!review.coaUrl && <><dt>COA</dt><dd className="admin-warning">⚠ Missing — required before going live</dd></>}
-              {review.leaflyUrl && <><dt>Leafly URL</dt><dd>✓ Set</dd></>}
+              <dd>
+                {review.details
+                  ? `${review.details.slice(0, 160)}${review.details.length > 160 ? '…' : ''}`
+                  : '—'}
+              </dd>
+              {review.effects && (
+                <>
+                  <dt>Effects</dt>
+                  <dd>{review.effects}</dd>
+                </>
+              )}
+              {review.flavors && (
+                <>
+                  <dt>Flavors</dt>
+                  <dd>{review.flavors}</dd>
+                </>
+              )}
+              {review.coaUrl && (
+                <>
+                  <dt>COA</dt>
+                  <dd>✓ Uploaded</dd>
+                </>
+              )}
+              {!review.coaUrl && (
+                <>
+                  <dt>COA</dt>
+                  <dd className="admin-warning">
+                    ⚠ Missing — required before going live
+                  </dd>
+                </>
+              )}
+              {review.leaflyUrl && (
+                <>
+                  <dt>Leafly URL</dt>
+                  <dd>✓ Set</dd>
+                </>
+              )}
               <dt>Variants (SKUs)</dt>
-              <dd>{Number(review.variantCount) > 0 ? review.variantCount : <span className="admin-warning">⚠ No variants defined</span>}</dd>
+              <dd>
+                {Number(review.variantCount) > 0 ? (
+                  review.variantCount
+                ) : (
+                  <span className="admin-warning">⚠ No variants defined</span>
+                )}
+              </dd>
             </dl>
 
             <p className="admin-hint">
-              Looks good? Click <strong>Submit</strong> to save, or <strong>Back</strong> to make changes.
+              Looks good? Click <strong>Submit</strong> to save, or{' '}
+              <strong>Back</strong> to make changes.
             </p>
           </div>
         )}
@@ -629,11 +684,20 @@ export function ProductWizardForm({
         {!isLastStep ? (
           // key forces unmount/remount when transitioning to last step so React
           // never mutates type="button" → type="submit" in-place mid-click.
-          <button key="next" type="button" onClick={goNext} disabled={imageUploading}>
+          <button
+            key="next"
+            type="button"
+            onClick={goNext}
+            disabled={imageUploading}
+          >
             {step === TOTAL_STEPS - 1 ? 'Review' : 'Next'}
           </button>
         ) : (
-          <button key="submit" type="submit" disabled={pending || imageUploading}>
+          <button
+            key="submit"
+            type="submit"
+            disabled={pending || imageUploading}
+          >
             {imageUploading ? 'Uploading image...' : submitLabel}
           </button>
         )}
@@ -642,19 +706,55 @@ export function ProductWizardForm({
       {/* Hidden passthroughs for fields not rendered when step 3 is skipped */}
       {!showStep3 && (
         <>
-          <input type="hidden" name="leaflyUrl" value={product?.leaflyUrl ?? ''} />
+          <input
+            type="hidden"
+            name="leaflyUrl"
+            value={product?.leaflyUrl ?? ''}
+          />
           <input type="hidden" name="strain" value={product?.strain ?? ''} />
-          <input type="hidden" name="effects" value={(product?.effects ?? []).join(',')} />
-          <input type="hidden" name="flavors" value={(product?.flavors ?? []).join(',')} />
-          <input type="hidden" name="terpenes" value={(product?.labResults?.terpenes ?? []).join(',')} />
-          <input type="hidden" name="labResults_thcPercent" value={product?.labResults?.thcPercent ?? ''} />
-          <input type="hidden" name="labResults_cbdPercent" value={product?.labResults?.cbdPercent ?? ''} />
-          <input type="hidden" name="labResults_testDate" value={product?.labResults?.testDate ?? ''} />
-          <input type="hidden" name="labResults_labName" value={product?.labResults?.labName ?? ''} />
+          <input
+            type="hidden"
+            name="effects"
+            value={(product?.effects ?? []).join(',')}
+          />
+          <input
+            type="hidden"
+            name="flavors"
+            value={(product?.flavors ?? []).join(',')}
+          />
+          <input
+            type="hidden"
+            name="terpenes"
+            value={(product?.labResults?.terpenes ?? []).join(',')}
+          />
+          <input
+            type="hidden"
+            name="labResults_thcPercent"
+            value={product?.labResults?.thcPercent ?? ''}
+          />
+          <input
+            type="hidden"
+            name="labResults_cbdPercent"
+            value={product?.labResults?.cbdPercent ?? ''}
+          />
+          <input
+            type="hidden"
+            name="labResults_testDate"
+            value={product?.labResults?.testDate ?? ''}
+          />
+          <input
+            type="hidden"
+            name="labResults_labName"
+            value={product?.labResults?.labName ?? ''}
+          />
         </>
       )}
       {!selectedVendorSlug && (
-        <input type="hidden" name="vendorProductUrl" value={product?.vendorProductUrl ?? ''} />
+        <input
+          type="hidden"
+          name="vendorProductUrl"
+          value={product?.vendorProductUrl ?? ''}
+        />
       )}
     </form>
   );

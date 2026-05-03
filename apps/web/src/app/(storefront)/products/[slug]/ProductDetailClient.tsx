@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ProductImage } from '@/components/ProductImage';
+import { getStorageUrl } from '@/lib/storage/url-cache';
 import { AddToCartButton } from '@/components/AddToCartButton';
 import { LOCATIONS } from '@/constants/locations';
 import type { Product, ProductSummary, ProductStrain } from '@/types';
@@ -192,8 +193,7 @@ export default function ProductDetailClient({
                     aria-label={`View image ${i + 1}`}
                   >
                     <ProductImage
-                      slug={product.slug}
-                      path={path}
+                      src={path ? getStorageUrl(path) : undefined}
                       alt={`${product.name} ${i + 1}`}
                       className="product-thumbnail-img"
                     />
@@ -219,8 +219,11 @@ export default function ProductDetailClient({
                 </div>
               ) : (
                 <ProductImage
-                  slug={product.slug}
-                  path={activeImage ?? product.image}
+                  src={(() => {
+                    const v = activeImage ?? product.image;
+                    if (!v) return undefined;
+                    return v.startsWith('http') ? v : getStorageUrl(v);
+                  })()}
                   alt={product.name}
                   className="product-main-img"
                 />
@@ -594,8 +597,9 @@ export default function ProductDetailClient({
                       </span>
                     )}
                     <ProductImage
-                      slug={related.slug}
-                      path={related.image}
+                      src={
+                        related.image ? getStorageUrl(related.image) : undefined
+                      }
                       alt={related.name}
                       className="related-strip-img"
                     />
