@@ -3,6 +3,7 @@
  * Server-side only (uses firebase-admin).
  */
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
+import { isLivePaymentsEnabled } from '@/lib/test-mode';
 import {
   ALLOWED_TRANSITIONS,
   type Order,
@@ -43,11 +44,15 @@ export async function getOrder(id: string): Promise<Order | null> {
 }
 
 export async function createOrder(
-  data: Omit<Order, 'id' | 'createdAt' | 'updatedAt'>
+  data: Omit<Order, 'id' | 'createdAt' | 'updatedAt' | 'testMode'>
 ): Promise<string> {
   const now = new Date();
   const docRef = ordersCol().doc();
-  await docRef.set({ ...data, createdAt: now, updatedAt: now });
+  // testMode is the inverse of the live-payments kill switch. Computed
+  // here (not at the caller) so every order created server-side is
+  // tagged correctly without trusting callers to pass the right value.
+  const testMode = !isLivePaymentsEnabled();
+  await docRef.set({ ...data, testMode, createdAt: now, updatedAt: now });
   return docRef.id;
 }
 
@@ -213,6 +218,12 @@ export interface ListOrdersOptions {
   dateTo?: Date;
   /** Best-effort prefix match on `customerEmail`. */
   search?: string;
+  /**
+   * Filter on the testMode flag. Default behavior at the page level is to
+   * hide test orders (admin passes `testMode: false`); pass undefined here
+   * to include both live and test orders.
+   */
+  testMode?: boolean;
   /** Page size; default 50, max 100. */
   limit?: number;
   /** Opaque cursor returned from a prior call. */
@@ -245,6 +256,9 @@ export async function listOrders(
   }
   if (opts.locationId) {
     query = query.where('locationId', '==', opts.locationId);
+  }
+  if (opts.testMode !== undefined) {
+    query = query.where('testMode', '==', opts.testMode);
   }
   if (opts.dateFrom) {
     query = query.where('createdAt', '>=', opts.dateFrom);
@@ -333,6 +347,7 @@ function docToOrder(id: string, d: FirebaseFirestore.DocumentData): Order {
     deliveryAddress:
       (d.deliveryAddress as ShippingAddress | undefined) ?? EMPTY_ADDRESS,
     status: d.status ?? 'pending_id_verification',
+    testMode: d.testMode === true,
     agecheckerSessionId: d.agecheckerSessionId ?? undefined,
     cloverCheckoutSessionId: d.cloverCheckoutSessionId ?? undefined,
     cloverPaymentId: d.cloverPaymentId ?? undefined,

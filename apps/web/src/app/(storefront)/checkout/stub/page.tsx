@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { TestModeBanner } from '@/components/TestModeBanner';
 
 /**
  * Stub payment landing page — shown when Clover sandbox keys are not yet
@@ -14,6 +15,7 @@ export default async function StubCheckoutPage({
 
   return (
     <main className="checkout-stub">
+      <TestModeBanner />
       <div className="container">
         <h1>Payment — Stub</h1>
         <p>

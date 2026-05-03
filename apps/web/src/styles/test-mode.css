@@ -1,0 +1,53 @@
+/**
+ * Test-mode visual indicators (storefront banner + admin TEST pill/badge).
+ * Yellow + diagonal stripes — impossible to miss when the live-payments
+ * kill switch is off. Tokens are scoped to the test-mode surfaces so they
+ * don't leak into the design system.
+ */
+:root {
+  --test-mode-yellow: #fde047;
+  --test-mode-yellow-strong: #facc15;
+  --test-mode-border: #ca8a04;
+  --test-mode-text: #1f2937;
+  --test-mode-pill-margin: var(--space-2, 0.5rem);
+  --test-mode-badge-margin: var(--space-3, 0.75rem);
+  --test-mode-banner-padding-y: var(--space-2, 0.5rem);
+  --test-mode-banner-padding-x: var(--space-4, 1rem);
+}
+
+.test-mode-banner {
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  padding: var(--test-mode-banner-padding-y) var(--test-mode-banner-padding-x);
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--test-mode-text);
+  background-color: var(--test-mode-yellow);
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--test-mode-yellow) 0 12px,
+    var(--test-mode-yellow-strong) 12px 24px
+  );
+  border-bottom-width: 2px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--test-mode-border);
+}
+
+.admin-test-pill,
+.admin-test-badge {
+  background-color: var(--test-mode-yellow);
+  color: var(--test-mode-text);
+  font-weight: 700;
+}
+
+.admin-test-pill {
+  margin-left: var(--test-mode-pill-margin);
+}
+
+.admin-test-badge {
+  margin-left: var(--test-mode-badge-margin);
+  font-size: 0.75rem;
+  vertical-align: middle;
+}

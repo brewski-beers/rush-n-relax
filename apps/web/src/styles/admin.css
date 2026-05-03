@@ -2,6 +2,8 @@
  * Admin CMS stylesheet — scoped to .admin-root to keep storefront styles isolated.
  */
 
+@import './test-mode.css';
+
 .admin-root {
   --admin-bg: #05080f;
   --admin-surface: rgba(11, 18, 30, 0.82);
