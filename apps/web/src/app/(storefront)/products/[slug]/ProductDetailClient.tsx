@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ProductImage } from '@/components/ProductImage';
+import { getStorageUrl } from '@/lib/storage/url-cache';
 import { AddToCartButton } from '@/components/AddToCartButton';
 import { LOCATIONS } from '@/constants/locations';
 import type { Product, ProductSummary, ProductStrain } from '@/types';
@@ -12,6 +13,21 @@ import {
   type DisplayVariant,
 } from '@/lib/storefront/resolveVariantPricing';
 import { NutritionFactsPanel } from '@/components/NutritionFactsPanel';
+
+/**
+ * Resolves an image value to a renderable URL.
+ *
+ * Accepts either a Firebase Storage path (e.g. "products/foo.webp") which
+ * gets converted via getStorageUrl, OR a pre-resolved absolute URL (when the
+ * server already constructed the public URL — see heroImageUrl). Without this
+ * guard, passing an absolute URL through getStorageUrl percent-encodes the
+ * scheme/host into the storage path, producing a broken URL and a placeholder
+ * fallback. Regression source: PR #341 thumbnail strip.
+ */
+function resolveImageSrc(value: string | undefined | null): string | undefined {
+  if (!value) return undefined;
+  return value.startsWith('http') ? value : getStorageUrl(value);
+}
 
 const STRAIN_LABELS: Record<ProductStrain, string> = {
   indica: 'Indica',
@@ -164,7 +180,7 @@ export default function ProductDetailClient({
   // When the user clicks a thumbnail, we may need to show the server-resolved
   // hero URL (for the primary image) or fall back to ProductImage (for gallery
   // images whose URLs were not pre-resolved).
-  const isActiveImagePrimary = activeImage === product.image;
+  const isActiveImagePrimary = activeImage === featuredUrl;
 
   return (
     <main className="product-detail-page">
@@ -192,8 +208,7 @@ export default function ProductDetailClient({
                     aria-label={`View image ${i + 1}`}
                   >
                     <ProductImage
-                      slug={product.slug}
-                      path={path}
+                      src={resolveImageSrc(path)}
                       alt={`${product.name} ${i + 1}`}
                       className="product-thumbnail-img"
                     />
@@ -219,8 +234,7 @@ export default function ProductDetailClient({
                 </div>
               ) : (
                 <ProductImage
-                  slug={product.slug}
-                  path={activeImage ?? product.image}
+                  src={resolveImageSrc(activeImage ?? product.image)}
                   alt={product.name}
                   className="product-main-img"
                 />
@@ -594,8 +608,7 @@ export default function ProductDetailClient({
                       </span>
                     )}
                     <ProductImage
-                      slug={related.slug}
-                      path={related.image}
+                      src={resolveImageSrc(related.image)}
                       alt={related.name}
                       className="related-strip-img"
                     />
