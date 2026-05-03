@@ -37,8 +37,12 @@ export type ComplianceLogType =
 
 /**
  * Immutable audit record written on every content/order/inventory mutation.
- * Lives at: tenants/{tenantId}/compliance-logs/{logId}
+ * Lives at: compliance-logs/{logId} (root collection — single-tenant model).
  * Write access: Cloud Functions only (enforced by Firestore security rules).
+ *
+ * Note: the `tenantId` field below is vestigial from the abandoned
+ * multi-tenant model. Kept only because the type is widely imported; safe
+ * to drop in a future cleanup once nothing actually reads/writes it.
  */
 export interface ComplianceLog {
   id: string;

@@ -3,9 +3,9 @@
  * Used by Server Components and API routes for privileged Firestore reads/writes.
  *
  * Auth hierarchy (in order):
- * 1. Vercel OIDC → GCP Workload Identity Federation (keyless, Phase B)
- * 2. Static SA key in FIREBASE_SERVICE_ACCOUNT_JSON (fallback during migration)
- * 3. Application Default Credentials (ADC: gcloud auth, emulators, App Hosting)
+ * 1. Vercel OIDC → GCP Workload Identity Federation (keyless; activates when Vercel Pro is enabled)
+ * 2. Static SA key in FIREBASE_SERVICE_ACCOUNT_JSON (current production path on Vercel Hobby)
+ * 3. Application Default Credentials (ADC: gcloud auth, Firebase emulators)
  */
 import { getApps, initializeApp, cert, type App } from 'firebase-admin/app';
 import {

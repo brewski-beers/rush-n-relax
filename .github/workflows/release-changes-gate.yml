@@ -29,7 +29,6 @@ jobs:
               - 'tools/**'
               - 'functions/**'
               - 'firebase.json'
-              - 'apphosting.yaml'
               - 'firestore.rules'
               - 'firestore.indexes.json'
               - 'storage.rules'
