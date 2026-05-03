@@ -63,6 +63,12 @@ export interface Order {
   /** Required — orders are delivery-only. */
   deliveryAddress: ShippingAddress;
   status: OrderStatus;
+  /**
+   * REQUIRED — true means this order was created while the live-payments
+   * kill switch was OFF (no real Clover charge). Set inside createOrder()
+   * from `isLivePaymentsEnabled()` so callers cannot forget it.
+   */
+  testMode: boolean;
 
   // ── Provider references ───────────────────────────────────────────
   /** AgeChecker session id (collected pre-payment). */
@@ -92,7 +98,12 @@ export interface Order {
  * handlers to guard illegal moves.
  */
 export const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  pending_id_verification: ['id_verified', 'id_rejected', 'cancelled', 'failed'],
+  pending_id_verification: [
+    'id_verified',
+    'id_rejected',
+    'cancelled',
+    'failed',
+  ],
   id_verified: ['awaiting_payment', 'cancelled', 'failed'],
   id_rejected: ['cancelled'],
   awaiting_payment: ['paid', 'failed', 'cancelled'],

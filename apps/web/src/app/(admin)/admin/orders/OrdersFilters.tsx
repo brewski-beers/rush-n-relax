@@ -31,6 +31,7 @@ interface Props {
     from?: string;
     to?: string;
     q?: string;
+    showTest?: string;
   };
 }
 
@@ -47,6 +48,7 @@ export function OrdersFilters({ locations, initial }: Props) {
   const [from, setFrom] = useState(initial.from ?? '');
   const [to, setTo] = useState(initial.to ?? '');
   const [q, setQ] = useState(initial.q ?? '');
+  const [showTest, setShowTest] = useState(initial.showTest === 'true');
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -56,6 +58,7 @@ export function OrdersFilters({ locations, initial }: Props) {
     if (from) params.set('from', from);
     if (to) params.set('to', to);
     if (q) params.set('q', q);
+    if (showTest) params.set('showTest', 'true');
     const qs = params.toString();
     router.push(qs ? `/admin/orders?${qs}` : '/admin/orders');
   }
@@ -66,6 +69,7 @@ export function OrdersFilters({ locations, initial }: Props) {
     setFrom('');
     setTo('');
     setQ('');
+    setShowTest(false);
     router.push('/admin/orders');
   }
 
@@ -136,6 +140,15 @@ export function OrdersFilters({ locations, initial }: Props) {
           placeholder="customer@example.com"
           value={q}
           onChange={e => setQ(e.target.value)}
+        />
+      </label>
+      <label>
+        <span>Test orders</span>
+        <input
+          type="checkbox"
+          name="showTest"
+          checked={showTest}
+          onChange={e => setShowTest(e.target.checked)}
         />
       </label>
       <div className="admin-filters-actions">

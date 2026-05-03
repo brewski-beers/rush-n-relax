@@ -27,7 +27,17 @@ export default async function AdminOrderDetailPage({ params }: Props) {
   return (
     <>
       <div className="admin-page-header">
-        <h1>Order {order.id}</h1>
+        <h1>
+          Order {order.id}
+          {order.testMode ? (
+            <span
+              className="admin-status-badge admin-test-badge"
+              data-testid="test-badge"
+            >
+              TEST
+            </span>
+          ) : null}
+        </h1>
         <Link href="/admin/orders" className="admin-btn-secondary">
           ← Back to orders
         </Link>

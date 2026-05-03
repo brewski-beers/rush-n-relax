@@ -172,6 +172,7 @@ const baseOrderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
     zip: '37902',
   },
   status: 'awaiting_payment',
+  testMode: true,
 };
 
 function makeOrderSnap(
@@ -202,15 +203,48 @@ describe('order.repository', () => {
 
   describe('createOrder', () => {
     it('auto-generates an ID and calls set with createdAt + updatedAt', async () => {
-      const id = await createOrder(baseOrderData);
+      // Caller no longer supplies testMode — repository computes it.
+      const { testMode: _omit, ...input } = baseOrderData;
+      void _omit;
+      const id = await createOrder(input);
 
       expect(id).toBe('generated-order-id');
       expect(docSetMock).toHaveBeenCalledOnce();
 
       const [payload] = docSetMock.mock.calls[0];
-      expect(payload).toMatchObject(baseOrderData);
+      expect(payload).toMatchObject(input);
       expect(payload.createdAt).toBeInstanceOf(Date);
       expect(payload.updatedAt).toBeInstanceOf(Date);
+    });
+
+    it('tags new orders with testMode=true when the kill switch is OFF (default)', async () => {
+      const prev = process.env.CLOVER_LIVE_PAYMENTS_ENABLED;
+      delete process.env.CLOVER_LIVE_PAYMENTS_ENABLED;
+      try {
+        const { testMode: _t, ...input } = baseOrderData;
+        void _t;
+        await createOrder(input);
+        const [payload] = docSetMock.mock.calls[0];
+        expect(payload.testMode).toBe(true);
+      } finally {
+        if (prev === undefined) delete process.env.CLOVER_LIVE_PAYMENTS_ENABLED;
+        else process.env.CLOVER_LIVE_PAYMENTS_ENABLED = prev;
+      }
+    });
+
+    it('tags new orders with testMode=false when the kill switch is ON', async () => {
+      const prev = process.env.CLOVER_LIVE_PAYMENTS_ENABLED;
+      process.env.CLOVER_LIVE_PAYMENTS_ENABLED = 'true';
+      try {
+        const { testMode: _t, ...input } = baseOrderData;
+        void _t;
+        await createOrder(input);
+        const [payload] = docSetMock.mock.calls[0];
+        expect(payload.testMode).toBe(false);
+      } finally {
+        if (prev === undefined) delete process.env.CLOVER_LIVE_PAYMENTS_ENABLED;
+        else process.env.CLOVER_LIVE_PAYMENTS_ENABLED = prev;
+      }
     });
   });
 

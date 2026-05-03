@@ -14,6 +14,7 @@ interface SearchParams {
   from?: string;
   to?: string;
   q?: string;
+  showTest?: string;
   cursor?: string;
   prevCursors?: string;
 }
@@ -53,6 +54,7 @@ function buildBaseHref(sp: SearchParams): string {
   if (sp.from) params.set('from', sp.from);
   if (sp.to) params.set('to', sp.to);
   if (sp.q) params.set('q', sp.q);
+  if (sp.showTest) params.set('showTest', sp.showTest);
   const qs = params.toString();
   return qs ? `/admin/orders?${qs}` : '/admin/orders';
 }
@@ -69,6 +71,10 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   const dateFrom = parseDate(sp.from);
   const dateTo = parseDate(sp.to);
   const search = sp.q?.trim() || undefined;
+  // Default behavior: hide test-mode orders. Admin must opt in via
+  // ?showTest=true to see them alongside live orders.
+  const showTest = sp.showTest === 'true';
+  const testModeFilter = showTest ? undefined : false;
 
   const prevCursors = sp.prevCursors
     ? sp.prevCursors.split(',').filter(Boolean)
@@ -80,6 +86,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
     dateFrom,
     dateTo,
     search,
+    testMode: testModeFilter,
     cursor: sp.cursor,
     limit: 50,
   });
@@ -103,6 +110,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
           from: sp.from,
           to: sp.to,
           q: sp.q,
+          showTest: sp.showTest,
         }}
       />
       <div className="admin-table-wrap">
@@ -122,6 +130,14 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
               <tr key={order.id} data-status={order.status}>
                 <td>
                   <Link href={`/admin/orders/${order.id}`}>{order.id}</Link>
+                  {order.testMode ? (
+                    <span
+                      className="admin-status-badge admin-test-pill"
+                      data-testid="test-pill"
+                    >
+                      TEST
+                    </span>
+                  ) : null}
                 </td>
                 <td>{order.createdAt.toLocaleString()}</td>
                 <td>
