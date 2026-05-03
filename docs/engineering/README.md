@@ -13,6 +13,7 @@ Module-level engineering references for Rush N Relax. Every doc here follows [`m
 | [`orders.md`](./orders.md)                                 | Order lifecycle, state machine, event log, webhook→status mapping. |
 | [`agechecker.md`](./agechecker.md)                         | AgeChecker.Net integration — research + webhook handler runbook.   |
 | [`clover-hosted-checkout.md`](./clover-hosted-checkout.md) | Clover Hosted Checkout — Path A vs B, current handler state.       |
+| [`firebase-deploy.md`](./firebase-deploy.md)               | GHA WIF + Vercel runtime SA — required IAM roles, rotation runbook.|
 | [`mermaid-standard.md`](./mermaid-standard.md)             | Diagram style guide. Every doc above complies.                     |
 
 ## Doc Update Rule
