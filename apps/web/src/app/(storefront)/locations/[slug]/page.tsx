@@ -6,6 +6,7 @@ import { buildBreadcrumbSchema } from '@/lib/seo/schemas/breadcrumb';
 import { JsonLd } from '@/components/JsonLd';
 import { seoConfig } from '@/config/seo.config';
 import LocationDetailClient from './LocationDetailClient';
+import { FeaturedAtLocationStrip } from './FeaturedAtLocationStrip';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -45,6 +46,7 @@ export default async function LocationDetailPage({ params }: Props) {
         ])}
       />
       <LocationDetailClient location={location} promos={promos} />
+      <FeaturedAtLocationStrip locationId={location.id} />
     </>
   );
 }
