@@ -18,10 +18,6 @@ interface CheckoutRequest {
  * `id_verified` (AgeChecker webhook fired). Transitions the order to
  * `awaiting_payment`, opens a Clover hosted-checkout session, persists the
  * Clover session id, and returns the redirect URL.
- *
- * Server-side guard: the status check is enforced via
- * `transitionStatus(... 'awaiting_payment' ...)` which throws
- * `InvalidTransitionError` when the order is not `id_verified`.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: CheckoutRequest;
@@ -65,10 +61,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     orderId: order.id,
     amount: order.total,
     customerEmail: order.customerEmail,
+    lineItems: order.items.map(it => ({
+      name: it.productName,
+      quantity: it.quantity,
+      unitPrice: it.unitPrice,
+    })),
   });
 
   await setOrderProviderRefs(order.id, {
-    cloverCheckoutSessionId: session.redirectUrl,
+    cloverCheckoutSessionId: session.sessionId,
   });
 
   return NextResponse.json({

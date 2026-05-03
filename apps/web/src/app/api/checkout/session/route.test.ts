@@ -52,6 +52,7 @@ describe('POST /api/checkout/session', () => {
     vi.clearAllMocks();
     createCloverMock.mockResolvedValue({
       redirectUrl: '/checkout/stub?order=order-1',
+      sessionId: 'stub-order-1',
       provider: 'stub',
     });
     transitionStatusMock.mockResolvedValue({ id: 'order-1' });
@@ -64,6 +65,15 @@ describe('POST /api/checkout/session', () => {
       status: 'id_verified',
       total: 1500,
       customerEmail: 'kb@example.com',
+      items: [
+        {
+          productId: 'p1',
+          productName: 'Hat',
+          quantity: 1,
+          unitPrice: 1500,
+          lineTotal: 1500,
+        },
+      ],
     });
 
     const res = await POST(
@@ -85,9 +95,10 @@ describe('POST /api/checkout/session', () => {
       orderId: 'order-1',
       amount: 1500,
       customerEmail: 'kb@example.com',
+      lineItems: [{ name: 'Hat', quantity: 1, unitPrice: 1500 }],
     });
     expect(setOrderProviderRefsMock).toHaveBeenCalledWith('order-1', {
-      cloverCheckoutSessionId: '/checkout/stub?order=order-1',
+      cloverCheckoutSessionId: 'stub-order-1',
     });
   });
 
@@ -96,6 +107,7 @@ describe('POST /api/checkout/session', () => {
       id: 'order-2',
       status: 'pending_id_verification',
       total: 1000,
+      items: [],
     });
 
     const res = await POST(
