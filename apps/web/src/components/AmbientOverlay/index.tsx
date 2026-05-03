@@ -18,9 +18,10 @@ const DEFAULT_AMBIENT_PATHS = {
 } as const;
 
 // Lead time before `duration` at which we begin the crossfade to the
-// other buffered <video>. Matches the CSS opacity transition (600ms)
-// so the swap finishes just as the outgoing clip hits its seam.
-const CROSSFADE_LEAD_SECONDS = 0.6;
+// other buffered <video>. Longer than the CSS transition (1200ms) so
+// the swap is well underway before the outgoing clip hits its seam,
+// making the handoff imperceptible.
+const CROSSFADE_LEAD_SECONDS = 1.2;
 
 export function AmbientOverlay() {
   const storagePath = DEFAULT_AMBIENT_PATHS.desktop;
@@ -45,8 +46,13 @@ export function AmbientOverlay() {
   });
   const [activeIndex, setActiveIndex] = useState<0 | 1>(0);
 
-  const videoARef = useRef<HTMLVideoElement | null>(null);
-  const videoBRef = useRef<HTMLVideoElement | null>(null);
+  // Two panes (left + mirrored right), each with a double-buffered pair.
+  // The mirror pane is driven by the same activeIndex / play state so the
+  // composition stays symmetrical.
+  const leftARef = useRef<HTMLVideoElement | null>(null);
+  const leftBRef = useRef<HTMLVideoElement | null>(null);
+  const rightARef = useRef<HTMLVideoElement | null>(null);
+  const rightBRef = useRef<HTMLVideoElement | null>(null);
 
   // Track prefers-reduced-motion. When enabled, we render nothing —
   // the storefront already has a static styled background, so the
@@ -126,29 +132,39 @@ export function AmbientOverlay() {
     };
   }, []);
 
-  // Crossfade driver: as the active video approaches its end, start
-  // the inactive one and swap which is visible. The two videos share
-  // the same source URL so the file is fetched once and cached.
+  // Crossfade driver: as the active left video approaches its end, start
+  // the inactive buffer (on both panes) and swap which is visible. Both
+  // panes use the same source URL so the file is fetched once and cached.
+  // The left pane drives timing; the right pane mirrors it via the shared
+  // activeIndex and synchronized play() calls.
   useEffect(() => {
     if (reducedMotion) return;
-    const a = videoARef.current;
-    const b = videoBRef.current;
-    if (!a || !b) return;
+    const lA = leftARef.current;
+    const lB = leftBRef.current;
+    const rA = rightARef.current;
+    const rB = rightBRef.current;
+    if (!lA || !lB || !rA || !rB) return;
 
     const handleTimeUpdate = (current: HTMLVideoElement) => {
-      const other = current === a ? b : a;
+      const isA = current === lA;
       if (!Number.isFinite(current.duration) || current.duration <= 0) return;
       const remaining = current.duration - current.currentTime;
       if (remaining > CROSSFADE_LEAD_SECONDS) return;
       // Avoid re-triggering once the swap has begun
       const currentIsActive =
-        (current === a && activeIndex === 0) ||
-        (current === b && activeIndex === 1);
+        (isA && activeIndex === 0) || (!isA && activeIndex === 1);
       if (!currentIsActive) return;
 
+      // Start the inactive buffer on BOTH panes simultaneously.
+      const nextLeft = isA ? lB : lA;
+      const nextRight = isA ? rB : rA;
       try {
-        other.currentTime = 0;
-        void other.play().catch(() => {
+        nextLeft.currentTime = 0;
+        nextRight.currentTime = 0;
+        void nextLeft.play().catch(() => {
+          /* autoplay may be blocked; ignore */
+        });
+        void nextRight.play().catch(() => {
           /* autoplay may be blocked; ignore */
         });
       } catch {
@@ -157,13 +173,14 @@ export function AmbientOverlay() {
       setActiveIndex(prev => (prev === 0 ? 1 : 0));
     };
 
-    const onTimeA = () => handleTimeUpdate(a);
-    const onTimeB = () => handleTimeUpdate(b);
-    a.addEventListener('timeupdate', onTimeA);
-    b.addEventListener('timeupdate', onTimeB);
+    // Drive timing off the left pane only; right mirrors via state.
+    const onTimeLA = () => handleTimeUpdate(lA);
+    const onTimeLB = () => handleTimeUpdate(lB);
+    lA.addEventListener('timeupdate', onTimeLA);
+    lB.addEventListener('timeupdate', onTimeLB);
     return () => {
-      a.removeEventListener('timeupdate', onTimeA);
-      b.removeEventListener('timeupdate', onTimeB);
+      lA.removeEventListener('timeupdate', onTimeLA);
+      lB.removeEventListener('timeupdate', onTimeLB);
     };
   }, [activeIndex, reducedMotion, resolvedUrls.desktop, resolvedUrls.mobile]);
 
@@ -185,36 +202,53 @@ export function AmbientOverlay() {
 
   if (!videoSrc) return null;
 
+  const videoCommon = {
+    muted: true,
+    playsInline: true,
+    preload: 'auto' as const,
+    crossOrigin: 'anonymous' as const,
+    disablePictureInPicture: true,
+    controls: false,
+    'aria-hidden': true as const,
+  };
+
   return createPortal(
-    <>
-      <video
-        ref={videoARef}
-        autoPlay
-        muted
-        playsInline
-        preload="auto"
-        crossOrigin="anonymous"
-        disablePictureInPicture
-        controls={false}
-        className={`ambient-video${activeIndex === 0 ? ' is-active' : ''}`}
-        aria-hidden="true"
-      >
-        <source src={videoSrc} type="video/mp4" />
-      </video>
-      <video
-        ref={videoBRef}
-        muted
-        playsInline
-        preload="auto"
-        crossOrigin="anonymous"
-        disablePictureInPicture
-        controls={false}
-        className={`ambient-video${activeIndex === 1 ? ' is-active' : ''}`}
-        aria-hidden="true"
-      >
-        <source src={videoSrc} type="video/mp4" />
-      </video>
-    </>,
+    <div className="ambient-stage" aria-hidden="true">
+      <div className="ambient-pane">
+        <video
+          ref={leftARef}
+          autoPlay
+          {...videoCommon}
+          className={`ambient-video${activeIndex === 0 ? ' is-active' : ''}`}
+        >
+          <source src={videoSrc} type="video/mp4" />
+        </video>
+        <video
+          ref={leftBRef}
+          {...videoCommon}
+          className={`ambient-video${activeIndex === 1 ? ' is-active' : ''}`}
+        >
+          <source src={videoSrc} type="video/mp4" />
+        </video>
+      </div>
+      <div className="ambient-pane ambient-pane--mirrored">
+        <video
+          ref={rightARef}
+          autoPlay
+          {...videoCommon}
+          className={`ambient-video${activeIndex === 0 ? ' is-active' : ''}`}
+        >
+          <source src={videoSrc} type="video/mp4" />
+        </video>
+        <video
+          ref={rightBRef}
+          {...videoCommon}
+          className={`ambient-video${activeIndex === 1 ? ' is-active' : ''}`}
+        >
+          <source src={videoSrc} type="video/mp4" />
+        </video>
+      </div>
+    </div>,
     portal
   );
 }

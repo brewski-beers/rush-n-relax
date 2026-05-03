@@ -1,23 +1,46 @@
 /* ============================================================
    AMBIENT OVERLAY COMPONENT
-   Stacked crossfade videos to eliminate the loop seam.
-   Two <video> elements occupy the same space; opacity is
-   toggled via .is-active so we crossfade between them just
-   before the playing one ends. See issue #188.
+   Full-viewport mirrored composition. Two side-by-side panes
+   each render a double-buffered <video> pair that crossfades
+   just before the loop seam. The right pane is horizontally
+   flipped so the screen reads as one continuous mirrored
+   smoke field. See issue #188.
    ============================================================ */
 
-.ambient-video {
+.ambient-stage {
   position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.ambient-pane {
+  position: relative;
+  flex: 1 1 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.ambient-pane--mirrored {
+  transform: scaleX(-1);
+}
+
+.ambient-video {
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  z-index: 0;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 600ms ease-in-out;
+  transition: opacity 1200ms ease-in-out;
 }
 
 .ambient-video.is-active {
