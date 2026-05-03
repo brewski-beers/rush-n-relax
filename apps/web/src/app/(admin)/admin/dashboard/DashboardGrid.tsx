@@ -2,23 +2,14 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { DndContext, closestCenter } from '@dnd-kit/core';
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useSortableGrid } from '@/hooks/useSortableGrid';
 import type { UserRole } from '@/types';
 
 const STORAGE_KEY = 'admin-dashboard-order';
@@ -143,23 +134,14 @@ export function DashboardGrid({ role }: DashboardGridProps) {
     if (saved) setCards(applyOrder(defaultCards, saved));
   }, []);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setCards(prev => {
-        const oldIndex = prev.findIndex(c => c.id === active.id);
-        const newIndex = prev.findIndex(c => c.id === over.id);
-        const next = arrayMove(prev, oldIndex, newIndex);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next.map(c => c.id)));
-        return next;
-      });
-    }
-  }
+  const { sensors, onDragEnd } = useSortableGrid<DashboardCard>({
+    items: cards,
+    getId: c => c.id,
+    onReorder: next => {
+      setCards(next);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next.map(c => c.id)));
+    },
+  });
 
   // SSR: render static cards without DnD context to avoid hydration mismatch
   if (!mounted) {
@@ -180,7 +162,7 @@ export function DashboardGrid({ role }: DashboardGridProps) {
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
+      onDragEnd={onDragEnd}
     >
       <SortableContext
         items={cards.map(c => c.id)}
