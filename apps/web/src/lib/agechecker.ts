@@ -1,9 +1,18 @@
 /**
  * AgeChecker.Net integration helpers.
  *
- * Test mode: when AGECHECKER_TEST_MODE=true, webhook handler accepts unsigned
- * payloads from our own test harness and simulates deterministic outcomes.
- * In production, HMAC signature verification is enforced.
+ * The customer-facing verification flow runs entirely in the browser via
+ * the AgeChecker JS widget (see `components/AgeCheckerModal/`). The widget
+ * returns a `verificationId` on success, which the cart POSTs to
+ * `/api/order/start`.
+ *
+ * Server-side, this module owns the inbound webhook authentication
+ * (`verifyAgeCheckerSignature`) — the webhook handler is defense-in-depth
+ * for the same outcome the widget already reported.
+ *
+ * Test mode: when `AGECHECKER_TEST_MODE=true`, the webhook handler accepts
+ * unsigned payloads from our own test harness. In production, HMAC
+ * signature verification is enforced.
  *
  * Dashboard: https://agechecker.net
  */
@@ -54,51 +63,4 @@ export function verifyAgeCheckerSignature(
   } catch {
     return false;
   }
-}
-
-// ─── Session start ───────────────────────────────────────────────────
-
-export interface AgeCheckerSessionInput {
-  orderId: string;
-  customerEmail?: string;
-  /** Where AgeChecker should redirect the user once verification finishes. */
-  returnUrl: string;
-}
-
-export interface AgeCheckerSession {
-  /** AgeChecker session id we persist on the order for webhook correlation. */
-  sessionId: string;
-  /** URL the storefront should redirect the user to. */
-  redirectUrl: string;
-  provider: 'agechecker' | 'stub';
-}
-
-/**
- * Start an AgeChecker hosted verification session.
- *
- * ⚠️  STUBBED until production keys + endpoint contract are confirmed. When
- *     AGECHECKER_API_KEY is absent we return a deterministic stub so the rest
- *     of the storefront flow is exercisable end-to-end. Mirrors the pattern
- *     used by `createCloverCheckoutSession`.
- */
-export function startAgeCheckerSession(
-  input: AgeCheckerSessionInput
-): Promise<AgeCheckerSession> {
-  const apiKey = process.env.AGECHECKER_API_KEY;
-  const merchantId = process.env.AGECHECKER_MERCHANT_ID;
-
-  if (!apiKey || !merchantId) {
-    return Promise.resolve({
-      sessionId: `stub-ac-${input.orderId}`,
-      redirectUrl: `/checkout/agecheck-stub?order=${encodeURIComponent(input.orderId)}`,
-      provider: 'stub',
-    });
-  }
-
-  // Real provider call lands here once contract is finalized.
-  return Promise.resolve({
-    sessionId: `stub-ac-${input.orderId}`,
-    redirectUrl: `/checkout/agecheck-stub?order=${encodeURIComponent(input.orderId)}`,
-    provider: 'stub',
-  });
 }
