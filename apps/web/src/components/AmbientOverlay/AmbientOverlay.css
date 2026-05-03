@@ -1,6 +1,9 @@
 /* ============================================================
    AMBIENT OVERLAY COMPONENT
-   Background video and overlay effects
+   Stacked crossfade videos to eliminate the loop seam.
+   Two <video> elements occupy the same space; opacity is
+   toggled via .is-active so we crossfade between them just
+   before the playing one ends. See issue #188.
    ============================================================ */
 
 .ambient-video {
@@ -13,4 +16,16 @@
   display: block;
   z-index: 0;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 600ms ease-in-out;
+}
+
+.ambient-video.is-active {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-video {
+    transition: none;
+  }
 }

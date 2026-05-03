@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getStorage$, initializeApp } from '@/firebase';
 import { getDownloadURL, ref } from 'firebase/storage';
@@ -17,11 +17,15 @@ const DEFAULT_AMBIENT_PATHS = {
   mobile: 'ambient/smoke-1080p.mp4',
 } as const;
 
+// Lead time before `duration` at which we begin the crossfade to the
+// other buffered <video>. Matches the CSS opacity transition (600ms)
+// so the swap finishes just as the outgoing clip hits its seam.
+const CROSSFADE_LEAD_SECONDS = 0.6;
+
 export function AmbientOverlay() {
   const storagePath = DEFAULT_AMBIENT_PATHS.desktop;
   const mobileStoragePath = DEFAULT_AMBIENT_PATHS.mobile;
 
-  // User preference from localStorage (defaults to enabled)
   const [resolvedUrls, setResolvedUrls] = useState<ResolvedUrls>({
     desktop: null,
     mobile: null,
@@ -35,6 +39,25 @@ export function AmbientOverlay() {
       return true;
     }
   });
+  const [reducedMotion, setReducedMotion] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
+  const [activeIndex, setActiveIndex] = useState<0 | 1>(0);
+
+  const videoARef = useRef<HTMLVideoElement | null>(null);
+  const videoBRef = useRef<HTMLVideoElement | null>(null);
+
+  // Track prefers-reduced-motion. When enabled, we render nothing —
+  // the storefront already has a static styled background, so the
+  // calmest UX is no motion at all (Approach D in the design handoff).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
     initializeApp();
@@ -46,7 +69,6 @@ export function AmbientOverlay() {
         const urls: ResolvedUrls = { desktop: null, mobile: null };
         const storage = getStorage$();
 
-        // Resolve desktop (4K) video
         try {
           const videoRef = ref(storage, storagePath);
           const url = await getDownloadURL(videoRef);
@@ -58,7 +80,6 @@ export function AmbientOverlay() {
           );
         }
 
-        // Resolve mobile (1080p) video
         try {
           const videoRef = ref(storage, mobileStoragePath);
           const url = await getDownloadURL(videoRef);
@@ -68,7 +89,6 @@ export function AmbientOverlay() {
             'AmbientOverlay: failed to resolve mobile video URL',
             err
           );
-          // Fall back to desktop if mobile fails
           urls.mobile = urls.desktop;
         }
 
@@ -106,8 +126,51 @@ export function AmbientOverlay() {
     };
   }, []);
 
+  // Crossfade driver: as the active video approaches its end, start
+  // the inactive one and swap which is visible. The two videos share
+  // the same source URL so the file is fetched once and cached.
+  useEffect(() => {
+    if (reducedMotion) return;
+    const a = videoARef.current;
+    const b = videoBRef.current;
+    if (!a || !b) return;
+
+    const handleTimeUpdate = (current: HTMLVideoElement) => {
+      const other = current === a ? b : a;
+      if (!Number.isFinite(current.duration) || current.duration <= 0) return;
+      const remaining = current.duration - current.currentTime;
+      if (remaining > CROSSFADE_LEAD_SECONDS) return;
+      // Avoid re-triggering once the swap has begun
+      const currentIsActive =
+        (current === a && activeIndex === 0) ||
+        (current === b && activeIndex === 1);
+      if (!currentIsActive) return;
+
+      try {
+        other.currentTime = 0;
+        void other.play().catch(() => {
+          /* autoplay may be blocked; ignore */
+        });
+      } catch {
+        /* setting currentTime can throw if metadata not loaded */
+      }
+      setActiveIndex(prev => (prev === 0 ? 1 : 0));
+    };
+
+    const onTimeA = () => handleTimeUpdate(a);
+    const onTimeB = () => handleTimeUpdate(b);
+    a.addEventListener('timeupdate', onTimeA);
+    b.addEventListener('timeupdate', onTimeB);
+    return () => {
+      a.removeEventListener('timeupdate', onTimeA);
+      b.removeEventListener('timeupdate', onTimeB);
+    };
+  }, [activeIndex, reducedMotion, resolvedUrls.desktop, resolvedUrls.mobile]);
+
+  if (reducedMotion) return null;
   if (!enabled || (!resolvedUrls.desktop && !resolvedUrls.mobile)) return null;
 
+  if (typeof document === 'undefined') return null;
   const portal = document.getElementById('ambient-portal');
   if (!portal) return null;
 
@@ -120,20 +183,38 @@ export function AmbientOverlay() {
     resolvedUrls.desktop ??
     resolvedUrls.mobile;
 
+  if (!videoSrc) return null;
+
   return createPortal(
-    <video
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="metadata"
-      crossOrigin="anonymous"
-      disablePictureInPicture
-      controls={false}
-      className="ambient-video"
-    >
-      {videoSrc && <source src={videoSrc} type="video/mp4" />}
-    </video>,
+    <>
+      <video
+        ref={videoARef}
+        autoPlay
+        muted
+        playsInline
+        preload="auto"
+        crossOrigin="anonymous"
+        disablePictureInPicture
+        controls={false}
+        className={`ambient-video${activeIndex === 0 ? ' is-active' : ''}`}
+        aria-hidden="true"
+      >
+        <source src={videoSrc} type="video/mp4" />
+      </video>
+      <video
+        ref={videoBRef}
+        muted
+        playsInline
+        preload="auto"
+        crossOrigin="anonymous"
+        disablePictureInPicture
+        controls={false}
+        className={`ambient-video${activeIndex === 1 ? ' is-active' : ''}`}
+        aria-hidden="true"
+      >
+        <source src={videoSrc} type="video/mp4" />
+      </video>
+    </>,
     portal
   );
 }
