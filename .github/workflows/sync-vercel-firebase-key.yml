@@ -19,20 +19,25 @@ jobs:
     steps:
       - name: Validate Service Account JSON
         id: validate
+        env:
+          SA_JSON: ${{ inputs.sa_key_json }}
+          SA_EMAIL: ${{ inputs.sa_email }}
         run: |
-          # Parse and validate the JSON
-          echo "${{ inputs.sa_key_json }}" | jq empty 2>/dev/null
-          if [ $? -ne 0 ]; then
+          # Pipe via env var (NOT direct GHA expression interpolation) so the
+          # JSON's embedded newlines don't break bash quoting. Direct
+          # interpolation of `${{ inputs.sa_key_json }}` into the script body
+          # silently breaks on any pretty-printed JSON, since GHA substitutes
+          # the raw multiline value into the bash source before bash parses it.
+          if ! printf '%s' "$SA_JSON" | jq empty 2>/dev/null; then
             echo "ERROR: Invalid JSON provided" >&2
             exit 1
           fi
 
-          # Extract key ID and project ID for logging
-          KEY_ID=$(echo "${{ inputs.sa_key_json }}" | jq -r '.private_key_id')
-          PROJECT_ID=$(echo "${{ inputs.sa_key_json }}" | jq -r '.project_id')
-          echo "key_id=$KEY_ID" >> $GITHUB_OUTPUT
-          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
-          echo "Validated SA: ${{ inputs.sa_email }} (project: $PROJECT_ID)"
+          KEY_ID=$(printf '%s' "$SA_JSON" | jq -r '.private_key_id')
+          PROJECT_ID=$(printf '%s' "$SA_JSON" | jq -r '.project_id')
+          echo "key_id=$KEY_ID" >> "$GITHUB_OUTPUT"
+          echo "project_id=$PROJECT_ID" >> "$GITHUB_OUTPUT"
+          echo "Validated SA: $SA_EMAIL (project: $PROJECT_ID, key: $KEY_ID)"
 
       - name: Update Vercel Environment Variables
         id: update_vercel
