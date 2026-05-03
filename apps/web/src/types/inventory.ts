@@ -5,13 +5,25 @@
  * Storefront visibility is now derived from `inStock` at the online location
  * (see location-ids.ts — ONLINE_LOCATION_ID). The legacy `availableOnline`
  * flag has been retired; the persisted field was dropped by migration #231.
+ *
+ * @deprecated The entire `inventory/{locationId}/items/{productId}`
+ * sub-collection is being folded into the `Product` document under #304
+ * (per-variant, per-location stock + price live on `Product.variantSpecs`,
+ * with denorm `inStockAt`/`pickupAt`/`featuredAt` arrays for queries).
+ * Schema in #305 (this ticket — types only). Migration in #307. Call-site
+ * migration in #311. Sub-collection retired in #312. Do not add new
+ * dependencies on this shape.
  */
 export interface InventoryItem {
   /** References products/{productId} */
   productId: string;
   /** Retail location doc ID or ONLINE_LOCATION_ID */
   locationId: string;
-  /** Whether this product is currently in stock at this location */
+  /**
+   * Whether this product is currently in stock at this location.
+   * @deprecated Folded into `Product.variantSpecs[*].locations[locationId].qty`
+   * + denorm `Product.inStockAt[]` under #304/#305. Removed in #312.
+   */
   inStock: boolean;
   /**
    * @deprecated Retired in #232 — no longer persisted or read by the
@@ -25,6 +37,9 @@ export interface InventoryItem {
    * Retail locations only — when true, product can be purchased online for
    * in-store pickup at this location. Deducts from this location's inventory.
    * Always false for Online Store.
+   * @deprecated Folded into
+   * `Product.variantSpecs[*].locations[locationId].availablePickup` + denorm
+   * `Product.pickupAt[]` under #304/#305. Removed in #312.
    */
   availablePickup: boolean;
   /**
@@ -32,6 +47,9 @@ export interface InventoryItem {
    * Online Store: shown in homepage "What We Carry" (requires inStock = true).
    * Retail: shown in per-store featured section (requires inStock = true).
    * Always false when inStock = false.
+   * @deprecated Folded into
+   * `Product.variantSpecs[*].locations[locationId].featured` + denorm
+   * `Product.featuredAt[]` under #304/#305. Removed in #312.
    */
   featured: boolean;
   /** Optional unit count — for future staff-facing stock level display */
@@ -40,6 +58,9 @@ export interface InventoryItem {
    * Per-variant pricing for this product at this location.
    * Keys are variantId values from Product.variants.
    * Missing variantId means no price has been set for that variant.
+   * @deprecated Folded into
+   * `Product.variantSpecs[variantId].locations[locationId]` ({ price,
+   * compareAtPrice, qty }) under #304/#305. Removed in #312.
    */
   variantPricing?: {
     [variantId: string]: {
