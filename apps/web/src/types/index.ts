@@ -6,6 +6,8 @@ export type {
 export type {
   Product,
   ProductVariant,
+  ProductVariantSpec,
+  ProductVariantLocation,
   VariantOption,
   VariantGroup,
   NutritionFacts,
@@ -51,12 +53,7 @@ export type {
 } from './email';
 export type { GoogleReview } from './reviews';
 export type { Vendor, VendorSummary } from './vendor';
-export type {
-  Order,
-  OrderItem,
-  OrderStatus,
-  ShippingAddress,
-} from './order';
+export type { Order, OrderItem, OrderStatus, ShippingAddress } from './order';
 export { ALLOWED_TRANSITIONS } from './order';
 export type { OrderEvent } from './order-event';
 export type { CoaDocument } from './coa';
