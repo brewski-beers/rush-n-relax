@@ -34,11 +34,10 @@ rush-n-relax/
 ├── firestore.rules       # Firestore security rules
 ├── firestore.indexes.json
 ├── storage.rules         # Storage security rules
-├── firebase.json         # Emulator + deploy config
-└── docs/
-    ├── architecture.md   # High-level architecture (engineering deep-docs are in Obsidian)
-    └── launch-runbook.md # Pre-launch checklist
+└── firebase.json         # Emulator + deploy config
 ```
+
+All engineering documentation lives in the Obsidian vault — see "Engineering docs" below.
 
 ---
 
