@@ -64,6 +64,19 @@ export default defineConfig({
           url: 'http://localhost:3000',
           reuseExistingServer: true,
           timeout: 30000,
+          // Order-flow E2E (issue #285) needs:
+          //   - AgeChecker simulate buttons (test-mode flag in modal)
+          //   - Clover stub fallback (live-payments kill switch closed)
+          //   - Webhook HMAC secret so POSTs to /api/webhooks/clover validate
+          // Only set when not already provided by the caller's shell.
+          env: {
+            NEXT_PUBLIC_AGECHECKER_TEST_MODE:
+              process.env.NEXT_PUBLIC_AGECHECKER_TEST_MODE ?? 'true',
+            CLOVER_LIVE_PAYMENTS_ENABLED:
+              process.env.CLOVER_LIVE_PAYMENTS_ENABLED ?? 'false',
+            CLOVER_WEBHOOK_SECRET:
+              process.env.CLOVER_WEBHOOK_SECRET ?? 'e2e-clover-secret',
+          },
         },
       }),
 });
