@@ -1,10 +1,11 @@
 /* ============================================================
    AMBIENT OVERLAY COMPONENT
-   Full-viewport mirrored composition. Two side-by-side panes
-   each render a double-buffered <video> pair that crossfades
-   just before the loop seam. The right pane is horizontally
-   flipped so the screen reads as one continuous mirrored
-   smoke field. See issue #188.
+   Two full-viewport video layers stacked. The base layer plays
+   the ambient smoke clip; a second identical layer is overlaid
+   horizontally mirrored and blended via `screen` so highlights
+   from both orientations combine into a symmetric kaleidoscope
+   field without a visible seam. Each layer is double-buffered
+   to crossfade across the loop boundary. See issue #188.
    ============================================================ */
 
 .ambient-stage {
@@ -13,21 +14,20 @@
   left: 0;
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: row;
   z-index: 0;
   pointer-events: none;
 }
 
 .ambient-pane {
-  position: relative;
-  flex: 1 1 0;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
 }
 
 .ambient-pane--mirrored {
   transform: scaleX(-1);
+  mix-blend-mode: screen;
+  opacity: 0.6;
 }
 
 .ambient-video {
