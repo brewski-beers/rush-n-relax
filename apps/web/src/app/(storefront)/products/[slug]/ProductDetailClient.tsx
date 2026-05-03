@@ -14,6 +14,21 @@ import {
 } from '@/lib/storefront/resolveVariantPricing';
 import { NutritionFactsPanel } from '@/components/NutritionFactsPanel';
 
+/**
+ * Resolves an image value to a renderable URL.
+ *
+ * Accepts either a Firebase Storage path (e.g. "products/foo.webp") which
+ * gets converted via getStorageUrl, OR a pre-resolved absolute URL (when the
+ * server already constructed the public URL — see heroImageUrl). Without this
+ * guard, passing an absolute URL through getStorageUrl percent-encodes the
+ * scheme/host into the storage path, producing a broken URL and a placeholder
+ * fallback. Regression source: PR #341 thumbnail strip.
+ */
+function resolveImageSrc(value: string | undefined | null): string | undefined {
+  if (!value) return undefined;
+  return value.startsWith('http') ? value : getStorageUrl(value);
+}
+
 const STRAIN_LABELS: Record<ProductStrain, string> = {
   indica: 'Indica',
   sativa: 'Sativa',
@@ -165,7 +180,7 @@ export default function ProductDetailClient({
   // When the user clicks a thumbnail, we may need to show the server-resolved
   // hero URL (for the primary image) or fall back to ProductImage (for gallery
   // images whose URLs were not pre-resolved).
-  const isActiveImagePrimary = activeImage === product.image;
+  const isActiveImagePrimary = activeImage === featuredUrl;
 
   return (
     <main className="product-detail-page">
@@ -193,7 +208,7 @@ export default function ProductDetailClient({
                     aria-label={`View image ${i + 1}`}
                   >
                     <ProductImage
-                      src={path ? getStorageUrl(path) : undefined}
+                      src={resolveImageSrc(path)}
                       alt={`${product.name} ${i + 1}`}
                       className="product-thumbnail-img"
                     />
@@ -219,11 +234,7 @@ export default function ProductDetailClient({
                 </div>
               ) : (
                 <ProductImage
-                  src={(() => {
-                    const v = activeImage ?? product.image;
-                    if (!v) return undefined;
-                    return v.startsWith('http') ? v : getStorageUrl(v);
-                  })()}
+                  src={resolveImageSrc(activeImage ?? product.image)}
                   alt={product.name}
                   className="product-main-img"
                 />
@@ -597,9 +608,7 @@ export default function ProductDetailClient({
                       </span>
                     )}
                     <ProductImage
-                      src={
-                        related.image ? getStorageUrl(related.image) : undefined
-                      }
+                      src={resolveImageSrc(related.image)}
                       alt={related.name}
                       className="related-strip-img"
                     />
