@@ -36,6 +36,10 @@ service cloud.firestore {
     match /products/{docId} {
       allow read, write: if false;
     }
+    // Variant/location audit log (#306) — Admin SDK only.
+    match /products/{docId}/adjustments/{adjId} {
+      allow read, write: if false;
+    }
     match /product-categories/{docId} {
       allow read, write: if false;
     }

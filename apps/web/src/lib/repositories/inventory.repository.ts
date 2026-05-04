@@ -430,28 +430,13 @@ function normalizeQuantity(value: unknown, fallbackInStock: boolean): number {
 
 // ── Atomic decrement (transactional) ──────────────────────────────────────
 
-export class InsufficientStockError extends Error {
-  readonly productId: string;
-  readonly locationId: string;
-  readonly available: number;
-  readonly requested: number;
-
-  constructor(
-    locationId: string,
-    productId: string,
-    available: number,
-    requested: number
-  ) {
-    super(
-      `Insufficient stock for '${productId}' at '${locationId}': have ${available}, need ${requested}`
-    );
-    this.name = 'InsufficientStockError';
-    this.productId = productId;
-    this.locationId = locationId;
-    this.available = available;
-    this.requested = requested;
-  }
-}
+/**
+ * Re-export of `InsufficientStockError`. The canonical owner moved to
+ * `product.repository.ts` in #306 (variant model). This re-export keeps the
+ * existing `inventory.repository` import surface working until #312.
+ */
+export { InsufficientStockError } from './product.repository';
+import { InsufficientStockError } from './product.repository';
 
 /**
  * Atomically decrement inventory for a list of items at one location.
