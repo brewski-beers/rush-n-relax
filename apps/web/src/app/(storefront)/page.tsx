@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Card } from '@/components/Card';
 import { CardGrid } from '@/components/CardGrid';
 import { ProductImage } from '@/components/ProductImage';
+import { getStorageUrl } from '@/lib/storage/url-cache';
 import { seoConfig } from '@/config/seo.config';
 import {
   listFeaturedInventory,
@@ -93,9 +94,8 @@ export default async function HomePage() {
                 motion={index === 1}
               >
                 <ProductImage
-                  slug={product.slug}
                   alt={product.name}
-                  path={product.image || undefined}
+                  src={product.image ? getStorageUrl(product.image) : undefined}
                 />
                 <div className="product-card-content">
                   <div className="product-category">{product.category}</div>

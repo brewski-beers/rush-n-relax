@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/hooks/useCart';
 import { formatCents } from '@/utils/currency';
 import { canShipToState } from '@/constants/shipping';
 import type { ShippingAddress } from '@/types';
+import {
+  AgeCheckerModal,
+  type AgeCheckOutcome,
+} from '@/components/AgeCheckerModal/AgeCheckerModal';
 import { DeliveryDetailsForm } from './DeliveryDetailsForm';
 
 const EMPTY_ADDRESS: ShippingAddress = {
@@ -27,6 +31,7 @@ export default function CartPage() {
 
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
 
   const stateAllowed =
     deliveryAddress.state !== '' && canShipToState(deliveryAddress.state);
@@ -39,53 +44,72 @@ export default function CartPage() {
     !!deliveryAddress.zip;
 
   const emailValid = EMAIL_RE.test(email);
-  const canCheckout = stateAllowed && addressComplete && emailValid;
+  const canVerify = stateAllowed && addressComplete && emailValid;
 
   const TAX_RATE = 0.0925;
   const taxEstimate = Math.round(subtotal * TAX_RATE);
   const total = subtotal + taxEstimate;
 
-  async function startCheckout() {
-    setCheckoutError(null);
-    setCheckoutLoading(true);
-    try {
-      const orderItems = items.map(i => ({
-        productId: i.productId,
-        productName: i.name,
-        quantity: i.quantity,
-        unitPrice: i.unitPrice,
-        lineTotal: i.unitPrice * i.quantity,
-      }));
+  const startOrder = useCallback(
+    async (verificationId: string) => {
+      setCheckoutError(null);
+      setCheckoutLoading(true);
+      try {
+        const orderItems = items.map(i => ({
+          productId: i.productId,
+          productName: i.name,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          lineTotal: i.unitPrice * i.quantity,
+        }));
 
-      const res = await fetch('/api/order/start', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          items: orderItems,
-          subtotal,
-          tax: taxEstimate,
-          total,
-          locationId: 'online',
-          deliveryAddress,
-          customerEmail: email || undefined,
-        }),
-      });
-      const data = (await res.json()) as {
-        agecheckerRedirectUrl?: string;
-        error?: string;
-      };
-      if (!res.ok || !data.agecheckerRedirectUrl) {
-        setCheckoutError(data.error ?? 'Checkout failed.');
-        return;
+        const res = await fetch('/api/order/start', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            verificationId,
+            items: orderItems,
+            subtotal,
+            tax: taxEstimate,
+            total,
+            locationId: 'online',
+            deliveryAddress,
+            customerEmail: email || undefined,
+          }),
+        });
+        const data = (await res.json()) as {
+          orderId?: string;
+          error?: string;
+        };
+        if (!res.ok || !data.orderId) {
+          setCheckoutError(data.error ?? 'Checkout failed.');
+          return;
+        }
+        clearCart();
+        window.location.assign(`/order/${data.orderId}`);
+      } catch {
+        setCheckoutError('Network error. Please try again.');
+      } finally {
+        setCheckoutLoading(false);
       }
-      clearCart();
-      window.location.assign(data.agecheckerRedirectUrl);
-    } catch {
-      setCheckoutError('Network error. Please try again.');
-    } finally {
-      setCheckoutLoading(false);
-    }
-  }
+    },
+    [items, subtotal, taxEstimate, total, deliveryAddress, email, clearCart]
+  );
+
+  const handleVerifyComplete = useCallback(
+    (outcome: AgeCheckOutcome) => {
+      setVerifyOpen(false);
+      if (outcome.status === 'pass') {
+        void startOrder(outcome.verificationId);
+      } else {
+        setCheckoutError(
+          outcome.reason ||
+            'ID verification did not pass. Please try again or contact support.'
+        );
+      }
+    },
+    [startOrder]
+  );
 
   if (items.length === 0) {
     return (
@@ -217,11 +241,11 @@ export default function CartPage() {
             <button
               type="button"
               className="btn btn-primary cart-checkout-btn"
-              disabled={!canCheckout || checkoutLoading}
-              aria-disabled={!canCheckout || checkoutLoading}
-              onClick={() => void startCheckout()}
+              disabled={!canVerify || checkoutLoading}
+              aria-disabled={!canVerify || checkoutLoading}
+              onClick={() => setVerifyOpen(true)}
             >
-              {checkoutLoading ? 'Processing…' : 'Verify ID & Checkout'}
+              {checkoutLoading ? 'Processing…' : 'Verify Age'}
             </button>
 
             <button
@@ -234,6 +258,12 @@ export default function CartPage() {
           </aside>
         </div>
       </div>
+
+      <AgeCheckerModal
+        open={verifyOpen}
+        onComplete={handleVerifyComplete}
+        onClose={() => setVerifyOpen(false)}
+      />
     </main>
   );
 }

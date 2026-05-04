@@ -1,19 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createOrderMock, setOrderProviderRefsMock, startSessionMock } =
-  vi.hoisted(() => ({
+const {
+  createOrderMock,
+  setOrderProviderRefsMock,
+  decrementInventoryItemsMock,
+  InsufficientStockErrorMock,
+} = vi.hoisted(() => {
+  class InsufficientStockErrorMock extends Error {
+    productId: string;
+    available: number;
+    requested: number;
+    constructor(productId: string, available: number, requested: number) {
+      super('Insufficient stock');
+      this.name = 'InsufficientStockError';
+      this.productId = productId;
+      this.available = available;
+      this.requested = requested;
+    }
+  }
+  return {
     createOrderMock: vi.fn(),
     setOrderProviderRefsMock: vi.fn(),
-    startSessionMock: vi.fn(),
-  }));
+    decrementInventoryItemsMock: vi.fn(),
+    InsufficientStockErrorMock,
+  };
+});
 
 vi.mock('@/lib/repositories', () => ({
   createOrder: createOrderMock,
   setOrderProviderRefs: setOrderProviderRefsMock,
-}));
-
-vi.mock('@/lib/agechecker', () => ({
-  startAgeCheckerSession: startSessionMock,
+  decrementInventoryItems: decrementInventoryItemsMock,
+  InsufficientStockError: InsufficientStockErrorMock,
 }));
 
 import { POST } from './route';
@@ -49,18 +66,14 @@ describe('POST /api/order/start', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createOrderMock.mockResolvedValue('order-123');
-    startSessionMock.mockResolvedValue({
-      sessionId: 'ac-sess-1',
-      redirectUrl: 'https://agechecker.example/verify/ac-sess-1',
-      provider: 'stub',
-    });
     setOrderProviderRefsMock.mockResolvedValue(undefined);
+    decrementInventoryItemsMock.mockResolvedValue(undefined);
   });
 
-  it('creates a pending_id_verification order, starts agechecker, returns redirect URL', async () => {
-    // Justified cast: NextRequest accepts a Request at runtime.
+  it('creates an id_verified order, decrements inventory, persists verificationId', async () => {
     const res = await POST(
       makeReq({
+        verificationId: 'verif-abc',
         items: SAMPLE_ITEMS,
         subtotal: 1000,
         tax: 92,
@@ -72,31 +85,27 @@ describe('POST /api/order/start', () => {
     );
 
     expect(res.status).toBe(200);
-    const body = (await res.json()) as {
-      orderId: string;
-      agecheckerRedirectUrl: string;
-    };
+    const body = (await res.json()) as { orderId: string };
     expect(body.orderId).toBe('order-123');
-    expect(body.agecheckerRedirectUrl).toContain('agechecker');
 
     expect(createOrderMock).toHaveBeenCalledTimes(1);
     expect(createOrderMock.mock.calls[0][0]).toMatchObject({
-      status: 'pending_id_verification',
+      status: 'id_verified',
       deliveryAddress: TN_ADDRESS,
-    });
-    expect(startSessionMock).toHaveBeenCalledWith({
-      orderId: 'order-123',
       customerEmail: 'kb@example.com',
-      returnUrl: 'http://localhost/order/order-123',
     });
     expect(setOrderProviderRefsMock).toHaveBeenCalledWith('order-123', {
-      agecheckerSessionId: 'ac-sess-1',
+      agecheckerSessionId: 'verif-abc',
     });
+    expect(decrementInventoryItemsMock).toHaveBeenCalledWith('online', [
+      { productId: 'p1', quantity: 1 },
+    ]);
   });
 
   it('rejects an empty cart', async () => {
     const res = await POST(
       makeReq({
+        verificationId: 'verif-abc',
         items: [],
         subtotal: 0,
         tax: 0,
@@ -107,11 +116,13 @@ describe('POST /api/order/start', () => {
     );
     expect(res.status).toBe(400);
     expect(createOrderMock).not.toHaveBeenCalled();
+    expect(decrementInventoryItemsMock).not.toHaveBeenCalled();
   });
 
-  it('rejects a delivery state we cannot ship to', async () => {
+  it('rejects 422 when delivery state is non-shippable, BEFORE any other work', async () => {
     const res = await POST(
       makeReq({
+        verificationId: 'verif-abc',
         items: SAMPLE_ITEMS,
         subtotal: 1000,
         tax: 0,
@@ -122,5 +133,40 @@ describe('POST /api/order/start', () => {
     );
     expect(res.status).toBe(422);
     expect(createOrderMock).not.toHaveBeenCalled();
+    expect(setOrderProviderRefsMock).not.toHaveBeenCalled();
+    expect(decrementInventoryItemsMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects 400 when verificationId is missing', async () => {
+    const res = await POST(
+      makeReq({
+        items: SAMPLE_ITEMS,
+        subtotal: 1000,
+        tax: 0,
+        total: 1000,
+        locationId: 'online',
+        deliveryAddress: TN_ADDRESS,
+      }) as unknown as import('next/server').NextRequest
+    );
+    expect(res.status).toBe(400);
+    expect(createOrderMock).not.toHaveBeenCalled();
+  });
+
+  it('returns 409 when inventory decrement reports insufficient stock', async () => {
+    decrementInventoryItemsMock.mockRejectedValueOnce(
+      new InsufficientStockErrorMock('p1', 0, 1)
+    );
+    const res = await POST(
+      makeReq({
+        verificationId: 'verif-abc',
+        items: SAMPLE_ITEMS,
+        subtotal: 1000,
+        tax: 0,
+        total: 1000,
+        locationId: 'online',
+        deliveryAddress: TN_ADDRESS,
+      }) as unknown as import('next/server').NextRequest
+    );
+    expect(res.status).toBe(409);
   });
 });

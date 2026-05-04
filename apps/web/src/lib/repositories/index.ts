@@ -35,6 +35,7 @@ export {
   getInventoryItem,
   listOnlineAvailableInventory,
   listFeaturedInventory,
+  listFeaturedAtLocation,
   getOnlineInStockSet,
   setInventoryItem,
   decrementInventoryItems,

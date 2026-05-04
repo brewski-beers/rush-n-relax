@@ -1,23 +1,14 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
 import {
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   rectSortingStrategy,
-  arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useSortableGrid } from '@/hooks/useSortableGrid';
 
 interface Props {
   /** Optimistic preview sources (object URLs or null), length 5. */
@@ -144,7 +135,8 @@ function SortableImageSlot({
             <img src={src} alt={`Gallery slot ${index + 1}`} />
 
             {/* Drag handle */}
-            <button type="button"
+            <button
+              type="button"
               className="img-upload-slot-handle"
               aria-label="Drag to reorder"
               {...attributes}
@@ -154,7 +146,8 @@ function SortableImageSlot({
             </button>
 
             {/* Remove button */}
-            <button type="button"
+            <button
+              type="button"
               className="img-upload-remove-btn"
               aria-label={`Remove gallery image ${index + 1}`}
               disabled={disabled}
@@ -174,7 +167,8 @@ function SortableImageSlot({
 
             {!uploading && (
               <div className="img-upload-slot-overlay">
-                <button type="button"
+                <button
+                  type="button"
                   className="admin-btn-secondary"
                   disabled={disabled}
                   onClick={e => {
@@ -220,6 +214,11 @@ function SortableImageSlot({
 
 // ── Gallery strip ──────────────────────────────────────────────────────────
 
+interface PathItem {
+  id: number;
+  path: string | null;
+}
+
 export function GalleryStrip({
   srcs,
   paths,
@@ -237,33 +236,29 @@ export function GalleryStrip({
     setMounted(true);
   }, []);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+  // dnd-kit item ids are the slot indices (0–4); reorder operates on the
+  // current `paths` array. Behavior is identical to the previous bespoke
+  // arrayMove implementation — just routed through the shared hook.
+  const items: PathItem[] = paths.map((path, id) => ({ id, path }));
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const oldIndex = paths.findIndex((_, i) => i === active.id);
-      const newIndex = paths.findIndex((_, i) => i === over.id);
-      onReorder(arrayMove(paths, oldIndex, newIndex));
-    }
-  }
+  const { sensors, onDragEnd } = useSortableGrid<PathItem>({
+    items,
+    getId: i => i.id,
+    onReorder: next => onReorder(next.map(i => i.path)),
+  });
 
-  // Indices 0–4 are the sortable item IDs
-  const itemIds = [0, 1, 2, 3, 4] as const;
+  const itemIds = items.map(i => i.id);
 
-  const slots = itemIds.map(i => (
+  const slots = items.map(item => (
     <SortableImageSlot
-      key={i}
-      index={i}
-      src={srcs[i] ?? null}
-      uploading={uploadingSlots.has(i)}
-      error={errors[i]}
+      key={item.id}
+      index={item.id}
+      src={srcs[item.id] ?? null}
+      uploading={uploadingSlots.has(item.id)}
+      error={errors[item.id]}
       disabled={disabled}
-      onFile={file => onFile(file, i)}
-      onRemove={() => onRemove(i)}
+      onFile={file => onFile(file, item.id)}
+      onRemove={() => onRemove(item.id)}
     />
   ));
 
@@ -276,9 +271,9 @@ export function GalleryStrip({
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
+      onDragEnd={onDragEnd}
     >
-      <SortableContext items={[...itemIds]} strategy={rectSortingStrategy}>
+      <SortableContext items={itemIds} strategy={rectSortingStrategy}>
         <div className="img-upload-gallery">{slots}</div>
       </SortableContext>
     </DndContext>

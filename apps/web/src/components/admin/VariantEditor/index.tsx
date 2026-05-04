@@ -13,9 +13,23 @@
  *
  * The "Add group" dropdown lists all globally-defined groups that are
  * not already attached, plus a manual "Custom group" option.
+ *
+ * #230: validates duplicate optionId within a group and duplicate groupId
+ *       within the product. The Save button outside this component is
+ *       disabled when `name="variantGroups-valid"` (hidden input below) is
+ *       absent — Server Actions read it via formData.has().
  */
 
-import { useState, useId, useRef } from 'react';
+import { useState, useId, useMemo, useRef } from 'react';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useSortableGrid } from '@/hooks/useSortableGrid';
 import type { VariantGroup, VariantOption } from '@/types/product';
 import type { VariantTemplate as StoredVariantTemplate } from '@/types/variant-template';
 import { generateSkus } from '@/lib/variants/generateSkus';
@@ -30,42 +44,93 @@ function slugify(label: string): string {
     .replace(/^-|-$/g, '');
 }
 
-// ── OptionRow ─────────────────────────────────────────────────────────────
+// ── Validation (#230) ──────────────────────────────────────────────────────
+
+interface ValidationErrors {
+  /** Map of `${groupIdx}-${optIdx}` → "duplicate" if optionId duplicates within group */
+  duplicateOptionIds: Record<string, true>;
+  /** Map of groupIdx → true if its groupId duplicates another group on this product */
+  duplicateGroupIds: Record<number, true>;
+}
+
+function validateGroups(groups: VariantGroup[]): ValidationErrors {
+  const duplicateOptionIds: Record<string, true> = {};
+  groups.forEach((group, gi) => {
+    const seen = new Map<string, number>();
+    group.options.forEach((opt, oi) => {
+      if (!opt.optionId) return;
+      const prev = seen.get(opt.optionId);
+      if (prev !== undefined) {
+        duplicateOptionIds[`${gi}-${oi}`] = true;
+        duplicateOptionIds[`${gi}-${prev}`] = true;
+      } else {
+        seen.set(opt.optionId, oi);
+      }
+    });
+  });
+
+  const duplicateGroupIds: Record<number, true> = {};
+  const groupSeen = new Map<string, number>();
+  groups.forEach((g, gi) => {
+    if (!g.groupId) return;
+    const prev = groupSeen.get(g.groupId);
+    if (prev !== undefined) {
+      duplicateGroupIds[gi] = true;
+      duplicateGroupIds[prev] = true;
+    } else {
+      groupSeen.set(g.groupId, gi);
+    }
+  });
+
+  return { duplicateOptionIds, duplicateGroupIds };
+}
+
+function hasErrors(errors: ValidationErrors): boolean {
+  return (
+    Object.keys(errors.duplicateOptionIds).length > 0 ||
+    Object.keys(errors.duplicateGroupIds).length > 0
+  );
+}
+
+// ── OptionRow (sortable via dnd-kit, #223) ─────────────────────────────────
 
 interface OptionRowProps {
   option: VariantOption;
+  /** Composite dnd-kit id: `${groupId}::${oi}` — stable across renders even with duplicate optionIds */
+  sortableId: string;
   index: number;
   total: number;
-  isDragOver: boolean;
   groupIndex: number;
+  duplicateOptionIdError: boolean;
   onLabelChange: (groupIdx: number, optIdx: number, value: string) => void;
   onIdChange: (groupIdx: number, optIdx: number, value: string) => void;
   onDelete: (groupIdx: number, optIdx: number) => void;
   onMoveUp: (groupIdx: number, optIdx: number) => void;
   onMoveDown: (groupIdx: number, optIdx: number) => void;
-  onDragStart: (groupIdx: number, optIdx: number) => void;
-  onDragOver: (e: React.DragEvent, groupIdx: number, optIdx: number) => void;
-  onDrop: (groupIdx: number, optIdx: number) => void;
-  onDragEnd: () => void;
 }
 
 function OptionRow({
   option,
+  sortableId,
   index,
   total,
-  isDragOver,
   groupIndex,
+  duplicateOptionIdError,
   onLabelChange,
   onIdChange,
   onDelete,
   onMoveUp,
   onMoveDown,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd,
 }: OptionRowProps) {
   const id = useId();
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: sortableId });
 
   function handleLabelChange(e: React.ChangeEvent<HTMLInputElement>) {
     const newLabel = e.target.value;
@@ -77,11 +142,15 @@ function OptionRow({
 
   return (
     <div
-      className={`variant-editor-item${isDragOver ? ' variant-editor-item--drag-over' : ''}`}
+      ref={setNodeRef}
+      // eslint-disable-next-line react/forbid-dom-props -- @dnd-kit requires inline transform/transition for drag animation
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={`variant-editor-item${isDragging ? ' variant-editor-item--drag-over' : ''}`}
       aria-label={`Option ${index + 1}`}
     >
       <div className="variant-editor-move">
-        <button type="button"
+        <button
+          type="button"
           onClick={() => onMoveUp(groupIndex, index)}
           disabled={index === 0}
           aria-label={`Move option ${index + 1} up`}
@@ -89,7 +158,8 @@ function OptionRow({
         >
           ↑
         </button>
-        <button type="button"
+        <button
+          type="button"
           onClick={() => onMoveDown(groupIndex, index)}
           disabled={index === total - 1}
           aria-label={`Move option ${index + 1} down`}
@@ -99,17 +169,16 @@ function OptionRow({
         </button>
       </div>
 
-      <div
-        className="variant-editor-card"
-        draggable
-        onDragStart={() => onDragStart(groupIndex, index)}
-        onDragOver={e => onDragOver(e, groupIndex, index)}
-        onDrop={() => onDrop(groupIndex, index)}
-        onDragEnd={onDragEnd}
-      >
-        <div className="variant-editor-card-drag-handle" aria-hidden="true">
+      <div className="variant-editor-card">
+        <button
+          type="button"
+          className="variant-editor-card-drag-handle"
+          aria-label={`Drag option ${index + 1} to reorder`}
+          {...attributes}
+          {...listeners}
+        >
           ⠿
-        </div>
+        </button>
         <div className="variant-editor-card-fields">
           <label htmlFor={`${id}-label`}>
             <span className="admin-hint">Label</span>
@@ -131,10 +200,24 @@ function OptionRow({
               onChange={e => onIdChange(groupIndex, index, e.target.value)}
               pattern="[a-z0-9-]+"
               title="lowercase letters, numbers, and hyphens only"
+              aria-invalid={duplicateOptionIdError || undefined}
+              aria-describedby={
+                duplicateOptionIdError ? `${id}-oid-error` : undefined
+              }
             />
+            {duplicateOptionIdError && (
+              <span
+                id={`${id}-oid-error`}
+                role="alert"
+                className="variant-editor-error"
+              >
+                Duplicate option ID in this group
+              </span>
+            )}
           </label>
         </div>
-        <button type="button"
+        <button
+          type="button"
           onClick={() => onDelete(groupIndex, index)}
           aria-label={`Delete option ${index + 1}`}
           className="variant-editor-delete-btn"
@@ -151,9 +234,10 @@ function OptionRow({
 interface GroupPanelProps {
   group: VariantGroup;
   groupIndex: number;
-  dragOverKey: string | null;
   isExpanded: boolean;
   isDragOver: boolean;
+  duplicateGroupId: boolean;
+  duplicateOptionIds: Record<string, true>;
   onToggleExpand: (groupIdx: number) => void;
   onGroupLabelChange: (groupIdx: number, value: string) => void;
   onCombinableChange: (groupIdx: number, value: boolean) => void;
@@ -169,10 +253,7 @@ interface GroupPanelProps {
   onMoveOptionUp: (groupIdx: number, optIdx: number) => void;
   onMoveOptionDown: (groupIdx: number, optIdx: number) => void;
   onAddOption: (groupIdx: number) => void;
-  onDragStart: (groupIdx: number, optIdx: number) => void;
-  onDragOver: (e: React.DragEvent, groupIdx: number, optIdx: number) => void;
-  onDrop: (groupIdx: number, optIdx: number) => void;
-  onDragEnd: () => void;
+  onReorderOptions: (groupIdx: number, oldIdx: number, newIdx: number) => void;
   onGroupDragStart: (groupIdx: number) => void;
   onGroupDragOver: (e: React.DragEvent, groupIdx: number) => void;
   onGroupDrop: (groupIdx: number) => void;
@@ -182,9 +263,10 @@ interface GroupPanelProps {
 function GroupPanel({
   group,
   groupIndex,
-  dragOverKey,
   isExpanded,
   isDragOver,
+  duplicateGroupId,
+  duplicateOptionIds,
   onToggleExpand,
   onGroupLabelChange,
   onCombinableChange,
@@ -195,10 +277,7 @@ function GroupPanel({
   onMoveOptionUp,
   onMoveOptionDown,
   onAddOption,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd,
+  onReorderOptions,
   onGroupDragStart,
   onGroupDragOver,
   onGroupDrop,
@@ -210,9 +289,34 @@ function GroupPanel({
   const optionSummary =
     optionCount === 1 ? '1 option' : `${optionCount} options`;
 
+  // Composite stable IDs — index-based suffix keeps each row uniquely
+  // identifiable even when optionId values collide (the very bug #230 catches).
+  const sortableItems = group.options.map((_, oi) => ({
+    id: `${group.groupId}::${oi}`,
+  }));
+
+  const { sensors, onDragEnd } = useSortableGrid({
+    items: sortableItems,
+    getId: i => i.id,
+    onReorder: next => {
+      // Translate next ordering of ids back into oldIdx → newIdx pair.
+      // Exactly one item moved; find the index that changed.
+      const before = sortableItems.map(i => i.id);
+      const after = next.map(i => i.id);
+      for (let i = 0; i < before.length; i++) {
+        if (before[i] !== after[i]) {
+          const movedId = after[i];
+          const oldIdx = before.indexOf(movedId);
+          onReorderOptions(groupIndex, oldIdx, i);
+          return;
+        }
+      }
+    },
+  });
+
   return (
     <div
-      className={`variant-editor-group${isDragOver ? ' variant-editor-group--drag-over' : ''}`}
+      className={`variant-editor-group${isDragOver ? ' variant-editor-group--drag-over' : ''}${duplicateGroupId ? ' variant-editor-group--error' : ''}`}
       onDragOver={e => onGroupDragOver(e, groupIndex)}
       onDrop={() => onGroupDrop(groupIndex)}
     >
@@ -243,7 +347,8 @@ function GroupPanel({
         </span>
 
         {/* Expand / collapse toggle */}
-        <button type="button"
+        <button
+          type="button"
           className="variant-editor-group-toggle"
           onClick={() => onToggleExpand(groupIndex)}
           aria-expanded={isExpanded}
@@ -257,7 +362,8 @@ function GroupPanel({
         </button>
 
         {/* Detach — removes from product only, never deletes global template */}
-        <button type="button"
+        <button
+          type="button"
           onClick={() => onDetachGroup(groupIndex)}
           aria-label={`Remove group ${groupIndex + 1} from this product`}
           className="variant-editor-delete-btn"
@@ -278,38 +384,55 @@ function GroupPanel({
             onChange={e => onGroupLabelChange(groupIndex, e.target.value)}
             placeholder="Group label (e.g. Flavor)"
             aria-label={`Group ${groupIndex + 1} label`}
+            aria-invalid={duplicateGroupId || undefined}
           />
+          {duplicateGroupId && (
+            <span role="alert" className="variant-editor-error">
+              Duplicate group ID on this product
+            </span>
+          )}
 
           {/* Options header row */}
           <div className="variant-editor-options-header">
             <span className="admin-hint">Options</span>
           </div>
 
-          {/* Option rows */}
-          <div className="variant-editor-list">
-            {group.options.map((opt, oi) => (
-              <OptionRow
-                key={oi}
-                option={opt}
-                index={oi}
-                total={group.options.length}
-                isDragOver={dragOverKey === `${groupIndex}-${oi}`}
-                groupIndex={groupIndex}
-                onLabelChange={onOptionLabelChange}
-                onIdChange={onOptionIdChange}
-                onDelete={onDeleteOption}
-                onMoveUp={onMoveOptionUp}
-                onMoveDown={onMoveOptionDown}
-                onDragStart={onDragStart}
-                onDragOver={onDragOver}
-                onDrop={onDrop}
-                onDragEnd={onDragEnd}
-              />
-            ))}
-          </div>
+          {/* Option rows — sortable via dnd-kit (#223) */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+          >
+            <SortableContext
+              items={sortableItems.map(i => i.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="variant-editor-list">
+                {group.options.map((opt, oi) => (
+                  <OptionRow
+                    key={`${group.groupId}::${oi}`}
+                    option={opt}
+                    sortableId={`${group.groupId}::${oi}`}
+                    index={oi}
+                    total={group.options.length}
+                    groupIndex={groupIndex}
+                    duplicateOptionIdError={
+                      duplicateOptionIds[`${groupIndex}-${oi}`] === true
+                    }
+                    onLabelChange={onOptionLabelChange}
+                    onIdChange={onOptionIdChange}
+                    onDelete={onDeleteOption}
+                    onMoveUp={onMoveOptionUp}
+                    onMoveDown={onMoveOptionDown}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
 
           <div className="variant-editor-group-footer">
-            <button type="button"
+            <button
+              type="button"
               onClick={() => onAddOption(groupIndex)}
               className="admin-add-row-btn"
             >
@@ -364,15 +487,15 @@ export function VariantEditor({
   // Dropdown open state for "Add from global group"
   const [addMenuOpen, setAddMenuOpen] = useState(false);
 
-  // Option-level DnD
-  const dragKeyRef = useRef<string | null>(null);
-  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
-
-  // Group-level DnD
+  // Group-level DnD (still uses native HTML5 — out of scope for #223)
   const dragGroupRef = useRef<number | null>(null);
   const [dragOverGroupIndex, setDragOverGroupIndex] = useState<number | null>(
     null
   );
+
+  // ── Validation (#230) ─────────────────────────────────────────────────────
+  const errors = useMemo(() => validateGroups(groups), [groups]);
+  const isValid = !hasErrors(errors);
 
   // ── Expand/collapse ───────────────────────────────────────────────────────
 
@@ -530,51 +653,17 @@ export function VariantEditor({
     );
   }
 
-  // ── Option drag handlers ──────────────────────────────────────────────────
-
-  function handleDragStart(groupIdx: number, optIdx: number) {
-    dragKeyRef.current = `${groupIdx}-${optIdx}`;
-  }
-
-  function handleDragOver(
-    e: React.DragEvent,
-    groupIdx: number,
-    optIdx: number
-  ) {
-    e.preventDefault();
-    setDragOverKey(`${groupIdx}-${optIdx}`);
-  }
-
-  function handleDrop(groupIdx: number, dropOptIdx: number) {
-    const dragKey = dragKeyRef.current;
-    if (!dragKey) return;
-    const [dragGroupStr, dragOptStr] = dragKey.split('-');
-    const dragGroupIdx = Number(dragGroupStr);
-    const dragOptIdx = Number(dragOptStr);
-    if (dragGroupIdx !== groupIdx || dragOptIdx === dropOptIdx) {
-      dragKeyRef.current = null;
-      setDragOverKey(null);
-      return;
-    }
+  function reorderOptions(groupIdx: number, oldIdx: number, newIdx: number) {
     setGroups(prev =>
-      prev.map((g, i) => {
-        if (i !== groupIdx) return g;
-        const opts = [...g.options];
-        const [dragged] = opts.splice(dragOptIdx, 1);
-        opts.splice(dropOptIdx, 0, dragged);
-        return { ...g, options: opts };
-      })
+      prev.map((g, i) =>
+        i === groupIdx
+          ? { ...g, options: arrayMove(g.options, oldIdx, newIdx) }
+          : g
+      )
     );
-    dragKeyRef.current = null;
-    setDragOverKey(null);
   }
 
-  function handleDragEnd() {
-    dragKeyRef.current = null;
-    setDragOverKey(null);
-  }
-
-  // ── Group drag handlers ───────────────────────────────────────────────────
+  // ── Group drag handlers (HTML5 native — out of scope for #223) ────────────
 
   function handleGroupDragStart(groupIdx: number) {
     dragGroupRef.current = groupIdx;
@@ -631,11 +720,15 @@ export function VariantEditor({
           <span className="admin-hint">Variant groups on this product:</span>
           <div className="variant-editor-template-chips">
             {groups.map((g, gi) => (
-              <span key={g.groupId} className="tag-chip variant-template-chip">
+              <span
+                key={`${g.groupId}-${gi}`}
+                className="tag-chip variant-template-chip"
+              >
                 <span className="variant-editor-chip-label">
                   {g.label || <em>Unnamed</em>}
                 </span>
-                <button type="button"
+                <button
+                  type="button"
                   className="tag-chip-remove"
                   onClick={() => detachGroup(gi)}
                   aria-label={`Remove "${g.label || 'unnamed'}" from this product`}
@@ -652,12 +745,13 @@ export function VariantEditor({
       {/* Group panels */}
       {groups.map((group, gi) => (
         <GroupPanel
-          key={group.groupId}
+          key={`${group.groupId}-${gi}`}
           group={group}
           groupIndex={gi}
-          dragOverKey={dragOverKey}
           isExpanded={expandedGroups.has(group.groupId)}
           isDragOver={dragOverGroupIndex === gi}
+          duplicateGroupId={errors.duplicateGroupIds[gi] === true}
+          duplicateOptionIds={errors.duplicateOptionIds}
           onToggleExpand={toggleExpand}
           onGroupLabelChange={changeGroupLabel}
           onCombinableChange={changeCombinableFlag}
@@ -668,10 +762,7 @@ export function VariantEditor({
           onMoveOptionUp={moveOptionUp}
           onMoveOptionDown={moveOptionDown}
           onAddOption={addOption}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onDragEnd={handleDragEnd}
+          onReorderOptions={reorderOptions}
           onGroupDragStart={handleGroupDragStart}
           onGroupDragOver={handleGroupDragOver}
           onGroupDrop={handleGroupDrop}
@@ -682,7 +773,8 @@ export function VariantEditor({
       {/* Add group controls */}
       <div className="variant-editor-add-row">
         <div className="variant-editor-add-menu-wrap">
-          <button type="button"
+          <button
+            type="button"
             className="admin-add-row-btn"
             onClick={() => setAddMenuOpen(o => !o)}
             aria-expanded={addMenuOpen}
@@ -697,7 +789,8 @@ export function VariantEditor({
                     From global variant groups
                   </span>
                   {availableTemplates.map(tpl => (
-                    <button type="button"
+                    <button
+                      type="button"
                       key={tpl.id}
                       className="variant-editor-copy-option"
                       onClick={() => attachGroupFromTemplate(tpl)}
@@ -708,7 +801,8 @@ export function VariantEditor({
                   <hr className="variant-editor-dropdown-divider" />
                 </>
               )}
-              <button type="button"
+              <button
+                type="button"
                 className="variant-editor-copy-option"
                 onClick={addCustomGroup}
               >
@@ -748,6 +842,20 @@ export function VariantEditor({
         type="hidden"
         name="variantGroups"
         value={JSON.stringify(groups)}
+      />
+      {/*
+        #230: Server Actions inspect formData for `variantGroups-valid`. When
+        validation fails this hidden input is omitted; consumers can also gate
+        their submit button via the matching `data-variant-editor-valid`
+        attribute exposed below.
+      */}
+      {isValid && (
+        <input type="hidden" name="variantGroups-valid" value="true" />
+      )}
+      <span
+        data-testid="variant-editor-validity"
+        data-variant-editor-valid={isValid ? 'true' : 'false'}
+        hidden
       />
     </fieldset>
   );

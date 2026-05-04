@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOrder, setOrderProviderRefs } from '@/lib/repositories';
-import { startAgeCheckerSession } from '@/lib/agechecker';
+import {
+  createOrder,
+  decrementInventoryItems,
+  InsufficientStockError,
+  setOrderProviderRefs,
+} from '@/lib/repositories';
 import { canShipToState, getShippingBlockReason } from '@/constants/shipping';
 import type { OrderItem, ShippingAddress } from '@/types';
 
 interface StartRequest {
+  /** Verification id returned by the AgeChecker widget (pass outcome). */
+  verificationId: string;
   items: OrderItem[];
   subtotal: number;
   tax: number;
@@ -17,10 +23,22 @@ interface StartRequest {
 /**
  * POST /api/order/start
  *
- * Creates an order in `pending_id_verification`, kicks off an AgeChecker
- * hosted-verification session, persists the session id, and returns the
- * AgeChecker redirect URL. This is the first leg of the storefront flow;
- * the ID-verification webhook later transitions the order to `id_verified`.
+ * Called by the cart AFTER the AgeChecker widget has returned a `pass`
+ * outcome with a `verificationId`. We:
+ *
+ *   1. Re-check shipping eligibility server-side (defense in depth, BEFORE
+ *      any other work) — 422 if the state is blocked.
+ *   2. Validate the cart payload.
+ *   3. Create the order directly in `id_verified` (skipping the
+ *      `pending_id_verification` placeholder — the user has already passed
+ *      verification by the time this is called).
+ *   4. Decrement inventory atomically (mirrors the webhook handler's
+ *      post-`id_verified` behavior so the inventory contract is unchanged).
+ *   5. Persist the agechecker verificationId on the order for the audit
+ *      trail and so the inbound webhook can correlate retries.
+ *
+ * Returns `{ orderId }`. The client redirects to `/order/[id]` where the
+ * existing `OrderStatusPoller` triggers Clover hosted checkout.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: StartRequest;
@@ -30,10 +48,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  if (!body.items?.length) {
-    return NextResponse.json({ error: 'Cart is empty.' }, { status: 400 });
-  }
-
+  // Shipping eligibility — checked FIRST so blocked states can never reach
+  // any further work (no order doc, no inventory write).
   const addr = body.deliveryAddress;
   if (!addr?.state) {
     return NextResponse.json(
@@ -51,6 +67,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
+  if (!body.verificationId || typeof body.verificationId !== 'string') {
+    return NextResponse.json(
+      { error: 'Missing AgeChecker verificationId.' },
+      { status: 400 }
+    );
+  }
+
+  if (!body.items?.length) {
+    return NextResponse.json({ error: 'Cart is empty.' }, { status: 400 });
+  }
+
   const orderId = await createOrder({
     items: body.items,
     subtotal: body.subtotal,
@@ -58,24 +85,43 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     total: body.total,
     locationId: body.locationId,
     deliveryAddress: body.deliveryAddress,
-    status: 'pending_id_verification',
+    status: 'id_verified',
     customerEmail: body.customerEmail,
   });
 
-  const origin = new URL(req.url).origin;
-  const session = await startAgeCheckerSession({
-    orderId,
-    customerEmail: body.customerEmail,
-    returnUrl: `${origin}/order/${orderId}`,
-  });
-
+  // Persist the verificationId for audit + webhook correlation. We reuse
+  // the `agecheckerSessionId` slot — same provider id, same field — to
+  // avoid a schema migration just for the rename.
   await setOrderProviderRefs(orderId, {
-    agecheckerSessionId: session.sessionId,
+    agecheckerSessionId: body.verificationId,
   });
 
-  return NextResponse.json({
-    orderId,
-    agecheckerRedirectUrl: session.redirectUrl,
-    provider: session.provider,
-  });
+  // Inventory decrement is the responsibility of the id_verified
+  // transition. Because we created the order directly in id_verified
+  // (bypassing the transitionStatus path that the webhook uses), we have
+  // to decrement inline here to preserve the existing contract.
+  try {
+    await decrementInventoryItems(
+      body.locationId,
+      body.items.map(i => ({
+        productId: i.productId,
+        quantity: i.quantity,
+      }))
+    );
+  } catch (err) {
+    if (err instanceof InsufficientStockError) {
+      return NextResponse.json(
+        {
+          error: 'Insufficient stock',
+          productId: err.productId,
+          available: err.available,
+          requested: err.requested,
+        },
+        { status: 409 }
+      );
+    }
+    throw err;
+  }
+
+  return NextResponse.json({ orderId });
 }

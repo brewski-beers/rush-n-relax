@@ -20,7 +20,7 @@
     "test:e2e:full": "pnpm --filter web test:e2e:full",
     "test:health": "pnpm --filter web test:health",
     "dev:emulators": "firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data --project=rush-n-relax",
-    "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:emulators\"",
+    "dev:all": "concurrently \"FIRESTORE_EMULATOR_HOST=localhost:8080 FIREBASE_AUTH_EMULATOR_HOST=localhost:9099 pnpm dev\" \"pnpm dev:emulators\"",
     "dev:seed": "tsx tools/seed-emulators.ts && tsx tools/seed-vendors.ts && tsx tools/seed-catalog.ts",
     "emulator:export": "firebase emulators:export ./emulator-data --project=rush-n-relax",
     "seed:prod:content": "tsx tools/prod-upsert-content.ts",

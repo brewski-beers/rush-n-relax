@@ -1,7 +1,11 @@
 import {
   listOnlineAvailableInventory,
   listProductsByIds,
+  listProductsByCategory,
+  getOnlineInStockSet,
+  listFeaturedInventory,
 } from '@/lib/repositories';
+import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 import type { ProductSummary } from '@/types';
 
 export interface ProductsPageItem extends ProductSummary {
@@ -22,59 +26,101 @@ interface FetchOptions {
 /**
  * Fetch a page of online-available products for the storefront grid.
  *
- * When no category is set, this paginates inventory directly (1 page → 1 fetch).
- * When a category is set, inventory docs don't carry category (it lives on the
- * product), so we loop through inventory pages until we've collected `limit`
- * matching products or inventory is exhausted. The returned `nextCursor` is
- * always an inventory doc id (or null when inventory is fully scanned).
+ * No category — paginate the online inventory directly (1 page → 1 fetch).
+ *
+ * With category (#194) — paginate `products` filtered by category at the
+ * Firestore query level (composite index already declared on
+ * status+category+name), then intersect with the online in-stock set in
+ * batches. The cursor is a product id (the last product seen on the page),
+ * which makes Load More O(limit) per request rather than scanning all
+ * inventory until a category cluster is found. Featured flags come from a
+ * single page of `listFeaturedInventory(ONLINE_LOCATION_ID)` because online
+ * featured items are <25 in practice.
  */
 export async function fetchProductsPage({
   limit,
   cursor,
   category,
 }: FetchOptions): Promise<ProductsPage> {
-  const collected: ProductsPageItem[] = [];
-  let inventoryCursor: string | undefined = cursor;
-  let nextCursor: string | null = null;
+  if (category) {
+    return fetchByCategory(limit, cursor, category);
+  }
+  return fetchByInventory(limit, cursor);
+}
 
-  // Cap the fill loop. Inventory is small (<1k) and this is a request-time read,
-  // but an unbounded loop on a cold cache is not OK.
+async function fetchByInventory(
+  limit: number,
+  cursor?: string
+): Promise<ProductsPage> {
+  const { items: inventoryItems, nextCursor } =
+    await listOnlineAvailableInventory({ limit, cursor });
+
+  if (inventoryItems.length === 0) {
+    return { items: [], nextCursor };
+  }
+
+  const featuredIds = new Set(
+    inventoryItems.filter(it => it.featured).map(it => it.productId)
+  );
+  const products = await listProductsByIds(
+    inventoryItems.map(it => it.productId)
+  );
+
+  const collected: ProductsPageItem[] = [
+    ...products
+      .filter(p => featuredIds.has(p.id))
+      .map(p => ({ ...p, featured: true })),
+    ...products
+      .filter(p => !featuredIds.has(p.id))
+      .map(p => ({ ...p, featured: false })),
+  ];
+
+  return { items: collected, nextCursor };
+}
+
+async function fetchByCategory(
+  limit: number,
+  cursor: string | undefined,
+  category: string
+): Promise<ProductsPage> {
+  // Pre-fetch the small online-featured set once. Featured items are flagged
+  // per-product so we can stamp the boolean cheaply per result.
+  const featuredPagePromise = listFeaturedInventory(ONLINE_LOCATION_ID);
+
+  // Loop in case some category-page products are out of stock — keep paging
+  // until we collect `limit` matches or run out of products in the category.
+  const collected: ProductsPageItem[] = [];
+  let productCursor: string | undefined = cursor;
+  let nextCursor: string | null = null;
   const MAX_ITERATIONS = 20;
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
-    const { items: inventoryItems, nextCursor: pageCursor } =
-      await listOnlineAvailableInventory({
+    const { items: products, nextCursor: pageCursor } =
+      await listProductsByCategory(category, {
         limit,
-        cursor: inventoryCursor,
+        cursor: productCursor,
       });
-
     nextCursor = pageCursor;
 
-    if (inventoryItems.length > 0) {
-      const featuredIds = new Set(
-        inventoryItems.filter(it => it.featured).map(it => it.productId)
-      );
-      const products = await listProductsByIds(
-        inventoryItems.map(it => it.productId)
-      );
-      const filtered = category
-        ? products.filter(p => p.category === category)
-        : products;
+    if (products.length === 0) break;
 
-      collected.push(
-        ...filtered
-          .filter(p => featuredIds.has(p.id))
-          .map(p => ({ ...p, featured: true })),
-        ...filtered
-          .filter(p => !featuredIds.has(p.id))
-          .map(p => ({ ...p, featured: false }))
-      );
-    }
+    const inStockIds = await getOnlineInStockSet(products.map(p => p.id));
+    const inStockProducts = products.filter(p => inStockIds.has(p.id));
+    collected.push(
+      ...inStockProducts.map(p => ({ ...p, featured: false as boolean }))
+    );
 
-    // Stop when the inventory is exhausted, we have enough matches, or there is
-    // no category filter (first inventory page is the storefront page).
-    if (!pageCursor || collected.length >= limit || !category) break;
-    inventoryCursor = pageCursor;
+    if (!pageCursor || collected.length >= limit) break;
+    productCursor = pageCursor;
+  }
+
+  // Mark featured flags by intersecting with the online-featured set.
+  const featuredPage = await featuredPagePromise;
+  const featuredIds = new Set(
+    featuredPage.items.filter(it => it.featured).map(it => it.productId)
+  );
+  for (const item of collected) {
+    if (featuredIds.has(item.id)) item.featured = true;
   }
 
   return { items: collected, nextCursor };

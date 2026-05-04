@@ -23,33 +23,49 @@ const TERMINATED_STATES: ReadonlySet<OrderStatus> = new Set([
   'id_rejected',
 ]);
 
+/**
+ * Pre-payment states the OrderStatusPoller handles:
+ *  - pending_id_verification → waiting for AgeChecker webhook
+ *  - id_verified            → poller triggers /api/checkout/session + redirects to Clover
+ *  - awaiting_payment       → waiting for Clover redirect / webhook
+ */
+const POLLER_STATES: ReadonlySet<OrderStatus> = new Set([
+  'pending_id_verification',
+  'id_verified',
+  'awaiting_payment',
+]);
+
 export default async function OrderConfirmationPage({ params }: Props) {
   const { id } = await params;
   const order = await getOrder(id);
 
   if (!order) notFound();
 
-  const showPoller =
-    order.status === 'pending_id_verification' ||
-    order.status === 'awaiting_payment';
+  const showPoller = POLLER_STATES.has(order.status);
   const showInProgress = IN_PROGRESS_STATES.has(order.status);
   const showCompleted = order.status === 'completed';
   const showFailed = order.status === 'failed';
   const showTerminated = TERMINATED_STATES.has(order.status);
   const showRefunded = order.status === 'refunded';
 
+  const pollerHeading =
+    order.status === 'id_verified'
+      ? 'Preparing your payment…'
+      : 'Order Received';
+  const pollerCopy =
+    order.status === 'id_verified'
+      ? 'ID verified. Redirecting you to secure checkout — please don’t close this tab.'
+      : 'Your payment is being processed. This page will update automatically.';
+
   return (
     <main className="order-confirmation-page">
       <TestModeBanner />
       <div className="container">
-        {/* ── Awaiting payment / verification ─────────────────────── */}
+        {/* ── Awaiting verification / payment / Clover redirect ────── */}
         {showPoller && (
           <section className="order-status order-status--pending">
-            <h1>Order Received</h1>
-            <p>
-              Your payment is being processed. This page will update
-              automatically.
-            </p>
+            <h1>{pollerHeading}</h1>
+            <p>{pollerCopy}</p>
             <OrderStatusPoller
               orderId={order.id}
               initialStatus={order.status}
