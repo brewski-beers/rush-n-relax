@@ -106,9 +106,7 @@ async function fetchByCategory(
 
     const inStockIds = await getOnlineInStockSet(products.map(p => p.id));
     const inStockProducts = products.filter(p => inStockIds.has(p.id));
-    collected.push(
-      ...inStockProducts.map(p => ({ ...p, featured: false as boolean }))
-    );
+    collected.push(...inStockProducts.map(p => ({ ...p, featured: false })));
 
     if (!pageCursor || collected.length >= limit) break;
     productCursor = pageCursor;

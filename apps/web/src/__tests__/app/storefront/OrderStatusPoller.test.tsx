@@ -50,7 +50,7 @@ describe('OrderStatusPoller', () => {
       return Promise.resolve(new Response('{}', { status: 200 }));
     };
     const fetchMock = vi.fn(fetchImpl);
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock;
 
     render(<OrderStatusPoller orderId="ord_123" initialStatus="id_verified" />);
 
