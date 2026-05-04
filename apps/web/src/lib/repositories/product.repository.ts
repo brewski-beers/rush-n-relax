@@ -7,6 +7,8 @@ import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import type {
   Product,
   ProductVariant,
+  ProductVariantSpec,
+  ProductVariantLocation,
   VariantGroup,
   VariantOption,
   ProductSummary,
@@ -340,6 +342,10 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
       typeof d.thcMgPerServing === 'number' ? d.thcMgPerServing : undefined,
     cbdMgPerServing:
       typeof d.cbdMgPerServing === 'number' ? d.cbdMgPerServing : undefined,
+    variantSpecs: readVariantSpecs(d),
+    inStockAt: Array.isArray(d.inStockAt) ? (d.inStockAt as string[]) : undefined,
+    pickupAt: Array.isArray(d.pickupAt) ? (d.pickupAt as string[]) : undefined,
+    featuredAt: Array.isArray(d.featuredAt) ? (d.featuredAt as string[]) : undefined,
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
   } satisfies Product;
@@ -457,4 +463,402 @@ function stripUndefinedFields<T extends Record<string, unknown>>(
   return Object.fromEntries(
     Object.entries(value).filter(([, v]) => v !== undefined)
   ) as Partial<T>;
+}
+
+// ── Variant/location helpers (#306) ───────────────────────────────────────
+
+/**
+ * Thrown when a transactional decrement detects fewer units available than
+ * requested. The whole transaction is rolled back when this error is thrown,
+ * so no partial writes survive.
+ *
+ * Owned by the product repository as of #306 (variant model). Re-exported
+ * from the inventory repository for back-compat with existing call sites
+ * (order start, agechecker webhook) until #312 cleanup.
+ */
+export class InsufficientStockError extends Error {
+  readonly productId: string;
+  readonly variantId: string;
+  readonly locationId: string;
+  readonly available: number;
+  readonly requested: number;
+
+  constructor(
+    locationId: string,
+    productId: string,
+    available: number,
+    requested: number,
+    variantId: string = 'default'
+  ) {
+    super(
+      `Insufficient stock for '${productId}' (variant '${variantId}') at '${locationId}': have ${available}, need ${requested}`
+    );
+    this.name = 'InsufficientStockError';
+    this.productId = productId;
+    this.variantId = variantId;
+    this.locationId = locationId;
+    this.available = available;
+    this.requested = requested;
+  }
+}
+
+/**
+ * Recompute the denormalized `inStockAt` / `pickupAt` / `featuredAt`
+ * arrays from the `variantSpecs` map. Pure function — no I/O.
+ *
+ * - `inStockAt`: any variant has `qty > 0` at this location
+ * - `pickupAt`: any variant has `qty > 0` AND `availablePickup === true`
+ * - `featuredAt`: any variant has `qty > 0` AND `featured === true`
+ */
+function recomputeIndexes(
+  variantSpecs: { [variantId: string]: ProductVariantSpec } | undefined
+): { inStockAt: string[]; pickupAt: string[]; featuredAt: string[] } {
+  const inStockAt = new Set<string>();
+  const pickupAt = new Set<string>();
+  const featuredAt = new Set<string>();
+
+  if (!variantSpecs) {
+    return { inStockAt: [], pickupAt: [], featuredAt: [] };
+  }
+
+  for (const variant of Object.values(variantSpecs)) {
+    if (!variant?.locations) continue;
+    for (const [locationId, loc] of Object.entries(variant.locations)) {
+      if (!loc || typeof loc.qty !== 'number' || loc.qty <= 0) continue;
+      inStockAt.add(locationId);
+      if (loc.availablePickup === true) pickupAt.add(locationId);
+      if (loc.featured === true) featuredAt.add(locationId);
+    }
+  }
+
+  return {
+    inStockAt: [...inStockAt].sort(),
+    pickupAt: [...pickupAt].sort(),
+    featuredAt: [...featuredAt].sort(),
+  };
+}
+
+/**
+ * Audit log entry written to `products/{slug}/adjustments/{autoId}` whenever
+ * a variant/location entry changes via the helpers in this file. Captures
+ * before/after so an operator can reconstruct a manual edit or reconcile
+ * an oversell. Source identifies the call site for traceability.
+ */
+export type VariantAdjustmentSource = 'admin' | 'order' | 'reconcile' | 'seed';
+
+interface VariantAdjustmentLog {
+  slug: string;
+  variantId: string;
+  locationId: string;
+  before: ProductVariantLocation | null;
+  after: ProductVariantLocation | null;
+  delta: number; // after.qty - before.qty (0 when entry was non-stock metadata only)
+  source: VariantAdjustmentSource;
+  actor?: string;
+  reason?: string;
+  createdAt: Date;
+}
+
+function readVariantSpecs(
+  d: FirebaseFirestore.DocumentData
+): { [variantId: string]: ProductVariantSpec } | undefined {
+  const raw = d.variantSpecs;
+  if (!raw || typeof raw !== 'object') return undefined;
+  const out: { [variantId: string]: ProductVariantSpec } = {};
+  for (const [variantId, v] of Object.entries(
+    raw as Record<string, unknown>
+  )) {
+    if (!v || typeof v !== 'object') continue;
+    const variant = v as Record<string, unknown>;
+    if (typeof variant.label !== 'string') continue;
+    const locations: { [locationId: string]: ProductVariantLocation } = {};
+    if (variant.locations && typeof variant.locations === 'object') {
+      for (const [locId, locRaw] of Object.entries(
+        variant.locations as Record<string, unknown>
+      )) {
+        if (!locRaw || typeof locRaw !== 'object') continue;
+        const loc = locRaw as Record<string, unknown>;
+        if (typeof loc.qty !== 'number' || typeof loc.price !== 'number') {
+          continue;
+        }
+        locations[locId] = {
+          qty: loc.qty,
+          price: loc.price,
+          compareAtPrice:
+            typeof loc.compareAtPrice === 'number'
+              ? loc.compareAtPrice
+              : undefined,
+          availablePickup:
+            typeof loc.availablePickup === 'boolean'
+              ? loc.availablePickup
+              : undefined,
+          featured:
+            typeof loc.featured === 'boolean' ? loc.featured : undefined,
+        } satisfies ProductVariantLocation;
+      }
+    }
+    out[variantId] = { label: variant.label, locations } satisfies ProductVariantSpec;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/**
+ * Set or replace a single variant/location entry on a product. Recomputes
+ * the denormalized index arrays and writes an audit log document under
+ * `products/{slug}/adjustments`.
+ *
+ * Runs in a single Firestore transaction so the entry write, index
+ * recomputation, and audit log are atomic.
+ *
+ * Throws when the product does not exist or when `variantSpecs[variantId]`
+ * is missing — this helper does not bootstrap variants (the catalog editor
+ * is responsible for creating them).
+ */
+export async function setVariantLocation(
+  slug: string,
+  variantId: string,
+  locationId: string,
+  patch: ProductVariantLocation,
+  meta: { source?: VariantAdjustmentSource; actor?: string; reason?: string } = {}
+): Promise<Product> {
+  const db = getAdminFirestore();
+  const ref = productsCol().doc(slug);
+
+  return db.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) {
+      throw new Error(`Product '${slug}' not found`);
+    }
+    const data = snap.data() ?? {};
+    const variantSpecs = readVariantSpecs(data) ?? {};
+    const existingVariant = variantSpecs[variantId];
+    if (!existingVariant) {
+      throw new Error(
+        `Variant '${variantId}' not found on product '${slug}'`
+      );
+    }
+
+    const before = existingVariant.locations[locationId] ?? null;
+    const nextLocations = { ...existingVariant.locations, [locationId]: patch };
+    const nextVariantSpecs: { [variantId: string]: ProductVariantSpec } = {
+      ...variantSpecs,
+      [variantId]: { ...existingVariant, locations: nextLocations },
+    };
+    const indexes = recomputeIndexes(nextVariantSpecs);
+
+    const now = new Date();
+    tx.set(
+      ref,
+      {
+        variantSpecs: nextVariantSpecs,
+        inStockAt: indexes.inStockAt,
+        pickupAt: indexes.pickupAt,
+        featuredAt: indexes.featuredAt,
+        updatedAt: now,
+      },
+      { merge: true }
+    );
+
+    const logRef = ref.collection('adjustments').doc();
+    tx.create(logRef, {
+      slug,
+      variantId,
+      locationId,
+      before,
+      after: patch,
+      delta: patch.qty - (before?.qty ?? 0),
+      source: meta.source ?? 'admin',
+      actor: meta.actor,
+      reason: meta.reason,
+      createdAt: now,
+    } satisfies VariantAdjustmentLog);
+
+    return docToProduct(snap.id, {
+      ...data,
+      variantSpecs: nextVariantSpecs,
+      inStockAt: indexes.inStockAt,
+      pickupAt: indexes.pickupAt,
+      featuredAt: indexes.featuredAt,
+      updatedAt: now,
+    });
+  });
+}
+
+/**
+ * Atomically decrement stock for a list of variant/location items across
+ * (potentially) multiple products in a single Firestore transaction.
+ *
+ * 1. Read every referenced product doc
+ * 2. Validate `variantSpecs[variantId].locations[locationId].qty >= qty`
+ *    for each item, accumulating per-product decrements so multiple lines
+ *    against the same product/variant compose correctly
+ * 3. Apply decrements via a recomputed map (FieldValue.increment is unsafe
+ *    here because we also need to recompute `inStockAt`/`pickupAt`/`featuredAt`
+ *    based on the post-decrement state)
+ * 4. Recompute denormalized indexes for each touched product
+ * 5. Throw `InsufficientStockError` on any shortage — the whole transaction
+ *    rolls back, so no writes survive
+ * 6. Write one audit log entry per item under
+ *    `products/{slug}/adjustments`
+ */
+export async function decrementVariantStock(
+  items: {
+    slug: string;
+    variantId: string;
+    locationId: string;
+    qty: number;
+  }[],
+  meta: { source?: VariantAdjustmentSource; actor?: string; reason?: string } = {}
+): Promise<void> {
+  if (items.length === 0) return;
+
+  const db = getAdminFirestore();
+
+  // Group by slug so each product is read at most once per transaction.
+  const slugs = [...new Set(items.map(i => i.slug))];
+
+  await db.runTransaction(async tx => {
+    const refs = slugs.map(s => productsCol().doc(s));
+    const snaps = await Promise.all(refs.map(r => tx.get(r)));
+
+    // Build per-slug working state
+    const working = new Map<
+      string,
+      {
+        ref: FirebaseFirestore.DocumentReference;
+        data: FirebaseFirestore.DocumentData;
+        variantSpecs: { [variantId: string]: ProductVariantSpec };
+        // before snapshot per (variantId, locationId)
+        beforeMap: Map<string, ProductVariantLocation | null>;
+      }
+    >();
+
+    for (let i = 0; i < slugs.length; i++) {
+      const snap = snaps[i];
+      if (!snap.exists) {
+        throw new Error(`Product '${slugs[i]}' not found`);
+      }
+      const data = snap.data() ?? {};
+      const variantSpecs = readVariantSpecs(data) ?? {};
+      working.set(slugs[i], {
+        ref: refs[i],
+        data,
+        variantSpecs,
+        beforeMap: new Map(),
+      });
+    }
+
+    // Apply decrements — this loop both validates and mutates the in-memory
+    // variantSpecs maps. Multiple lines against the same product/variant
+    // compose because each iteration reads the running state.
+    for (const item of items) {
+      const w = working.get(item.slug);
+      if (!w) {
+        // unreachable: slugs derives from items
+        throw new Error(`Product '${item.slug}' not loaded`);
+      }
+      const variant = w.variantSpecs[item.variantId];
+      if (!variant) {
+        throw new Error(
+          `Variant '${item.variantId}' not found on product '${item.slug}'`
+        );
+      }
+      const loc = variant.locations[item.locationId];
+      const available = loc?.qty ?? 0;
+      if (!loc || available < item.qty) {
+        throw new InsufficientStockError(
+          item.locationId,
+          item.slug,
+          available,
+          item.qty,
+          item.variantId
+        );
+      }
+      // Capture original before-state once (first touch wins).
+      const beforeKey = `${item.variantId}::${item.locationId}`;
+      if (!w.beforeMap.has(beforeKey)) {
+        w.beforeMap.set(beforeKey, { ...loc });
+      }
+
+      const nextQty = available - item.qty;
+      const nextLoc: ProductVariantLocation = {
+        ...loc,
+        qty: nextQty,
+        // Mirror the inventory invariant: when a SKU sells out, drop pickup
+        // and featured flags so the storefront stops surfacing it.
+        ...(nextQty === 0
+          ? { availablePickup: false, featured: false }
+          : {}),
+      };
+      w.variantSpecs[item.variantId] = {
+        ...variant,
+        locations: { ...variant.locations, [item.locationId]: nextLoc },
+      };
+    }
+
+    const now = new Date();
+
+    // Write each touched product + its audit logs
+    for (const [slug, w] of working) {
+      const indexes = recomputeIndexes(w.variantSpecs);
+      tx.set(
+        w.ref,
+        {
+          variantSpecs: w.variantSpecs,
+          inStockAt: indexes.inStockAt,
+          pickupAt: indexes.pickupAt,
+          featuredAt: indexes.featuredAt,
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+
+      // One audit row per (variantId, locationId) touched on this product.
+      for (const [beforeKey, before] of w.beforeMap) {
+        const [variantId, locationId] = beforeKey.split('::');
+        const after =
+          w.variantSpecs[variantId]?.locations[locationId] ?? null;
+        const logRef = w.ref.collection('adjustments').doc();
+        tx.create(logRef, {
+          slug,
+          variantId,
+          locationId,
+          before,
+          after,
+          delta: (after?.qty ?? 0) - (before?.qty ?? 0),
+          source: meta.source ?? 'order',
+          actor: meta.actor,
+          reason: meta.reason,
+          createdAt: now,
+        } satisfies VariantAdjustmentLog);
+      }
+    }
+  });
+}
+
+/**
+ * List active products that have at least one variant in stock at the given
+ * location, using the denormalized `inStockAt` array. Default limit: 25
+ * (storefront context).
+ */
+export async function listProductsInStockAt(
+  locationId: string,
+  opts: { limit?: number; cursor?: string } = {}
+): Promise<PageResult<Product>> {
+  const limit = opts.limit ?? 25;
+  let query = productsCol()
+    .where('status', '==', 'active')
+    .where('inStockAt', 'array-contains', locationId)
+    .orderBy('name')
+    .limit(limit);
+
+  const afterSnap = await resolveCursor(opts.cursor);
+  if (afterSnap) query = query.startAfter(afterSnap);
+
+  const snap = await query.get();
+  const items = snap.docs.map(doc => docToProduct(doc.id, doc.data()));
+  return {
+    items,
+    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+  };
 }

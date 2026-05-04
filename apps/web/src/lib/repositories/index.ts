@@ -19,6 +19,10 @@ export {
   upsertProduct,
   clearProductFields,
   setProductStatus,
+  setVariantLocation,
+  decrementVariantStock,
+  listProductsInStockAt,
+  InsufficientStockError,
 } from './product.repository';
 
 export {
@@ -39,7 +43,6 @@ export {
   getOnlineInStockSet,
   setInventoryItem,
   decrementInventoryItems,
-  InsufficientStockError,
 } from './inventory.repository';
 
 export {
