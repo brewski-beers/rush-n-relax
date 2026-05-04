@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
 import { getOrder, listOrderEvents } from '@/lib/repositories';
+import type { OrderStatus } from '@/types';
+import { AdminOrderActions } from './AdminOrderActions';
+import { ResendEmailButton } from './ResendEmailButton';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -12,6 +15,21 @@ interface Props {
 function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
+
+// Mirror of the order.repository STATUS_TO_EMAIL_TEMPLATE keys — used to
+// decide whether a "Resend email" button should be rendered for a given
+// event-log row. Must stay in sync with the repository.
+const RESENDABLE_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  'pending_id_verification',
+  'id_verified',
+  'id_rejected',
+  'paid',
+  'preparing',
+  'out_for_delivery',
+  'completed',
+  'cancelled',
+  'refunded',
+]);
 
 export default async function AdminOrderDetailPage({ params }: Props) {
   await requireRole('staff');
@@ -50,6 +68,14 @@ export default async function AdminOrderDetailPage({ params }: Props) {
             {order.status}
           </span>
         </p>
+        <AdminOrderActions
+          order={{
+            id: order.id,
+            status: order.status,
+            cloverPaymentId: order.cloverPaymentId,
+            total: order.total,
+          }}
+        />
       </section>
 
       <section className="admin-section">
@@ -152,6 +178,11 @@ export default async function AdminOrderDetailPage({ params }: Props) {
                     {ev.from ?? '∅'} → {ev.to}
                   </strong>
                   <span className="admin-timeline-actor"> · {ev.actor}</span>
+                  <ResendEmailButton
+                    orderId={order.id}
+                    eventId={ev.id}
+                    enabled={RESENDABLE_STATUSES.has(ev.to)}
+                  />
                 </div>
                 {ev.meta ? (
                   <pre className="admin-timeline-meta">
