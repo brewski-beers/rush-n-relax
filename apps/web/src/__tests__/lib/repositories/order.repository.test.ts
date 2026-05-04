@@ -397,7 +397,7 @@ describe('order.repository', () => {
         id: `order-${i}`,
         data: () => ({
           ...baseOrderData,
-          status: 'paid' as OrderStatus,
+          status: 'paid',
           createdAt: new Date(),
           updatedAt: new Date(),
         }),

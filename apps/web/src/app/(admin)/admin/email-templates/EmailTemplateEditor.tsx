@@ -641,8 +641,7 @@ export function EmailTemplateEditor({ initialTemplate }: Props) {
                                   current.type === 'keyValue'
                                     ? {
                                         ...current,
-                                        valuePath: event.target
-                                          .value as EmailTemplateValuePath,
+                                        valuePath: event.target.value,
                                       }
                                     : current
                               )

@@ -16,7 +16,7 @@ async function listStaffPhoneUsers() {
   while (true) {
     const page = await auth.listUsers(1000, pageToken);
     for (const user of page.users) {
-      const claims = user.customClaims as Record<string, unknown> | undefined;
+      const claims = user.customClaims;
       if (
         user.phoneNumber &&
         !user.email && // phone-only users
