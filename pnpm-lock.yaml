@@ -136,11 +136,11 @@ importers:
         specifier: ^25.0.1
         version: 25.0.1
       stylelint:
-        specifier: ^17.9.0
-        version: 17.9.0(typescript@5.9.3)
+        specifier: ^17.10.0
+        version: 17.10.0(typescript@5.9.3)
       stylelint-config-standard:
         specifier: ^40.0.0
-        version: 40.0.0(stylelint@17.9.0(typescript@5.9.3))
+        version: 40.0.0(stylelint@17.10.0(typescript@5.9.3))
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
@@ -4511,6 +4511,11 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
+  nanoid@3.3.12:
+    resolution: {integrity: sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ==}
+    engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+    hasBin: true
+
   napi-postinstall@0.3.4:
     resolution: {integrity: sha512-PHI5f1O0EP5xJ9gQmFGMS6IZcrVvTjpXjz7Na41gTE7eE2hK11lg04CECCYEEjdc17EV4DO+fkGEtt7TpTaTiQ==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
@@ -4892,8 +4897,8 @@ packages:
     resolution: {integrity: sha512-pMMHxBOZKFU6HgAZ4eyGnwXF/EvPGGqUr0MnZ5+99485wwW41kW91A4LOGxSHhgugZmSChL5AlElNdwlNgcnLQ==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postcss@8.5.12:
-    resolution: {integrity: sha512-W62t/Se6rA0Az3DfCL0AqJwXuKwBeYg6nOaIgzP+xZ7N5BFCI7DYi1qs6ygUYT6rvfi6t9k65UMLJC+PHZpDAA==}
+  postcss@8.5.13:
+    resolution: {integrity: sha512-qif0+jGGZoLWdHey3UFHHWP0H7Gbmsk8T5VEqyYFbWqPr1XqvLGBbk/sl8V5exGmcYJklJOhOQq1pV9IcsiFag==}
     engines: {node: ^10 || ^12 || >=14}
 
   postgres-array@2.0.0:
@@ -5488,8 +5493,8 @@ packages:
     peerDependencies:
       stylelint: ^17.0.0
 
-  stylelint@17.9.0:
-    resolution: {integrity: sha512-xO0jeY6z1/urFL5L/BZLmB1yYlbRiRMQnYH6ArZIDWJ+SZXGssOY7XoYb1JIv/L220+EBnwwJXJS4Mt/F96SvA==}
+  stylelint@17.10.0:
+    resolution: {integrity: sha512-cI7I6HHEYOHHVNVci+s92WlA3QfmNhjwFdgCgYV3TLEysilOjk+B3EFxMED1xY9GYB0Kre3OD+mSLj19VLTIvA==}
     engines: {node: '>=20.19.0'}
     hasBin: true
 
@@ -10909,6 +10914,8 @@ snapshots:
 
   nanoid@3.3.11: {}
 
+  nanoid@3.3.12: {}
+
   napi-postinstall@0.3.4: {}
 
   natural-compare@1.4.0: {}
@@ -11287,9 +11294,9 @@ snapshots:
 
   possible-typed-array-names@1.1.0: {}
 
-  postcss-safe-parser@7.0.1(postcss@8.5.12):
+  postcss-safe-parser@7.0.1(postcss@8.5.13):
     dependencies:
-      postcss: 8.5.12
+      postcss: 8.5.13
 
   postcss-selector-parser@7.1.1:
     dependencies:
@@ -11310,9 +11317,9 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  postcss@8.5.12:
+  postcss@8.5.13:
     dependencies:
-      nanoid: 3.3.11
+      nanoid: 3.3.12
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
@@ -12055,16 +12062,16 @@ snapshots:
     optionalDependencies:
       '@babel/core': 7.29.0
 
-  stylelint-config-recommended@18.0.0(stylelint@17.9.0(typescript@5.9.3)):
+  stylelint-config-recommended@18.0.0(stylelint@17.10.0(typescript@5.9.3)):
     dependencies:
-      stylelint: 17.9.0(typescript@5.9.3)
+      stylelint: 17.10.0(typescript@5.9.3)
 
-  stylelint-config-standard@40.0.0(stylelint@17.9.0(typescript@5.9.3)):
+  stylelint-config-standard@40.0.0(stylelint@17.10.0(typescript@5.9.3)):
     dependencies:
-      stylelint: 17.9.0(typescript@5.9.3)
-      stylelint-config-recommended: 18.0.0(stylelint@17.9.0(typescript@5.9.3))
+      stylelint: 17.10.0(typescript@5.9.3)
+      stylelint-config-recommended: 18.0.0(stylelint@17.10.0(typescript@5.9.3))
 
-  stylelint@17.9.0(typescript@5.9.3):
+  stylelint@17.10.0(typescript@5.9.3):
     dependencies:
       '@csstools/css-calc': 3.2.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
@@ -12093,8 +12100,8 @@ snapshots:
       micromatch: 4.0.8
       normalize-path: 3.0.0
       picocolors: 1.1.1
-      postcss: 8.5.12
-      postcss-safe-parser: 7.0.1(postcss@8.5.12)
+      postcss: 8.5.13
+      postcss-safe-parser: 7.0.1(postcss@8.5.13)
       postcss-selector-parser: 7.1.1
       postcss-value-parser: 4.2.0
       string-width: 8.2.1
