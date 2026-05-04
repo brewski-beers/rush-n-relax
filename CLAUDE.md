@@ -50,24 +50,39 @@ All Firestore access is **server-side only** via Admin SDK. No client-side Fires
 - **No `any`**: every TypeScript escape hatch (`any`, `as`, `!`) requires an inline justification comment.
 - **`satisfies` on Firestore mappings**: use `satisfies TypeName` on all `docToX()` return objects.
 
+## Cloud Functions Secrets — Pre-Deploy Contract
+
+When a PR adds a new `defineSecret('FOO')` to `functions/`, the secret value MUST be set in Google Secret Manager **before** the PR merges:
+
+```bash
+firebase functions:secrets:set FOO --project rush-n-relax
+```
+
+CI cannot populate values — it can only read existing secrets. Skipping this step breaks the deploy with `In non-interactive mode but have no value for the secret`. Full runbook + live secrets table: [[firebase-deploy-iam]] → "Cloud Functions runtime secrets (Secret Manager)".
+
+**PR review checklist** when `functions/` changes:
+
+- New `defineSecret()` call → call out in PR body, set secret before merge, update the secrets table in [[firebase-deploy-iam]]
+- Rotating an existing secret → note rotation date in the table
+
 ## Doc Update Rule
 
 **All engineering docs live in the Obsidian vault**, not the repo. Vault root: `~/Documents/Obsidian Vault/projects/rush-n-relax/`.
 
 When any of these source files change → the matching vault doc must be reviewed and updated in the same session:
 
-| Source change | Vault doc to update |
-|---------------|---------------------|
-| `apps/web/src/types/order*` | [[orders]] |
-| `apps/web/src/types/product*`, `variant-template*` | [[products]] |
-| `apps/web/src/types/vendor*` | [[vendors]] |
-| `apps/web/src/types/inventory*` | [[products]] (folded into product schema per #304) |
-| `apps/web/src/lib/repositories/*` | matching vault module doc |
-| `apps/web/src/app/api/webhooks/agechecker/*` | [[agechecker]] |
-| `apps/web/src/app/api/webhooks/clover/*` | [[clover-hosted-checkout]] |
-| `firestore.rules` / `firestore.indexes.json` | [[architecture]] + affected module doc |
-| `.github/workflows/*` (deploy/CI) | [[firebase-deploy-iam]] |
-| `scripts/seed-*.ts` or `scripts/seed-*.cjs` | matching module doc |
+| Source change                                      | Vault doc to update                                |
+| -------------------------------------------------- | -------------------------------------------------- |
+| `apps/web/src/types/order*`                        | [[orders]]                                         |
+| `apps/web/src/types/product*`, `variant-template*` | [[products]]                                       |
+| `apps/web/src/types/vendor*`                       | [[vendors]]                                        |
+| `apps/web/src/types/inventory*`                    | [[products]] (folded into product schema per #304) |
+| `apps/web/src/lib/repositories/*`                  | matching vault module doc                          |
+| `apps/web/src/app/api/webhooks/agechecker/*`       | [[agechecker]]                                     |
+| `apps/web/src/app/api/webhooks/clover/*`           | [[clover-hosted-checkout]]                         |
+| `firestore.rules` / `firestore.indexes.json`       | [[architecture]] + affected module doc             |
+| `.github/workflows/*` (deploy/CI)                  | [[firebase-deploy-iam]]                            |
+| `scripts/seed-*.ts` or `scripts/seed-*.cjs`        | matching module doc                                |
 
 Repo carries only this `CLAUDE.md` + a top-level `README.md`. Do not create `docs/engineering/*.md` files.
 
@@ -77,24 +92,24 @@ Repo carries only this `CLAUDE.md` + a top-level `README.md`. Do not create `doc
 
 Source of truth: `~/Developer/BrewCortex/.claude/agents/`. Current roster (16 agents):
 
-| Agent          | When to spawn (RnR-specific notes)                                                                |
-| -------------- | ------------------------------------------------------------------------------------------------- |
-| `strategist`   | Product direction, prioritization, what's next for RnR                                            |
-| `architect`    | System design, Firestore schema decisions, infra trade-offs                                       |
-| `engineering`  | Multi-file code changes, refactors, bug hunts (default for code work)                             |
-| `qa`           | Test strategy, coverage audits, BDD validation, missing scenarios                                 |
-| `research`     | Web lookups, library comparisons, doc fetches (Haiku — fast/cheap)                                |
-| `website`      | UI audit, component generation, a11y, SEO, CSS architecture for the storefront                    |
-| `copy`         | Landing page copy, CTAs, product descriptions, email/SMS messaging                                |
-| `firebase`     | Firestore rules, Auth config, Cloud Functions, Storage rules, emulator, security audits           |
-| `vercel`       | Vercel config, env vars, build settings, edge functions, domain wiring                            |
-| `monitoring`   | Vercel deployment health, function errors, Cloudflare DNS/CDN, prod incident triage               |
-| `github`       | GitHub Actions spend, CI/CD health, Dependabot PRs, workflow auth (WIF)                           |
-| `partner`      | Not typically used for RnR (client-facing proposals/SOWs)                                         |
-| `mobile`       | **Not applicable** — RnR has no native app. Skip.                                                 |
-| `worker`       | Issue-queue automation; invoked via `/work`. Never bypass for issue-driven work.                  |
-| `orchestrator` | Multi-agent coordination across long-running initiatives                                          |
-| `heartbeat`    | Scheduled / cron-triggered checks                                                                 |
+| Agent          | When to spawn (RnR-specific notes)                                                      |
+| -------------- | --------------------------------------------------------------------------------------- |
+| `strategist`   | Product direction, prioritization, what's next for RnR                                  |
+| `architect`    | System design, Firestore schema decisions, infra trade-offs                             |
+| `engineering`  | Multi-file code changes, refactors, bug hunts (default for code work)                   |
+| `qa`           | Test strategy, coverage audits, BDD validation, missing scenarios                       |
+| `research`     | Web lookups, library comparisons, doc fetches (Haiku — fast/cheap)                      |
+| `website`      | UI audit, component generation, a11y, SEO, CSS architecture for the storefront          |
+| `copy`         | Landing page copy, CTAs, product descriptions, email/SMS messaging                      |
+| `firebase`     | Firestore rules, Auth config, Cloud Functions, Storage rules, emulator, security audits |
+| `vercel`       | Vercel config, env vars, build settings, edge functions, domain wiring                  |
+| `monitoring`   | Vercel deployment health, function errors, Cloudflare DNS/CDN, prod incident triage     |
+| `github`       | GitHub Actions spend, CI/CD health, Dependabot PRs, workflow auth (WIF)                 |
+| `partner`      | Not typically used for RnR (client-facing proposals/SOWs)                               |
+| `mobile`       | **Not applicable** — RnR has no native app. Skip.                                       |
+| `worker`       | Issue-queue automation; invoked via `/work`. Never bypass for issue-driven work.        |
+| `orchestrator` | Multi-agent coordination across long-running initiatives                                |
+| `heartbeat`    | Scheduled / cron-triggered checks                                                       |
 
 ## Parallel Work
 
