@@ -32,6 +32,13 @@ export type OrderStatus =
 
 export interface OrderItem {
   productId: string;
+  /**
+   * Variant identifier within the product (key of `Product.variantSpecs`).
+   * Defaults to `'default'` for variantless products and back-compat reads
+   * of pre-#308 orders. Required on writes — order creation MUST set this
+   * so inventory decrement targets the correct variant/location entry.
+   */
+  variantId: string;
   productName: string;
   quantity: number;
   /** cents */

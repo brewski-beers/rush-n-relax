@@ -83,6 +83,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
       items: [
         {
           productId: 'p1',
+          variantId: 'default',
           productName: 'Widget',
           quantity: 2,
           unitPrice: 750,

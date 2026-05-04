@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAgeCheckerSignature } from '@/lib/agechecker';
 import {
-  decrementInventoryItems,
+  decrementVariantStock,
   getOrder,
   InsufficientStockError,
   InvalidTransitionError,
@@ -100,12 +100,14 @@ export async function POST(req: Request) {
     }
 
     try {
-      await decrementInventoryItems(
-        order.locationId,
+      await decrementVariantStock(
         order.items.map(i => ({
-          productId: i.productId,
-          quantity: i.quantity,
-        }))
+          slug: i.productId,
+          variantId: i.variantId,
+          locationId: order.locationId,
+          qty: i.quantity,
+        })),
+        { source: 'order', actor: actor }
       );
     } catch (err) {
       if (err instanceof InsufficientStockError) {

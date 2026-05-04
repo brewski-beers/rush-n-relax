@@ -337,7 +337,22 @@ const EMPTY_ADDRESS: ShippingAddress = {
 function docToOrder(id: string, d: FirebaseFirestore.DocumentData): Order {
   return {
     id,
-    items: Array.isArray(d.items) ? d.items : [],
+    // Back-compat: pre-#308 orders did not persist `variantId` per item.
+    // Default to 'default' on read so the variant-aware decrement helpers
+    // can target the correct entry without needing a data backfill.
+    items: Array.isArray(d.items)
+      ? (d.items as Record<string, unknown>[]).map(it => ({
+          productId: typeof it.productId === 'string' ? it.productId : '',
+          variantId:
+            typeof it.variantId === 'string' && it.variantId.length > 0
+              ? it.variantId
+              : 'default',
+          productName: typeof it.productName === 'string' ? it.productName : '',
+          quantity: typeof it.quantity === 'number' ? it.quantity : 0,
+          unitPrice: typeof it.unitPrice === 'number' ? it.unitPrice : 0,
+          lineTotal: typeof it.lineTotal === 'number' ? it.lineTotal : 0,
+        }))
+      : [],
     subtotal: d.subtotal ?? 0,
     tax: d.tax ?? 0,
     total: d.total ?? 0,

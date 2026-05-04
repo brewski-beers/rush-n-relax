@@ -154,6 +154,7 @@ const baseOrderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
   items: [
     {
       productId: 'prod-1',
+      variantId: 'default',
       productName: 'Blue Dream',
       quantity: 2,
       unitPrice: 1500,
