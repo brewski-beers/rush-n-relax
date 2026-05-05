@@ -343,9 +343,13 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     cbdMgPerServing:
       typeof d.cbdMgPerServing === 'number' ? d.cbdMgPerServing : undefined,
     variantSpecs: readVariantSpecs(d),
-    inStockAt: Array.isArray(d.inStockAt) ? (d.inStockAt as string[]) : undefined,
+    inStockAt: Array.isArray(d.inStockAt)
+      ? (d.inStockAt as string[])
+      : undefined,
     pickupAt: Array.isArray(d.pickupAt) ? (d.pickupAt as string[]) : undefined,
-    featuredAt: Array.isArray(d.featuredAt) ? (d.featuredAt as string[]) : undefined,
+    featuredAt: Array.isArray(d.featuredAt)
+      ? (d.featuredAt as string[])
+      : undefined,
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
   } satisfies Product;
@@ -356,7 +360,7 @@ function docToLabResults(
 ): LabResults | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   // Narrow DocumentData's `any`-valued map to `unknown` so field reads are type-checked.
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+
   const r = raw as Record<string, unknown>;
   return {
     thcPercent: typeof r.thcPercent === 'number' ? r.thcPercent : undefined,
@@ -565,9 +569,7 @@ function readVariantSpecs(
   const raw = d.variantSpecs;
   if (!raw || typeof raw !== 'object') return undefined;
   const out: { [variantId: string]: ProductVariantSpec } = {};
-  for (const [variantId, v] of Object.entries(
-    raw as Record<string, unknown>
-  )) {
+  for (const [variantId, v] of Object.entries(raw as Record<string, unknown>)) {
     if (!v || typeof v !== 'object') continue;
     const variant = v as Record<string, unknown>;
     if (typeof variant.label !== 'string') continue;
@@ -597,7 +599,10 @@ function readVariantSpecs(
         } satisfies ProductVariantLocation;
       }
     }
-    out[variantId] = { label: variant.label, locations } satisfies ProductVariantSpec;
+    out[variantId] = {
+      label: variant.label,
+      locations,
+    } satisfies ProductVariantSpec;
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }
@@ -619,7 +624,11 @@ export async function setVariantLocation(
   variantId: string,
   locationId: string,
   patch: ProductVariantLocation,
-  meta: { source?: VariantAdjustmentSource; actor?: string; reason?: string } = {}
+  meta: {
+    source?: VariantAdjustmentSource;
+    actor?: string;
+    reason?: string;
+  } = {}
 ): Promise<Product> {
   const db = getAdminFirestore();
   const ref = productsCol().doc(slug);
@@ -633,9 +642,7 @@ export async function setVariantLocation(
     const variantSpecs = readVariantSpecs(data) ?? {};
     const existingVariant = variantSpecs[variantId];
     if (!existingVariant) {
-      throw new Error(
-        `Variant '${variantId}' not found on product '${slug}'`
-      );
+      throw new Error(`Variant '${variantId}' not found on product '${slug}'`);
     }
 
     const before = existingVariant.locations[locationId] ?? null;
@@ -708,7 +715,11 @@ export async function decrementVariantStock(
     locationId: string;
     qty: number;
   }[],
-  meta: { source?: VariantAdjustmentSource; actor?: string; reason?: string } = {}
+  meta: {
+    source?: VariantAdjustmentSource;
+    actor?: string;
+    reason?: string;
+  } = {}
 ): Promise<void> {
   if (items.length === 0) return;
 
@@ -786,9 +797,7 @@ export async function decrementVariantStock(
         qty: nextQty,
         // Mirror the inventory invariant: when a SKU sells out, drop pickup
         // and featured flags so the storefront stops surfacing it.
-        ...(nextQty === 0
-          ? { availablePickup: false, featured: false }
-          : {}),
+        ...(nextQty === 0 ? { availablePickup: false, featured: false } : {}),
       };
       w.variantSpecs[item.variantId] = {
         ...variant,
@@ -816,8 +825,7 @@ export async function decrementVariantStock(
       // One audit row per (variantId, locationId) touched on this product.
       for (const [beforeKey, before] of w.beforeMap) {
         const [variantId, locationId] = beforeKey.split('::');
-        const after =
-          w.variantSpecs[variantId]?.locations[locationId] ?? null;
+        const after = w.variantSpecs[variantId]?.locations[locationId] ?? null;
         const logRef = w.ref.collection('adjustments').doc();
         tx.create(logRef, {
           slug,

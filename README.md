@@ -2,15 +2,15 @@
 
 E-commerce + admin platform for a 3-location TN dispensary chain (Oak Ridge, Maryville, Seymour) plus an online store.
 
-| | |
-|---|---|
-| **Stack** | Next.js 15 App Router · React 19 · TypeScript (strict) · Firebase (Firestore via Admin SDK, Functions v2, Storage, Auth) · Tailwind CSS |
-| **Hosting** | Vercel (PR previews + production) |
-| **Payments** | Clover Hosted Checkout (Path B — merchant private token + return-URL reconciliation) |
-| **ID verification** | AgeChecker.Net (HMAC-signed webhook) |
-| **Email** | Resend, dispatched via Firebase Cloud Functions |
-| **Testing** | Vitest (unit + BDD) · Playwright + playwright-bdd (E2E against Firebase emulators) |
-| **CI/CD** | GitHub Actions — lint → typecheck → unit tests → E2E → deploy on merge to `main` |
+|                     |                                                                                                                                         |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Stack**           | Next.js 15 App Router · React 19 · TypeScript (strict) · Firebase (Firestore via Admin SDK, Functions v2, Storage, Auth) · Tailwind CSS |
+| **Hosting**         | Vercel (PR previews + production)                                                                                                       |
+| **Payments**        | Clover Hosted Checkout (Path B — merchant private token + return-URL reconciliation)                                                    |
+| **ID verification** | AgeChecker.Net (HMAC-signed webhook)                                                                                                    |
+| **Email**           | Resend, dispatched via Firebase Cloud Functions                                                                                         |
+| **Testing**         | Vitest (unit + BDD) · Playwright + playwright-bdd (E2E against Firebase emulators)                                                      |
+| **CI/CD**           | GitHub Actions — lint → typecheck → unit tests → E2E → deploy on merge to `main`                                                        |
 
 ---
 
@@ -60,9 +60,11 @@ The vault uses Obsidian's wikilinks, Canvas, and Mermaid plugins for diagrams + 
 ## Local development
 
 ### Prerequisites
+
 - Node 22.x · pnpm 9.x · Firebase CLI · `gcloud` CLI (for IAM operations)
 
 ### First-time setup
+
 ```bash
 pnpm install
 firebase login
@@ -70,6 +72,7 @@ firebase use rush-n-relax
 ```
 
 ### Run with emulators (default)
+
 ```bash
 pnpm dev:emulators   # spawns Firestore + Auth + Functions + Storage emulators
 pnpm dev             # in another terminal — Next.js on http://localhost:3000
@@ -78,12 +81,15 @@ pnpm dev             # in another terminal — Next.js on http://localhost:3000
 The app refuses to talk to production Firebase from local dev; emulator URLs are wired in `apps/web/src/lib/firebase/admin.ts`.
 
 ### Tests
+
 ```bash
 pnpm test          # Vitest — unit + component + BDD (835 tests as of 2026-05-02)
 pnpm test:e2e      # Playwright BDD against emulators
 pnpm typecheck
 pnpm lint
 ```
+
+> **Lint contract:** `pnpm lint` runs the same flat-config ESLint (`apps/web/eslint.config.js`) that the pre-commit hook (lint-staged) uses, so CI and pre-commit produce identical error/warning counts. Do not bypass with `--no-verify` — fix or scope-suppress instead.
 
 ---
 
@@ -106,6 +112,7 @@ See [`CLAUDE.md`](./CLAUDE.md) for the project's Doc Update Rule and full agent 
 ## Deployment
 
 Production deploys on merge to `main` via the **Main — Verify & Deploy** workflow:
+
 1. `verify` — lint, typecheck, unit tests
 2. `deploy` — Firestore rules + indexes, Storage rules (via WIF auth)
 3. Vercel — automatic on push (separate from the GHA workflow)
@@ -116,12 +123,12 @@ For credential rotation, IAM troubleshooting, and the Vercel SA key runbook, see
 
 ## Locations
 
-| Slug | Type |
-|------|------|
+| Slug        | Type                         |
+| ----------- | ---------------------------- |
 | `oak-ridge` | Physical retail (Clover POS) |
 | `maryville` | Physical retail (Clover POS) |
-| `seymour` | Physical retail (Clover POS) |
-| `online` | E-commerce only |
+| `seymour`   | Physical retail (Clover POS) |
+| `online`    | E-commerce only              |
 
 Each is a fully independent entity — separate inventory, separate Clover merchant. No central warehouse.
 

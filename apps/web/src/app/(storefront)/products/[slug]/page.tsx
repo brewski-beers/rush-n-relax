@@ -84,7 +84,6 @@ export default async function ProductDetailPage({ params }: Props) {
         : undefined;
 
       if (coaPath) {
-        // eslint-disable-next-line react-hooks/purity -- server component, not a hook
         const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1_000);
         const [url] = await getAdminStorage()
           .bucket()
