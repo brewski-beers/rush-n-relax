@@ -2,11 +2,7 @@ import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/constants/site';
 import { LOCATIONS } from '@/constants/locations';
 import { ONLINE_LOCATION_ID } from '@/constants/location-ids';
-import {
-  listOnlineAvailableInventory,
-  listProductsByIds,
-  listVendors,
-} from '@/lib/repositories';
+import { listProductsInStockAt, listVendors } from '@/lib/repositories';
 
 /**
  * Public sitemap — served at /sitemap.xml via Next.js App Router convention.
@@ -52,11 +48,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let productRoutes: MetadataRoute.Sitemap = [];
   let vendorRoutes: MetadataRoute.Sitemap = [];
   try {
-    const { items: onlineInventory } = await listOnlineAvailableInventory({
-      limit: 1000,
-    });
-    const onlineProductIds = onlineInventory.map(i => i.productId);
-    const onlineProducts = await listProductsByIds(onlineProductIds);
+    const { items: onlineProducts } = await listProductsInStockAt(
+      ONLINE_LOCATION_ID,
+      { limit: 1000 }
+    );
     productRoutes = onlineProducts.map(product => ({
       url: `${SITE_URL}/products/${product.slug}`,
       lastModified: now,

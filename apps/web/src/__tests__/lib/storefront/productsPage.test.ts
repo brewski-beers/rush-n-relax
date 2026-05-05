@@ -1,96 +1,142 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fetchProductsPage } from '@/lib/storefront/productsPage';
-import type { ProductSummary } from '@/types';
+import type { Product, ProductSummary } from '@/types';
 
-const listOnlineAvailableInventory = vi.fn();
-const listProductsByIds = vi.fn();
+const listProductsInStockAt = vi.fn();
 const listProductsByCategory = vi.fn();
-const getOnlineInStockSet = vi.fn();
-const listFeaturedInventory = vi.fn();
 
 vi.mock('@/lib/repositories', () => ({
-  listOnlineAvailableInventory: (...args: unknown[]) =>
-    listOnlineAvailableInventory(...args) as unknown,
-  listProductsByIds: (...args: unknown[]) =>
-    listProductsByIds(...args) as unknown,
+  listProductsInStockAt: (...args: unknown[]) =>
+    listProductsInStockAt(...args) as unknown,
   listProductsByCategory: (...args: unknown[]) =>
     listProductsByCategory(...args) as unknown,
-  getOnlineInStockSet: (...args: unknown[]) =>
-    getOnlineInStockSet(...args) as unknown,
-  listFeaturedInventory: (...args: unknown[]) =>
-    listFeaturedInventory(...args) as unknown,
 }));
 
 vi.mock('@/lib/firebase/admin', () => ({
   ONLINE_LOCATION_ID: 'online',
 }));
 
-type InventoryItem = {
-  productId: string;
-  featured: boolean;
-};
-
-function invPage(ids: string[], nextCursor: string | null) {
-  const items: InventoryItem[] = ids.map(id => ({
-    productId: id,
-    featured: false,
-  }));
-  return { items, nextCursor };
-}
-
-function prod(id: string, category: string): ProductSummary {
+function product(
+  id: string,
+  category: string,
+  opts: { inStock?: boolean; featured?: boolean } = {}
+): Product {
+  const inStockAt = opts.inStock === false ? [] : ['online'];
+  const featuredAt = opts.featured ? ['online'] : [];
   return {
     id,
     slug: id,
     name: id.toUpperCase(),
     category,
-    image: null,
+    details: '',
     status: 'active',
     availableAt: [],
+    inStockAt,
+    featuredAt,
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  } as unknown as Product;
+}
+
+function summary(
+  id: string,
+  category: string,
+  opts: { inStock?: boolean; featured?: boolean } = {}
+): ProductSummary {
+  const inStockAt = opts.inStock === false ? [] : ['online'];
+  const featuredAt = opts.featured ? ['online'] : [];
+  return {
+    id,
+    slug: id,
+    name: id.toUpperCase(),
+    category,
+    status: 'active',
+    availableAt: [],
+    inStockAt,
+    featuredAt,
   } as unknown as ProductSummary;
 }
 
-describe('fetchProductsPage', () => {
+describe('fetchProductsPage (#310 inStockAt query path)', () => {
   beforeEach(() => {
-    listOnlineAvailableInventory.mockReset();
-    listProductsByIds.mockReset();
+    listProductsInStockAt.mockReset();
     listProductsByCategory.mockReset();
-    getOnlineInStockSet.mockReset();
-    listFeaturedInventory.mockReset();
   });
 
   describe('Given no category filter', () => {
-    it('fetches a single inventory page and returns its cursor', async () => {
-      listOnlineAvailableInventory.mockResolvedValueOnce(
-        invPage(['a', 'b', 'c'], 'cursor-1')
-      );
-      listProductsByIds.mockResolvedValueOnce([
-        prod('a', 'flower'),
-        prod('b', 'edibles'),
-        prod('c', 'vapes'),
-      ]);
+    it('issues a single inStockAt query and returns its cursor', async () => {
+      listProductsInStockAt.mockResolvedValueOnce({
+        items: [
+          product('a', 'flower'),
+          product('b', 'edibles'),
+          product('c', 'vapes'),
+        ],
+        nextCursor: 'cursor-1',
+      });
 
       const result = await fetchProductsPage({ limit: 25, category: null });
 
-      expect(listOnlineAvailableInventory).toHaveBeenCalledTimes(1);
+      expect(listProductsInStockAt).toHaveBeenCalledTimes(1);
+      expect(listProductsInStockAt).toHaveBeenCalledWith('online', {
+        limit: 25,
+        cursor: undefined,
+      });
       expect(result.items).toHaveLength(3);
       expect(result.nextCursor).toBe('cursor-1');
     });
-  });
 
-  describe('Given a category filter (#194 — push category into the query)', () => {
-    it('paginates products by category and intersects with online stock', async () => {
-      listProductsByCategory.mockResolvedValueOnce({
+    it('does NOT issue a separate listProductsByIds round-trip', async () => {
+      listProductsInStockAt.mockResolvedValueOnce({
+        items: [product('a', 'flower')],
+        nextCursor: null,
+      });
+
+      await fetchProductsPage({ limit: 25, category: null });
+
+      // Only the single denormalized query — no follow-up fetch needed.
+      expect(listProductsInStockAt).toHaveBeenCalledTimes(1);
+    });
+
+    it('stamps featured flag from the product.featuredAt array', async () => {
+      listProductsInStockAt.mockResolvedValueOnce({
         items: [
-          prod('f1', 'flower'),
-          prod('f2', 'flower'),
-          prod('f3', 'flower'),
+          product('a', 'flower', { featured: true }),
+          product('b', 'flower'),
         ],
         nextCursor: null,
       });
-      getOnlineInStockSet.mockResolvedValueOnce(new Set(['f1', 'f2', 'f3']));
-      listFeaturedInventory.mockResolvedValueOnce({
+
+      const result = await fetchProductsPage({ limit: 25, category: null });
+
+      const a = result.items.find(i => i.id === 'a');
+      const b = result.items.find(i => i.id === 'b');
+      expect(a?.featured).toBe(true);
+      expect(b?.featured).toBe(false);
+      // Featured items render first in the page.
+      expect(result.items[0]?.id).toBe('a');
+    });
+
+    it('returns empty page when the inStockAt query yields nothing', async () => {
+      listProductsInStockAt.mockResolvedValueOnce({
         items: [],
+        nextCursor: null,
+      });
+
+      const result = await fetchProductsPage({ limit: 25, category: null });
+
+      expect(result.items).toEqual([]);
+      expect(result.nextCursor).toBeNull();
+    });
+  });
+
+  describe('Given a category filter', () => {
+    it('paginates products by category and filters by inStockAt without extra round-trips', async () => {
+      listProductsByCategory.mockResolvedValueOnce({
+        items: [
+          summary('f1', 'flower'),
+          summary('f2', 'flower'),
+          summary('f3', 'flower'),
+        ],
         nextCursor: null,
       });
 
@@ -100,48 +146,52 @@ describe('fetchProductsPage', () => {
         limit: 3,
         cursor: undefined,
       });
-      expect(listOnlineAvailableInventory).not.toHaveBeenCalled();
+      expect(listProductsInStockAt).not.toHaveBeenCalled();
       expect(result.items.map(i => i.id)).toEqual(['f1', 'f2', 'f3']);
-      expect(result.nextCursor).toBeNull();
     });
 
-    it('given 60 products in category X clustered after cursor 50, when fetched with category=X cursor, then returns category-X products from the filtered set', async () => {
-      // Bug from MEMORY: previously inventory pagination would fetch 25
-      // inventory items at a time and discard non-X items, returning empty
-      // pages when X clustered late. With category-aware pagination, the
-      // cursor walks the category-filtered product set directly.
+    it('filters out products whose inStockAt does not include the online location', async () => {
       listProductsByCategory.mockResolvedValueOnce({
-        items: [prod('x51', 'X'), prod('x52', 'X'), prod('x53', 'X')],
-        nextCursor: 'x53',
-      });
-      getOnlineInStockSet.mockResolvedValueOnce(new Set(['x51', 'x52', 'x53']));
-      listFeaturedInventory.mockResolvedValueOnce({
-        items: [],
+        items: [
+          summary('a', 'flower'),
+          summary('b', 'flower', { inStock: false }),
+          summary('c', 'flower'),
+        ],
         nextCursor: null,
       });
 
-      const result = await fetchProductsPage({
-        limit: 3,
-        category: 'X',
-        cursor: 'x50',
-      });
+      const result = await fetchProductsPage({ limit: 25, category: 'flower' });
 
-      expect(listProductsByCategory).toHaveBeenCalledWith('X', {
-        limit: 3,
-        cursor: 'x50',
-      });
-      expect(result.items.map(i => i.id)).toEqual(['x51', 'x52', 'x53']);
-      expect(result.nextCursor).toBe('x53');
+      expect(result.items.map(i => i.id)).toEqual(['a', 'c']);
     });
 
-    it('marks featured items via the online-featured set', async () => {
+    it('keeps paging when out-of-stock products consume the page', async () => {
+      listProductsByCategory
+        .mockResolvedValueOnce({
+          items: [
+            summary('a', 'X'),
+            summary('b', 'X', { inStock: false }),
+            summary('c', 'X', { inStock: false }),
+          ],
+          nextCursor: 'c',
+        })
+        .mockResolvedValueOnce({
+          items: [summary('d', 'X'), summary('e', 'X')],
+          nextCursor: null,
+        });
+
+      const result = await fetchProductsPage({ limit: 3, category: 'X' });
+
+      expect(listProductsByCategory).toHaveBeenCalledTimes(2);
+      expect(result.items.map(i => i.id)).toEqual(['a', 'd', 'e']);
+    });
+
+    it('stamps featured flag from product.featuredAt rather than a separate inventory call', async () => {
       listProductsByCategory.mockResolvedValueOnce({
-        items: [prod('a', 'flower'), prod('b', 'flower')],
-        nextCursor: null,
-      });
-      getOnlineInStockSet.mockResolvedValueOnce(new Set(['a', 'b']));
-      listFeaturedInventory.mockResolvedValueOnce({
-        items: [{ productId: 'a', featured: true } as InventoryItem],
+        items: [
+          summary('a', 'flower', { featured: true }),
+          summary('b', 'flower'),
+        ],
         nextCursor: null,
       });
 
@@ -151,31 +201,6 @@ describe('fetchProductsPage', () => {
       const b = result.items.find(i => i.id === 'b');
       expect(a?.featured).toBe(true);
       expect(b?.featured).toBe(false);
-    });
-
-    it('keeps paging when out-of-stock products consume the page', async () => {
-      // Page 1: 3 products, only 1 in stock — keep going to fill the limit.
-      listProductsByCategory
-        .mockResolvedValueOnce({
-          items: [prod('a', 'X'), prod('b', 'X'), prod('c', 'X')],
-          nextCursor: 'c',
-        })
-        .mockResolvedValueOnce({
-          items: [prod('d', 'X'), prod('e', 'X')],
-          nextCursor: null,
-        });
-      getOnlineInStockSet
-        .mockResolvedValueOnce(new Set(['a']))
-        .mockResolvedValueOnce(new Set(['d', 'e']));
-      listFeaturedInventory.mockResolvedValueOnce({
-        items: [],
-        nextCursor: null,
-      });
-
-      const result = await fetchProductsPage({ limit: 3, category: 'X' });
-
-      expect(listProductsByCategory).toHaveBeenCalledTimes(2);
-      expect(result.items.map(i => i.id)).toEqual(['a', 'd', 'e']);
     });
   });
 });

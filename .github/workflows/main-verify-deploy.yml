@@ -87,9 +87,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ./emulator-data
-          key: emulator-data-${{ hashFiles('tools/seed-*.ts', 'tools/seed-*.cjs', 'firestore.rules') }}
-          restore-keys: |
-            emulator-data-
+          key: emulator-data-v1-${{ hashFiles('tools/seed-*.ts', 'tools/seed-*.cjs', 'firestore.rules', 'apps/web/src/lib/fixtures/**') }}
 
       - name: E2E tests (import cache)
         if: steps.emulator-cache.outputs.cache-hit == 'true'
@@ -116,7 +114,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ./emulator-data
-          key: emulator-data-${{ hashFiles('tools/seed-*.ts', 'tools/seed-*.cjs', 'firestore.rules') }}
+          key: emulator-data-v1-${{ hashFiles('tools/seed-*.ts', 'tools/seed-*.cjs', 'firestore.rules', 'apps/web/src/lib/fixtures/**') }}
 
       - name: Upload verify failure artifacts
         if: failure()
