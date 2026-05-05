@@ -24,17 +24,12 @@ interface Props {
 }
 
 const VALID_STATUSES: ReadonlySet<OrderStatus> = new Set([
-  'pending_id_verification',
-  'id_verified',
-  'id_rejected',
-  'awaiting_payment',
   'paid',
   'preparing',
   'out_for_delivery',
   'completed',
   'cancelled',
   'refunded',
-  'failed',
 ]);
 
 function parseDate(input: string | undefined): Date | undefined {

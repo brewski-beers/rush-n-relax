@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { getOrder } from '@/lib/repositories';
 import { formatCents } from '@/utils/currency';
 import type { OrderStatus } from '@/types';
-import { OrderStatusPoller } from './OrderStatusPoller';
 import { TestModeBanner } from '@/components/TestModeBanner';
 
 interface Props {
@@ -18,61 +17,28 @@ const IN_PROGRESS_STATES: ReadonlySet<OrderStatus> = new Set([
   'out_for_delivery',
 ]);
 
-const TERMINATED_STATES: ReadonlySet<OrderStatus> = new Set([
-  'cancelled',
-  'id_rejected',
-]);
-
 /**
- * Pre-payment states the OrderStatusPoller handles:
- *  - pending_id_verification → waiting for AgeChecker webhook
- *  - id_verified            → poller triggers /api/checkout/session + redirects to Clover
- *  - awaiting_payment       → waiting for Clover redirect / webhook
+ * Post-#362: Order documents are born only at successful payment, so the
+ * pre-payment poller states (`pending_id_verification`, `id_verified`,
+ * `awaiting_payment`, `failed`, `id_rejected`) no longer exist. The
+ * confirmation page just shows post-payment state. The full storefront
+ * checkout-page rewrite lands in #371.
  */
-const POLLER_STATES: ReadonlySet<OrderStatus> = new Set([
-  'pending_id_verification',
-  'id_verified',
-  'awaiting_payment',
-]);
-
 export default async function OrderConfirmationPage({ params }: Props) {
   const { id } = await params;
   const order = await getOrder(id);
 
   if (!order) notFound();
 
-  const showPoller = POLLER_STATES.has(order.status);
   const showInProgress = IN_PROGRESS_STATES.has(order.status);
   const showCompleted = order.status === 'completed';
-  const showFailed = order.status === 'failed';
-  const showTerminated = TERMINATED_STATES.has(order.status);
+  const showCancelled = order.status === 'cancelled';
   const showRefunded = order.status === 'refunded';
-
-  const pollerHeading =
-    order.status === 'id_verified'
-      ? 'Preparing your payment…'
-      : 'Order Received';
-  const pollerCopy =
-    order.status === 'id_verified'
-      ? 'ID verified. Redirecting you to secure checkout — please don’t close this tab.'
-      : 'Your payment is being processed. This page will update automatically.';
 
   return (
     <main className="order-confirmation-page">
       <TestModeBanner />
       <div className="container">
-        {/* ── Awaiting verification / payment / Clover redirect ────── */}
-        {showPoller && (
-          <section className="order-status order-status--pending">
-            <h1>{pollerHeading}</h1>
-            <p>{pollerCopy}</p>
-            <OrderStatusPoller
-              orderId={order.id}
-              initialStatus={order.status}
-            />
-          </section>
-        )}
-
         {/* ── Paid / Preparing / Out for delivery ─────────────────── */}
         {showInProgress && (
           <section className="order-status order-status--paid">
@@ -134,33 +100,11 @@ export default async function OrderConfirmationPage({ params }: Props) {
           </section>
         )}
 
-        {/* ── Failed ───────────────────────────────────────────── */}
-        {showFailed && (
-          <section className="order-status order-status--failed">
-            <h1>Payment Failed</h1>
-            <p>
-              We were unable to process your payment. Please check your payment
-              details and try again.
-            </p>
-            <Link href="/cart" className="btn btn-primary">
-              Return to Cart
-            </Link>
-          </section>
-        )}
-
-        {/* ── Cancelled / ID rejected ─────────────────────────────── */}
-        {showTerminated && (
+        {/* ── Cancelled ───────────────────────────────────────────── */}
+        {showCancelled && (
           <section className="order-status order-status--voided">
-            <h1>
-              {order.status === 'id_rejected'
-                ? 'ID Verification Failed'
-                : 'Order Cancelled'}
-            </h1>
-            <p>
-              {order.status === 'id_rejected'
-                ? 'We were unable to verify your ID. No charge was made.'
-                : 'This order has been cancelled and no charge was made.'}
-            </p>
+            <h1>Order Cancelled</h1>
+            <p>This order has been cancelled and no charge was made.</p>
             <Link href="/products" className="btn btn-secondary">
               Browse Products
             </Link>

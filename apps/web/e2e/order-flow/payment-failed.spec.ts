@@ -1,4 +1,9 @@
 /**
+ * SKIPPED post-#362: this spec drives the legacy pre-payment OrderStatus
+ * flow (id_verified / awaiting_payment / failed / id_rejected). Full BDD
+ * rewrite for the new CheckoutSession-based path lands in #373.
+ */
+/**
  * Order flow E2E — payment_failed + state-gate (issue #285).
  *
  * payment_failed: drive the cart through a successful ID check, advance the
@@ -29,7 +34,7 @@ const PRODUCT = {
   stock: 999,
 };
 
-test.describe('Order flow — payment_failed', () => {
+test.describe.skip('Order flow — payment_failed', () => {
   test.beforeAll(async () => {
     await seedProductForOrderFlow(PRODUCT);
   });
@@ -96,9 +101,10 @@ test.describe('Order flow — state gate (issue #331)', () => {
     // pick a disabled option, which is the assertion we want.
     const stateSelect = page.getByLabel(/state/i);
     await expect(stateSelect).toBeVisible();
-    await expect(
-      stateSelect.locator('option[value="CO"]')
-    ).toHaveAttribute('disabled', '');
+    await expect(stateSelect.locator('option[value="CO"]')).toHaveAttribute(
+      'disabled',
+      ''
+    );
   });
 
   test('server returns 422 if a blocked state is POSTed to /api/order/start', async ({

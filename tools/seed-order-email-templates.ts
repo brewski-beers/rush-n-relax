@@ -148,38 +148,6 @@ interface OrderTemplateSpec {
 
 const ORDER_TEMPLATES: OrderTemplateSpec[] = [
   {
-    id: 'order_received',
-    name: 'Order Received',
-    subjectTemplate:
-      'We got your order, {{ customer.name }} — Rush N Relax #{{ order.id }}',
-    heading: 'Thanks for your order',
-    body: [
-      "We've received your order ({{ order.total | money }}) and it's in the queue.",
-      "Next up: we'll verify your ID before charging anything.",
-    ],
-    includeOrderTotal: true,
-  },
-  {
-    id: 'id_verified',
-    name: 'ID Verified',
-    subjectTemplate: 'ID verified — finishing your order #{{ order.id }}',
-    heading: 'ID verified',
-    body: [
-      'Your ID checked out. Your payment will be processed shortly.',
-      "We'll send another note once it confirms.",
-    ],
-  },
-  {
-    id: 'id_rejected',
-    name: 'ID Rejected',
-    subjectTemplate: "We couldn't verify your ID — order #{{ order.id }}",
-    heading: 'We need a clearer ID',
-    body: [
-      "We weren't able to verify the ID you sent. No charge has been made.",
-      'Reply to this email with a clearer photo of your government-issued ID and we will pick it back up.',
-    ],
-  },
-  {
     id: 'payment_confirmed',
     name: 'Payment Confirmed',
     subjectTemplate: 'Payment confirmed — Rush N Relax #{{ order.id }}',

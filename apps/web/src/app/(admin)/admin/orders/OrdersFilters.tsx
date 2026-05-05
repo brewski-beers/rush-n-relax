@@ -5,17 +5,12 @@ import { useState, type FormEvent } from 'react';
 import type { OrderStatus } from '@/types';
 
 const STATUS_OPTIONS: OrderStatus[] = [
-  'pending_id_verification',
-  'id_verified',
-  'id_rejected',
-  'awaiting_payment',
   'paid',
   'preparing',
   'out_for_delivery',
   'completed',
   'cancelled',
   'refunded',
-  'failed',
 ];
 
 export interface LocationOption {

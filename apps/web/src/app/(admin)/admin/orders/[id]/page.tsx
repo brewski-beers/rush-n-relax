@@ -20,9 +20,6 @@ function formatCents(cents: number): string {
 // decide whether a "Resend email" button should be rendered for a given
 // event-log row. Must stay in sync with the repository.
 const RESENDABLE_STATUSES: ReadonlySet<OrderStatus> = new Set([
-  'pending_id_verification',
-  'id_verified',
-  'id_rejected',
   'paid',
   'preparing',
   'out_for_delivery',
@@ -157,8 +154,6 @@ export default async function AdminOrderDetailPage({ params }: Props) {
           <dd>{order.cloverPaymentId ?? '—'}</dd>
           <dt>Clover checkout session ID</dt>
           <dd>{order.cloverCheckoutSessionId ?? '—'}</dd>
-          <dt>AgeChecker session ID</dt>
-          <dd>{order.agecheckerSessionId ?? '—'}</dd>
         </dl>
       </section>
 

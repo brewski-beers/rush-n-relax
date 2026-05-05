@@ -810,196 +810,24 @@ export const retryFailedOutboundEmails = onSchedule(
   }
 );
 
-// ─── Clover Path B recovery cron (#279) ───────────────────────────────────
+// ─── Clover Path B recovery cron — STUB ─────────────────────────────────
 //
-// We are on Clover Path B in production: merchant-issued private API token,
-// no app-level webhooks. Payment confirmation flows primarily through the
-// return URL at /order/{id}/return (see #279). This scheduled function
-// catches the case where a customer abandons the browser before the
-// redirect fires, leaving the order stranded in `awaiting_payment`.
-//
-// Logic per run (every 5 minutes):
-//   1. Query orders.where('status','==','awaiting_payment')
-//      .where('updatedAt','<=', now - 10min)
-//   2. For each, GET the Clover payment(s) for the order's
-//      cloverCheckoutSessionId.
-//   3. SUCCESS → transition to `paid`. FAIL → transition to `failed`.
-//      PENDING/UNKNOWN → leave alone.
-//
-// Idempotent: an already-settled order will fail the
-// transition-allowed check and be silently skipped.
+// Pre-#362 this scheduled job reconciled orders stuck in `awaiting_payment`
+// against Clover. Both `awaiting_payment` and `failed` were removed from
+// `OrderStatus` in #362 (Order is born only at successful payment). The
+// replacement, which reconciles `CheckoutSession` records that did not
+// produce an Order, lands in #369. Until then the cron is a logging no-op.
 
 const CLOVER_MERCHANT_ID = defineSecret('CLOVER_MERCHANT_ID');
 const CLOVER_API_KEY = defineSecret('CLOVER_API_KEY');
-const RECONCILE_AGE_MINUTES = 10;
-
-interface CloverPaymentElement {
-  id?: string;
-  result?: string;
-  amount?: number;
-}
-
-function getCloverBaseUrlForRecon(): string {
-  return process.env.CLOVER_BASE_URL || 'https://api.clover.com';
-}
-
-async function fetchCloverOrderPayments(
-  cloverOrderId: string,
-  merchantId: string,
-  apiKey: string
-): Promise<CloverPaymentElement[]> {
-  const url = `${getCloverBaseUrlForRecon()}/v3/merchants/${merchantId}/orders/${encodeURIComponent(cloverOrderId)}/payments`;
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  if (!res.ok) {
-    throw new Error(
-      `Clover GET payments returned HTTP ${res.status} for order ${cloverOrderId}`
-    );
-  }
-  const json = (await res.json()) as { elements?: CloverPaymentElement[] };
-  return Array.isArray(json.elements) ? json.elements : [];
-}
-
-type ReconcileOutcome = 'paid' | 'failed' | 'pending' | 'no-session';
-
-function classifyPayments(payments: CloverPaymentElement[]): {
-  outcome: ReconcileOutcome;
-  paymentId?: string;
-} {
-  if (payments.length === 0) return { outcome: 'pending' };
-  const success = payments.find(
-    p => p.result === 'SUCCESS' || p.result === 'success'
-  );
-  if (success) return { outcome: 'paid', paymentId: success.id };
-  const failed = payments.find(
-    p => p.result === 'FAIL' || p.result === 'FAILED' || p.result === 'fail'
-  );
-  if (failed) return { outcome: 'failed', paymentId: failed.id };
-  return { outcome: 'pending' };
-}
-
-/**
- * Atomically transition an order's status, mirroring the web app's
- * `transitionStatus` semantics (guard + event-log append). Throws when
- * the move is not allowed — callers swallow that as "already processed".
- */
-async function transitionOrderStatus(
-  orderId: string,
-  to: 'paid' | 'failed',
-  meta: Record<string, unknown>
-): Promise<void> {
-  const allowedFrom: Record<typeof to, string[]> = {
-    paid: ['awaiting_payment'],
-    failed: ['awaiting_payment', 'pending_id_verification', 'id_verified'],
-  };
-  const orderRef = db.collection('orders').doc(orderId);
-  const eventRef = db
-    .collection('order-events')
-    .doc(orderId)
-    .collection('events')
-    .doc();
-
-  await db.runTransaction(async tx => {
-    const snap = await tx.get(orderRef);
-    if (!snap.exists) {
-      throw new Error(`Order ${orderId} not found`);
-    }
-    const data = snap.data();
-    if (!data) throw new Error(`Order ${orderId} has no data`);
-    const from = data.status as string | undefined;
-    if (!from || !allowedFrom[to].includes(from)) {
-      throw new Error(`InvalidTransition:${from ?? 'null'}->${to}`);
-    }
-    const now = new Date();
-    const patch: Record<string, unknown> = {
-      status: to,
-      updatedAt: now,
-    };
-    if (to === 'paid') {
-      patch.paidAt = now;
-      if (typeof meta.cloverPaymentId === 'string') {
-        patch.cloverPaymentId = meta.cloverPaymentId;
-      }
-    }
-    tx.update(orderRef, patch);
-    tx.set(eventRef, {
-      orderId,
-      from,
-      to,
-      actor: 'system',
-      meta: { ...meta, source: 'recovery-cron' },
-      createdAt: now,
-    });
-  });
-}
 
 export async function reconcileAwaitingPaymentOrdersImpl(
-  merchantId: string,
-  apiKey: string,
-  nowMs: number = Date.now()
+  _merchantId: string,
+  _apiKey: string,
+  _nowMs: number = Date.now()
 ): Promise<{ scanned: number; settled: number; pending: number }> {
-  const cutoff = new Date(nowMs - RECONCILE_AGE_MINUTES * 60 * 1000);
-  const snap = await db
-    .collection('orders')
-    .where('status', '==', 'awaiting_payment')
-    .where('updatedAt', '<=', cutoff)
-    .get();
-
-  let settled = 0;
-  let pending = 0;
-
-  for (const doc of snap.docs) {
-    const data = doc.data();
-    const cloverOrderId =
-      typeof data.cloverCheckoutSessionId === 'string'
-        ? data.cloverCheckoutSessionId
-        : undefined;
-    if (!cloverOrderId) {
-      pending += 1;
-      continue;
-    }
-
-    try {
-      const payments = await fetchCloverOrderPayments(
-        cloverOrderId,
-        merchantId,
-        apiKey
-      );
-      const { outcome, paymentId } = classifyPayments(payments);
-      if (outcome === 'paid') {
-        await transitionOrderStatus(doc.id, 'paid', {
-          cloverPaymentId: paymentId,
-        });
-        settled += 1;
-      } else if (outcome === 'failed') {
-        await transitionOrderStatus(doc.id, 'failed', {
-          reason: 'clover-payment-failed',
-          cloverPaymentId: paymentId,
-        });
-        settled += 1;
-      } else {
-        pending += 1;
-      }
-    } catch (error) {
-      // Swallow — already-processed orders raise InvalidTransition; real
-      // network errors get logged so the next run can retry.
-      const message = error instanceof Error ? error.message : String(error);
-      if (!message.startsWith('InvalidTransition:')) {
-        logger.error('reconcileAwaitingPaymentOrders item failed', {
-          orderId: doc.id,
-          error: message,
-        });
-      }
-    }
-  }
-
-  return { scanned: snap.size, settled, pending };
+  // No-op until #369 lands the CheckoutSession-based reconciler.
+  return { scanned: 0, settled: 0, pending: 0 };
 }
 
 export const reconcileAwaitingPaymentOrders = onSchedule(
@@ -1008,15 +836,8 @@ export const reconcileAwaitingPaymentOrders = onSchedule(
     secrets: [CLOVER_MERCHANT_ID, CLOVER_API_KEY],
   },
   async () => {
-    const merchantId = CLOVER_MERCHANT_ID.value();
-    const apiKey = CLOVER_API_KEY.value();
-    if (!merchantId || !apiKey) {
-      logger.info(
-        'reconcileAwaitingPaymentOrders: Clover credentials not set; skipping'
-      );
-      return;
-    }
-    const result = await reconcileAwaitingPaymentOrdersImpl(merchantId, apiKey);
-    logger.info('reconcileAwaitingPaymentOrders run complete', result);
+    logger.info(
+      'reconcileAwaitingPaymentOrders: stub (awaiting #369 rewrite); no-op'
+    );
   }
 );
