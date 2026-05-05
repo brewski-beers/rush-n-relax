@@ -5,6 +5,12 @@ import { requireRole } from '@/lib/admin-auth';
 import { listLocations } from '@/lib/repositories';
 import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 
+/**
+ * #311: Inventory editing has been folded into the product editor. This
+ * landing page now points users to /admin/products and surfaces a
+ * deprecation banner. The per-location inventory pages still render until
+ * the cleanup sub-issue (#312) deletes them entirely.
+ */
 export default async function AdminInventoryPage() {
   await requireRole('owner');
 
@@ -15,9 +21,19 @@ export default async function AdminInventoryPage() {
       <div className="admin-page-header">
         <h1>Inventory</h1>
       </div>
+      <div className="admin-banner-warning" role="status">
+        <strong>Heads up — inventory editing has moved.</strong>
+        <p>
+          Each product&apos;s stock, price, pickup, and featured state are now
+          edited inside the product editor. Open a product from{' '}
+          <Link href="/admin/products">Products</Link> and use the new{' '}
+          <em>Variants &amp; Stock</em> section. The per-location pages below
+          remain available for transition reference and will be removed soon.
+        </p>
+      </div>
       <p className="admin-section-desc">
-        Manage product stock levels by location. Select a location to view and
-        update its inventory.
+        Legacy per-location inventory pages (read-only mirror — pending
+        removal).
       </p>
       <div className="dashboard-links">
         <Link
