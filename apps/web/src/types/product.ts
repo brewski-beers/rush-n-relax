@@ -217,4 +217,5 @@ export type ProductSummary = Pick<
   | 'variants'
   | 'variantGroups'
   | 'leaflyUrl'
+  | 'variantSpecs'
 >;
