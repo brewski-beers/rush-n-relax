@@ -16,23 +16,11 @@
  */
 import { useLayoutEffect } from 'react';
 import Script from 'next/script';
+import '@/types/agechecker-window';
 
 interface Props {
   sessionId: string;
   customerEmail: string;
-}
-
-interface AgeCheckerConfig {
-  element: string;
-  key: string;
-  order: string;
-  email: string;
-}
-
-declare global {
-  interface Window {
-    AgeCheckerConfig?: AgeCheckerConfig;
-  }
 }
 
 const POPUP_SRC = 'https://cdn.agechecker.net/static/popup/v1/popup.js';

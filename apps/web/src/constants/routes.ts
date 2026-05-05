@@ -49,6 +49,7 @@ export const PAGE_TO_ROUTE: Record<string, RoutePath | 'dynamic'> = {
   contact: '/contact',
   cart: 'dynamic',
   'checkout/stub': 'dynamic',
+  'checkout/[sessionId]/verify': 'dynamic',
   'order/[id]': 'dynamic',
   'promo/[slug]': 'dynamic',
   vendors: '/vendors',
