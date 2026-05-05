@@ -344,10 +344,10 @@ describe('createProduct server action', () => {
       expect(upsertProductMock).toHaveBeenCalledOnce();
     });
 
-    it('redirects to /admin/inventory on intent="save-and-set-pricing"', async () => {
+    it('redirects to /admin/products/{slug}/edit on intent="save-and-set-pricing"', async () => {
       await expect(
         createProduct(null, makeFormData({ intent: 'save-and-set-pricing' }))
-      ).rejects.toThrow('NEXT_REDIRECT:/admin/inventory');
+      ).rejects.toThrow('NEXT_REDIRECT:/admin/products/test-product/edit');
       expect(upsertProductMock).toHaveBeenCalledOnce();
     });
 

@@ -20,7 +20,6 @@ const ALL_LINKS: NavLink[] = [
   { label: 'Products', href: '/admin/products' },
   { label: 'Variant Groups', href: '/admin/variant-groups' },
   { label: 'Categories', href: '/admin/categories' },
-  { label: 'Inventory', href: '/admin/inventory' },
   { label: 'Users', href: '/admin/users' },
   { label: 'Promos', href: '/admin/promos', group: 'Ops' },
   { label: 'Email Templates', href: '/admin/email-templates', group: 'Ops' },
@@ -110,7 +109,11 @@ export function AdminNav({ role }: AdminNavProps) {
             if (link.group && !renderedGroups.has(link.group)) {
               renderedGroups.add(link.group);
               items.push(
-                <li key={`group-${link.group}`} className="admin-nav-drawer-group-heading" aria-hidden="true">
+                <li
+                  key={`group-${link.group}`}
+                  className="admin-nav-drawer-group-heading"
+                  aria-hidden="true"
+                >
                   {link.group}
                 </li>
               );

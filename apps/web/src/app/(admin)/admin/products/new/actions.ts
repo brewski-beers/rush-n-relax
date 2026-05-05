@@ -248,11 +248,11 @@ export async function createProduct(
 
   // ── Post-create intent (Review-step CTAs) ───────────────────────────────
   // 'save' (default) → product list
-  // 'save-and-set-pricing' → inventory hub (no per-product deep link yet)
+  // 'save-and-set-pricing' → product editor (variants & stock section)
   // 'save-and-add-another' → fresh wizard, with toast slug for confirmation
   const intent = formData.get('intent')?.toString() ?? 'save';
   if (intent === 'save-and-set-pricing') {
-    redirect('/admin/inventory');
+    redirect(`/admin/products/${slug}/edit`);
   }
   if (intent === 'save-and-add-another') {
     redirect(`/admin/products/new?created=${encodeURIComponent(slug)}`);

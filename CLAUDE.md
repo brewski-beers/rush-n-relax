@@ -19,7 +19,6 @@
 locations/{slug}
 products/{slug}
 promos/{slug}
-inventory/{locationId}/items/{productId}
 location-reviews/{placeId}
 product-categories/{slug}
 variant-templates/{docId}
@@ -71,18 +70,17 @@ CI cannot populate values — it can only read existing secrets. Skipping this s
 
 When any of these source files change → the matching vault doc must be reviewed and updated in the same session:
 
-| Source change                                      | Vault doc to update                                |
-| -------------------------------------------------- | -------------------------------------------------- |
-| `apps/web/src/types/order*`                        | [[orders]]                                         |
-| `apps/web/src/types/product*`, `variant-template*` | [[products]]                                       |
-| `apps/web/src/types/vendor*`                       | [[vendors]]                                        |
-| `apps/web/src/types/inventory*`                    | [[products]] (folded into product schema per #304) |
-| `apps/web/src/lib/repositories/*`                  | matching vault module doc                          |
-| `apps/web/src/app/api/webhooks/agechecker/*`       | [[agechecker]]                                     |
-| `apps/web/src/app/api/webhooks/clover/*`           | [[clover-hosted-checkout]]                         |
-| `firestore.rules` / `firestore.indexes.json`       | [[architecture]] + affected module doc             |
-| `.github/workflows/*` (deploy/CI)                  | [[firebase-deploy-iam]]                            |
-| `scripts/seed-*.ts` or `scripts/seed-*.cjs`        | matching module doc                                |
+| Source change                                      | Vault doc to update                    |
+| -------------------------------------------------- | -------------------------------------- |
+| `apps/web/src/types/order*`                        | [[orders]]                             |
+| `apps/web/src/types/product*`, `variant-template*` | [[products]]                           |
+| `apps/web/src/types/vendor*`                       | [[vendors]]                            |
+| `apps/web/src/lib/repositories/*`                  | matching vault module doc              |
+| `apps/web/src/app/api/webhooks/agechecker/*`       | [[agechecker]]                         |
+| `apps/web/src/app/api/webhooks/clover/*`           | [[clover-hosted-checkout]]             |
+| `firestore.rules` / `firestore.indexes.json`       | [[architecture]] + affected module doc |
+| `.github/workflows/*` (deploy/CI)                  | [[firebase-deploy-iam]]                |
+| `scripts/seed-*.ts` or `scripts/seed-*.cjs`        | matching module doc                    |
 
 Repo carries only this `CLAUDE.md` + a top-level `README.md`. Do not create `docs/engineering/*.md` files.
 

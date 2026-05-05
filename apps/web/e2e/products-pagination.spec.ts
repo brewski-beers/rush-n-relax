@@ -1,8 +1,9 @@
 /**
  * Storefront Products — cursor-based "Load More" pagination BDD E2E coverage.
  *
- * Architecture under test (PR #177 — worker/feature-cursor-pagination):
- *   - ProductsGrid (Server Component) fetches page 1 via listOnlineAvailableInventory
+ * Architecture under test (post-#312 — inventory folded into product docs):
+ *   - ProductsGrid (Server Component) fetches page 1 via listProductsInStockAt
+ *     (filters on `products.inStockAt array-contains 'online'`)
  *   - ProductsGridClient (Client Component) renders cards + Load More button
  *   - /api/products handles subsequent cursor-fetched pages
  *   - useLoadMore hook manages client-side state
@@ -25,6 +26,8 @@ const ONLINE_LOCATION_ID = 'online';
  * Uses the Firestore REST API — no Admin SDK required in the test runner.
  */
 async function seedProduct(slug: string, category: string): Promise<void> {
+  // Post-#312: products carry their own `inStockAt` denorm array, so a single
+  // product write is enough to make a slug eligible for the storefront grid.
   const url = `${EMULATOR_FIRESTORE}/v1/projects/${PROJECT_ID}/databases/(default)/documents/products/${slug}`;
   const body = JSON.stringify({
     fields: {
@@ -34,30 +37,9 @@ async function seedProduct(slug: string, category: string): Promise<void> {
       details: { stringValue: 'Seeded for pagination E2E test.' },
       status: { stringValue: 'active' },
       availableAt: { arrayValue: { values: [] } },
-    },
-  });
-  await fetch(url, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  });
-}
-
-/**
- * Write an online inventory item for a product to the emulator.
- * The inventory query filters on inStock == true to determine pagination pages.
- */
-async function seedOnlineInventory(slug: string): Promise<void> {
-  const url = `${EMULATOR_FIRESTORE}/v1/projects/${PROJECT_ID}/databases/(default)/documents/inventory/${ONLINE_LOCATION_ID}/items/${slug}`;
-  const body = JSON.stringify({
-    fields: {
-      productId: { stringValue: slug },
-      locationId: { stringValue: ONLINE_LOCATION_ID },
-      inStock: { booleanValue: true },
-      availableOnline: { booleanValue: true },
-      availablePickup: { booleanValue: false },
-      featured: { booleanValue: false },
-      quantity: { integerValue: '10' },
+      inStockAt: {
+        arrayValue: { values: [{ stringValue: ONLINE_LOCATION_ID }] },
+      },
     },
   });
   await fetch(url, {
@@ -82,7 +64,6 @@ async function seedExtraProducts(
     const slug = `${prefix}-${String(i).padStart(3, '0')}`;
     slugs.push(slug);
     await seedProduct(slug, category);
-    await seedOnlineInventory(slug);
   }
   return slugs;
 }
@@ -195,9 +176,10 @@ test.describe('Products Page — Load More Pagination', () => {
       if (hasMore) {
         // Intercept the API call to verify category is passed in the request
         const [request] = await Promise.all([
-          page.waitForRequest(req =>
-            req.url().includes('/api/products') &&
-            req.url().includes('category=flower')
+          page.waitForRequest(
+            req =>
+              req.url().includes('/api/products') &&
+              req.url().includes('category=flower')
           ),
           loadMoreBtn.click(),
         ]);

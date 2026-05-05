@@ -7,7 +7,6 @@ import type {
   ProductCategoryConfig,
   Promo,
 } from '@/types';
-import type { InventoryItem } from '@/types/inventory';
 import type { VariantTemplate } from '@/types/variant-template';
 import { ONLINE_LOCATION_ID } from '../../constants/location-ids';
 
@@ -44,7 +43,12 @@ export interface ProductFixture {
   coaUrl?: string;
 }
 
-export interface InventoryItemFixture {
+/**
+ * Internal fixture for a single (product, location) inventory state. Powers
+ * `buildProductDocuments` — folded into `Product.variantSpecs` per #312.
+ * Not exported as a top-level fixture type any more.
+ */
+interface LegacyInventoryFixture {
   locationId: string;
   productId: string;
   inStock: boolean;
@@ -52,7 +56,13 @@ export interface InventoryItemFixture {
   availablePickup: boolean;
   featured: boolean;
   quantity: number;
-  variantPricing?: InventoryItem['variantPricing'];
+  variantPricing?: {
+    [variantId: string]: {
+      price: number;
+      compareAtPrice?: number;
+      inStock?: boolean;
+    };
+  };
   notes?: string;
 }
 
@@ -358,7 +368,7 @@ export const PRODUCT_FIXTURES: readonly ProductFixture[] = [
  *   uncle-skunks-lemon-ginger-sparkling-water — drink with staff notes
  *   blue-dream-distillate-cart — in-store only (availableOnline: false)
  */
-export const ONLINE_INVENTORY_FIXTURES: readonly InventoryItemFixture[] = [
+export const ONLINE_VARIANT_FIXTURES: readonly LegacyInventoryFixture[] = [
   // ── Generic category products (E2E storefront baseline) ──────────────────────
   {
     locationId: ONLINE_LOCATION_ID,
@@ -576,7 +586,7 @@ export const ONLINE_INVENTORY_FIXTURES: readonly InventoryItemFixture[] = [
  *   maryville   — secondary: pickup enabled, subset of products
  *   seymour     — pickup disabled for most products (no-pickup branch)
  */
-export const RETAIL_INVENTORY_FIXTURES: readonly InventoryItemFixture[] = [
+export const RETAIL_VARIANT_FIXTURES: readonly LegacyInventoryFixture[] = [
   // ── Oak Ridge ────────────────────────────────────────────────────────────────
 
   // In-stock, pickup enabled, featured at this location
@@ -960,26 +970,78 @@ export function buildLocationSummaries(): LocationSummary[] {
 }
 
 export function buildProductDocuments(date: Date = fixtureDate): Product[] {
-  // Mirror `recomputeProductIndexes` in product.repository.ts: derive the
-  // denormalized location arrays from the inventory fixtures so storefront
-  // queries that filter on `inStockAt`/`pickupAt`/`featuredAt` return data
-  // when the e2e suite seeds from these fixtures.
-  const allInventory = [
-    ...ONLINE_INVENTORY_FIXTURES,
-    ...RETAIL_INVENTORY_FIXTURES,
-  ];
+  // Inventory was folded into the product document under #304/#312. The legacy
+  // inventory fixtures still drive what stock / pricing each product carries
+  // at each location; here we project them onto `variantSpecs` (map keyed by
+  // variantId) plus the denormalized `inStockAt` / `pickupAt` / `featuredAt`
+  // arrays — same shape `recomputeIndexes` in product.repository writes at
+  // runtime.
+  const allInventory = [...ONLINE_VARIANT_FIXTURES, ...RETAIL_VARIANT_FIXTURES];
 
   return PRODUCT_FIXTURES.map(product => {
     const inStockAt = new Set<string>();
     const pickupAt = new Set<string>();
     const featuredAt = new Set<string>();
 
+    // Build variantSpecs: { [variantId]: { label, locations: { [locationId]: {...} } } }
+    // Variantless products fall back to a single `default` variant key. Price
+    // is required on `ProductVariantLocation` — when no variantPricing entry
+    // exists for a (product, variant) pair, we skip writing that location so
+    // the resulting fixtures never contain malformed entries.
+    const variantSpecs: {
+      [variantId: string]: {
+        label: string;
+        locations: {
+          [locationId: string]: {
+            qty: number;
+            price: number;
+            compareAtPrice?: number;
+            availablePickup?: boolean;
+            featured?: boolean;
+          };
+        };
+      };
+    } = {};
+
     for (const item of allInventory) {
       if (item.productId !== product.slug) continue;
-      if (item.quantity <= 0) continue;
-      inStockAt.add(item.locationId);
-      if (item.availablePickup) pickupAt.add(item.locationId);
-      if (item.featured) featuredAt.add(item.locationId);
+      if (item.quantity > 0) inStockAt.add(item.locationId);
+      if (item.quantity > 0 && item.availablePickup)
+        pickupAt.add(item.locationId);
+      if (item.quantity > 0 && item.featured) featuredAt.add(item.locationId);
+
+      const pricing = item.variantPricing;
+      if (pricing && Object.keys(pricing).length > 0) {
+        for (const [variantId, entry] of Object.entries(pricing)) {
+          const variantInStock =
+            typeof entry.inStock === 'boolean' ? entry.inStock : item.inStock;
+          const qty = variantInStock && item.quantity > 0 ? item.quantity : 0;
+          if (!variantSpecs[variantId]) {
+            variantSpecs[variantId] = { label: variantId, locations: {} };
+          }
+          variantSpecs[variantId].locations[item.locationId] = {
+            qty,
+            price: entry.price,
+            ...(entry.compareAtPrice !== undefined && {
+              compareAtPrice: entry.compareAtPrice,
+            }),
+            ...(item.availablePickup && { availablePickup: true }),
+            ...(item.featured && { featured: true }),
+          };
+        }
+      } else {
+        // No variant-level pricing → seed a single `default` entry so the
+        // location still appears in variantSpecs (price defaults to 0).
+        if (!variantSpecs.default) {
+          variantSpecs.default = { label: 'Default', locations: {} };
+        }
+        variantSpecs.default.locations[item.locationId] = {
+          qty: item.quantity,
+          price: 0,
+          ...(item.availablePickup && { availablePickup: true }),
+          ...(item.featured && { featured: true }),
+        };
+      }
     }
 
     return {
@@ -992,6 +1054,7 @@ export function buildProductDocuments(date: Date = fixtureDate): Product[] {
       status: product.status,
       coaUrl: product.coaUrl,
       availableAt: product.availableAt ?? [...LOCATION_SLUGS],
+      ...(Object.keys(variantSpecs).length > 0 && { variantSpecs }),
       inStockAt: [...inStockAt].sort(),
       pickupAt: [...pickupAt].sort(),
       featuredAt: [...featuredAt].sort(),
@@ -999,42 +1062,6 @@ export function buildProductDocuments(date: Date = fixtureDate): Product[] {
       updatedAt: date,
     };
   });
-}
-
-function inventoryItemFromFixture(
-  item: InventoryItemFixture,
-  date: Date
-): InventoryItem {
-  const doc: InventoryItem = {
-    productId: item.productId,
-    locationId: item.locationId,
-    inStock: item.inStock,
-    availableOnline: item.availableOnline,
-    availablePickup: item.availablePickup,
-    featured: item.featured,
-    quantity: item.quantity,
-    variantPricing: item.variantPricing,
-    updatedAt: date,
-  };
-  const notes = item.notes;
-  if (notes) doc.notes = notes;
-  return doc;
-}
-
-export function buildOnlineInventoryDocuments(
-  date: Date = fixtureDate
-): InventoryItem[] {
-  return ONLINE_INVENTORY_FIXTURES.map(item =>
-    inventoryItemFromFixture(item, date)
-  );
-}
-
-export function buildRetailInventoryDocuments(
-  date: Date = fixtureDate
-): InventoryItem[] {
-  return RETAIL_INVENTORY_FIXTURES.map(item =>
-    inventoryItemFromFixture(item, date)
-  );
 }
 
 export function buildPromoDocuments(date: Date = fixtureDate): Promo[] {

@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import {
   getProductBySlug,
-  getInventoryItem,
   getOnlineInStockSet,
   getRelatedProducts,
 } from '@/lib/repositories';
@@ -48,10 +47,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-  const [product, onlineItem] = await Promise.all([
-    getProductBySlug(slug),
-    getInventoryItem(ONLINE_LOCATION_ID, slug),
-  ]);
+  const product = await getProductBySlug(slug);
   if (!product || product.status === 'archived') notFound();
 
   // Fetch more candidates than needed so we can drop any that aren't currently
@@ -113,8 +109,7 @@ export default async function ProductDetailPage({ params }: Props) {
         relatedProducts={relatedProducts}
         coaSignedUrl={coaSignedUrl}
         heroImageUrl={heroImageUrl}
-        variantPricing={onlineItem?.variantPricing}
-        itemInStock={onlineItem?.inStock ?? false}
+        onlineLocationId={ONLINE_LOCATION_ID}
       />
     </>
   );

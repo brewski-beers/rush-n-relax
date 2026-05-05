@@ -5,11 +5,7 @@ import { CardGrid } from '@/components/CardGrid';
 import { ProductImage } from '@/components/ProductImage';
 import { getStorageUrl } from '@/lib/storage/url-cache';
 import { seoConfig } from '@/config/seo.config';
-import {
-  listFeaturedInventory,
-  listProductsByIds,
-  listLocations,
-} from '@/lib/repositories';
+import { listFeaturedProductsAt, listLocations } from '@/lib/repositories';
 import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 
 export const metadata: Metadata = {
@@ -22,15 +18,10 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [featuredInventoryPage, locations] = await Promise.all([
-    listFeaturedInventory(ONLINE_LOCATION_ID),
+  const [featuredProducts, locations] = await Promise.all([
+    listFeaturedProductsAt(ONLINE_LOCATION_ID),
     listLocations(),
   ]);
-
-  const { items: featuredInventory } = featuredInventoryPage;
-  const featuredProducts = await listProductsByIds(
-    featuredInventory.map(i => i.productId)
-  );
 
   return (
     <main className="home-page">

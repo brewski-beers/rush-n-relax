@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import ProductDetailClient from '@/app/(storefront)/products/[slug]/ProductDetailClient';
+import { CartProvider } from '@/contexts/CartContext';
 import { buildProductDocuments } from '@/lib/fixtures';
 
 vi.mock('next/link', () => ({
@@ -37,11 +38,14 @@ describe('ProductDetailClient — gallery thumbnails', () => {
       'https://firebasestorage.googleapis.com/v0/b/rush-n-relax.firebasestorage.app/o/products%2Fflower.jpg?alt=media';
 
     const { container } = render(
-      <ProductDetailClient
-        product={product}
-        relatedProducts={[]}
-        heroImageUrl={heroImageUrl}
-      />
+      <CartProvider>
+        <ProductDetailClient
+          product={product}
+          relatedProducts={[]}
+          heroImageUrl={heroImageUrl}
+          onlineLocationId="online"
+        />
+      </CartProvider>
     );
 
     const thumbStrip = container.querySelector('.product-thumbnail-strip');

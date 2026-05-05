@@ -7,7 +7,6 @@ import { getStorageUrl } from '@/lib/storage/url-cache';
 import { AddToCartButton } from '@/components/AddToCartButton';
 import { LOCATIONS } from '@/constants/locations';
 import type { Product, ProductSummary, ProductStrain } from '@/types';
-import type { InventoryItem } from '@/types/inventory';
 import {
   resolveVariantPricing,
   type DisplayVariant,
@@ -64,8 +63,7 @@ export default function ProductDetailClient({
   relatedProducts,
   coaSignedUrl,
   heroImageUrl,
-  variantPricing,
-  itemInStock = false,
+  onlineLocationId,
 }: {
   product: Product;
   relatedProducts: ProductSummary[];
@@ -77,16 +75,15 @@ export default function ProductDetailClient({
    * preload it — fixing the LCP regression.
    */
   heroImageUrl?: string;
-  /** variantPricing from inventory/online/items/{slug} — drives variant selector */
-  variantPricing?: InventoryItem['variantPricing'];
-  /** Item-level inStock from inventory/online — fallback when variant-level flag absent */
-  itemInStock?: boolean;
+  /** Online-store location ID — drives variant selector via product.variantSpecs */
+  onlineLocationId: string;
 }) {
-  // Resolve display variants from product definition + online inventory pricing
+  // Resolve display variants from product.variantSpecs at the online location.
+  // Inventory was folded into the product document under #304/#312.
   const displayVariants: DisplayVariant[] = resolveVariantPricing(
-    product.variants,
-    variantPricing,
-    itemInStock
+    product.variantSpecs,
+    onlineLocationId,
+    product.variants
   );
   const hasOnlinePricing = displayVariants.length > 0;
 

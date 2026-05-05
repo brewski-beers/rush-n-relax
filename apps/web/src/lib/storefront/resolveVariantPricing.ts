@@ -1,12 +1,11 @@
 /**
  * resolveVariantPricing — pure pricing resolution for the storefront.
  *
- * Merges Product.variants with InventoryItem.variantPricing to produce a
- * display-ready list. No Firestore calls — safe to use in both Server
- * Components and client-side code.
+ * Builds the display-ready list of purchasable variants by reading
+ * `Product.variantSpecs` for the given location. No Firestore calls — safe
+ * in both Server Components and client-side code.
  */
-import type { ProductVariant } from '@/types/product';
-import type { InventoryItem } from '@/types/inventory';
+import type { ProductVariant, ProductVariantSpec } from '@/types/product';
 
 export interface DisplayVariant {
   variantId: string;
@@ -22,33 +21,38 @@ export interface DisplayVariant {
  * Build the list of purchasable variants for the storefront variant selector.
  *
  * Rules:
- * - Only variants that have an entry in `variantPricing` are included.
- * - `inStock` comes from the variant-level pricing entry when present;
- *   otherwise it inherits from `itemInStock`.
+ * - Only variants that have an entry at the given location are included.
+ * - `inStock` is derived from `qty - (reserved ?? 0) > 0` at that location.
+ * - The variant label comes from `variantSpecs[variantId].label`, falling
+ *   back to the legacy `variants[].label` when the new map omits a label.
  * - Results are sorted by price ascending.
- * - Returns `[]` when `variantPricing` is undefined/empty or `variants` is empty.
+ * - Returns `[]` when `variantSpecs` is undefined/empty.
  */
 export function resolveVariantPricing(
-  variants: ProductVariant[] | undefined,
-  variantPricing: InventoryItem['variantPricing'],
-  itemInStock = true
+  variantSpecs: { [variantId: string]: ProductVariantSpec } | undefined,
+  locationId: string,
+  legacyVariants?: ProductVariant[]
 ): DisplayVariant[] {
-  if (!variants?.length || !variantPricing) return [];
+  if (!variantSpecs) return [];
+
+  const labelByVariantId = new Map<string, string>();
+  for (const v of legacyVariants ?? [])
+    labelByVariantId.set(v.variantId, v.label);
 
   const results: DisplayVariant[] = [];
 
-  for (const variant of variants) {
-    const pricing = variantPricing[variant.variantId];
-    if (!pricing) continue; // no price set — exclude from storefront
+  for (const [variantId, spec] of Object.entries(variantSpecs)) {
+    const loc = spec?.locations?.[locationId];
+    if (!loc || typeof loc.price !== 'number') continue;
 
-    const inStock =
-      typeof pricing.inStock === 'boolean' ? pricing.inStock : itemInStock;
+    const available = (loc.qty ?? 0) - (loc.reserved ?? 0);
+    const inStock = available > 0;
 
     results.push({
-      variantId: variant.variantId,
-      label: variant.label,
-      price: pricing.price,
-      compareAtPrice: pricing.compareAtPrice,
+      variantId,
+      label: labelByVariantId.get(variantId) ?? spec.label ?? variantId,
+      price: loc.price,
+      compareAtPrice: loc.compareAtPrice,
       inStock,
     });
   }

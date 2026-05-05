@@ -25,6 +25,8 @@ export {
   releaseStock,
   commitStock,
   listProductsInStockAt,
+  listFeaturedProductsAt,
+  getOnlineInStockSet,
   InsufficientStockError,
 } from './product.repository';
 export type { HoldRequest } from './product.repository';
@@ -37,17 +39,6 @@ export {
   deletePromo,
   upsertPromo,
 } from './promo.repository';
-
-export {
-  listInventoryForLocation,
-  getInventoryItem,
-  listOnlineAvailableInventory,
-  listFeaturedInventory,
-  listFeaturedAtLocation,
-  getOnlineInStockSet,
-  setInventoryItem,
-  decrementInventoryItems,
-} from './inventory.repository';
 
 export {
   normalizeInviteEmail,

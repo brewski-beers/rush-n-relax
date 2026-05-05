@@ -53,11 +53,12 @@ export interface VariantGroup {
 
 /**
  * A single purchasable variant of a product (e.g. "1/8 oz", "10mg gummy").
- * Variants are authored at the product level and priced at the inventory level
- * via InventoryItem.variantPricing.
+ * Variants are authored at the product level and priced via
+ * `ProductVariantSpec.locations[locationId].price` (#312).
  *
  * @deprecated Legacy array-shaped variant. Replaced by `ProductVariantSpec`
- * (map-based, per-location pricing) under #304/#305. Removed in #312.
+ * (map-based, per-location pricing) under #304/#305. Retained for fallback
+ * label resolution while existing fixtures continue to author it.
  */
 export interface ProductVariant {
   variantId: string;
@@ -117,9 +118,9 @@ export interface ProductVariantSpec {
  * Firestore document shape for a product.
  * Lives at: products/{slug}
  *
- * Visibility and featuring are controlled at the inventory level
- * (inventory/{locationId}/items/{productId}.featured), not here.
- * Pricing is controlled at the inventory level via InventoryItem.variantPricing.
+ * Visibility, featuring, and pricing live on `variantSpecs[*].locations[*]`
+ * (per-variant, per-location). The legacy `inventory/{locationId}/items`
+ * sub-collection was retired in #312.
  */
 export interface Product {
   /** Firestore document ID (same as slug) */
@@ -165,7 +166,7 @@ export interface Product {
   /**
    * Denormalized flat variant list — computed from variantGroups on save via generateSkus().
    * Also accepts legacy hand-authored variants for products without variantGroups.
-   * Priced per-variant at the inventory level via InventoryItem.variantPricing.
+   * Priced per-variant on `variantSpecs[variantId].locations[locationId].price`.
    */
   variants?: ProductVariant[];
   /**
