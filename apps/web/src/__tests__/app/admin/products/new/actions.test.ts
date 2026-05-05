@@ -65,6 +65,7 @@ function makeFormData(
     description: 'A great product',
     details: 'Some details here',
     availableAt: ['oak-ridge'],
+    price: '2500',
   };
   const merged = { ...defaults, ...overrides };
   for (const [key, value] of Object.entries(merged)) {
@@ -269,6 +270,65 @@ describe('createProduct server action', () => {
       const variants = payload.variants as { label: string }[];
       expect(variants).toHaveLength(2);
       expect(variants.map(v => v.label)).toEqual(['1g', '3.5g']);
+    });
+  });
+
+
+  describe('given a missing or invalid price (#359)', () => {
+    it('returns an error when price is absent', async () => {
+      stubAuthorisedActor();
+
+      const result = await createProduct(null, makeFormData({ price: '' }));
+
+      expect(result).toEqual({
+        error: 'Price (in cents) is required and must be a positive integer.',
+      });
+      expect(upsertProductMock).not.toHaveBeenCalled();
+    });
+
+    it('returns an error when price is zero', async () => {
+      stubAuthorisedActor();
+
+      const result = await createProduct(null, makeFormData({ price: '0' }));
+
+      expect(result?.error).toMatch(/Price/);
+      expect(upsertProductMock).not.toHaveBeenCalled();
+    });
+
+    it('returns an error when price is not an integer', async () => {
+      stubAuthorisedActor();
+
+      const result = await createProduct(null, makeFormData({ price: '12.5' }));
+
+      expect(result?.error).toMatch(/Price/);
+      expect(upsertProductMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('given a valid payload, the product seeds the new variantSpecs shape (#359)', () => {
+    it('seeds variantSpecs.default with empty locations and empty index arrays', async () => {
+      stubAuthorisedActor();
+      getProductBySlugMock.mockResolvedValue(null);
+
+      redirectMock.mockImplementation(() => {
+        throw new Error('NEXT_REDIRECT');
+      });
+
+      await expect(
+        createProduct(null, makeFormData({ price: '4200' }))
+      ).rejects.toThrow('NEXT_REDIRECT');
+
+      const [payload] = upsertProductMock.mock.calls[0] as [
+        Record<string, unknown>,
+      ];
+
+      expect(payload.price).toBe(4200);
+      expect(payload.variantSpecs).toEqual({
+        default: { label: 'Default', locations: {} },
+      });
+      expect(payload.inStockAt).toEqual([]);
+      expect(payload.pickupAt).toEqual([]);
+      expect(payload.featuredAt).toEqual([]);
     });
   });
 });

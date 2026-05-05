@@ -121,6 +121,12 @@ export interface Product {
   name: string;
   category: string;
   details: string;
+  /**
+   * Default unit price in cents shown when no variant-specific price is set.
+   * Required at create time (#359) so storefront has a price to render even
+   * before per-location variantSpecs are populated.
+   */
+  price?: number;
   /** Firebase Storage path, e.g. products/{slug}.jpg */
   image?: string;
   /** Firebase Storage paths for the gallery (up to 5), e.g. products/{slug}/gallery/0.jpg */

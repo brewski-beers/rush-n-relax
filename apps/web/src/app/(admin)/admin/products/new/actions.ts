@@ -35,6 +35,17 @@ export async function createProduct(
     return { error: 'All required fields must be filled.' };
   }
 
+  // ── Price (cents) — required at create time (#359) ─────────────────────
+  const priceRaw = formData.get('price')?.toString().trim() ?? '';
+  const priceParsed = priceRaw !== '' ? Number(priceRaw) : NaN;
+  const priceCents =
+    Number.isFinite(priceParsed) && Number.isInteger(priceParsed)
+      ? priceParsed
+      : NaN;
+  if (!Number.isFinite(priceCents) || priceCents <= 0) {
+    return { error: 'Price (in cents) is required and must be a positive integer.' };
+  }
+
   if (!/^[a-z0-9-]+$/.test(slug)) {
     return {
       error: 'Slug must be lowercase letters, numbers, and hyphens only.',
@@ -192,9 +203,16 @@ export async function createProduct(
     name,
     category,
     details,
+    price: priceCents,
     image: featuredImagePath,
     availableAt,
     status: 'active',
+    // #359: seed the new variantSpecs map with a single `default` variant
+    // so the inventory editor (#358) has a valid target for setVariantLocation.
+    variantSpecs: { default: { label: 'Default', locations: {} } },
+    inStockAt: [],
+    pickupAt: [],
+    featuredAt: [],
     ...(vendorSlug !== undefined ? { vendorSlug } : {}),
     ...(coaUrl !== undefined ? { coaUrl } : {}),
     ...(leaflyUrl !== undefined ? { leaflyUrl } : {}),
