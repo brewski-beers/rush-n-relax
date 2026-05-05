@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-base-to-string --
+ * `formData.get(x)?.toString()` is the project-wide pattern for reading
+ * Server Action FormData. The rule flags `File.toString() → "[object Object]"`
+ * but our wizard never submits File inputs through this action; uploads go
+ * through ProductImageUpload which yields a storage path string.
+ */
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -35,15 +41,25 @@ export async function createProduct(
     return { error: 'All required fields must be filled.' };
   }
 
-  // ── Price (cents) — required at create time (#359) ─────────────────────
+  // ── Price (cents) — OPTIONAL at create time ───────────────────────────
+  // Pricing belongs with inventory (per-variant, per-location). If the caller
+  // happens to send a price, we still sanity-check it.
   const priceRaw = formData.get('price')?.toString().trim() ?? '';
-  const priceParsed = priceRaw !== '' ? Number(priceRaw) : NaN;
-  const priceCents =
-    Number.isFinite(priceParsed) && Number.isInteger(priceParsed)
-      ? priceParsed
-      : NaN;
-  if (!Number.isFinite(priceCents) || priceCents <= 0) {
-    return { error: 'Price (in cents) is required and must be a positive integer.' };
+  let priceCents: number | undefined;
+  if (priceRaw !== '') {
+    const parsed = Number(priceRaw);
+    if (
+      !Number.isFinite(parsed) ||
+      !Number.isInteger(parsed) ||
+      parsed <= 0 ||
+      parsed > 999999
+    ) {
+      return {
+        error:
+          'Price (in cents) must be a positive integer no greater than 999999.',
+      };
+    }
+    priceCents = parsed;
   }
 
   if (!/^[a-z0-9-]+$/.test(slug)) {
@@ -72,7 +88,8 @@ export async function createProduct(
   const leaflyUrl = formData.get('leaflyUrl')?.toString().trim() || undefined;
 
   // ── Vendor product URL ────────────────────────────────────────────────────
-  const vendorProductUrl = formData.get('vendorProductUrl')?.toString().trim() || undefined;
+  const vendorProductUrl =
+    formData.get('vendorProductUrl')?.toString().trim() || undefined;
 
   // ── Cannabis profile fields ────────────────────────────────────────────
   const strainRaw = formData.get('strain')?.toString() ?? '';
@@ -203,7 +220,7 @@ export async function createProduct(
     name,
     category,
     details,
-    price: priceCents,
+    ...(priceCents !== undefined ? { price: priceCents } : {}),
     image: featuredImagePath,
     availableAt,
     status: 'active',
@@ -235,5 +252,16 @@ export async function createProduct(
   revalidatePath('/products');
   revalidatePath(`/products/${slug}`);
 
+  // ── Post-create intent (Review-step CTAs) ───────────────────────────────
+  // 'save' (default) → product list
+  // 'save-and-set-pricing' → inventory hub (no per-product deep link yet)
+  // 'save-and-add-another' → fresh wizard, with toast slug for confirmation
+  const intent = formData.get('intent')?.toString() ?? 'save';
+  if (intent === 'save-and-set-pricing') {
+    redirect('/admin/inventory');
+  }
+  if (intent === 'save-and-add-another') {
+    redirect(`/admin/products/new?created=${encodeURIComponent(slug)}`);
+  }
   redirect('/admin/products');
 }

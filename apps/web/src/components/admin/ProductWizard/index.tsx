@@ -14,9 +14,11 @@
  *   3. Cannabis Profile (strain, THC/CBD %, effects, flavors, terpenes, COA)
  *      — skipped in navigation when !requiresCannabisProfile && !requiresCOA
  *   4. Variants (+ nutrition facts when requiresNutritionFacts)
- *   5. Pricing (default unit price; per-variant overrides via inventory editor)
- *   6. Images
- *   7. Review
+ *   5. Images
+ *   6. Review (with CTA group: Save / Save & Set Pricing / Save & Add Another)
+ *
+ * Pricing is no longer collected at create time — it lives with inventory
+ * (per-variant, per-location). See PR #377 reversal.
  *
  * Category contract flags (requiresCannabisProfile, requiresNutritionFacts,
  * requiresCOA) are sourced from the selected ProductCategorySummary and gate
@@ -83,26 +85,16 @@ interface ReviewSnapshot {
 
 // --- Constants ---------------------------------------------------------------
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
 const STEP_TITLES: Record<number, string> = {
   1: 'Category & Name',
   2: 'Details',
   3: 'Cannabis Profile',
   4: 'Variants',
-  5: 'Pricing',
-  6: 'Images',
-  7: 'Review',
+  5: 'Images',
+  6: 'Review',
 };
-
-const PRICE_MAX_DOLLARS = 9999.99;
-
-/** Convert a dollar string (e.g. "19.99") to integer cents. NaN if invalid. */
-function dollarsToCents(input: string): number {
-  const n = Number(input);
-  if (!Number.isFinite(n)) return NaN;
-  return Math.round(n * 100);
-}
 
 // --- Per-step validation -----------------------------------------------------
 
@@ -126,23 +118,6 @@ function validateStep(step: number, form: HTMLFormElement): string | null {
   }
   if (step === 2) {
     if (!v('details')) return 'Description is required.';
-  }
-  if (step === 5) {
-    const priceStr = v('priceDollars');
-    if (!priceStr) return 'Price is required.';
-    const dollars = Number(priceStr);
-    if (!Number.isFinite(dollars) || dollars <= 0)
-      return 'Price must be greater than $0.';
-    if (dollars > PRICE_MAX_DOLLARS)
-      return `Price must be no more than $${PRICE_MAX_DOLLARS.toFixed(2)}.`;
-    const compareStr = v('compareAtPriceDollars');
-    if (compareStr) {
-      const compare = Number(compareStr);
-      if (!Number.isFinite(compare) || compare <= 0)
-        return 'Compare-at price must be greater than $0.';
-      if (compare > PRICE_MAX_DOLLARS)
-        return `Compare-at price must be no more than $${PRICE_MAX_DOLLARS.toFixed(2)}.`;
-    }
   }
   return null;
 }
@@ -174,6 +149,11 @@ export function ProductWizardForm({
   const [stepError, setStepError] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [review, setReview] = useState<ReviewSnapshot | null>(null);
+  // Which Review-step CTA was clicked. Submitted as `intent` so the server
+  // action can decide where to navigate after a successful create.
+  const [submitIntent, setSubmitIntent] = useState<
+    'save' | 'save-and-set-pricing' | 'save-and-add-another'
+  >('save');
 
   // Controlled inputs that need auto-suggest or inter-field logic
   const [name, setName] = useState(product?.name ?? '');
@@ -181,13 +161,6 @@ export function ProductWizardForm({
   const [selectedVendorSlug, setSelectedVendorSlug] = useState(
     product?.vendorSlug ?? ''
   );
-
-  // Pricing inputs are captured as dollar strings; converted to cents on submit.
-  // Default variant price; per-variant overrides handled by inventory editor.
-  const [priceDollars, setPriceDollars] = useState(
-    product?.price !== undefined ? (product.price / 100).toFixed(2) : ''
-  );
-  const [compareAtPriceDollars, setCompareAtPriceDollars] = useState('');
 
   // Track selected category to gate form sections by contract flags.
   // Edit mode pre-selects via initialCategory; create mode starts undefined.
@@ -588,88 +561,12 @@ export function ProductWizardForm({
         />
       </div>
 
-      {/* ── Step 5: Pricing ────────────────────────────────────── */}
+      {/* ── Step 5: Images ─────────────────────────────────────── */}
       <div
         className={
           isHidden(5) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
         aria-hidden={isHidden(5)}
-      >
-        <fieldset className="admin-fieldset">
-          <legend>Pricing</legend>
-          <span className="admin-hint">
-            Default unit price shown when no variant-specific price is set.
-          </span>
-
-          <label>
-            Price
-            <span className="admin-input-prefix">
-              <span aria-hidden="true">$</span>
-              <input
-                name="priceDollars"
-                type="number"
-                inputMode="decimal"
-                min="0.01"
-                max={PRICE_MAX_DOLLARS}
-                step="0.01"
-                required
-                placeholder="0.00"
-                value={priceDollars}
-                onChange={e => setPriceDollars(e.target.value)}
-              />
-            </span>
-          </label>
-
-          <label>
-            Compare-at price{' '}
-            <span className="admin-hint">
-              (optional — for &quot;was $X&quot; sale display)
-            </span>
-            <span className="admin-input-prefix">
-              <span aria-hidden="true">$</span>
-              <input
-                name="compareAtPriceDollars"
-                type="number"
-                inputMode="decimal"
-                min="0.01"
-                max={PRICE_MAX_DOLLARS}
-                step="0.01"
-                placeholder="0.00"
-                value={compareAtPriceDollars}
-                onChange={e => setCompareAtPriceDollars(e.target.value)}
-              />
-            </span>
-          </label>
-
-          {/* Hidden cents fields submitted to the server action. */}
-          <input
-            type="hidden"
-            name="price"
-            value={
-              priceDollars && Number.isFinite(dollarsToCents(priceDollars))
-                ? String(dollarsToCents(priceDollars))
-                : ''
-            }
-          />
-          <input
-            type="hidden"
-            name="compareAtPrice"
-            value={
-              compareAtPriceDollars &&
-              Number.isFinite(dollarsToCents(compareAtPriceDollars))
-                ? String(dollarsToCents(compareAtPriceDollars))
-                : ''
-            }
-          />
-        </fieldset>
-      </div>
-
-      {/* ── Step 6: Images ─────────────────────────────────────── */}
-      <div
-        className={
-          isHidden(6) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
-        }
-        aria-hidden={isHidden(6)}
       >
         <fieldset className="admin-fieldset">
           <legend>Images</legend>
@@ -682,12 +579,12 @@ export function ProductWizardForm({
         </fieldset>
       </div>
 
-      {/* ── Step 7: Review ─────────────────────────────────────── */}
+      {/* ── Step 6: Review ─────────────────────────────────────── */}
       <div
         className={
-          isHidden(7) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+          isHidden(6) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(7)}
+        aria-hidden={isHidden(6)}
       >
         {review && (
           <div className="wizard-review">
@@ -803,6 +700,47 @@ export function ProductWizardForm({
           >
             {step === TOTAL_STEPS - 1 ? 'Review' : 'Next'}
           </button>
+        ) : mode === 'create' ? (
+          <>
+            <button
+              key="submit-pricing"
+              type="submit"
+              className="admin-btn-secondary"
+              disabled={pending || imageUploading}
+              onClick={() => setSubmitIntent('save-and-set-pricing')}
+            >
+              {imageUploading
+                ? 'Uploading image...'
+                : pending
+                  ? 'Saving...'
+                  : 'Save & Set Pricing'}
+            </button>
+            <button
+              key="submit-another"
+              type="submit"
+              className="admin-btn-secondary"
+              disabled={pending || imageUploading}
+              onClick={() => setSubmitIntent('save-and-add-another')}
+            >
+              {imageUploading
+                ? 'Uploading image...'
+                : pending
+                  ? 'Saving...'
+                  : 'Save & Add Another'}
+            </button>
+            <button
+              key="submit"
+              type="submit"
+              disabled={pending || imageUploading}
+              onClick={() => setSubmitIntent('save')}
+            >
+              {imageUploading
+                ? 'Uploading image...'
+                : pending
+                  ? 'Saving...'
+                  : 'Save Product'}
+            </button>
+          </>
         ) : (
           <button
             key="submit"
@@ -813,6 +751,12 @@ export function ProductWizardForm({
           </button>
         )}
       </div>
+
+      {/* Intent submitted alongside form data so the server action knows
+          which post-create destination to redirect to (create mode only). */}
+      {mode === 'create' && (
+        <input type="hidden" name="intent" value={submitIntent} />
+      )}
 
       {/* Hidden passthroughs for fields not rendered when step 3 is skipped */}
       {!showStep3 && (

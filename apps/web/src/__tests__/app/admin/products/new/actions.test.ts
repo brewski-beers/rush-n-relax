@@ -13,7 +13,9 @@ const {
   requireRoleMock: vi.fn(),
   upsertProductMock: vi.fn().mockResolvedValue('new-product'),
   getProductBySlugMock: vi.fn().mockResolvedValue(null),
-  listActiveCategoriesMock: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
+  listActiveCategoriesMock: vi
+    .fn()
+    .mockResolvedValue({ items: [], nextCursor: null }),
   revalidatePathMock: vi.fn(),
   redirectMock: vi.fn(),
 }));
@@ -65,7 +67,7 @@ function makeFormData(
     description: 'A great product',
     details: 'Some details here',
     availableAt: ['oak-ridge'],
-    price: '2500',
+    // price intentionally omitted — no longer required at create time
   };
   const merged = { ...defaults, ...overrides };
   for (const [key, value] of Object.entries(merged)) {
@@ -83,9 +85,10 @@ function makeFormData(
 describe('createProduct server action', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    listActiveCategoriesMock.mockResolvedValue({ items: [
-      { slug: 'flower', label: 'Flower', order: 1 },
-    ], nextCursor: null });
+    listActiveCategoriesMock.mockResolvedValue({
+      items: [{ slug: 'flower', label: 'Flower', order: 1 }],
+      nextCursor: null,
+    });
   });
 
   describe('given an unauthenticated caller', () => {
@@ -143,9 +146,10 @@ describe('createProduct server action', () => {
   describe('given an invalid category', () => {
     it('returns an invalid-category error when category is not in active list', async () => {
       stubAuthorisedActor();
-      listActiveCategoriesMock.mockResolvedValue({ items: [
-        { slug: 'edibles', label: 'Edibles', order: 2 },
-      ], nextCursor: null });
+      listActiveCategoriesMock.mockResolvedValue({
+        items: [{ slug: 'edibles', label: 'Edibles', order: 2 }],
+        nextCursor: null,
+      });
 
       const result = await createProduct(
         null,
@@ -273,19 +277,26 @@ describe('createProduct server action', () => {
     });
   });
 
-
-  describe('given a missing or invalid price (#359)', () => {
-    it('returns an error when price is absent', async () => {
+  describe('given price is omitted (now optional after PR #377 reversal)', () => {
+    it('creates the product without a price field', async () => {
       stubAuthorisedActor();
-
-      const result = await createProduct(null, makeFormData({ price: '' }));
-
-      expect(result).toEqual({
-        error: 'Price (in cents) is required and must be a positive integer.',
+      getProductBySlugMock.mockResolvedValue(null);
+      redirectMock.mockImplementation(() => {
+        throw new Error('NEXT_REDIRECT');
       });
-      expect(upsertProductMock).not.toHaveBeenCalled();
-    });
 
+      await expect(createProduct(null, makeFormData())).rejects.toThrow(
+        'NEXT_REDIRECT'
+      );
+
+      const [payload] = upsertProductMock.mock.calls[0] as [
+        Record<string, unknown>,
+      ];
+      expect(payload.price).toBeUndefined();
+    });
+  });
+
+  describe('given an invalid price is supplied', () => {
     it('returns an error when price is zero', async () => {
       stubAuthorisedActor();
 
@@ -302,6 +313,57 @@ describe('createProduct server action', () => {
 
       expect(result?.error).toMatch(/Price/);
       expect(upsertProductMock).not.toHaveBeenCalled();
+    });
+
+    it('returns an error when price exceeds 999999 cents', async () => {
+      stubAuthorisedActor();
+
+      const result = await createProduct(
+        null,
+        makeFormData({ price: '1000000' })
+      );
+
+      expect(result?.error).toMatch(/Price/);
+      expect(upsertProductMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('given a Review-step CTA intent (PR #377 reversal)', () => {
+    beforeEach(() => {
+      stubAuthorisedActor();
+      getProductBySlugMock.mockResolvedValue(null);
+      redirectMock.mockImplementation((url: string) => {
+        throw new Error(`NEXT_REDIRECT:${url}`);
+      });
+    });
+
+    it('redirects to /admin/products on intent="save"', async () => {
+      await expect(
+        createProduct(null, makeFormData({ intent: 'save' }))
+      ).rejects.toThrow('NEXT_REDIRECT:/admin/products');
+      expect(upsertProductMock).toHaveBeenCalledOnce();
+    });
+
+    it('redirects to /admin/inventory on intent="save-and-set-pricing"', async () => {
+      await expect(
+        createProduct(null, makeFormData({ intent: 'save-and-set-pricing' }))
+      ).rejects.toThrow('NEXT_REDIRECT:/admin/inventory');
+      expect(upsertProductMock).toHaveBeenCalledOnce();
+    });
+
+    it('redirects to /admin/products/new with created slug on intent="save-and-add-another"', async () => {
+      await expect(
+        createProduct(null, makeFormData({ intent: 'save-and-add-another' }))
+      ).rejects.toThrow(
+        'NEXT_REDIRECT:/admin/products/new?created=test-product'
+      );
+      expect(upsertProductMock).toHaveBeenCalledOnce();
+    });
+
+    it('defaults to /admin/products when intent is absent', async () => {
+      await expect(createProduct(null, makeFormData())).rejects.toThrow(
+        'NEXT_REDIRECT:/admin/products'
+      );
     });
   });
 
