@@ -20,25 +20,14 @@
  */
 import Script from 'next/script';
 import { useEffect } from 'react';
+import type { AgeCheckerConfig } from '@/types/agechecker-window';
+import '@/types/agechecker-window';
 
 interface Props {
   sessionId: string;
   apiKey: string;
   customerEmail: string | undefined;
   redirectUrl: string;
-}
-
-interface AgeCheckerConfig {
-  element: string;
-  key: string;
-  order: string;
-  email?: string;
-}
-
-declare global {
-  interface Window {
-    AgeCheckerConfig?: AgeCheckerConfig;
-  }
 }
 
 const POPUP_SRC = 'https://cdn.agechecker.net/static/popup/v1/popup.js';
