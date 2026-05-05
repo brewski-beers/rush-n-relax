@@ -31,17 +31,14 @@ const SAMPLE_PAYLOAD: OrderEmailPayload = {
 const UNRESOLVED_TOKEN_RE = /\{\{[^}]*\}\}/;
 
 describe('order lifecycle email templates seed', () => {
-  it('contains exactly the 9 expected lifecycle templates', () => {
-    expect(ORDER_TEMPLATES).toHaveLength(9);
+  it('contains exactly the 6 expected lifecycle templates (post-#362)', () => {
+    expect(ORDER_TEMPLATES).toHaveLength(6);
     expect(ORDER_TEMPLATES.map(t => t.id).sort()).toEqual(
       [
-        'id_rejected',
-        'id_verified',
         'order_cancelled',
         'order_completed',
         'order_out_for_delivery',
         'order_preparing',
-        'order_received',
         'order_refunded',
         'payment_confirmed',
       ].sort()

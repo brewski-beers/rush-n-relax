@@ -109,21 +109,17 @@ describe('admin order Server Actions', () => {
 
     it('rejects a transition not in ALLOWED_TRANSITIONS', async () => {
       getOrderMock.mockResolvedValue({ ...baseOrder, status: 'paid' });
-      const res = await transitionOrderAction(
-        'ord_1',
-        'pending_id_verification'
-      );
+      const res = await transitionOrderAction('ord_1', 'completed');
       expect(res.ok).toBe(false);
       expect(transitionStatusMock).not.toHaveBeenCalled();
     });
 
     it.each([
-      ['pending_id_verification', 'id_verified'],
-      ['id_verified', 'awaiting_payment'],
-      ['awaiting_payment', 'paid'],
       ['paid', 'preparing'],
       ['preparing', 'out_for_delivery'],
       ['out_for_delivery', 'completed'],
+      ['paid', 'refunded'],
+      ['completed', 'refunded'],
     ] as const)('allows transition %s → %s', async (from, to) => {
       getOrderMock.mockResolvedValue({ ...baseOrder, status: from });
       transitionStatusMock.mockResolvedValue({ id: 'ord_1' });

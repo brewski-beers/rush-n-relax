@@ -37,9 +37,6 @@ export interface ActionResult {
 }
 
 const STATUS_TO_EMAIL_TEMPLATE: Partial<Record<OrderStatus, string>> = {
-  pending_id_verification: 'order_received',
-  id_verified: 'id_verified',
-  id_rejected: 'id_rejected',
   paid: 'payment_confirmed',
   preparing: 'order_preparing',
   out_for_delivery: 'order_out_for_delivery',

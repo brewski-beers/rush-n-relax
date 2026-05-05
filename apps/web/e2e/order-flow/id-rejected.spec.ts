@@ -1,4 +1,9 @@
 /**
+ * SKIPPED post-#362: this spec drives the legacy pre-payment OrderStatus
+ * flow (id_verified / awaiting_payment / failed / id_rejected). Full BDD
+ * rewrite for the new CheckoutSession-based path lands in #373.
+ */
+/**
  * Order flow E2E — id_rejected (issue #285).
  *
  * Per the post-#332 cart wiring (CartPage.handleVerifyComplete):
@@ -26,7 +31,7 @@ const PRODUCT = {
   stock: 999,
 };
 
-test.describe('Order flow — id_rejected', () => {
+test.describe.skip('Order flow — id_rejected', () => {
   test.beforeAll(async () => {
     await seedProductForOrderFlow(PRODUCT);
   });
