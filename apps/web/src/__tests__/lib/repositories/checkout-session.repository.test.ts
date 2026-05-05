@@ -13,6 +13,7 @@ interface FakeDocSnap {
 const {
   docGetMock,
   docSetMock,
+  docCreateMock,
   docUpdateMock,
   txGetMock,
   txUpdateMock,
@@ -23,6 +24,7 @@ const {
 } = vi.hoisted(() => {
   const docGetMock = vi.fn();
   const docSetMock = vi.fn().mockResolvedValue(undefined);
+  const docCreateMock = vi.fn().mockResolvedValue(undefined);
   const docUpdateMock = vi.fn().mockResolvedValue(undefined);
 
   const txGetMock = vi.fn();
@@ -36,6 +38,7 @@ const {
     id: id ?? 'auto-id',
     get: docGetMock,
     set: docSetMock,
+    create: docCreateMock,
     update: docUpdateMock,
   }));
 
@@ -49,6 +52,7 @@ const {
   return {
     docGetMock,
     docSetMock,
+    docCreateMock,
     docUpdateMock,
     txGetMock,
     txUpdateMock,
@@ -67,6 +71,7 @@ vi.mock('@/lib/firebase/admin', () => ({
 
 import {
   createCheckoutSession,
+  DuplicateCheckoutSessionError,
   getCheckoutSession,
   InvalidCheckoutSessionTransitionError,
   markAgeVerified,
@@ -139,9 +144,9 @@ describe('checkout-session.repository', () => {
       expect(id).toBe('clover-sess-abc');
       expect(collectionMock).toHaveBeenCalledWith('checkout-sessions');
       expect(docFnMock).toHaveBeenCalledWith('clover-sess-abc');
-      expect(docSetMock).toHaveBeenCalledOnce();
+      expect(docCreateMock).toHaveBeenCalledOnce();
 
-      const [payload] = docSetMock.mock.calls[0];
+      const [payload] = docCreateMock.mock.calls[0];
       expect(payload.status).toBe('awaiting_id');
       expect(payload.ageVerifiedAt).toBeNull();
       expect(payload.verificationId).toBeNull();
@@ -155,12 +160,12 @@ describe('checkout-session.repository', () => {
       await expect(
         createCheckoutSession({ ...baseInput, cloverCheckoutSessionId: '' })
       ).rejects.toThrow(/cloverCheckoutSessionId/);
-      expect(docSetMock).not.toHaveBeenCalled();
+      expect(docCreateMock).not.toHaveBeenCalled();
     });
 
     it('omits customerEmail from payload when not provided', async () => {
       await createCheckoutSession(baseInput);
-      const [payload] = docSetMock.mock.calls[0];
+      const [payload] = docCreateMock.mock.calls[0];
       expect('customerEmail' in payload).toBe(false);
     });
 
@@ -169,8 +174,32 @@ describe('checkout-session.repository', () => {
         ...baseInput,
         customerEmail: 'b@example.com',
       });
-      const [payload] = docSetMock.mock.calls[0];
+      const [payload] = docCreateMock.mock.calls[0];
       expect(payload.customerEmail).toBe('b@example.com');
+    });
+
+    it('throws DuplicateCheckoutSessionError when Clover session id already exists (numeric code 6)', async () => {
+      docCreateMock.mockRejectedValueOnce(
+        Object.assign(new Error('ALREADY_EXISTS'), { code: 6 })
+      );
+      await expect(createCheckoutSession(baseInput)).rejects.toBeInstanceOf(
+        DuplicateCheckoutSessionError
+      );
+    });
+
+    it('throws DuplicateCheckoutSessionError when Clover session id already exists (string code)', async () => {
+      docCreateMock.mockRejectedValueOnce(
+        Object.assign(new Error('ALREADY_EXISTS'), { code: 'already-exists' })
+      );
+      await expect(createCheckoutSession(baseInput)).rejects.toBeInstanceOf(
+        DuplicateCheckoutSessionError
+      );
+    });
+
+    it('rethrows non-duplicate errors from create()', async () => {
+      const oops = new Error('network');
+      docCreateMock.mockRejectedValueOnce(oops);
+      await expect(createCheckoutSession(baseInput)).rejects.toBe(oops);
     });
   });
 

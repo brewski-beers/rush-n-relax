@@ -21,6 +21,18 @@ function checkoutSessionsCol() {
   return getAdminFirestore().collection(COLLECTION);
 }
 
+export class DuplicateCheckoutSessionError extends Error {
+  readonly cloverCheckoutSessionId: string;
+
+  constructor(cloverCheckoutSessionId: string) {
+    super(
+      `CheckoutSession already exists for cloverCheckoutSessionId '${cloverCheckoutSessionId}'`
+    );
+    this.name = 'DuplicateCheckoutSessionError';
+    this.cloverCheckoutSessionId = cloverCheckoutSessionId;
+  }
+}
+
 export class InvalidCheckoutSessionTransitionError extends Error {
   readonly from: CheckoutSessionStatus | null;
   readonly to: CheckoutSessionStatus;
@@ -83,7 +95,18 @@ export async function createCheckoutSession(
     updatedAt: now,
     expiresAt: input.expiresAt,
   };
-  await ref.set(payload);
+  try {
+    await ref.create(payload);
+  } catch (err: unknown) {
+    // Firestore Admin SDK throws on .create() when the doc already exists.
+    // Surface a typed error so the Clover webhook can handle retries
+    // idempotently instead of silently overwriting age-verification state.
+    const code = (err as { code?: number | string } | null)?.code;
+    if (code === 6 || code === 'already-exists') {
+      throw new DuplicateCheckoutSessionError(input.cloverCheckoutSessionId);
+    }
+    throw err;
+  }
   return ref.id;
 }
 

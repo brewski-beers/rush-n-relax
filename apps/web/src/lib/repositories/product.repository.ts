@@ -1081,7 +1081,7 @@ async function mutateReservations(
           before,
           after,
           delta: (after?.qty ?? 0) - (before?.qty ?? 0),
-          source: meta.source ?? (op === 'commit' ? 'order' : 'order'),
+          source: meta.source ?? 'order',
           actor: meta.actor,
           reason: meta.reason ?? `stock-${op}`,
           createdAt: now,
