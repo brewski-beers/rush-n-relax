@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-base-to-string --
+ * `formData.get(x)?.toString()` is the project-wide pattern for reading
+ * Server Action FormData. The rule flags `File.toString() → "[object Object]"`
+ * but our wizard never submits File inputs through this action; uploads go
+ * through ProductImageUpload which yields a storage path string.
+ */
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -35,6 +41,27 @@ export async function createProduct(
     return { error: 'All required fields must be filled.' };
   }
 
+  // ── Price (cents) — OPTIONAL at create time ───────────────────────────
+  // Pricing belongs with inventory (per-variant, per-location). If the caller
+  // happens to send a price, we still sanity-check it.
+  const priceRaw = formData.get('price')?.toString().trim() ?? '';
+  let priceCents: number | undefined;
+  if (priceRaw !== '') {
+    const parsed = Number(priceRaw);
+    if (
+      !Number.isFinite(parsed) ||
+      !Number.isInteger(parsed) ||
+      parsed <= 0 ||
+      parsed > 999999
+    ) {
+      return {
+        error:
+          'Price (in cents) must be a positive integer no greater than 999999.',
+      };
+    }
+    priceCents = parsed;
+  }
+
   if (!/^[a-z0-9-]+$/.test(slug)) {
     return {
       error: 'Slug must be lowercase letters, numbers, and hyphens only.',
@@ -61,7 +88,8 @@ export async function createProduct(
   const leaflyUrl = formData.get('leaflyUrl')?.toString().trim() || undefined;
 
   // ── Vendor product URL ────────────────────────────────────────────────────
-  const vendorProductUrl = formData.get('vendorProductUrl')?.toString().trim() || undefined;
+  const vendorProductUrl =
+    formData.get('vendorProductUrl')?.toString().trim() || undefined;
 
   // ── Cannabis profile fields ────────────────────────────────────────────
   const strainRaw = formData.get('strain')?.toString() ?? '';
@@ -192,9 +220,16 @@ export async function createProduct(
     name,
     category,
     details,
+    ...(priceCents !== undefined ? { price: priceCents } : {}),
     image: featuredImagePath,
     availableAt,
     status: 'active',
+    // #359: seed the new variantSpecs map with a single `default` variant
+    // so the inventory editor (#358) has a valid target for setVariantLocation.
+    variantSpecs: { default: { label: 'Default', locations: {} } },
+    inStockAt: [],
+    pickupAt: [],
+    featuredAt: [],
     ...(vendorSlug !== undefined ? { vendorSlug } : {}),
     ...(coaUrl !== undefined ? { coaUrl } : {}),
     ...(leaflyUrl !== undefined ? { leaflyUrl } : {}),
@@ -217,5 +252,16 @@ export async function createProduct(
   revalidatePath('/products');
   revalidatePath(`/products/${slug}`);
 
+  // ── Post-create intent (Review-step CTAs) ───────────────────────────────
+  // 'save' (default) → product list
+  // 'save-and-set-pricing' → inventory hub (no per-product deep link yet)
+  // 'save-and-add-another' → fresh wizard, with toast slug for confirmation
+  const intent = formData.get('intent')?.toString() ?? 'save';
+  if (intent === 'save-and-set-pricing') {
+    redirect('/admin/inventory');
+  }
+  if (intent === 'save-and-add-another') {
+    redirect(`/admin/products/new?created=${encodeURIComponent(slug)}`);
+  }
   redirect('/admin/products');
 }
