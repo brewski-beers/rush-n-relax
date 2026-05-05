@@ -1,7 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars,
-                  @typescript-eslint/no-unsafe-assignment,
-                  @typescript-eslint/no-unsafe-member-access,
-                  @typescript-eslint/require-await */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── Hoisted mocks ──────────────────────────────────────────────────────────

@@ -298,7 +298,6 @@ export async function listOrderEvents(orderId: string): Promise<OrderEvent[]> {
   return snap.docs.map(d => docToOrderEvent(d.id, d.data()));
 }
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 function docToOrderEvent(
   id: string,
   d: FirebaseFirestore.DocumentData
@@ -313,7 +312,6 @@ function docToOrderEvent(
     createdAt: toDate(d.createdAt),
   } satisfies OrderEvent;
 }
-/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 
 const EMPTY_ADDRESS: ShippingAddress = {
   name: '',
@@ -326,7 +324,7 @@ const EMPTY_ADDRESS: ShippingAddress = {
 // Justified disables: Firestore DocumentData fields are typed `any`. Each
 // field is defaulted/coerced below, and the final object is constrained by
 // `satisfies Order`, so the runtime shape is safe.
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
+
 function docToOrder(id: string, d: FirebaseFirestore.DocumentData): Order {
   return {
     id,
@@ -369,4 +367,3 @@ function docToOrder(id: string, d: FirebaseFirestore.DocumentData): Order {
     refundedAt: d.refundedAt ? toDate(d.refundedAt) : undefined,
   } satisfies Order;
 }
-/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */

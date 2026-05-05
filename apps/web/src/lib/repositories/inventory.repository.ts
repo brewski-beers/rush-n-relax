@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument -- Firestore Admin doc.data() returns `any`; safe casts are documented inline. Pre-existing baseline (#314 doc-touch surfaced in lint-staged; full type-narrowing tracked separately). */
 /**
  * Inventory repository — all Firestore access for inventory documents.
  * Server-side only (uses firebase-admin).

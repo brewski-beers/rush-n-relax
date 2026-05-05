@@ -54,7 +54,7 @@ function getAdminApp(): App {
 
     try {
       adminApp = initializeApp({
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any -- Firebase Admin accepts credential config objects
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase Admin accepts credential config objects
         credential: externalAccountConfig as any,
         projectId: 'rush-n-relax',
         storageBucket: 'rush-n-relax.firebasestorage.app',
@@ -71,12 +71,10 @@ function getAdminApp(): App {
 
   // Fallback (during migration or if WIF fails): static SA key
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSON.parse is any by design
     const serviceAccount = JSON.parse(
       process.env.FIREBASE_SERVICE_ACCOUNT_JSON
     );
     adminApp = initializeApp({
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- serviceAccount is ServiceAccount-shaped at runtime
       credential: cert(serviceAccount),
       projectId: 'rush-n-relax',
       storageBucket: 'rush-n-relax.firebasestorage.app',
