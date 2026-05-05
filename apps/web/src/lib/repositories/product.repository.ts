@@ -524,7 +524,12 @@ function recomputeIndexes(
   for (const variant of Object.values(variantSpecs)) {
     if (!variant?.locations) continue;
     for (const [locationId, loc] of Object.entries(variant.locations)) {
-      if (!loc || typeof loc.qty !== 'number' || loc.qty <= 0) continue;
+      if (!loc || typeof loc.qty !== 'number') continue;
+      // #361 — denormalized indexes track AVAILABLE stock (qty minus held
+      // reservations), so the storefront stops surfacing a SKU as in-stock
+      // the moment its remaining units are entirely reserved.
+      const available = loc.qty - (loc.reserved ?? 0);
+      if (available <= 0) continue;
       inStockAt.add(locationId);
       if (loc.availablePickup === true) pickupAt.add(locationId);
       if (loc.featured === true) featuredAt.add(locationId);
@@ -583,6 +588,7 @@ function readVariantSpecs(
         }
         locations[locId] = {
           qty: loc.qty,
+          ...(typeof loc.reserved === 'number' ? { reserved: loc.reserved } : {}),
           price: loc.price,
           compareAtPrice:
             typeof loc.compareAtPrice === 'number'
@@ -861,4 +867,226 @@ export async function listProductsInStockAt(
     items,
     nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
   };
+}
+
+// ── Reservation helpers (#361) ────────────────────────────────────────────
+
+/**
+ * A single hold/release/commit request targeting a (product, variant,
+ * location) tuple. Mirrored on `CheckoutSessionHold` (#360).
+ */
+export interface HoldRequest {
+  productId: string;
+  variantId: string;
+  locationId: string;
+  qty: number;
+}
+
+interface ReservationMeta {
+  source?: VariantAdjustmentSource;
+  actor?: string;
+  reason?: string;
+}
+
+/**
+ * Atomically increment `reserved` across one or more product/variant/location
+ * tuples in a single Firestore transaction.
+ *
+ * Validates `(qty - reserved) >= requested qty` for each line, accumulating
+ * per-product holds so multiple lines against the same SKU compose
+ * correctly. Throws `InsufficientStockError` on any shortage — the whole
+ * transaction rolls back and no partial holds survive.
+ *
+ * Recomputes denormalized `inStockAt` / `pickupAt` / `featuredAt` indexes
+ * because available stock is now `qty - reserved`.
+ *
+ * Audit log: writes one row per (variantId, locationId) touched per product
+ * to `products/{slug}/adjustments` with source `'order'` (override via meta).
+ * Delta is 0 because `qty` is unchanged — the row records the reservation
+ * via the before/after snapshots.
+ */
+export async function holdStock(
+  items: HoldRequest[],
+  meta: ReservationMeta = {}
+): Promise<void> {
+  await mutateReservations(items, 'hold', meta);
+}
+
+/**
+ * Atomic decrement of `reserved` — releases held units back to the available
+ * pool. No-op safe when called with already-zero reserved entries (clamps at 0
+ * rather than throwing) so callers can release on cancellation/expiry without
+ * coordinating with the original hold.
+ */
+export async function releaseStock(
+  items: HoldRequest[],
+  meta: ReservationMeta = {}
+): Promise<void> {
+  await mutateReservations(items, 'release', meta);
+}
+
+/**
+ * Atomic decrement of BOTH `qty` and `reserved` — used after payment capture
+ * to convert a hold into a real stock decrement. Equivalent to (a) the legacy
+ * `decrementVariantStock` for `qty` plus (b) `releaseStock` for `reserved`,
+ * but guaranteed atomic.
+ *
+ * If `qty` falls to 0, `availablePickup` and `featured` are cleared (mirrors
+ * `decrementVariantStock`). Indexes are recomputed.
+ */
+export async function commitStock(
+  items: HoldRequest[],
+  meta: ReservationMeta = {}
+): Promise<void> {
+  await mutateReservations(items, 'commit', meta);
+}
+
+type ReservationOp = 'hold' | 'release' | 'commit';
+
+async function mutateReservations(
+  items: HoldRequest[],
+  op: ReservationOp,
+  meta: ReservationMeta
+): Promise<void> {
+  if (items.length === 0) return;
+
+  const db = getAdminFirestore();
+  const slugs = [...new Set(items.map(i => i.productId))];
+
+  await db.runTransaction(async tx => {
+    const refs = slugs.map(s => productsCol().doc(s));
+    const snaps = await Promise.all(refs.map(r => tx.get(r)));
+
+    const working = new Map<
+      string,
+      {
+        ref: FirebaseFirestore.DocumentReference;
+        data: FirebaseFirestore.DocumentData;
+        variantSpecs: { [variantId: string]: ProductVariantSpec };
+        beforeMap: Map<string, ProductVariantLocation | null>;
+      }
+    >();
+
+    for (let i = 0; i < slugs.length; i++) {
+      const snap = snaps[i];
+      if (!snap.exists) {
+        throw new Error(`Product '${slugs[i]}' not found`);
+      }
+      const data = snap.data() ?? {};
+      const variantSpecs = readVariantSpecs(data) ?? {};
+      working.set(slugs[i], {
+        ref: refs[i],
+        data,
+        variantSpecs,
+        beforeMap: new Map(),
+      });
+    }
+
+    for (const item of items) {
+      const w = working.get(item.productId);
+      if (!w) {
+        throw new Error(`Product '${item.productId}' not loaded`);
+      }
+      const variant = w.variantSpecs[item.variantId];
+      if (!variant) {
+        throw new Error(
+          `Variant '${item.variantId}' not found on product '${item.productId}'`
+        );
+      }
+      const loc = variant.locations[item.locationId];
+      if (!loc) {
+        throw new Error(
+          `Location '${item.locationId}' not found on variant '${item.variantId}' of '${item.productId}'`
+        );
+      }
+
+      const beforeKey = `${item.variantId}::${item.locationId}`;
+      if (!w.beforeMap.has(beforeKey)) {
+        w.beforeMap.set(beforeKey, { ...loc });
+      }
+
+      const reserved = loc.reserved ?? 0;
+      let nextLoc: ProductVariantLocation;
+
+      if (op === 'hold') {
+        const available = loc.qty - reserved;
+        if (available < item.qty) {
+          throw new InsufficientStockError(
+            item.locationId,
+            item.productId,
+            available,
+            item.qty,
+            item.variantId
+          );
+        }
+        nextLoc = { ...loc, reserved: reserved + item.qty };
+      } else if (op === 'release') {
+        // Clamp at 0 — release is idempotent / no-op-safe.
+        const nextReserved = Math.max(0, reserved - item.qty);
+        nextLoc = { ...loc, reserved: nextReserved };
+      } else {
+        // commit: decrement qty AND reserved atomically.
+        if (loc.qty < item.qty) {
+          throw new InsufficientStockError(
+            item.locationId,
+            item.productId,
+            loc.qty,
+            item.qty,
+            item.variantId
+          );
+        }
+        const nextQty = loc.qty - item.qty;
+        const nextReserved = Math.max(0, reserved - item.qty);
+        nextLoc = {
+          ...loc,
+          qty: nextQty,
+          reserved: nextReserved,
+          ...(nextQty === 0
+            ? { availablePickup: false, featured: false }
+            : {}),
+        };
+      }
+
+      w.variantSpecs[item.variantId] = {
+        ...variant,
+        locations: { ...variant.locations, [item.locationId]: nextLoc },
+      };
+    }
+
+    const now = new Date();
+
+    for (const [slug, w] of working) {
+      const indexes = recomputeIndexes(w.variantSpecs);
+      tx.set(
+        w.ref,
+        {
+          variantSpecs: w.variantSpecs,
+          inStockAt: indexes.inStockAt,
+          pickupAt: indexes.pickupAt,
+          featuredAt: indexes.featuredAt,
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+
+      for (const [beforeKey, before] of w.beforeMap) {
+        const [variantId, locationId] = beforeKey.split('::');
+        const after =
+          w.variantSpecs[variantId]?.locations[locationId] ?? null;
+        const logRef = w.ref.collection('adjustments').doc();
+        tx.create(logRef, {
+          slug,
+          variantId,
+          locationId,
+          before,
+          after,
+          delta: (after?.qty ?? 0) - (before?.qty ?? 0),
+          source: meta.source ?? (op === 'commit' ? 'order' : 'order'),
+          actor: meta.actor,
+          reason: meta.reason ?? `stock-${op}`,
+          createdAt: now,
+        } satisfies VariantAdjustmentLog);
+      }
+    }
+  });
 }

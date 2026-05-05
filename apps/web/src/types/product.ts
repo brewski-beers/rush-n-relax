@@ -79,6 +79,13 @@ export interface ProductVariant {
  */
 export interface ProductVariantLocation {
   qty: number;
+  /**
+   * Units currently held by in-flight CheckoutSessions (#361). Subtract from
+   * `qty` to get available stock. Optional / additive — pre-#361 documents
+   * default to 0 via `?? 0` reads. Mutated only by the reservation helpers
+   * (`holdStock`, `releaseStock`, `commitStock`) in product.repository.
+   */
+  reserved?: number;
   /** Unit price in cents */
   price: number;
   /** Optional MSRP in cents — when present, used to render a strike-through */
