@@ -23,16 +23,17 @@ async function fetchOrderStatus(orderId: string): Promise<OrderStatus | null> {
 
 /**
  * States that mean we are still waiting for the server-side flow to advance:
- *  - id_verified       → we trigger /api/checkout/session ourselves
- *  - awaiting_payment  → waiting for Clover redirect (or webhook)
+ *  - pending_id_verification → waiting for AgeChecker webhook (live popup)
+ *  - id_verified             → we trigger /api/checkout/session ourselves
+ *  - awaiting_payment        → waiting for Clover redirect (or webhook)
  *
- * `pending_id_verification` was removed when the cart flow was switched to
- * the JS-widget path: orders now create directly in `id_verified` and the
- * pre-verification state is no longer reachable from the storefront. The
- * OrderStatus union still includes it for the inbound webhook + admin
- * surfaces, but the poller is no longer responsible for that transition.
+ * The `pending_id_verification` state is reachable again now that the live
+ * AgeChecker integration creates the order BEFORE the popup runs (the popup
+ * has no JS callback — verification arrives via webhook). In test mode the
+ * cart still short-circuits to `id_verified` directly.
  */
 const POLLING_STATES: ReadonlySet<OrderStatus> = new Set([
+  'pending_id_verification',
   'id_verified',
   'awaiting_payment',
 ]);
@@ -95,9 +96,11 @@ export function OrderStatusPoller({
   if (!isPolling) return null;
 
   const message =
-    status === 'id_verified'
-      ? 'ID verified — opening payment…'
-      : 'Payment processing…';
+    status === 'pending_id_verification'
+      ? 'Waiting for ID verification…'
+      : status === 'id_verified'
+        ? 'ID verified — opening payment…'
+        : 'Payment processing…';
 
   return (
     <div

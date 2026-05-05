@@ -137,7 +137,7 @@ describe('POST /api/order/start', () => {
     expect(decrementInventoryItemsMock).not.toHaveBeenCalled();
   });
 
-  it('rejects 400 when verificationId is missing', async () => {
+  it('live path: when verificationId is absent, creates pending_id_verification order and skips inventory decrement', async () => {
     const res = await POST(
       makeReq({
         items: SAMPLE_ITEMS,
@@ -146,10 +146,22 @@ describe('POST /api/order/start', () => {
         total: 1000,
         locationId: 'online',
         deliveryAddress: TN_ADDRESS,
+        customerEmail: 'kb@example.com',
       }) as unknown as import('next/server').NextRequest
     );
-    expect(res.status).toBe(400);
-    expect(createOrderMock).not.toHaveBeenCalled();
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { orderId: string };
+    expect(body.orderId).toBe('order-123');
+
+    expect(createOrderMock).toHaveBeenCalledTimes(1);
+    expect(createOrderMock.mock.calls[0][0]).toMatchObject({
+      status: 'pending_id_verification',
+      deliveryAddress: TN_ADDRESS,
+      customerEmail: 'kb@example.com',
+    });
+    expect(setOrderProviderRefsMock).not.toHaveBeenCalled();
+    expect(decrementInventoryItemsMock).not.toHaveBeenCalled();
   });
 
   it('returns 409 when inventory decrement reports insufficient stock', async () => {

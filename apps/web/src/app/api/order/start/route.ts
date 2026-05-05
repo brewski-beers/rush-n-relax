@@ -9,8 +9,14 @@ import { canShipToState, getShippingBlockReason } from '@/constants/shipping';
 import type { OrderItem, ShippingAddress } from '@/types';
 
 interface StartRequest {
-  /** Verification id returned by the AgeChecker widget (pass outcome). */
-  verificationId: string;
+  /**
+   * Verification id returned by the AgeChecker test-mode simulate modal.
+   * **Optional** — only present in test mode where the cart short-circuits
+   * the popup. In live mode the request omits this field; the order is
+   * created in `pending_id_verification` and the inbound webhook drives
+   * the state machine + inventory decrement.
+   */
+  verificationId?: string;
   items: OrderItem[];
   subtotal: number;
   tax: number;
@@ -23,22 +29,24 @@ interface StartRequest {
 /**
  * POST /api/order/start
  *
- * Called by the cart AFTER the AgeChecker widget has returned a `pass`
- * outcome with a `verificationId`. We:
+ * Two execution paths, gated by presence of `verificationId`:
  *
- *   1. Re-check shipping eligibility server-side (defense in depth, BEFORE
- *      any other work) — 422 if the state is blocked.
- *   2. Validate the cart payload.
- *   3. Create the order directly in `id_verified` (skipping the
- *      `pending_id_verification` placeholder — the user has already passed
- *      verification by the time this is called).
- *   4. Decrement inventory atomically (mirrors the webhook handler's
- *      post-`id_verified` behavior so the inventory contract is unchanged).
- *   5. Persist the agechecker verificationId on the order for the audit
- *      trail and so the inbound webhook can correlate retries.
+ *  - **Test-mode path** (verificationId present): the simulate modal already
+ *    returned a `pass` outcome. We create the order directly in
+ *    `id_verified`, persist the verificationId, and decrement inventory
+ *    inline (mirroring the webhook handler's post-`id_verified` work).
+ *
+ *  - **Live path** (verificationId absent): the AgeChecker popup will run
+ *    AFTER this call, on the order page. We create the order in
+ *    `pending_id_verification` and stop. The `/api/webhooks/agechecker`
+ *    handler is responsible for the `id_verified` transition AND the
+ *    inventory decrement when the popup completes server-side.
+ *
+ * Both paths re-check shipping eligibility server-side first.
  *
  * Returns `{ orderId }`. The client redirects to `/order/[id]` where the
- * existing `OrderStatusPoller` triggers Clover hosted checkout.
+ * existing `OrderStatusPoller` (and, in live mode, `<AgeCheckerLiveButton>`)
+ * take over.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: StartRequest;
@@ -67,16 +75,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  if (!body.verificationId || typeof body.verificationId !== 'string') {
-    return NextResponse.json(
-      { error: 'Missing AgeChecker verificationId.' },
-      { status: 400 }
-    );
-  }
-
   if (!body.items?.length) {
     return NextResponse.json({ error: 'Cart is empty.' }, { status: 400 });
   }
+
+  const hasVerification =
+    typeof body.verificationId === 'string' && body.verificationId.length > 0;
 
   const orderId = await createOrder({
     items: body.items,
@@ -85,42 +89,40 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     total: body.total,
     locationId: body.locationId,
     deliveryAddress: body.deliveryAddress,
-    status: 'id_verified',
+    status: hasVerification ? 'id_verified' : 'pending_id_verification',
     customerEmail: body.customerEmail,
   });
 
-  // Persist the verificationId for audit + webhook correlation. We reuse
-  // the `agecheckerSessionId` slot — same provider id, same field — to
-  // avoid a schema migration just for the rename.
-  await setOrderProviderRefs(orderId, {
-    agecheckerSessionId: body.verificationId,
-  });
+  if (hasVerification) {
+    // Test-mode path: persist the verificationId for audit + webhook
+    // correlation, then decrement inventory inline.
+    await setOrderProviderRefs(orderId, {
+      // verificationId presence already validated above.
+      agecheckerSessionId: body.verificationId as string,
+    });
 
-  // Inventory decrement is the responsibility of the id_verified
-  // transition. Because we created the order directly in id_verified
-  // (bypassing the transitionStatus path that the webhook uses), we have
-  // to decrement inline here to preserve the existing contract.
-  try {
-    await decrementInventoryItems(
-      body.locationId,
-      body.items.map(i => ({
-        productId: i.productId,
-        quantity: i.quantity,
-      }))
-    );
-  } catch (err) {
-    if (err instanceof InsufficientStockError) {
-      return NextResponse.json(
-        {
-          error: 'Insufficient stock',
-          productId: err.productId,
-          available: err.available,
-          requested: err.requested,
-        },
-        { status: 409 }
+    try {
+      await decrementInventoryItems(
+        body.locationId,
+        body.items.map(i => ({
+          productId: i.productId,
+          quantity: i.quantity,
+        }))
       );
+    } catch (err) {
+      if (err instanceof InsufficientStockError) {
+        return NextResponse.json(
+          {
+            error: 'Insufficient stock',
+            productId: err.productId,
+            available: err.available,
+            requested: err.requested,
+          },
+          { status: 409 }
+        );
+      }
+      throw err;
     }
-    throw err;
   }
 
   return NextResponse.json({ orderId });

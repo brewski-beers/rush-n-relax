@@ -8,6 +8,7 @@ import { canShipToState } from '@/constants/shipping';
 import type { ShippingAddress } from '@/types';
 import {
   AgeCheckerModal,
+  isAgeCheckerTestMode,
   type AgeCheckOutcome,
 } from '@/components/AgeCheckerModal/AgeCheckerModal';
 import { DeliveryDetailsForm } from './DeliveryDetailsForm';
@@ -51,7 +52,7 @@ export default function CartPage() {
   const total = subtotal + taxEstimate;
 
   const startOrder = useCallback(
-    async (verificationId: string) => {
+    async (verificationId?: string) => {
       setCheckoutError(null);
       setCheckoutLoading(true);
       try {
@@ -67,7 +68,7 @@ export default function CartPage() {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
-            verificationId,
+            ...(verificationId ? { verificationId } : {}),
             items: orderItems,
             subtotal,
             tax: taxEstimate,
@@ -243,7 +244,16 @@ export default function CartPage() {
               className="btn btn-primary cart-checkout-btn"
               disabled={!canVerify || checkoutLoading}
               aria-disabled={!canVerify || checkoutLoading}
-              onClick={() => setVerifyOpen(true)}
+              onClick={() => {
+                if (isAgeCheckerTestMode()) {
+                  setVerifyOpen(true);
+                } else {
+                  // Live path: create the order in pending_id_verification,
+                  // then redirect to /order/[id] where <AgeCheckerLiveButton>
+                  // attaches the real popup. Webhook drives the rest.
+                  void startOrder();
+                }
+              }}
             >
               {checkoutLoading ? 'Processing…' : 'Verify Age'}
             </button>

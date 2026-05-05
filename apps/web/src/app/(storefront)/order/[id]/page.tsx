@@ -5,6 +5,10 @@ import { formatCents } from '@/utils/currency';
 import type { OrderStatus } from '@/types';
 import { OrderStatusPoller } from './OrderStatusPoller';
 import { TestModeBanner } from '@/components/TestModeBanner';
+import { AgeCheckerLiveButton } from '@/components/AgeCheckerModal/AgeCheckerModal';
+
+const AGECHECKER_TEST_MODE =
+  process.env.NEXT_PUBLIC_AGECHECKER_TEST_MODE === 'true';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -48,14 +52,21 @@ export default async function OrderConfirmationPage({ params }: Props) {
   const showTerminated = TERMINATED_STATES.has(order.status);
   const showRefunded = order.status === 'refunded';
 
+  const showLiveAgeChecker =
+    !AGECHECKER_TEST_MODE && order.status === 'pending_id_verification';
+
   const pollerHeading =
     order.status === 'id_verified'
       ? 'Preparing your payment…'
-      : 'Order Received';
+      : order.status === 'pending_id_verification'
+        ? 'Verify your ID'
+        : 'Order Received';
   const pollerCopy =
     order.status === 'id_verified'
       ? 'ID verified. Redirecting you to secure checkout — please don’t close this tab.'
-      : 'Your payment is being processed. This page will update automatically.';
+      : order.status === 'pending_id_verification'
+        ? 'Tap the button below to verify your ID. You will be returned here automatically when verification completes.'
+        : 'Your payment is being processed. This page will update automatically.';
 
   return (
     <main className="order-confirmation-page">
@@ -66,6 +77,12 @@ export default async function OrderConfirmationPage({ params }: Props) {
           <section className="order-status order-status--pending">
             <h1>{pollerHeading}</h1>
             <p>{pollerCopy}</p>
+            {showLiveAgeChecker && (
+              <AgeCheckerLiveButton
+                orderId={order.id}
+                customerEmail={order.customerEmail}
+              />
+            )}
             <OrderStatusPoller
               orderId={order.id}
               initialStatus={order.status}

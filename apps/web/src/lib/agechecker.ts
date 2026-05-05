@@ -1,20 +1,21 @@
 /**
- * AgeChecker.Net integration helpers.
+ * AgeChecker.net integration helpers (server side).
  *
- * The customer-facing verification flow runs entirely in the browser via
- * the AgeChecker JS widget (see `components/AgeCheckerModal/`). The widget
- * returns a `verificationId` on success, which the cart POSTs to
- * `/api/order/start`.
+ * Live flow: the customer-facing popup (loaded via
+ * `components/AgeCheckerModal/AgeCheckerLiveButton`) runs on the order page
+ * AFTER the order has been created in `pending_id_verification`. The popup
+ * has **no JS callback** — verification arrives at
+ * `/api/webhooks/agechecker/route.ts` and drives the order's state machine.
  *
- * Server-side, this module owns the inbound webhook authentication
- * (`verifyAgeCheckerSignature`) — the webhook handler is defense-in-depth
- * for the same outcome the widget already reported.
- *
- * Test mode: when `AGECHECKER_TEST_MODE=true`, the webhook handler accepts
- * unsigned payloads from our own test harness. In production, HMAC
- * signature verification is enforced.
+ * Test mode (`AGECHECKER_TEST_MODE=true`): the webhook handler accepts
+ * unsigned payloads from our own test harness, and the cart's simulate
+ * modal short-circuits the popup by submitting a synthetic `verificationId`
+ * directly to `/api/order/start`. In production, HMAC signature
+ * verification is enforced.
  *
  * Dashboard: https://agechecker.net
+ * Client docs: https://agechecker.net/account/install/custom/client
+ * Server docs: https://agechecker.net/account/install/custom/server
  */
 import crypto from 'node:crypto';
 

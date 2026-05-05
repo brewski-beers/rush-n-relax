@@ -5,8 +5,10 @@ import type { CartContextValue, CartItem } from '@/contexts/CartContext';
 
 // Mock AgeCheckerModal — we test that CartPage wires it correctly
 // (open prop, onComplete callback), not the modal's internal widget logic.
-// The modal has its own dedicated tests.
+// The modal has its own dedicated tests. We force test-mode so the cart
+// renders the simulate modal on Verify Age click.
 vi.mock('@/components/AgeCheckerModal/AgeCheckerModal', () => ({
+  isAgeCheckerTestMode: () => true,
   AgeCheckerModal: ({
     open,
     onComplete,
@@ -132,7 +134,7 @@ describe('CartPage — AgeCheckerModal wiring', () => {
     expect(screen.getByTestId('agechecker-modal')).toBeInTheDocument();
   });
 
-  it('on pass outcome, POSTs verificationId to /api/order/start and redirects to /order/[id]', async () => {
+  it('test-mode: on pass outcome, POSTs verificationId to /api/order/start and redirects to /order/[id]', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ orderId: 'order-xyz' }),
