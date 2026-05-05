@@ -960,19 +960,45 @@ export function buildLocationSummaries(): LocationSummary[] {
 }
 
 export function buildProductDocuments(date: Date = fixtureDate): Product[] {
-  return PRODUCT_FIXTURES.map(product => ({
-    id: product.slug,
-    slug: product.slug,
-    name: product.name,
-    category: product.category,
-    details: product.details,
-    image: product.image,
-    status: product.status,
-    coaUrl: product.coaUrl,
-    availableAt: product.availableAt ?? [...LOCATION_SLUGS],
-    createdAt: date,
-    updatedAt: date,
-  }));
+  // Mirror `recomputeProductIndexes` in product.repository.ts: derive the
+  // denormalized location arrays from the inventory fixtures so storefront
+  // queries that filter on `inStockAt`/`pickupAt`/`featuredAt` return data
+  // when the e2e suite seeds from these fixtures.
+  const allInventory = [
+    ...ONLINE_INVENTORY_FIXTURES,
+    ...RETAIL_INVENTORY_FIXTURES,
+  ];
+
+  return PRODUCT_FIXTURES.map(product => {
+    const inStockAt = new Set<string>();
+    const pickupAt = new Set<string>();
+    const featuredAt = new Set<string>();
+
+    for (const item of allInventory) {
+      if (item.productId !== product.slug) continue;
+      if (item.quantity <= 0) continue;
+      inStockAt.add(item.locationId);
+      if (item.availablePickup) pickupAt.add(item.locationId);
+      if (item.featured) featuredAt.add(item.locationId);
+    }
+
+    return {
+      id: product.slug,
+      slug: product.slug,
+      name: product.name,
+      category: product.category,
+      details: product.details,
+      image: product.image,
+      status: product.status,
+      coaUrl: product.coaUrl,
+      availableAt: product.availableAt ?? [...LOCATION_SLUGS],
+      inStockAt: [...inStockAt].sort(),
+      pickupAt: [...pickupAt].sort(),
+      featuredAt: [...featuredAt].sort(),
+      createdAt: date,
+      updatedAt: date,
+    };
+  });
 }
 
 function inventoryItemFromFixture(
