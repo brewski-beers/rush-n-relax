@@ -64,6 +64,8 @@ export interface CreateCheckoutSessionInput {
   customerEmail?: string;
   holds: CheckoutSessionHold[];
   cloverCheckoutSessionId: string;
+  /** Persisted Clover Hosted Checkout redirect URL. Optional — stub provider does not return one. */
+  cloverCheckoutUrl?: string;
   /** Absolute expiry time for the cron sweep. */
   expiresAt: Date;
 }
@@ -91,6 +93,9 @@ export async function createCheckoutSession(
     verificationId: null,
     holds: input.holds,
     cloverCheckoutSessionId: input.cloverCheckoutSessionId,
+    ...(input.cloverCheckoutUrl !== undefined
+      ? { cloverCheckoutUrl: input.cloverCheckoutUrl }
+      : {}),
     createdAt: now,
     updatedAt: now,
     expiresAt: input.expiresAt,
@@ -246,6 +251,9 @@ function docToCheckoutSession(
       typeof d.cloverCheckoutSessionId === 'string'
         ? d.cloverCheckoutSessionId
         : id,
+    ...(typeof d.cloverCheckoutUrl === 'string'
+      ? { cloverCheckoutUrl: d.cloverCheckoutUrl }
+      : {}),
     createdAt: toDate(d.createdAt),
     updatedAt: toDate(d.updatedAt),
     expiresAt: toDate(d.expiresAt),
