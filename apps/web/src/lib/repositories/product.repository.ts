@@ -305,6 +305,13 @@ function docToProductSummary(
     variants: docToVariants(d.variants),
     variantGroups: docToVariantGroups(d.variantGroups),
     leaflyUrl: d.leaflyUrl ?? undefined,
+    variantSpecs: readVariantSpecs(d),
+    inStockAt: Array.isArray(d.inStockAt)
+      ? (d.inStockAt as string[])
+      : undefined,
+    featuredAt: Array.isArray(d.featuredAt)
+      ? (d.featuredAt as string[])
+      : undefined,
   } satisfies ProductSummary;
 }
 
