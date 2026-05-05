@@ -47,6 +47,7 @@ function makeReq(body: unknown): Request {
 const SAMPLE_ITEMS: OrderItem[] = [
   {
     productId: 'p1',
+    variantId: 'default',
     productName: 'Widget',
     quantity: 1,
     unitPrice: 1000,

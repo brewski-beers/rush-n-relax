@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   transitionStatusMock,
   getOrderMock,
-  decrementInventoryItemsMock,
+  decrementVariantStockMock,
   verifySigMock,
   InvalidTransitionErrorMock,
   InsufficientStockErrorMock,
@@ -22,6 +22,7 @@ const {
   }
   class InsufficientStockErrorMock extends Error {
     readonly productId: string;
+    readonly variantId: string;
     readonly locationId: string;
     readonly available: number;
     readonly requested: number;
@@ -29,11 +30,13 @@ const {
       locationId: string,
       productId: string,
       available: number,
-      requested: number
+      requested: number,
+      variantId: string = 'default'
     ) {
       super('insufficient');
       this.name = 'InsufficientStockError';
       this.productId = productId;
+      this.variantId = variantId;
       this.locationId = locationId;
       this.available = available;
       this.requested = requested;
@@ -42,7 +45,7 @@ const {
   return {
     transitionStatusMock: vi.fn(),
     getOrderMock: vi.fn(),
-    decrementInventoryItemsMock: vi.fn(),
+    decrementVariantStockMock: vi.fn(),
     verifySigMock: vi.fn(() => true),
     InvalidTransitionErrorMock,
     InsufficientStockErrorMock,
@@ -52,7 +55,7 @@ const {
 vi.mock('@/lib/repositories', () => ({
   transitionStatus: transitionStatusMock,
   getOrder: getOrderMock,
-  decrementInventoryItems: decrementInventoryItemsMock,
+  decrementVariantStock: decrementVariantStockMock,
   InvalidTransitionError: InvalidTransitionErrorMock,
   InsufficientStockError: InsufficientStockErrorMock,
 }));
@@ -80,8 +83,8 @@ const SAMPLE_ORDER = {
   id: 'order-1',
   locationId: 'oak-ridge',
   items: [
-    { productId: 'prod-a', quantity: 2 },
-    { productId: 'prod-b', quantity: 1 },
+    { productId: 'prod-a', variantId: 'default', quantity: 2 },
+    { productId: 'prod-b', variantId: 'large', quantity: 1 },
   ],
 };
 
@@ -97,7 +100,7 @@ describe('POST /api/webhooks/agechecker', () => {
     it('transitions to id_verified and decrements inventory atomically', async () => {
       transitionStatusMock.mockResolvedValue({ id: 'order-1' });
       getOrderMock.mockResolvedValue(SAMPLE_ORDER);
-      decrementInventoryItemsMock.mockResolvedValue(undefined);
+      decrementVariantStockMock.mockResolvedValue(undefined);
 
       const res = await POST(
         makeReq({ verificationId: 'v1', status: 'pass', orderId: 'order-1' })
@@ -112,10 +115,23 @@ describe('POST /api/webhooks/agechecker', () => {
         'webhook:agechecker',
         { verificationId: 'v1' }
       );
-      expect(decrementInventoryItemsMock).toHaveBeenCalledWith('oak-ridge', [
-        { productId: 'prod-a', quantity: 2 },
-        { productId: 'prod-b', quantity: 1 },
-      ]);
+      expect(decrementVariantStockMock).toHaveBeenCalledWith(
+        [
+          {
+            slug: 'prod-a',
+            variantId: 'default',
+            locationId: 'oak-ridge',
+            qty: 2,
+          },
+          {
+            slug: 'prod-b',
+            variantId: 'large',
+            locationId: 'oak-ridge',
+            qty: 1,
+          },
+        ],
+        { source: 'order', actor: 'webhook:agechecker' }
+      );
     });
   });
 
@@ -134,7 +150,7 @@ describe('POST /api/webhooks/agechecker', () => {
         'webhook:agechecker',
         { verificationId: 'v2', reason: 'deny' }
       );
-      expect(decrementInventoryItemsMock).not.toHaveBeenCalled();
+      expect(decrementVariantStockMock).not.toHaveBeenCalled();
     });
   });
 
@@ -174,7 +190,7 @@ describe('POST /api/webhooks/agechecker', () => {
       const body = (await res.json()) as Record<string, unknown>;
       expect(body).toEqual({ received: true, handled: false });
       expect(transitionStatusMock).not.toHaveBeenCalled();
-      expect(decrementInventoryItemsMock).not.toHaveBeenCalled();
+      expect(decrementVariantStockMock).not.toHaveBeenCalled();
     });
   });
 
@@ -210,7 +226,7 @@ describe('POST /api/webhooks/agechecker', () => {
         handled: false,
         reason: 'already_processed',
       });
-      expect(decrementInventoryItemsMock).not.toHaveBeenCalled();
+      expect(decrementVariantStockMock).not.toHaveBeenCalled();
     });
   });
 
@@ -218,7 +234,7 @@ describe('POST /api/webhooks/agechecker', () => {
     it('returns 409 and does not partially commit (transaction rolled back)', async () => {
       transitionStatusMock.mockResolvedValue({ id: 'order-1' });
       getOrderMock.mockResolvedValue(SAMPLE_ORDER);
-      decrementInventoryItemsMock.mockRejectedValue(
+      decrementVariantStockMock.mockRejectedValue(
         new InsufficientStockErrorMock('oak-ridge', 'prod-a', 1, 2)
       );
 
@@ -268,7 +284,7 @@ describe('POST /api/webhooks/agechecker', () => {
       expect(first.status).toBe(200);
       const firstBody = (await first.json()) as Record<string, unknown>;
       expect(firstBody.reason).toBe('already_processed');
-      expect(decrementInventoryItemsMock).not.toHaveBeenCalled();
+      expect(decrementVariantStockMock).not.toHaveBeenCalled();
     });
 
     it('WHEN deny is re-delivered after id_rejected was already applied THEN returns already_processed', async () => {
@@ -298,7 +314,7 @@ describe('POST /api/webhooks/agechecker', () => {
     it('WHEN decrementInventoryItems throws InsufficientStockError THEN status remains advanced (id_verified) and the inventory tx is rolled back', async () => {
       transitionStatusMock.mockResolvedValue({ id: 'order-1' });
       getOrderMock.mockResolvedValue(SAMPLE_ORDER);
-      decrementInventoryItemsMock.mockRejectedValue(
+      decrementVariantStockMock.mockRejectedValue(
         new InsufficientStockErrorMock('oak-ridge', 'prod-b', 0, 1)
       );
 
@@ -312,7 +328,7 @@ describe('POST /api/webhooks/agechecker', () => {
       // transitionStatus to id_verified DID succeed (called once); the
       // rollback is internal to decrementInventoryItems' transaction.
       expect(transitionStatusMock).toHaveBeenCalledOnce();
-      expect(decrementInventoryItemsMock).toHaveBeenCalledOnce();
+      expect(decrementVariantStockMock).toHaveBeenCalledOnce();
     });
   });
 
@@ -339,7 +355,7 @@ describe('POST /api/webhooks/agechecker', () => {
       ];
       expect(callArgs[1]).toBeNull();
       expect(transitionStatusMock).not.toHaveBeenCalled();
-      expect(decrementInventoryItemsMock).not.toHaveBeenCalled();
+      expect(decrementVariantStockMock).not.toHaveBeenCalled();
     });
   });
 
@@ -387,6 +403,58 @@ describe('POST /api/webhooks/agechecker', () => {
       const body = (await res.json()) as Record<string, unknown>;
       expect(body).toEqual({ received: true, handled: false });
       expect(transitionStatusMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GIVEN oversell on one specific variant of a multi-variant product', () => {
+    it('WHEN the variant transaction throws InsufficientStockError THEN the whole tx rolls back; other variants of the same product are not partially decremented (single-tx invariant)', async () => {
+      transitionStatusMock.mockResolvedValue({ id: 'order-1' });
+      // Same product, two variants on one order — exercises the
+      // multi-line composition path inside decrementVariantStock.
+      getOrderMock.mockResolvedValue({
+        id: 'order-1',
+        locationId: 'oak-ridge',
+        items: [
+          { productId: 'prod-a', variantId: 'small', quantity: 1 },
+          { productId: 'prod-a', variantId: 'large', quantity: 5 },
+        ],
+      });
+      // The helper validates ALL items inside one tx; throwing here
+      // simulates the 'large' variant being short. The contract is that
+      // no partial writes survive — verified at the repo layer's tx test;
+      // here we assert the webhook surfaces 409 with the specific variant.
+      decrementVariantStockMock.mockRejectedValue(
+        new InsufficientStockErrorMock('oak-ridge', 'prod-a', 0, 5, 'large')
+      );
+
+      const res = await POST(
+        makeReq({ verificationId: 'v-mv', status: 'pass', orderId: 'order-1' })
+      );
+
+      expect(res.status).toBe(409);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body.error).toBe('Insufficient stock');
+      expect(body.productId).toBe('prod-a');
+      // The whole array of items was passed to the helper — no per-item
+      // pre-filtering by the webhook. The repository owns the atomic guarantee.
+      expect(decrementVariantStockMock).toHaveBeenCalledOnce();
+      const callArgs = decrementVariantStockMock.mock.calls[0] as unknown as [
+        Array<{ slug: string; variantId: string; locationId: string; qty: number }>,
+        { source?: string; actor?: string },
+      ];
+      expect(callArgs[0]).toHaveLength(2);
+      expect(callArgs[0][0]).toEqual({
+        slug: 'prod-a',
+        variantId: 'small',
+        locationId: 'oak-ridge',
+        qty: 1,
+      });
+      expect(callArgs[0][1]).toEqual({
+        slug: 'prod-a',
+        variantId: 'large',
+        locationId: 'oak-ridge',
+        qty: 5,
+      });
     });
   });
 });
