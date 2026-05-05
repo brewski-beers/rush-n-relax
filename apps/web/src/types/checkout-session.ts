@@ -59,6 +59,8 @@ export interface CheckoutSession {
   holds: CheckoutSessionHold[];
   /** Clover Hosted Checkout session id — set at session creation. */
   cloverCheckoutSessionId: string;
+  /** Persisted Clover Hosted Checkout redirect URL — used by the redirect route to send the customer to Clover after age verification. */
+  cloverCheckoutUrl?: string;
   createdAt: Date;
   updatedAt: Date;
   /** Absolute time after which a cron sweep may expire the session. */

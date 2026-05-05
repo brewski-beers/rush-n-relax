@@ -162,6 +162,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       qty: h.qty,
     })),
     cloverCheckoutSessionId,
+    ...(cloverSession.redirectUrl ? { cloverCheckoutUrl: cloverSession.redirectUrl } : {}),
     expiresAt,
     ...(body.customerEmail ? { customerEmail: body.customerEmail } : {}),
   };
