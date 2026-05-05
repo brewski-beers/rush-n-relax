@@ -11,11 +11,12 @@
  * Step structure:
  *   1. Category & Name
  *   2. Details (description, vendor, Leafly URL)
- *   3. Cannabis Profile (strain, THC/CBD %, effects, flavors, terpenes, COA)
+ *   3. Pricing (default unit price; per-variant overrides via inventory editor)
+ *   4. Cannabis Profile (strain, THC/CBD %, effects, flavors, terpenes, COA)
  *      — skipped in navigation when !requiresCannabisProfile && !requiresCOA
- *   4. Variants (+ nutrition facts when requiresNutritionFacts)
- *   5. Images
- *   6. Review
+ *   5. Variants (+ nutrition facts when requiresNutritionFacts)
+ *   6. Images
+ *   7. Review
  *
  * Category contract flags (requiresCannabisProfile, requiresNutritionFacts,
  * requiresCOA) are sourced from the selected ProductCategorySummary and gate
@@ -82,16 +83,26 @@ interface ReviewSnapshot {
 
 // --- Constants ---------------------------------------------------------------
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 const STEP_TITLES: Record<number, string> = {
   1: 'Category & Name',
   2: 'Details',
-  3: 'Cannabis Profile',
-  4: 'Variants',
-  5: 'Images',
-  6: 'Review',
+  3: 'Pricing',
+  4: 'Cannabis Profile',
+  5: 'Variants',
+  6: 'Images',
+  7: 'Review',
 };
+
+const PRICE_MAX_DOLLARS = 9999.99;
+
+/** Convert a dollar string (e.g. "19.99") to integer cents. NaN if invalid. */
+function dollarsToCents(input: string): number {
+  const n = Number(input);
+  if (!Number.isFinite(n)) return NaN;
+  return Math.round(n * 100);
+}
 
 // --- Per-step validation -----------------------------------------------------
 
@@ -115,6 +126,23 @@ function validateStep(step: number, form: HTMLFormElement): string | null {
   }
   if (step === 2) {
     if (!v('details')) return 'Description is required.';
+  }
+  if (step === 3) {
+    const priceStr = v('priceDollars');
+    if (!priceStr) return 'Price is required.';
+    const dollars = Number(priceStr);
+    if (!Number.isFinite(dollars) || dollars <= 0)
+      return 'Price must be greater than $0.';
+    if (dollars > PRICE_MAX_DOLLARS)
+      return `Price must be no more than $${PRICE_MAX_DOLLARS.toFixed(2)}.`;
+    const compareStr = v('compareAtPriceDollars');
+    if (compareStr) {
+      const compare = Number(compareStr);
+      if (!Number.isFinite(compare) || compare <= 0)
+        return 'Compare-at price must be greater than $0.';
+      if (compare > PRICE_MAX_DOLLARS)
+        return `Compare-at price must be no more than $${PRICE_MAX_DOLLARS.toFixed(2)}.`;
+    }
   }
   return null;
 }
@@ -154,6 +182,13 @@ export function ProductWizardForm({
     product?.vendorSlug ?? ''
   );
 
+  // Pricing inputs are captured as dollar strings; converted to cents on submit.
+  // Default variant price; per-variant overrides handled by inventory editor.
+  const [priceDollars, setPriceDollars] = useState(
+    product?.price !== undefined ? (product.price / 100).toFixed(2) : ''
+  );
+  const [compareAtPriceDollars, setCompareAtPriceDollars] = useState('');
+
   // Track selected category to gate form sections by contract flags.
   // Edit mode pre-selects via initialCategory; create mode starts undefined.
   const [selectedCategory, setSelectedCategory] = useState<
@@ -174,7 +209,7 @@ export function ProductWizardForm({
     setStepError(null);
     const rawNext = step + 1;
     const nextStep = Math.min(
-      rawNext === 3 && !showStep3 ? 4 : rawNext,
+      rawNext === 4 && !showStep4 ? 5 : rawNext,
       TOTAL_STEPS
     );
     if (nextStep === TOTAL_STEPS && form) {
@@ -220,7 +255,7 @@ export function ProductWizardForm({
     setStepError(null);
     setStep(s => {
       const prev = s - 1;
-      return Math.max(prev === 3 && !showStep3 ? 2 : prev, 1);
+      return Math.max(prev === 4 && !showStep4 ? 3 : prev, 1);
     });
   }
 
@@ -251,9 +286,9 @@ export function ProductWizardForm({
   const showNutritionFacts = selectedCategory?.requiresNutritionFacts ?? false;
   const showCOA = selectedCategory?.requiresCOA ?? false;
 
-  // Step 3 (Cannabis Profile) is skipped in navigation for categories that
+  // Step 4 (Cannabis Profile) is skipped in navigation for categories that
   // don't require a cannabis profile or COA (e.g. edibles, drinks).
-  const showStep3 = showCannabisProfile || showCOA;
+  const showStep4 = showCannabisProfile || showCOA;
 
   return (
     <form action={formAction} className="admin-form">
@@ -383,12 +418,88 @@ export function ProductWizardForm({
         </fieldset>
       </div>
 
-      {/* ── Step 3: Cannabis Profile ───────────────────────────── */}
+      {/* ── Step 3: Pricing ────────────────────────────────────── */}
       <div
         className={
           isHidden(3) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
         aria-hidden={isHidden(3)}
+      >
+        <fieldset className="admin-fieldset">
+          <legend>Pricing</legend>
+          <span className="admin-hint">
+            Default unit price shown when no variant-specific price is set.
+          </span>
+
+          <label>
+            Price
+            <span className="admin-input-prefix">
+              <span aria-hidden="true">$</span>
+              <input
+                name="priceDollars"
+                type="number"
+                inputMode="decimal"
+                min="0.01"
+                max={PRICE_MAX_DOLLARS}
+                step="0.01"
+                required
+                placeholder="0.00"
+                value={priceDollars}
+                onChange={e => setPriceDollars(e.target.value)}
+              />
+            </span>
+          </label>
+
+          <label>
+            Compare-at price{' '}
+            <span className="admin-hint">
+              (optional — for &quot;was $X&quot; sale display)
+            </span>
+            <span className="admin-input-prefix">
+              <span aria-hidden="true">$</span>
+              <input
+                name="compareAtPriceDollars"
+                type="number"
+                inputMode="decimal"
+                min="0.01"
+                max={PRICE_MAX_DOLLARS}
+                step="0.01"
+                placeholder="0.00"
+                value={compareAtPriceDollars}
+                onChange={e => setCompareAtPriceDollars(e.target.value)}
+              />
+            </span>
+          </label>
+
+          {/* Hidden cents fields submitted to the server action. */}
+          <input
+            type="hidden"
+            name="price"
+            value={
+              priceDollars && Number.isFinite(dollarsToCents(priceDollars))
+                ? String(dollarsToCents(priceDollars))
+                : ''
+            }
+          />
+          <input
+            type="hidden"
+            name="compareAtPrice"
+            value={
+              compareAtPriceDollars &&
+              Number.isFinite(dollarsToCents(compareAtPriceDollars))
+                ? String(dollarsToCents(compareAtPriceDollars))
+                : ''
+            }
+          />
+        </fieldset>
+      </div>
+
+      {/* ── Step 4: Cannabis Profile ───────────────────────────── */}
+      <div
+        className={
+          isHidden(4) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+        }
+        aria-hidden={isHidden(4)}
       >
         <fieldset className="admin-fieldset">
           <legend>Cannabis Profile</legend>
@@ -495,12 +606,12 @@ export function ProductWizardForm({
         </fieldset>
       </div>
 
-      {/* ── Step 4: Variants ───────────────────────────────────── */}
+      {/* ── Step 5: Variants ───────────────────────────────────── */}
       <div
         className={
-          isHidden(4) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+          isHidden(5) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(4)}
+        aria-hidden={isHidden(5)}
       >
         {showStatusField && (
           <fieldset className="admin-fieldset">
@@ -553,12 +664,12 @@ export function ProductWizardForm({
         />
       </div>
 
-      {/* ── Step 5: Images ─────────────────────────────────────── */}
+      {/* ── Step 6: Images ─────────────────────────────────────── */}
       <div
         className={
-          isHidden(5) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+          isHidden(6) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(5)}
+        aria-hidden={isHidden(6)}
       >
         <fieldset className="admin-fieldset">
           <legend>Images</legend>
@@ -571,12 +682,12 @@ export function ProductWizardForm({
         </fieldset>
       </div>
 
-      {/* ── Step 6: Review ─────────────────────────────────────── */}
+      {/* ── Step 7: Review ─────────────────────────────────────── */}
       <div
         className={
-          isHidden(6) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
+          isHidden(7) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(6)}
+        aria-hidden={isHidden(7)}
       >
         {review && (
           <div className="wizard-review">
@@ -703,8 +814,8 @@ export function ProductWizardForm({
         )}
       </div>
 
-      {/* Hidden passthroughs for fields not rendered when step 3 is skipped */}
-      {!showStep3 && (
+      {/* Hidden passthroughs for fields not rendered when step 4 is skipped */}
+      {!showStep4 && (
         <>
           <input
             type="hidden"
