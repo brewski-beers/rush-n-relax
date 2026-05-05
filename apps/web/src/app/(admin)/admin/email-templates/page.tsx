@@ -22,7 +22,7 @@ function normalizeTemplateId(value: string | undefined): string {
     return DEFAULT_TEMPLATE_ID;
   }
 
-  return /^[a-z0-9-]{3,64}$/.test(value) ? value : DEFAULT_TEMPLATE_ID;
+  return /^[a-z0-9_-]{3,64}$/.test(value) ? value : DEFAULT_TEMPLATE_ID;
 }
 
 export default async function AdminEmailTemplatesPage({
