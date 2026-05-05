@@ -49,7 +49,10 @@ function fillBasics() {
   ) as HTMLTextAreaElement;
   fireEvent.change(details, { target: { value: 'Some details' } });
   fireEvent.click(screen.getByRole('button', { name: /Next/i }));
-  // Now on Step 3 (Pricing)
+  // Step 3 (Cannabis Profile) is skipped for edibles → lands on Step 4 (Variants).
+  // Advance once more to reach Step 5 (Pricing).
+  fireEvent.click(screen.getByRole('button', { name: /Next/i }));
+  // Now on Step 5 (Pricing)
 }
 
 describe('ProductWizard — Pricing step (#359 UI)', () => {
@@ -57,7 +60,7 @@ describe('ProductWizard — Pricing step (#359 UI)', () => {
     it('renders the Pricing step indicator and dollar inputs', () => {
       renderWizard();
       fillBasics();
-      expect(screen.getByText(/Step 3 of 7 — Pricing/)).toBeDefined();
+      expect(screen.getByText(/Step 5 of 7 — Pricing/)).toBeDefined();
       expect(
         document.querySelector('input[name="priceDollars"]')
       ).not.toBeNull();
@@ -72,7 +75,7 @@ describe('ProductWizard — Pricing step (#359 UI)', () => {
       fireEvent.click(screen.getByRole('button', { name: /Next/i }));
       expect(screen.getByText(/Price is required\./)).toBeDefined();
       // Still on Pricing step
-      expect(screen.getByText(/Step 3 of 7 — Pricing/)).toBeDefined();
+      expect(screen.getByText(/Step 5 of 7 — Pricing/)).toBeDefined();
     });
 
     it('blocks Next when price is zero', () => {
