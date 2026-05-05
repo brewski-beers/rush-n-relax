@@ -15,7 +15,10 @@
  *      — skipped in navigation when !requiresCannabisProfile && !requiresCOA
  *   4. Variants (+ nutrition facts when requiresNutritionFacts)
  *   5. Images
- *   6. Review
+ *   6. Review (with CTA group: Save / Save & Set Pricing / Save & Add Another)
+ *
+ * Pricing is no longer collected at create time — it lives with inventory
+ * (per-variant, per-location). See PR #377 reversal.
  *
  * Category contract flags (requiresCannabisProfile, requiresNutritionFacts,
  * requiresCOA) are sourced from the selected ProductCategorySummary and gate
@@ -146,6 +149,11 @@ export function ProductWizardForm({
   const [stepError, setStepError] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [review, setReview] = useState<ReviewSnapshot | null>(null);
+  // Which Review-step CTA was clicked. Submitted as `intent` so the server
+  // action can decide where to navigate after a successful create.
+  const [submitIntent, setSubmitIntent] = useState<
+    'save' | 'save-and-set-pricing' | 'save-and-add-another'
+  >('save');
 
   // Controlled inputs that need auto-suggest or inter-field logic
   const [name, setName] = useState(product?.name ?? '');
@@ -692,6 +700,47 @@ export function ProductWizardForm({
           >
             {step === TOTAL_STEPS - 1 ? 'Review' : 'Next'}
           </button>
+        ) : mode === 'create' ? (
+          <>
+            <button
+              key="submit-pricing"
+              type="submit"
+              className="admin-btn-secondary"
+              disabled={pending || imageUploading}
+              onClick={() => setSubmitIntent('save-and-set-pricing')}
+            >
+              {imageUploading
+                ? 'Uploading image...'
+                : pending
+                  ? 'Saving...'
+                  : 'Save & Set Pricing'}
+            </button>
+            <button
+              key="submit-another"
+              type="submit"
+              className="admin-btn-secondary"
+              disabled={pending || imageUploading}
+              onClick={() => setSubmitIntent('save-and-add-another')}
+            >
+              {imageUploading
+                ? 'Uploading image...'
+                : pending
+                  ? 'Saving...'
+                  : 'Save & Add Another'}
+            </button>
+            <button
+              key="submit"
+              type="submit"
+              disabled={pending || imageUploading}
+              onClick={() => setSubmitIntent('save')}
+            >
+              {imageUploading
+                ? 'Uploading image...'
+                : pending
+                  ? 'Saving...'
+                  : 'Save Product'}
+            </button>
+          </>
         ) : (
           <button
             key="submit"
@@ -702,6 +751,12 @@ export function ProductWizardForm({
           </button>
         )}
       </div>
+
+      {/* Intent submitted alongside form data so the server action knows
+          which post-create destination to redirect to (create mode only). */}
+      {mode === 'create' && (
+        <input type="hidden" name="intent" value={submitIntent} />
+      )}
 
       {/* Hidden passthroughs for fields not rendered when step 3 is skipped */}
       {!showStep3 && (

@@ -1,34 +1,26 @@
 /**
  * Order schema — delivery-only lifecycle.
  *
- * Rush N Relax operates as a delivery-only e-commerce flow (no in-store
- * pickup at checkout). Status transitions follow the lifecycle below; see
- * `ALLOWED_TRANSITIONS` for the legal moves.
+ * Per the checkout-flow rewrite (issue #362 + companion tickets #360, #364–#373),
+ * Order documents are born only after a successful Clover payment. Pre-payment
+ * lifecycle (ID verification, awaiting_payment, etc.) lives on `CheckoutSession`
+ * (see `apps/web/src/types/checkout-session.ts` introduced by #360).
  *
  * ```
- *  pending_id_verification
- *      ├── id_verified ── awaiting_payment ── paid ── preparing
- *      │                                                 └── out_for_delivery ── completed
- *      │                                                                          └── refunded
- *      ├── id_rejected
- *      └── failed
+ *  paid ── preparing ── out_for_delivery ── completed
+ *                                              └── refunded
  *
  *  Most live states can also transition to `cancelled` or `refunded`.
  * ```
  */
 
 export type OrderStatus =
-  | 'pending_id_verification'
-  | 'id_verified'
-  | 'id_rejected'
-  | 'awaiting_payment'
   | 'paid'
   | 'preparing'
   | 'out_for_delivery'
   | 'completed'
   | 'cancelled'
-  | 'refunded'
-  | 'failed';
+  | 'refunded';
 
 export interface OrderItem {
   productId: string;
@@ -78,8 +70,6 @@ export interface Order {
   testMode: boolean;
 
   // ── Provider references ───────────────────────────────────────────
-  /** AgeChecker session id (collected pre-payment). */
-  agecheckerSessionId?: string;
   /** Clover Hosted Checkout session id (created when invoking payment). */
   cloverCheckoutSessionId?: string;
   /** Clover payment id (set on successful capture). */
@@ -105,20 +95,10 @@ export interface Order {
  * handlers to guard illegal moves.
  */
 export const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  pending_id_verification: [
-    'id_verified',
-    'id_rejected',
-    'cancelled',
-    'failed',
-  ],
-  id_verified: ['awaiting_payment', 'cancelled', 'failed'],
-  id_rejected: ['cancelled'],
-  awaiting_payment: ['paid', 'failed', 'cancelled'],
   paid: ['preparing', 'refunded', 'cancelled'],
   preparing: ['out_for_delivery', 'cancelled', 'refunded'],
   out_for_delivery: ['completed', 'refunded'],
   completed: ['refunded'],
   cancelled: [],
   refunded: [],
-  failed: ['cancelled'],
 };

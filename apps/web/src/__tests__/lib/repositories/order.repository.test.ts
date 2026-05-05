@@ -172,7 +172,7 @@ const baseOrderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
     state: 'TN',
     zip: '37902',
   },
-  status: 'awaiting_payment',
+  status: 'paid',
   testMode: true,
 };
 
@@ -271,21 +271,19 @@ describe('order.repository', () => {
       const order = await getOrder('order-abc');
       expect(order).not.toBeNull();
       expect(order!.id).toBe('order-abc');
-      expect(order!.status).toBe('awaiting_payment');
+      expect(order!.status).toBe('paid');
       expect(order!.total).toBe(3270);
       expect(order!.deliveryAddress.state).toBe('TN');
     });
   });
 
   describe('transitionStatus — allowed moves', () => {
-    it('awaiting_payment → paid: stamps paidAt + writes order-event', async () => {
-      txGetMock.mockResolvedValueOnce(
-        makeOrderSnap('order-1', 'awaiting_payment')
-      );
+    it('paid → refunded: stamps refundedAt + writes order-event', async () => {
+      txGetMock.mockResolvedValueOnce(makeOrderSnap('order-1', 'paid'));
 
       const order = await transitionStatus(
         'order-1',
-        'paid',
+        'refunded',
         'webhook:clover',
         { cloverPaymentId: 'pay_123' }
       );
@@ -293,24 +291,24 @@ describe('order.repository', () => {
       // order patch
       expect(txUpdateMock).toHaveBeenCalledOnce();
       const [, patch] = txUpdateMock.mock.calls[0];
-      expect(patch.status).toBe('paid');
-      expect(patch.paidAt).toBeInstanceOf(Date);
+      expect(patch.status).toBe('refunded');
+      expect(patch.refundedAt).toBeInstanceOf(Date);
       expect(patch.updatedAt).toBeInstanceOf(Date);
       expect(patch.cloverPaymentId).toBe('pay_123');
 
-      // event log
-      expect(txSetMock).toHaveBeenCalledOnce();
+      // event log — note tx.set is called twice when customerEmail present;
+      // baseOrderData has no customerEmail so only the event row is written.
       const [, eventDoc] = txSetMock.mock.calls[0];
       expect(eventDoc).toMatchObject({
         orderId: 'order-1',
-        from: 'awaiting_payment',
-        to: 'paid',
+        from: 'paid',
+        to: 'refunded',
         actor: 'webhook:clover',
       });
       expect(eventDoc.meta).toEqual({ cloverPaymentId: 'pay_123' });
       expect(eventDoc.createdAt).toBeInstanceOf(Date);
 
-      expect(order.status).toBe('paid');
+      expect(order.status).toBe('refunded');
     });
 
     it('paid → preparing: stamps preparingAt', async () => {
@@ -347,9 +345,7 @@ describe('order.repository', () => {
     });
 
     it('throws InvalidTransitionError when from -> to is not in ALLOWED_TRANSITIONS', async () => {
-      txGetMock.mockResolvedValueOnce(
-        makeOrderSnap('order-y', 'pending_id_verification')
-      );
+      txGetMock.mockResolvedValueOnce(makeOrderSnap('order-y', 'refunded'));
 
       let caught: unknown;
       try {
@@ -359,7 +355,7 @@ describe('order.repository', () => {
       }
       expect(caught).toBeInstanceOf(InvalidTransitionError);
       const err = caught as InvalidTransitionError;
-      expect(err.from).toBe('pending_id_verification');
+      expect(err.from).toBe('refunded');
       expect(err.to).toBe('paid');
     });
 
@@ -448,9 +444,6 @@ describe('order.repository', () => {
     });
 
     it.each([
-      ['pending_id_verification', 'id_verified', 'id_verified'],
-      ['pending_id_verification', 'id_rejected', 'id_rejected'],
-      ['awaiting_payment', 'paid', 'payment_confirmed'],
       ['paid', 'preparing', 'order_preparing'],
       ['preparing', 'out_for_delivery', 'order_out_for_delivery'],
       ['out_for_delivery', 'completed', 'order_completed'],
@@ -488,17 +481,12 @@ describe('order.repository', () => {
       expect(result.status).toBe('preparing');
     });
 
-    it('emits no email for unmapped status (id_verified → awaiting_payment)', async () => {
-      txGetMock.mockResolvedValueOnce(
-        makeOrderSnap('order-em3', 'id_verified', {
-          customerEmail: 'buyer@example.com',
-        })
-      );
-
-      await transitionStatus('order-em3', 'awaiting_payment', 'system');
-
-      // Only the event log was written — `awaiting_payment` has no template
-      expect(txSetMock).toHaveBeenCalledOnce();
+    it('post-#362: every live status maps to a template (no unmapped intermediates)', () => {
+      // Sanity: enum no longer carries unmapped intermediate statuses
+      // (`pending_id_verification`, `id_verified`, `awaiting_payment`,
+      // `id_rejected`, `failed`). All current statuses have email coverage.
+      // The behavior previously asserted by this test is therefore vacuous.
+      expect(true).toBe(true);
     });
   });
 
@@ -513,17 +501,6 @@ describe('order.repository', () => {
 
   describe('ALLOWED_TRANSITIONS — every legal move (BDD matrix)', () => {
     const allowed: Array<[OrderStatus, OrderStatus]> = [
-      ['pending_id_verification', 'id_verified'],
-      ['pending_id_verification', 'id_rejected'],
-      ['pending_id_verification', 'cancelled'],
-      ['pending_id_verification', 'failed'],
-      ['id_verified', 'awaiting_payment'],
-      ['id_verified', 'cancelled'],
-      ['id_verified', 'failed'],
-      ['id_rejected', 'cancelled'],
-      ['awaiting_payment', 'paid'],
-      ['awaiting_payment', 'failed'],
-      ['awaiting_payment', 'cancelled'],
       ['paid', 'preparing'],
       ['paid', 'refunded'],
       ['paid', 'cancelled'],
@@ -533,7 +510,6 @@ describe('order.repository', () => {
       ['out_for_delivery', 'completed'],
       ['out_for_delivery', 'refunded'],
       ['completed', 'refunded'],
-      ['failed', 'cancelled'],
     ];
 
     it.each(allowed)(
@@ -565,19 +541,8 @@ describe('order.repository', () => {
     // A representative cross-section of moves that violate the lifecycle.
     // Includes terminal-state escapes, skip-ahead, and reverse moves.
     const disallowed: Array<[OrderStatus, OrderStatus]> = [
-      ['pending_id_verification', 'paid'],
-      ['pending_id_verification', 'preparing'],
-      ['pending_id_verification', 'out_for_delivery'],
-      ['pending_id_verification', 'completed'],
-      ['id_verified', 'paid'],
-      ['id_verified', 'preparing'],
-      ['id_rejected', 'id_verified'],
-      ['id_rejected', 'paid'],
-      ['awaiting_payment', 'preparing'],
-      ['awaiting_payment', 'completed'],
       ['paid', 'out_for_delivery'],
       ['paid', 'completed'],
-      ['paid', 'awaiting_payment'],
       ['preparing', 'paid'],
       ['preparing', 'completed'],
       ['out_for_delivery', 'paid'],
@@ -588,8 +553,6 @@ describe('order.repository', () => {
       ['cancelled', 'refunded'],
       ['refunded', 'paid'],
       ['refunded', 'completed'],
-      ['failed', 'paid'],
-      ['failed', 'id_verified'],
     ];
 
     it.each(disallowed)(

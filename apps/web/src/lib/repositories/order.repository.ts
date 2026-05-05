@@ -63,12 +63,9 @@ export async function createOrder(
  */
 export async function setOrderProviderRefs(
   orderId: string,
-  refs: { agecheckerSessionId?: string; cloverCheckoutSessionId?: string }
+  refs: { cloverCheckoutSessionId?: string }
 ): Promise<void> {
   const patch: Record<string, unknown> = { updatedAt: new Date() };
-  if (refs.agecheckerSessionId !== undefined) {
-    patch.agecheckerSessionId = refs.agecheckerSessionId;
-  }
   if (refs.cloverCheckoutSessionId !== undefined) {
     patch.cloverCheckoutSessionId = refs.cloverCheckoutSessionId;
   }
@@ -96,13 +93,9 @@ const STATUS_TIMESTAMP_FIELD: Partial<Record<OrderStatus, keyof Order>> = {
  * is enqueued in the same transaction so the existing Cloud Functions
  * worker (`functions/index.ts`) can render + deliver via Resend.
  *
- * Statuses without an entry (e.g. `awaiting_payment`, `failed`) emit no
- * email — they are intermediate or admin-only states.
+ * Every live status has an email; no intermediate states remain post-#362.
  */
 const STATUS_TO_EMAIL_TEMPLATE: Partial<Record<OrderStatus, string>> = {
-  pending_id_verification: 'order_received',
-  id_verified: 'id_verified',
-  id_rejected: 'id_rejected',
   paid: 'payment_confirmed',
   preparing: 'order_preparing',
   out_for_delivery: 'order_out_for_delivery',
@@ -361,9 +354,8 @@ function docToOrder(id: string, d: FirebaseFirestore.DocumentData): Order {
     // always written by createOrder via the Order type.
     deliveryAddress:
       (d.deliveryAddress as ShippingAddress | undefined) ?? EMPTY_ADDRESS,
-    status: d.status ?? 'pending_id_verification',
+    status: d.status ?? 'paid',
     testMode: d.testMode === true,
-    agecheckerSessionId: d.agecheckerSessionId ?? undefined,
     cloverCheckoutSessionId: d.cloverCheckoutSessionId ?? undefined,
     cloverPaymentId: d.cloverPaymentId ?? undefined,
     customerEmail: d.customerEmail ?? undefined,

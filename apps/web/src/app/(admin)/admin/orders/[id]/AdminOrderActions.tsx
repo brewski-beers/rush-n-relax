@@ -21,7 +21,6 @@ interface Props {
 const DESTRUCTIVE_TRANSITIONS: ReadonlySet<OrderStatus> = new Set([
   'cancelled',
   'refunded',
-  'failed',
 ]);
 
 function formatCents(cents: number): string {
