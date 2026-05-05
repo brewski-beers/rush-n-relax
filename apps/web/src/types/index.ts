@@ -58,3 +58,9 @@ export { ALLOWED_TRANSITIONS } from './order';
 export type { OrderEvent } from './order-event';
 export type { CoaDocument } from './coa';
 export type { VariantTemplate } from './variant-template';
+export type {
+  CheckoutSession,
+  CheckoutSessionStatus,
+  CheckoutSessionHold,
+} from './checkout-session';
+export { CHECKOUT_SESSION_TRANSITIONS } from './checkout-session';

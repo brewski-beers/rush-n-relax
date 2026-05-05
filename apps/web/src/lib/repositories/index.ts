@@ -106,3 +106,14 @@ export {
   upsertVariantTemplate,
   deleteVariantTemplate,
 } from './variant-template.repository';
+
+export {
+  createCheckoutSession,
+  getCheckoutSession,
+  markAgeVerified,
+  markCheckoutSessionCompleted,
+  markCheckoutSessionExpired,
+  markCheckoutSessionCancelled,
+  InvalidCheckoutSessionTransitionError,
+} from './checkout-session.repository';
+export type { CreateCheckoutSessionInput } from './checkout-session.repository';
