@@ -1,0 +1,163 @@
+import { describe, it, expect, vi } from 'vitest';
+import { render, fireEvent, screen, within } from '@testing-library/react';
+import { CartProvider } from '@/contexts/CartContext';
+import ProductDetailClient from '@/app/(storefront)/products/[slug]/ProductDetailClient';
+import type { Product } from '@/types/product';
+import type { InventoryItem } from '@/types/inventory';
+
+vi.mock('next/link', () => ({
+  default: ({
+    href,
+    children,
+    ...props
+  }: {
+    href: string;
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
+/**
+ * Coverage for #309 — cart: pass variantId through cart → order.
+ *
+ * The variant-selector behavior on the PDP is the user-facing surface that
+ * supplies variantId to the cart. These tests pin:
+ *   1. Variants render with their labels.
+ *   2. Out-of-stock variants are visually marked OOS and disabled.
+ *   3. Selecting a variant updates the active selection (aria-pressed).
+ *   4. The Add-to-Cart CTA reflects the selected variant's stock state.
+ */
+
+const baseProduct: Product = {
+  id: 'flower',
+  slug: 'flower',
+  name: 'Premium Flower',
+  category: 'flower',
+  details: 'Top-shelf indoor.',
+  status: 'active',
+  availableAt: ['online'],
+  variants: [
+    { variantId: '3-5g', label: '3.5g' },
+    { variantId: '7g', label: '7g' },
+    { variantId: '14g', label: '14g' },
+  ],
+  createdAt: new Date('2026-01-01'),
+  updatedAt: new Date('2026-01-01'),
+};
+
+const variantPricing: NonNullable<InventoryItem['variantPricing']> = {
+  '3-5g': { price: 2800, inStock: true },
+  '7g': { price: 5000, inStock: false },
+  '14g': { price: 9000, inStock: true },
+};
+
+function findVariantCard(label: string): HTMLButtonElement {
+  const card = screen.getByText(label).closest('button.product-variant-card');
+  if (!(card instanceof HTMLButtonElement)) {
+    throw new Error(`No variant card found for label "${label}"`);
+  }
+  return card;
+}
+
+describe('ProductDetailClient — variant selector', () => {
+  it('renders one variant card per priced variant with its label', () => {
+    render(
+      <CartProvider>
+        <ProductDetailClient
+          product={baseProduct}
+          relatedProducts={[]}
+          variantPricing={variantPricing}
+          itemInStock
+        />
+      </CartProvider>
+    );
+
+    expect(screen.getByText('3.5g')).toBeDefined();
+    expect(screen.getByText('7g')).toBeDefined();
+    expect(screen.getByText('14g')).toBeDefined();
+  });
+
+  it('marks out-of-stock variants disabled and labels them "Out of stock"', () => {
+    const { container } = render(
+      <CartProvider>
+        <ProductDetailClient
+          product={baseProduct}
+          relatedProducts={[]}
+          variantPricing={variantPricing}
+          itemInStock
+        />
+      </CartProvider>
+    );
+
+    const sevenG = findVariantCard('7g');
+    expect(sevenG.disabled).toBe(true);
+    expect(sevenG.classList.contains('product-variant-card--oos')).toBe(true);
+    expect(within(sevenG).getByText(/Out of stock/i)).toBeDefined();
+
+    // In-stock variants remain enabled
+    expect(findVariantCard('3.5g').disabled).toBe(false);
+
+    // Sanity: a variant grid was rendered
+    expect(container.querySelector('.product-variant-grid')).not.toBeNull();
+  });
+
+  it('updates the active selection when a different in-stock variant is clicked', () => {
+    render(
+      <CartProvider>
+        <ProductDetailClient
+          product={baseProduct}
+          relatedProducts={[]}
+          variantPricing={variantPricing}
+          itemInStock
+        />
+      </CartProvider>
+    );
+
+    // resolveVariantPricing sorts by price asc, so 3.5g ($28) is first/active.
+    const threeFive = findVariantCard('3.5g');
+    const fourteenG = findVariantCard('14g');
+
+    expect(threeFive.getAttribute('aria-pressed')).toBe('true');
+    expect(fourteenG.getAttribute('aria-pressed')).toBe('false');
+
+    fireEvent.click(fourteenG);
+
+    expect(threeFive.getAttribute('aria-pressed')).toBe('false');
+    expect(fourteenG.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('disables Add to Cart when the (initial) selected variant is out of stock', () => {
+    // Make the lowest-price variant OOS — that is the default selection.
+    const oosFirst: NonNullable<InventoryItem['variantPricing']> = {
+      '3-5g': { price: 2800, inStock: false },
+      '7g': { price: 5000, inStock: true },
+    };
+
+    render(
+      <CartProvider>
+        <ProductDetailClient
+          product={{
+            ...baseProduct,
+            variants: [
+              { variantId: '3-5g', label: '3.5g' },
+              { variantId: '7g', label: '7g' },
+            ],
+          }}
+          relatedProducts={[]}
+          variantPricing={oosFirst}
+          itemInStock
+        />
+      </CartProvider>
+    );
+
+    const cta = screen.getByRole('button', {
+      name: /Out of Stock/i,
+    });
+    expect(cta).toBeInstanceOf(HTMLButtonElement);
+    expect((cta as HTMLButtonElement).disabled).toBe(true);
+  });
+});

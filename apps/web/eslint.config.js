@@ -85,7 +85,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/lib/repositories/**/*.ts', 'src/lib/firebase/admin.ts', 'src/constants/social.ts'],
+    files: ['**/src/lib/repositories/**/*.ts', '**/src/lib/firebase/admin.ts', '**/src/constants/social.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
@@ -94,12 +94,12 @@ export default tseslint.config(
   },
   {
     files: [
-      'src/**/*.test.ts',
-      'src/**/*.test.tsx',
-      'src/**/__tests__/**/*.ts',
-      'src/**/__tests__/**/*.tsx',
-      'functions/**/*.test.ts',
-      'functions/**/*.test.tsx',
+      '**/src/**/*.test.ts',
+      '**/src/**/*.test.tsx',
+      '**/src/**/__tests__/**/*.ts',
+      '**/src/**/__tests__/**/*.tsx',
+      '**/functions/**/*.test.ts',
+      '**/functions/**/*.test.tsx',
     ],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
@@ -110,13 +110,13 @@ export default tseslint.config(
     },
   },
   {
-    files: ['e2e/**/*.ts', 'e2e/**/*.tsx'],
+    files: ['**/e2e/**/*.ts', '**/e2e/**/*.tsx'],
     rules: {
       '@typescript-eslint/require-await': 'off',
     },
   },
   {
-    files: ['src/app/(admin)/**/actions.ts'],
+    files: ['**/src/app/(admin)/**/actions.ts'],
     rules: {
       '@typescript-eslint/no-base-to-string': 'off',
     },

@@ -231,4 +231,6 @@ export type ProductSummary = Pick<
   | 'variantGroups'
   | 'leaflyUrl'
   | 'variantSpecs'
+  | 'inStockAt'
+  | 'featuredAt'
 >;

@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-base-to-string --
- * `formData.get(x)?.toString()` is the project-wide pattern for reading
- * Server Action FormData. The rule flags `File.toString() → "[object Object]"`
- * but our wizard never submits File inputs through this action; uploads go
- * through ProductImageUpload which yields a storage path string.
- */
 'use server';
 
 import { revalidatePath } from 'next/cache';
