@@ -76,6 +76,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Checkout sessions (#360): bridging cart → order. Admin SDK only.
+    match /checkout-sessions/{sessionId} {
+      allow read, write: if false;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

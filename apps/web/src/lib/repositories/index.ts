@@ -21,9 +21,13 @@ export {
   setProductStatus,
   setVariantLocation,
   decrementVariantStock,
+  holdStock,
+  releaseStock,
+  commitStock,
   listProductsInStockAt,
   InsufficientStockError,
 } from './product.repository';
+export type { HoldRequest } from './product.repository';
 
 export {
   listAllPromos,
@@ -106,3 +110,14 @@ export {
   upsertVariantTemplate,
   deleteVariantTemplate,
 } from './variant-template.repository';
+
+export {
+  createCheckoutSession,
+  getCheckoutSession,
+  markAgeVerified,
+  markCheckoutSessionCompleted,
+  markCheckoutSessionExpired,
+  markCheckoutSessionCancelled,
+  InvalidCheckoutSessionTransitionError,
+} from './checkout-session.repository';
+export type { CreateCheckoutSessionInput } from './checkout-session.repository';
