@@ -1,3 +1,21 @@
+/**
+ * BDD coverage anchor for the #304 inventory-into-products initiative.
+ *
+ * This suite is the canonical pin for the variant model on `products/{slug}`:
+ *   - schema: `variantSpecs[variantId].locations[locationId]` map shape
+ *   - denormalized indexes: `inStockAt` / `pickupAt` / `featuredAt` recompute
+ *   - repo helpers: `setVariantLocation`, `decrementVariantStock`,
+ *     `listProductsInStockAt`
+ *   - sell-out invariant: zero qty forces `availablePickup`/`featured` false
+ *   - audit trail: `products/{slug}/adjustments/{autoId}` per write
+ *
+ * Sister suites pin adjacent layers — see vault docs/products.md
+ * "Test coverage map" for the full grid (cart, PDP, order create, admin
+ * stock actions, online-in-stock set, storefront listings).
+ *
+ * Finalized 2026-05-05 under issue #313.
+ */
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ── Hoisted mocks ──────────────────────────────────────────────────────────
