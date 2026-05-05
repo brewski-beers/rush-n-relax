@@ -11,6 +11,8 @@ import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
 import { AdminBackLink } from '@/components/admin/AdminBackLink';
 import InventoryTable, { type InventoryRow } from './InventoryTable';
 
+const DEFAULT_VARIANT_ID = 'default';
+
 interface Props {
   params: Promise<{ locationId: string }>;
 }
@@ -21,6 +23,10 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
   const { locationId } = await params;
   const isOnline = locationId === ONLINE_LOCATION_ID;
 
+  // Inventory is sourced from `products/{slug}.variantSpecs.default
+  // .locations[locationId]` (issue #358). The legacy inventory lookup is
+  // retained only to preserve `variantPricing` for the multi-variant editor
+  // panel, which has not yet been migrated.
   const [locations, productsPage, inventoryPage] = await Promise.all([
     listLocations(),
     listProducts({ limit: 500 }),
@@ -36,20 +42,23 @@ export default async function AdminInventoryLocationPage({ params }: Props) {
 
   if (!location) notFound();
 
-  const inventoryMap = new Map(
-    inventoryItems.map(item => [item.productId, item])
+  const variantPricingMap = new Map(
+    inventoryItems.map(item => [item.productId, item.variantPricing])
   );
 
   const rows: InventoryRow[] = products.map(product => {
-    const inv = inventoryMap.get(product.id);
+    const loc =
+      product.variantSpecs?.[DEFAULT_VARIANT_ID]?.locations?.[locationId];
+    const qty = loc?.qty ?? 0;
+    const inStock = qty > 0;
     return {
       ...product,
-      quantity: inv?.quantity ?? 0,
-      inStock: inv?.inStock ?? false,
-      availableOnline: inv?.availableOnline ?? false,
-      availablePickup: inv?.availablePickup ?? false,
-      featured: inv?.featured ?? false,
-      variantPricing: inv?.variantPricing,
+      quantity: qty,
+      inStock,
+      availableOnline: isOnline ? inStock : false,
+      availablePickup: loc?.availablePickup ?? false,
+      featured: loc?.featured ?? false,
+      variantPricing: variantPricingMap.get(product.id),
       variants: product.variants,
     };
   });
