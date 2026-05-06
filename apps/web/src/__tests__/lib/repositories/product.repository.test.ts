@@ -721,15 +721,18 @@ describe('recomputeProductIndexes', () => {
   });
 });
 
-// ── Self-pruning matrix (#396) ─────────────────────────────────────────────
+// ── Self-pruning matrix (#399 final) ───────────────────────────────────────
 //
 // Every mutation method (setVariantLocation / decrementVariantStock /
 // holdStock / releaseStock / commitStock) must:
-//   1. Project legacy fields (variantGroups / array variants / variantSpecs)
-//      onto the unified `variants` map BEFORE applying the mutation.
+//   1. Project any `legacyVariants` array onto the unified `variants` map
+//      BEFORE applying the mutation.
 //   2. Write the unified map back as `variants`.
-//   3. Physically delete each legacy field present on the existing doc via
+//   3. Physically delete `legacyVariants` (when present) via
 //      FieldValue.delete() in the SAME write payload.
+//
+// `variantGroups` is NOT pruned — per Path A (#399) it is the stable
+// option-dimension authoring source.
 //
 // We exercise the matrix through `setVariantLocation` because it's the
 // simplest single-product mutation; the projection helper is shared across
@@ -763,7 +766,6 @@ interface SelfPruningPayload {
     string,
     { label: string; locations: Record<string, Record<string, unknown>> }
   >;
-  variantSpecs?: unknown;
   variantGroups?: unknown;
   legacyVariants?: unknown;
   inStockAt?: string[];
@@ -776,7 +778,7 @@ describe('self-pruning write contract (#396)', () => {
   });
 
   describe('given a doc whose variants live only on variantGroups (no map data)', () => {
-    it('projects the groups onto the unified variants map and deletes variantGroups in the same write', async () => {
+    it('projects the groups onto the unified variants map and leaves variantGroups intact', async () => {
       txGetMock.mockResolvedValueOnce(
         txProductSnap('grouped-only', {
           variantGroups: [
@@ -807,16 +809,17 @@ describe('self-pruning write contract (#396)', () => {
         qty: 4,
         price: 3000,
       });
-      // Self-pruning: variantGroups physically removed
-      expect(payload.variantGroups).toBe(fieldValueDeleteSentinel);
+      // Path A (#399): variantGroups is the stable option-dimension
+      // authoring source — never pruned by mutation writes.
+      expect('variantGroups' in payload).toBe(false);
     });
   });
 
-  describe('given a doc whose variants live only on variantSpecs (legacy map alias)', () => {
-    it('projects the alias onto `variants` and deletes the variantSpecs field', async () => {
+  describe('given a doc that still carries legacyVariants alongside the canonical map', () => {
+    it('writes through the canonical map and prunes legacyVariants in the same write', async () => {
       txGetMock.mockResolvedValueOnce(
-        txProductSnap('specs-only', {
-          variantSpecs: {
+        txProductSnap('legacy-mixed', {
+          variants: {
             default: {
               label: 'Default',
               locations: {
@@ -824,10 +827,11 @@ describe('self-pruning write contract (#396)', () => {
               },
             },
           },
+          legacyVariants: [{ variantId: 'default', label: 'Default' }],
         })
       );
 
-      await setVariantLocation('specs-only', 'default', 'seymour', {
+      await setVariantLocation('legacy-mixed', 'default', 'seymour', {
         qty: 3,
         price: 1500,
       });
@@ -845,45 +849,8 @@ describe('self-pruning write contract (#396)', () => {
         price: 1500,
         reserved: 1,
       });
-      // variantSpecs alias physically removed
-      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
-    });
-  });
-
-  describe('given a doc with BOTH variantGroups AND variantSpecs', () => {
-    it('merges both into `variants` and deletes both legacy fields atomically', async () => {
-      txGetMock.mockResolvedValueOnce(
-        txProductSnap('both-legacy', {
-          variantGroups: [
-            {
-              groupId: 'size',
-              label: 'Size',
-              combinable: false,
-              options: [{ optionId: 'eighth', label: '3.5g' }],
-            },
-          ],
-          variantSpecs: {
-            eighth: {
-              label: '3.5g',
-              locations: { 'oak-ridge': { qty: 5, price: 3000 } },
-            },
-          },
-        })
-      );
-
-      await setVariantLocation('both-legacy', 'eighth', 'oak-ridge', {
-        qty: 7,
-        price: 3000,
-      });
-
-      const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
-
-      expect(payload.variants?.eighth.locations['oak-ridge']).toEqual({
-        qty: 7,
-        price: 3000,
-      });
-      expect(payload.variantGroups).toBe(fieldValueDeleteSentinel);
-      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
+      // legacyVariants physically removed in the same write
+      expect(payload.legacyVariants).toBe(fieldValueDeleteSentinel);
     });
   });
 
@@ -913,25 +880,24 @@ describe('self-pruning write contract (#396)', () => {
       });
       // No legacy fields present → no delete sentinels emitted
       expect('variantGroups' in payload).toBe(false);
-      expect('variantSpecs' in payload).toBe(false);
       expect('legacyVariants' in payload).toBe(false);
     });
   });
 });
 
-// ── Money path: reserved preservation through legacy projection ────────────
+// ── Money path: reserved preservation across the unified map ──────────────
 
-describe('money path — reserved preservation across legacy → unified projection (#396)', () => {
+describe('money path — reserved preservation on the unified `variants` map', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   describe('holdStock', () => {
-    it('preserves an existing `reserved` count carried in on the deprecated variantSpecs alias', async () => {
+    it('preserves an existing `reserved` count when holding more units', async () => {
       txGetMock.mockResolvedValueOnce(
         txProductSnap('held', {
-          // Doc still in legacy shape; another in-flight session has 1 unit held.
-          variantSpecs: {
+          // Another in-flight session has 1 unit held.
+          variants: {
             default: {
               label: 'Default',
               locations: { online: { qty: 5, reserved: 1, price: 1500 } },
@@ -954,16 +920,14 @@ describe('money path — reserved preservation across legacy → unified project
       expect(payload.variants?.default.locations.online.reserved).toBe(3);
       // qty unchanged on hold.
       expect(payload.variants?.default.locations.online.qty).toBe(5);
-      // Legacy variantSpecs pruned in the same write.
-      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
     });
   });
 
   describe('releaseStock', () => {
-    it('decrements the legacy `reserved` count after projecting onto the unified map', async () => {
+    it('decrements the `reserved` count', async () => {
       txGetMock.mockResolvedValueOnce(
         txProductSnap('released', {
-          variantSpecs: {
+          variants: {
             default: {
               label: 'Default',
               locations: { online: { qty: 5, reserved: 3, price: 1500 } },
@@ -984,15 +948,14 @@ describe('money path — reserved preservation across legacy → unified project
       const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
       expect(payload.variants?.default.locations.online.reserved).toBe(1);
       expect(payload.variants?.default.locations.online.qty).toBe(5);
-      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
     });
   });
 
   describe('commitStock', () => {
-    it('decrements both qty and reserved while projecting legacy variantSpecs onto the unified map', async () => {
+    it('decrements both qty and reserved on the unified map', async () => {
       txGetMock.mockResolvedValueOnce(
         txProductSnap('committed', {
-          variantSpecs: {
+          variants: {
             default: {
               label: 'Default',
               locations: { online: { qty: 5, reserved: 2, price: 1500 } },
@@ -1013,15 +976,14 @@ describe('money path — reserved preservation across legacy → unified project
       const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
       expect(payload.variants?.default.locations.online.qty).toBe(3);
       expect(payload.variants?.default.locations.online.reserved).toBe(0);
-      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
     });
   });
 
   describe('decrementVariantStock', () => {
-    it('preserves `reserved` when decrementing qty on a legacy variantSpecs doc', async () => {
+    it('preserves `reserved` when decrementing qty', async () => {
       txGetMock.mockResolvedValueOnce(
         txProductSnap('decremented', {
-          variantSpecs: {
+          variants: {
             default: {
               label: 'Default',
               locations: {
@@ -1098,7 +1060,6 @@ describe('upsertProduct self-pruning (admin save path) (#398)', () => {
         default: { label: 'Default', locations: {} },
       });
       expect(payload.legacyVariants).toBeUndefined();
-      expect(payload.variantSpecs).toBeUndefined();
       expect(payload.inStockAt).toEqual([]);
     });
   });
@@ -1132,18 +1093,17 @@ describe('upsertProduct self-pruning (admin save path) (#398)', () => {
       expect(payload.variants).toEqual({
         '1g': { label: '1g', locations: {} },
       });
-      // variantGroups is the option-group definition (PDP UI input). Step 3
-      // intentionally leaves it on the doc — step 4 (#399) migrates the PDP
-      // off it.
+      // variantGroups is the stable option-dimension authoring source
+      // (Path A, #399). upsertProduct does not touch it.
       expect('variantGroups' in payload).toBe(false);
     });
   });
 
-  describe('given an existing doc whose variants live only on the deprecated variantSpecs alias', () => {
-    it('preserves the per-location stock/price under the unified map and prunes variantSpecs', async () => {
+  describe('given an existing doc whose variants live on the canonical map alongside legacyVariants', () => {
+    it('preserves the per-location stock/price under the unified map and prunes legacyVariants', async () => {
       stubExistingDoc({
-        slug: 'specs-only',
-        variantSpecs: {
+        slug: 'canonical-with-legacy',
+        variants: {
           default: {
             label: 'Default',
             locations: {
@@ -1151,12 +1111,13 @@ describe('upsertProduct self-pruning (admin save path) (#398)', () => {
             },
           },
         },
+        legacyVariants: [{ variantId: 'default', label: 'Default' }],
       });
 
       // Editor save: seeds the variant with empty locations — repo MUST
       // preserve the existing per-location data.
       await upsertProduct({
-        slug: 'specs-only',
+        slug: 'canonical-with-legacy',
         name: 'Specs',
         category: 'flower',
         details: '',
@@ -1171,8 +1132,8 @@ describe('upsertProduct self-pruning (admin save path) (#398)', () => {
         price: 4200,
         reserved: 2,
       });
-      // Legacy alias physically removed.
-      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
+      // Legacy field physically removed.
+      expect(payload.legacyVariants).toBe(fieldValueDeleteSentinel);
       // Indexes recomputed from preserved data.
       expect(payload.inStockAt).toContain('oak-ridge');
     });

@@ -42,10 +42,13 @@ export interface VariantOption {
 /**
  * A dimension of purchasable options (e.g. Flavor, Quantity, Weight).
  *
- * @deprecated Step 1 of variant-model unification (#396). VariantGroups are
- * folded into the unified `Product.variants` map at write time and the field
- * is self-pruned in the same Firestore write. Removed entirely in step 3
- * (#398) when the catalog editor migrates to author the unified shape directly.
+ * STABLE — option-dimension authoring source (Path A, finalized in #399).
+ * `variantGroups` is the canonical input for the multi-dimensional variant
+ * selector on the storefront PDP and is the authoring shape used by the
+ * admin catalog editor. It is intentionally distinct from the unified
+ * `variants` map: `variantGroups` describes the *axis configuration*
+ * (e.g. "Weight has options 1g/3.5g/7g"), while `variants` carries the
+ * per-leaf pricing/stock reality. Both are persisted on the product doc.
  */
 export interface VariantGroup {
   groupId: string;
@@ -91,10 +94,6 @@ export interface ProductVariantLocation {
  * The canonical (unified) variant shape — a labelled bundle of per-location
  * pricing/availability entries. Variantless products use a single `default`
  * variant key.
- *
- * Renamed from `ProductVariantSpec` in #396 step 1. The legacy alias
- * `ProductVariantSpec` is retained for the duration of steps 1–2 so step-3
- * callers compile.
  */
 export interface ProductVariant {
   label: string;
@@ -104,12 +103,14 @@ export interface ProductVariant {
 
 /**
  * Legacy array-shaped variant entry. Predates the unified map — authored on
- * the `Product.legacyVariants` field by older fixtures and the catalog
- * editor. The product repository projects these onto the unified
- * `Product.variants` map at write time and self-prunes the legacy field.
+ * the `Product.legacyVariants` field by older catalog seed data. The product
+ * repository projects these onto the unified `Product.variants` map at write
+ * time and self-prunes the legacy field.
  *
- * @deprecated Replaced by `ProductVariant` (the unified map entry) in #396
- * step 1. Removed in #398 step 3.
+ * STABLE pending PDP refactor (#399 / Path A): the storefront PDP still
+ * reads this field for the "see in store" multi-dim fallback when no
+ * unified `variants` data exists. Removal is tracked separately and is
+ * out of scope for the variant-model unification (#395).
  */
 export interface LegacyProductVariant {
   variantId: string;
@@ -164,29 +165,35 @@ export interface Product {
   /** Flavor/taste descriptors, e.g. ['Citrus', 'Pine', 'Berry'] */
   flavors?: string[];
   /**
-   * @deprecated #396 step 1 — option dimensions for this product. The
-   * product repository folds these into the unified `variants` map at write
-   * time and prunes the field. Step 3 (#398) deletes this field and the
-   * editor moves to authoring `variants` directly.
+   * STABLE — option-dimension authoring source (Path A, #399). Carries the
+   * group-shaped axis configuration that the multi-dimensional variant
+   * selector on the storefront PDP and the admin catalog editor both
+   * consume. Intentionally distinct from `variants` (which carries the
+   * per-leaf pricing/stock reality). Both fields coexist on the product
+   * doc; neither subsumes the other.
    */
   variantGroups?: VariantGroup[];
   /**
-   * @deprecated #396 step 1 — legacy hand-authored variant array. Renamed
-   * from `variants` so the field name `variants` is free for the unified
-   * map (the canonical write target). Repo reads continue to populate this
-   * for label-fallback callers (#398 deletes the field outright).
+   * STABLE pending PDP refactor (#399 / Path A). Legacy hand-authored
+   * variant array still consumed by the storefront PDP for the "see in
+   * store" fallback when no unified `variants` data exists. Repo writes
+   * self-prune this field on save through `upsertProduct`; reads
+   * back-populate it from the array when present so PDP code can keep
+   * working until the fallback is migrated.
    */
   legacyVariants?: LegacyProductVariant[];
   /**
-   * Unified variant catalogue (#396 step 1). Map-keyed by variantId; each
-   * entry carries a label and per-location pricing/availability/reservation.
-   * Variantless products use the single `default` key.
+   * Unified variant catalogue. Map-keyed by variantId; each entry carries a
+   * label and per-location pricing/availability/reservation. Variantless
+   * products use the single `default` key. This is the canonical pricing
+   * and stock source — read by storefront, admin, and cart-availability.
    *
-   * Self-pruning contract: every repository write path projects legacy
-   * fields (`variantGroups`, `legacyVariants`, `variantSpecs`) onto this map
-   * — preserving qty / price / compareAtPrice / availablePickup / featured /
-   * reserved when variantIds match — and deletes the legacy fields in the
-   * same Firestore write.
+   * Self-pruning contract: every repository write path projects any
+   * `legacyVariants` onto this map — preserving qty / price /
+   * compareAtPrice / availablePickup / featured / reserved when variantIds
+   * match — and deletes the legacy field in the same Firestore write.
+   * `variantGroups` is intentionally NOT pruned — it is a stable
+   * authored field per Path A.
    */
   variants?: { [variantId: string]: ProductVariant };
   /**

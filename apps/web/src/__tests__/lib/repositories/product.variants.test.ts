@@ -2,7 +2,7 @@
  * BDD coverage anchor for the #304 inventory-into-products initiative.
  *
  * This suite is the canonical pin for the variant model on `products/{slug}`:
- *   - schema: `variantSpecs[variantId].locations[locationId]` map shape
+ *   - schema: `variants[variantId].locations[locationId]` map shape
  *   - denormalized indexes: `inStockAt` / `pickupAt` / `featuredAt` recompute
  *   - repo helpers: `setVariantLocation`, `decrementVariantStock`,
  *     `listProductsInStockAt`
@@ -120,7 +120,7 @@ import {
 
 function productSnap(
   slug: string,
-  variantSpecs: Record<
+  variants: Record<
     string,
     { label: string; locations: Record<string, Record<string, unknown>> }
   >,
@@ -136,7 +136,7 @@ function productSnap(
       details: '',
       status: 'active',
       availableAt: [],
-      variantSpecs,
+      variants,
       ...extra,
     }),
   };
@@ -178,11 +178,11 @@ describe('setVariantLocation', () => {
       expect(p.inStockAt).toEqual(['oak-ridge']);
       expect(p.pickupAt).toEqual(['oak-ridge']);
       expect(p.featuredAt).toEqual(['oak-ridge']);
-      const variantSpecs = p.variants as Record<
+      const specs = p.variants as Record<
         string,
         { locations: Record<string, { qty: number }> }
       >;
-      expect(variantSpecs.default.locations['oak-ridge'].qty).toBe(5);
+      expect(specs.default.locations['oak-ridge'].qty).toBe(5);
 
       // Audit log written to the adjustments subcollection
       expect(txCreateMock).toHaveBeenCalledTimes(1);
@@ -264,7 +264,7 @@ describe('decrementVariantStock', () => {
   });
 
   describe('given sufficient stock for every line', () => {
-    it('writes recomputed variantSpecs + indexes and one audit log per line', async () => {
+    it('writes recomputed variants + indexes and one audit log per line', async () => {
       txGetMock.mockResolvedValueOnce(
         productSnap('blue-dream', {
           default: {
@@ -295,16 +295,14 @@ describe('decrementVariantStock', () => {
 
       expect(txSetMock).toHaveBeenCalledTimes(1);
       const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
-      const variantSpecs = payload.variants as Record<
+      const specs = payload.variants as Record<
         string,
         {
           locations: Record<string, { qty: number; availablePickup?: boolean }>;
         }
       >;
-      expect(variantSpecs.default.locations['oak-ridge'].qty).toBe(7);
-      expect(variantSpecs.default.locations['oak-ridge'].availablePickup).toBe(
-        true
-      );
+      expect(specs.default.locations['oak-ridge'].qty).toBe(7);
+      expect(specs.default.locations['oak-ridge'].availablePickup).toBe(true);
       expect(payload.inStockAt).toEqual(['oak-ridge']);
 
       expect(txCreateMock).toHaveBeenCalledTimes(1);
@@ -340,7 +338,7 @@ describe('decrementVariantStock', () => {
       ]);
 
       const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
-      const variantSpecs = payload.variants as Record<
+      const specs = payload.variants as Record<
         string,
         {
           locations: Record<
@@ -349,7 +347,7 @@ describe('decrementVariantStock', () => {
           >;
         }
       >;
-      const loc = variantSpecs.default.locations['oak-ridge'];
+      const loc = specs.default.locations['oak-ridge'];
       expect(loc.qty).toBe(0);
       expect(loc.availablePickup).toBe(false);
       expect(loc.featured).toBe(false);

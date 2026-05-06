@@ -61,7 +61,7 @@ import {
 
 function productSnap(
   slug: string,
-  variantSpecs: Record<
+  variants: Record<
     string,
     {
       label: string;
@@ -79,7 +79,7 @@ function productSnap(
       details: '',
       status: 'active',
       availableAt: [],
-      variantSpecs,
+      variants,
     }),
   };
 }
