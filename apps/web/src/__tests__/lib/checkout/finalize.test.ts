@@ -84,7 +84,7 @@ function makeSession(
     updatedAt: new Date('2026-05-01T00:00:00Z'),
     expiresAt: new Date('2026-05-02T00:00:00Z'),
     ...overrides,
-  } as CheckoutSession;
+  };
 }
 
 beforeEach(() => {
