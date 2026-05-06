@@ -41,31 +41,17 @@ export interface VariantOption {
 
 /**
  * A dimension of purchasable options (e.g. Flavor, Quantity, Weight).
- * When `combinable` is true, this group participates in the cartesian-product
- * SKU generation along with all other combinable groups.
+ *
+ * @deprecated Step 1 of variant-model unification (#396). VariantGroups are
+ * folded into the unified `Product.variants` map at write time and the field
+ * is self-pruned in the same Firestore write. Removed entirely in step 3
+ * (#398) when the catalog editor migrates to author the unified shape directly.
  */
 export interface VariantGroup {
   groupId: string;
   label: string;
   combinable: boolean;
   options: VariantOption[];
-}
-
-/**
- * A single purchasable variant of a product (e.g. "1/8 oz", "10mg gummy").
- * Variants are authored at the product level and priced via
- * `ProductVariantSpec.locations[locationId].price` (#312).
- *
- * @deprecated Legacy array-shaped variant. Replaced by `ProductVariantSpec`
- * (map-based, per-location pricing) under #304/#305. Retained for fallback
- * label resolution while existing fixtures continue to author it.
- */
-export interface ProductVariant {
-  variantId: string;
-  label: string;
-  weight?: { value: number; unit: 'g' | 'oz' };
-  quantity?: number;
-  dose?: { value: number; unit: 'mg' | 'mcg' };
 }
 
 /**
@@ -85,6 +71,10 @@ export interface ProductVariantLocation {
    * `qty` to get available stock. Optional / additive — pre-#361 documents
    * default to 0 via `?? 0` reads. Mutated only by the reservation helpers
    * (`holdStock`, `releaseStock`, `commitStock`) in product.repository.
+   *
+   * MUST be preserved across the legacy → unified projection performed by
+   * the product repository self-pruning writes (#396); losing this field
+   * would silently release in-flight CheckoutSession holds.
    */
   reserved?: number;
   /** Unit price in cents */
@@ -98,29 +88,51 @@ export interface ProductVariantLocation {
 }
 
 /**
- * New map-based variant shape introduced by #305 (parent #304).
- * A variant has a human label and a map of per-location availability /
- * pricing keyed by location ID. Variantless products use a single
- * `default` variant key (data migration in #307).
+ * The canonical (unified) variant shape — a labelled bundle of per-location
+ * pricing/availability entries. Variantless products use a single `default`
+ * variant key.
  *
- * Named `ProductVariantSpec` to avoid colliding with the legacy
- * array-shaped `ProductVariant` type, which remains in place during the
- * parallel-write window. The legacy type is removed in #312, at which
- * point this type will be renamed to `ProductVariant`.
+ * Renamed from `ProductVariantSpec` in #396 step 1. The legacy alias
+ * `ProductVariantSpec` is retained for the duration of steps 1–2 so step-3
+ * callers compile.
  */
-export interface ProductVariantSpec {
+export interface ProductVariant {
   label: string;
   /** Keyed by location ID (retail location slug or ONLINE_LOCATION_ID). */
   locations: { [locationId: string]: ProductVariantLocation };
 }
 
 /**
+ * @deprecated Renamed to `ProductVariant` in #396 step 1. Retained as an
+ * alias so step-2/step-3 callers (storefront, admin editor) keep compiling.
+ * Removed in #398 step 3.
+ */
+export type ProductVariantSpec = ProductVariant;
+
+/**
+ * Legacy array-shaped variant entry. Predates the unified map — authored on
+ * the `Product.legacyVariants` field by older fixtures and the catalog
+ * editor. The product repository projects these onto the unified
+ * `Product.variants` map at write time and self-prunes the legacy field.
+ *
+ * @deprecated Replaced by `ProductVariant` (the unified map entry) in #396
+ * step 1. Removed in #398 step 3.
+ */
+export interface LegacyProductVariant {
+  variantId: string;
+  label: string;
+  weight?: { value: number; unit: 'g' | 'oz' };
+  quantity?: number;
+  dose?: { value: number; unit: 'mg' | 'mcg' };
+}
+
+/**
  * Firestore document shape for a product.
  * Lives at: products/{slug}
  *
- * Visibility, featuring, and pricing live on `variantSpecs[*].locations[*]`
- * (per-variant, per-location). The legacy `inventory/{locationId}/items`
- * sub-collection was retired in #312.
+ * Visibility, featuring, and pricing live on `variants[*].locations[*]`
+ * (per-variant, per-location) under the unified map shape introduced in
+ * #396 step 1.
  */
 export interface Product {
   /** Firestore document ID (same as slug) */
@@ -132,7 +144,7 @@ export interface Product {
   /**
    * Default unit price in cents shown when no variant-specific price is set.
    * Required at create time (#359) so storefront has a price to render even
-   * before per-location variantSpecs are populated.
+   * before per-location variant entries are populated.
    */
   price?: number;
   /** Firebase Storage path, e.g. products/{slug}.jpg */
@@ -159,43 +171,52 @@ export interface Product {
   /** Flavor/taste descriptors, e.g. ['Citrus', 'Pine', 'Berry'] */
   flavors?: string[];
   /**
-   * Option dimensions for this product (e.g. Flavor, Weight).
-   * Combinable groups are cartesian-product expanded into `variants` on save.
+   * @deprecated #396 step 1 — option dimensions for this product. The
+   * product repository folds these into the unified `variants` map at write
+   * time and prunes the field. Step 3 (#398) deletes this field and the
+   * editor moves to authoring `variants` directly.
    */
   variantGroups?: VariantGroup[];
   /**
-   * Denormalized flat variant list — computed from variantGroups on save via generateSkus().
-   * Also accepts legacy hand-authored variants for products without variantGroups.
-   * Priced per-variant on `variantSpecs[variantId].locations[locationId].price`.
+   * @deprecated #396 step 1 — legacy hand-authored variant array. Renamed
+   * from `variants` so the field name `variants` is free for the unified
+   * map (the canonical write target). Repo reads continue to populate this
+   * for label-fallback callers (#398 deletes the field outright).
    */
-  variants?: ProductVariant[];
+  legacyVariants?: LegacyProductVariant[];
   /**
-   * NEW (#305) — map-based variant catalogue with per-location stock,
-   * pricing, pickup, and featured flags. Co-exists with the legacy
-   * `variants` array during the parallel-write window. Uses a map (not an
-   * array) so Firestore field-path atomic updates target individual
-   * variants. Variantless products use a single `default` key (#307).
+   * Unified variant catalogue (#396 step 1). Map-keyed by variantId; each
+   * entry carries a label and per-location pricing/availability/reservation.
+   * Variantless products use the single `default` key.
    *
-   * Naming: field is `variantSpecs` to avoid colliding with the legacy
-   * `variants` field. Renamed in #312 cleanup.
+   * Self-pruning contract: every repository write path projects legacy
+   * fields (`variantGroups`, `legacyVariants`, `variantSpecs`) onto this map
+   * — preserving qty / price / compareAtPrice / availablePickup / featured /
+   * reserved when variantIds match — and deletes the legacy fields in the
+   * same Firestore write.
    */
-  variantSpecs?: { [variantId: string]: ProductVariantSpec };
+  variants?: { [variantId: string]: ProductVariant };
   /**
-   * NEW (#305) — denormalized list of location IDs where this product has
-   * at least one variant with `qty > 0`. Recomputed by the product
-   * repository on writes. Powers storefront list queries via array-contains.
+   * @deprecated #396 step 1 — alias of the unified `variants` map populated
+   * on read so step-2/step-3 callers compile. Repository writes prune this
+   * field from new docs. Removed in #398 step 3.
+   */
+  variantSpecs?: { [variantId: string]: ProductVariant };
+  /**
+   * Denormalized list of location IDs where this product has at least one
+   * variant with `qty - (reserved ?? 0) > 0`. Recomputed by the product
+   * repository on every write. Powers storefront list queries via
+   * array-contains.
    */
   inStockAt?: string[];
   /**
-   * NEW (#305) — denormalized list of retail location IDs where this
-   * product has at least one variant with `availablePickup === true` and
-   * `qty > 0`. Recomputed by the product repository on writes.
+   * Denormalized list of retail location IDs where this product has at
+   * least one variant with `availablePickup === true` and available stock.
    */
   pickupAt?: string[];
   /**
-   * NEW (#305) — denormalized list of location IDs where this product has
-   * at least one variant marked `featured` and in stock. Recomputed by the
-   * product repository on writes.
+   * Denormalized list of location IDs where this product has at least one
+   * variant marked `featured` and with available stock.
    */
   featuredAt?: string[];
   /** FDA-style nutrition facts — edibles and drinks (serving info). */
@@ -228,9 +249,10 @@ export type ProductSummary = Pick<
   | 'availableAt'
   | 'vendorSlug'
   | 'strain'
-  | 'variants'
+  | 'legacyVariants'
   | 'variantGroups'
   | 'leaflyUrl'
+  | 'variants'
   | 'variantSpecs'
   | 'inStockAt'
   | 'featuredAt'

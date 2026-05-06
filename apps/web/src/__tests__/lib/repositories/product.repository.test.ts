@@ -7,21 +7,49 @@ const {
   docSetMock,
   docUpdateMock,
   colGetMock,
-  collectionMock,
   getAdminFirestoreMock,
+  txGetMock,
+  txSetMock,
+  fieldValueDeleteSentinel,
 } = vi.hoisted(() => {
   const docGetMock = vi.fn();
   const docSetMock = vi.fn().mockResolvedValue(undefined);
   const docUpdateMock = vi.fn().mockResolvedValue(undefined);
   const colGetMock = vi.fn().mockResolvedValue({ docs: [] });
 
+  const txGetMock = vi.fn();
+  const txSetMock = vi.fn();
+  const txCreateMock = vi.fn();
+  const runTransactionMock = vi.fn(
+    async (
+      fn: (tx: {
+        get: typeof txGetMock;
+        set: typeof txSetMock;
+        create: typeof txCreateMock;
+      }) => Promise<unknown>
+    ) => fn({ get: txGetMock, set: txSetMock, create: txCreateMock })
+  );
+
+  // Sentinel value used by `firebase-admin/firestore`'s FieldValue.delete().
+  // We assert by reference identity in the self-pruning suite below.
+  const fieldValueDeleteSentinel = { __op: 'delete' } as const;
+
+  // Adjustments subcollection — `.doc()` returns a fresh autoId-style ref.
+  const adjustmentsDoc = vi.fn(() => ({
+    id: `adj-${Math.random().toString(36).slice(2)}`,
+  }));
+  const adjustmentsCol = vi.fn(() => ({ doc: adjustmentsDoc }));
+
+  const productDoc = vi.fn((id: string) => ({
+    id,
+    get: docGetMock,
+    set: docSetMock,
+    update: docUpdateMock,
+    collection: adjustmentsCol,
+  }));
+
   const collectionMock = vi.fn(() => ({
-    doc: vi.fn((id: string) => ({
-      id,
-      get: docGetMock,
-      set: docSetMock,
-      update: docUpdateMock,
-    })),
+    doc: productDoc,
     where: vi.fn().mockReturnThis(),
     orderBy: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
@@ -31,6 +59,7 @@ const {
 
   const getAdminFirestoreMock = vi.fn(() => ({
     collection: collectionMock,
+    runTransaction: runTransactionMock,
   }));
 
   return {
@@ -38,8 +67,10 @@ const {
     docSetMock,
     docUpdateMock,
     colGetMock,
-    collectionMock,
     getAdminFirestoreMock,
+    txGetMock,
+    txSetMock,
+    fieldValueDeleteSentinel,
   };
 });
 
@@ -47,6 +78,13 @@ vi.mock('@/lib/firebase/admin', () => ({
   getAdminFirestore: getAdminFirestoreMock,
   toDate: (value: Date | string | undefined) =>
     value ? new Date(value) : new Date(0),
+  ONLINE_LOCATION_ID: 'online',
+}));
+
+vi.mock('firebase-admin/firestore', () => ({
+  FieldValue: {
+    delete: () => fieldValueDeleteSentinel,
+  },
 }));
 
 import {
@@ -58,6 +96,12 @@ import {
   listAllProducts,
   listProductsByCategory,
   getRelatedProducts,
+  setVariantLocation,
+  decrementVariantStock,
+  holdStock,
+  releaseStock,
+  commitStock,
+  recomputeProductIndexes,
 } from '@/lib/repositories/product.repository';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -614,6 +658,393 @@ describe('getRelatedProducts', () => {
       // product-0 excluded, leaving 7; capped at limit 6
       expect(result).toHaveLength(6);
       expect(result.every(p => p.slug !== 'product-0')).toBe(true);
+    });
+  });
+});
+
+// ── recomputeProductIndexes (pure) ─────────────────────────────────────────
+
+describe('recomputeProductIndexes', () => {
+  describe('given a unified variants map', () => {
+    it('returns sorted location ids where qty - reserved > 0', () => {
+      const result = recomputeProductIndexes({
+        default: {
+          label: 'Default',
+          locations: {
+            online: { qty: 5, price: 1500 },
+            'oak-ridge': {
+              qty: 3,
+              price: 1500,
+              availablePickup: true,
+              featured: true,
+            },
+            seymour: { qty: 0, price: 1500 },
+          },
+        },
+      });
+      expect(result.inStockAt).toEqual(['oak-ridge', 'online']);
+      expect(result.pickupAt).toEqual(['oak-ridge']);
+      expect(result.featuredAt).toEqual(['oak-ridge']);
+    });
+  });
+
+  describe('given a SKU whose available stock is fully reserved', () => {
+    it('excludes that location from every index', () => {
+      const result = recomputeProductIndexes({
+        default: {
+          label: 'Default',
+          locations: {
+            online: {
+              qty: 2,
+              reserved: 2,
+              price: 1500,
+              availablePickup: true,
+              featured: true,
+            },
+          },
+        },
+      });
+      expect(result.inStockAt).toEqual([]);
+      expect(result.pickupAt).toEqual([]);
+      expect(result.featuredAt).toEqual([]);
+    });
+  });
+
+  describe('given undefined variants', () => {
+    it('returns empty arrays', () => {
+      expect(recomputeProductIndexes(undefined)).toEqual({
+        inStockAt: [],
+        pickupAt: [],
+        featuredAt: [],
+      });
+    });
+  });
+});
+
+// ── Self-pruning matrix (#396) ─────────────────────────────────────────────
+//
+// Every mutation method (setVariantLocation / decrementVariantStock /
+// holdStock / releaseStock / commitStock) must:
+//   1. Project legacy fields (variantGroups / array variants / variantSpecs)
+//      onto the unified `variants` map BEFORE applying the mutation.
+//   2. Write the unified map back as `variants`.
+//   3. Physically delete each legacy field present on the existing doc via
+//      FieldValue.delete() in the SAME write payload.
+//
+// We exercise the matrix through `setVariantLocation` because it's the
+// simplest single-product mutation; the projection helper is shared across
+// all six methods so coverage transfers.
+
+function txProductSnap(
+  slug: string,
+  data: Record<string, unknown>
+): {
+  id: string;
+  exists: boolean;
+  data: () => Record<string, unknown>;
+} {
+  return {
+    id: slug,
+    exists: true,
+    data: () => ({
+      slug,
+      name: 'Test',
+      category: 'flower',
+      details: '',
+      status: 'active',
+      availableAt: [],
+      ...data,
+    }),
+  };
+}
+
+interface SelfPruningPayload {
+  variants?: Record<
+    string,
+    { label: string; locations: Record<string, Record<string, unknown>> }
+  >;
+  variantSpecs?: unknown;
+  variantGroups?: unknown;
+  legacyVariants?: unknown;
+  inStockAt?: string[];
+  [k: string]: unknown;
+}
+
+describe('self-pruning write contract (#396)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('given a doc whose variants live only on variantGroups (no map data)', () => {
+    it('projects the groups onto the unified variants map and deletes variantGroups in the same write', async () => {
+      txGetMock.mockResolvedValueOnce(
+        txProductSnap('grouped-only', {
+          variantGroups: [
+            {
+              groupId: 'size',
+              label: 'Size',
+              combinable: false,
+              options: [
+                { optionId: 'eighth', label: '3.5g' },
+                { optionId: 'quarter', label: '7g' },
+              ],
+            },
+          ],
+          // The eighth variant must exist in the projected map for
+          // setVariantLocation to find it without bootstrapping.
+        })
+      );
+
+      await setVariantLocation('grouped-only', 'eighth', 'oak-ridge', {
+        qty: 4,
+        price: 3000,
+      });
+
+      expect(txSetMock).toHaveBeenCalledTimes(1);
+      const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
+
+      expect(payload.variants?.eighth.locations['oak-ridge']).toEqual({
+        qty: 4,
+        price: 3000,
+      });
+      // Self-pruning: variantGroups physically removed
+      expect(payload.variantGroups).toBe(fieldValueDeleteSentinel);
+    });
+  });
+
+  describe('given a doc whose variants live only on variantSpecs (legacy map alias)', () => {
+    it('projects the alias onto `variants` and deletes the variantSpecs field', async () => {
+      txGetMock.mockResolvedValueOnce(
+        txProductSnap('specs-only', {
+          variantSpecs: {
+            default: {
+              label: 'Default',
+              locations: {
+                'oak-ridge': { qty: 2, price: 1500, reserved: 1 },
+              },
+            },
+          },
+        })
+      );
+
+      await setVariantLocation('specs-only', 'default', 'seymour', {
+        qty: 3,
+        price: 1500,
+      });
+
+      const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
+
+      // Patched location written under unified map
+      expect(payload.variants?.default.locations.seymour).toEqual({
+        qty: 3,
+        price: 1500,
+      });
+      // Pre-existing oak-ridge entry preserved including `reserved`
+      expect(payload.variants?.default.locations['oak-ridge']).toEqual({
+        qty: 2,
+        price: 1500,
+        reserved: 1,
+      });
+      // variantSpecs alias physically removed
+      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
+    });
+  });
+
+  describe('given a doc with BOTH variantGroups AND variantSpecs', () => {
+    it('merges both into `variants` and deletes both legacy fields atomically', async () => {
+      txGetMock.mockResolvedValueOnce(
+        txProductSnap('both-legacy', {
+          variantGroups: [
+            {
+              groupId: 'size',
+              label: 'Size',
+              combinable: false,
+              options: [{ optionId: 'eighth', label: '3.5g' }],
+            },
+          ],
+          variantSpecs: {
+            eighth: {
+              label: '3.5g',
+              locations: { 'oak-ridge': { qty: 5, price: 3000 } },
+            },
+          },
+        })
+      );
+
+      await setVariantLocation('both-legacy', 'eighth', 'oak-ridge', {
+        qty: 7,
+        price: 3000,
+      });
+
+      const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
+
+      expect(payload.variants?.eighth.locations['oak-ridge']).toEqual({
+        qty: 7,
+        price: 3000,
+      });
+      expect(payload.variantGroups).toBe(fieldValueDeleteSentinel);
+      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
+    });
+  });
+
+  describe('given a doc with neither legacy field present (canonical only)', () => {
+    it('writes the unified map and does NOT emit FieldValue.delete sentinels for absent fields', async () => {
+      txGetMock.mockResolvedValueOnce(
+        txProductSnap('canonical-only', {
+          variants: {
+            default: {
+              label: 'Default',
+              locations: { online: { qty: 4, price: 1500 } },
+            },
+          },
+        })
+      );
+
+      await setVariantLocation('canonical-only', 'default', 'online', {
+        qty: 6,
+        price: 1500,
+      });
+
+      const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
+
+      expect(payload.variants?.default.locations.online).toEqual({
+        qty: 6,
+        price: 1500,
+      });
+      // No legacy fields present → no delete sentinels emitted
+      expect('variantGroups' in payload).toBe(false);
+      expect('variantSpecs' in payload).toBe(false);
+      expect('legacyVariants' in payload).toBe(false);
+    });
+  });
+});
+
+// ── Money path: reserved preservation through legacy projection ────────────
+
+describe('money path — reserved preservation across legacy → unified projection (#396)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('holdStock', () => {
+    it('preserves an existing `reserved` count carried in on the deprecated variantSpecs alias', async () => {
+      txGetMock.mockResolvedValueOnce(
+        txProductSnap('held', {
+          // Doc still in legacy shape; another in-flight session has 1 unit held.
+          variantSpecs: {
+            default: {
+              label: 'Default',
+              locations: { online: { qty: 5, reserved: 1, price: 1500 } },
+            },
+          },
+        })
+      );
+
+      await holdStock([
+        {
+          productId: 'held',
+          variantId: 'default',
+          locationId: 'online',
+          qty: 2,
+        },
+      ]);
+
+      const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
+      // Existing reservation (1) plus new hold (2) = 3.
+      expect(payload.variants?.default.locations.online.reserved).toBe(3);
+      // qty unchanged on hold.
+      expect(payload.variants?.default.locations.online.qty).toBe(5);
+      // Legacy variantSpecs pruned in the same write.
+      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
+    });
+  });
+
+  describe('releaseStock', () => {
+    it('decrements the legacy `reserved` count after projecting onto the unified map', async () => {
+      txGetMock.mockResolvedValueOnce(
+        txProductSnap('released', {
+          variantSpecs: {
+            default: {
+              label: 'Default',
+              locations: { online: { qty: 5, reserved: 3, price: 1500 } },
+            },
+          },
+        })
+      );
+
+      await releaseStock([
+        {
+          productId: 'released',
+          variantId: 'default',
+          locationId: 'online',
+          qty: 2,
+        },
+      ]);
+
+      const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
+      expect(payload.variants?.default.locations.online.reserved).toBe(1);
+      expect(payload.variants?.default.locations.online.qty).toBe(5);
+      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
+    });
+  });
+
+  describe('commitStock', () => {
+    it('decrements both qty and reserved while projecting legacy variantSpecs onto the unified map', async () => {
+      txGetMock.mockResolvedValueOnce(
+        txProductSnap('committed', {
+          variantSpecs: {
+            default: {
+              label: 'Default',
+              locations: { online: { qty: 5, reserved: 2, price: 1500 } },
+            },
+          },
+        })
+      );
+
+      await commitStock([
+        {
+          productId: 'committed',
+          variantId: 'default',
+          locationId: 'online',
+          qty: 2,
+        },
+      ]);
+
+      const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
+      expect(payload.variants?.default.locations.online.qty).toBe(3);
+      expect(payload.variants?.default.locations.online.reserved).toBe(0);
+      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
+    });
+  });
+
+  describe('decrementVariantStock', () => {
+    it('preserves `reserved` when decrementing qty on a legacy variantSpecs doc', async () => {
+      txGetMock.mockResolvedValueOnce(
+        txProductSnap('decremented', {
+          variantSpecs: {
+            default: {
+              label: 'Default',
+              locations: {
+                'oak-ridge': { qty: 10, reserved: 4, price: 1500 },
+              },
+            },
+          },
+        })
+      );
+
+      await decrementVariantStock([
+        {
+          slug: 'decremented',
+          variantId: 'default',
+          locationId: 'oak-ridge',
+          qty: 3,
+        },
+      ]);
+
+      const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
+      // qty decremented, reserved untouched (decrement is independent of holds)
+      expect(payload.variants?.default.locations['oak-ridge'].qty).toBe(7);
+      expect(payload.variants?.default.locations['oak-ridge'].reserved).toBe(4);
     });
   });
 });

@@ -56,7 +56,7 @@ const baseProduct: Product = {
   details: 'Top-shelf indoor.',
   status: 'active',
   availableAt: ['online'],
-  variants: [
+  legacyVariants: [
     { variantId: '3-5g', label: '3.5g' },
     { variantId: '7g', label: '7g' },
     { variantId: '14g', label: '14g' },
@@ -157,7 +157,7 @@ describe('ProductDetailClient — variant selector', () => {
         <ProductDetailClient
           product={{
             ...baseProduct,
-            variants: [
+            legacyVariants: [
               { variantId: '3-5g', label: '3.5g' },
               { variantId: '7g', label: '7g' },
             ],

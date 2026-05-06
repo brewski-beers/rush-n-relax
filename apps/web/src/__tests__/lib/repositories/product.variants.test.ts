@@ -49,9 +49,9 @@ const {
   );
 
   // Adjustments subcollection — `.doc()` returns a fresh autoId ref.
-  const adjustmentsDoc = vi.fn(
-    () => ({ id: `adj-${Math.random().toString(36).slice(2)}` })
-  );
+  const adjustmentsDoc = vi.fn(() => ({
+    id: `adj-${Math.random().toString(36).slice(2)}`,
+  }));
   const adjustmentsCol = vi.fn(() => ({ doc: adjustmentsDoc }));
 
   const productDoc = vi.fn((id: string) => ({
@@ -178,7 +178,7 @@ describe('setVariantLocation', () => {
       expect(p.inStockAt).toEqual(['oak-ridge']);
       expect(p.pickupAt).toEqual(['oak-ridge']);
       expect(p.featuredAt).toEqual(['oak-ridge']);
-      const variantSpecs = p.variantSpecs as Record<
+      const variantSpecs = p.variants as Record<
         string,
         { locations: Record<string, { qty: number }> }
       >;
@@ -248,9 +248,7 @@ describe('setVariantLocation', () => {
           qty: 1,
           price: 100,
         })
-      ).rejects.toThrow(
-        "Variant 'eighth' not found on product 'blue-dream'"
-      );
+      ).rejects.toThrow("Variant 'eighth' not found on product 'blue-dream'");
     });
   });
 });
@@ -284,15 +282,24 @@ describe('decrementVariantStock', () => {
       );
 
       await decrementVariantStock(
-        [{ slug: 'blue-dream', variantId: 'default', locationId: 'oak-ridge', qty: 3 }],
+        [
+          {
+            slug: 'blue-dream',
+            variantId: 'default',
+            locationId: 'oak-ridge',
+            qty: 3,
+          },
+        ],
         { source: 'order' }
       );
 
       expect(txSetMock).toHaveBeenCalledTimes(1);
       const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
-      const variantSpecs = payload.variantSpecs as Record<
+      const variantSpecs = payload.variants as Record<
         string,
-        { locations: Record<string, { qty: number; availablePickup?: boolean }> }
+        {
+          locations: Record<string, { qty: number; availablePickup?: boolean }>;
+        }
       >;
       expect(variantSpecs.default.locations['oak-ridge'].qty).toBe(7);
       expect(variantSpecs.default.locations['oak-ridge'].availablePickup).toBe(
@@ -324,11 +331,16 @@ describe('decrementVariantStock', () => {
       );
 
       await decrementVariantStock([
-        { slug: 'blue-dream', variantId: 'default', locationId: 'oak-ridge', qty: 2 },
+        {
+          slug: 'blue-dream',
+          variantId: 'default',
+          locationId: 'oak-ridge',
+          qty: 2,
+        },
       ]);
 
       const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
-      const variantSpecs = payload.variantSpecs as Record<
+      const variantSpecs = payload.variants as Record<
         string,
         {
           locations: Record<
@@ -357,12 +369,22 @@ describe('decrementVariantStock', () => {
       );
 
       await decrementVariantStock([
-        { slug: 'blue-dream', variantId: 'default', locationId: 'oak-ridge', qty: 3 },
-        { slug: 'blue-dream', variantId: 'default', locationId: 'oak-ridge', qty: 4 },
+        {
+          slug: 'blue-dream',
+          variantId: 'default',
+          locationId: 'oak-ridge',
+          qty: 3,
+        },
+        {
+          slug: 'blue-dream',
+          variantId: 'default',
+          locationId: 'oak-ridge',
+          qty: 4,
+        },
       ]);
 
       const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
-      const vs = payload.variantSpecs as Record<
+      const vs = payload.variants as Record<
         string,
         { locations: Record<string, { qty: number }> }
       >;
@@ -423,8 +445,18 @@ describe('decrementVariantStock', () => {
 
       await expect(
         decrementVariantStock([
-          { slug: 'blue-dream', variantId: 'default', locationId: 'oak-ridge', qty: 2 },
-          { slug: 'og-kush', variantId: 'default', locationId: 'oak-ridge', qty: 5 },
+          {
+            slug: 'blue-dream',
+            variantId: 'default',
+            locationId: 'oak-ridge',
+            qty: 2,
+          },
+          {
+            slug: 'og-kush',
+            variantId: 'default',
+            locationId: 'oak-ridge',
+            qty: 5,
+          },
         ])
       ).rejects.toBeInstanceOf(InsufficientStockError);
       // The throw occurs before tx.set runs, so no writes survive.
@@ -442,11 +474,14 @@ describe('decrementVariantStock', () => {
 
       await expect(
         decrementVariantStock([
-          { slug: 'blue-dream', variantId: 'eighth', locationId: 'oak-ridge', qty: 1 },
+          {
+            slug: 'blue-dream',
+            variantId: 'eighth',
+            locationId: 'oak-ridge',
+            qty: 1,
+          },
         ])
-      ).rejects.toThrow(
-        "Variant 'eighth' not found on product 'blue-dream'"
-      );
+      ).rejects.toThrow("Variant 'eighth' not found on product 'blue-dream'");
     });
   });
 });
