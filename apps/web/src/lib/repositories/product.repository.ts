@@ -201,9 +201,9 @@ export async function getRelatedProducts(
 // ── Write operations ──────────────────────────────────────────────────────
 
 /**
- * Upsert a product document. Self-pruning (#398): when the caller supplies
- * a `variants` map OR the existing document has any legacy variant fields
- * (`variantGroups`-only stays untouched here — it's still authored), we
+ * Upsert a product document. Self-pruning: when the caller supplies a
+ * `variants` map OR the existing document has any legacy variant array
+ * field, we
  *
  *   1. Read the existing document.
  *   2. Project any legacy fields onto the unified `variants` map.
@@ -212,13 +212,13 @@ export async function getRelatedProducts(
  *      reserved — when the caller seeds an entry with empty locations).
  *   4. Recompute denormalized indexes (`inStockAt` / `pickupAt` /
  *      `featuredAt`).
- *   5. Delete the legacy alias fields (`legacyVariants`, `variantSpecs`)
- *      via `FieldValue.delete()` in the same write.
+ *   5. Delete the legacy alias field `legacyVariants` via
+ *      `FieldValue.delete()` in the same write.
  *
  * `variantGroups` (option-group definitions used by the storefront PDP for
- * the multi-dimensional selector) is NOT pruned here — it remains an
- * authored field on the product doc. Step 4 (#399) will migrate the PDP
- * away from it.
+ * the multi-dimensional selector) is NOT pruned here — per Path A (#399)
+ * it is the stable option-dimension authoring source and coexists with
+ * the unified `variants` map.
  */
 export async function upsertProduct(
   data: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
@@ -268,12 +268,9 @@ export async function upsertProduct(
     payload.featuredAt = indexes.featuredAt;
   }
 
-  // Self-prune legacy alias fields when present on the existing doc.
+  // Self-prune legacy alias field when present on the existing doc.
   if (existingData.legacyVariants !== undefined) {
     payload.legacyVariants = FieldValue.delete();
-  }
-  if (existingData.variantSpecs !== undefined) {
-    payload.variantSpecs = FieldValue.delete();
   }
 
   await ref.set(payload, { merge: true });
@@ -579,24 +576,20 @@ function readLocation(raw: unknown): ProductVariantLocation | null {
 }
 
 /**
- * Project any combination of legacy fields (`variantGroups`,
- * `legacyVariants` / `variants` array, `variantSpecs`) AND the canonical
- * `variants` map into a single unified `variants` map.
+ * Project any combination of legacy fields (`legacyVariants` / `variants`
+ * array, `variantGroups`) AND the canonical `variants` map into a single
+ * unified `variants` map.
  *
  * Precedence (entries from earlier sources win on collision so any data
- * already migrated to the canonical field is the source of truth):
+ * already on the canonical field is the source of truth):
  *   1. `variants` (canonical map) — wins on label and locations
- *   2. `variantSpecs` (deprecated map alias) — fills gaps
- *   3. legacy array `variants` / `legacyVariants` — provides labels for
- *      ids that exist in the maps; bootstraps empty entries for ids that
+ *   2. legacy array `variants` / `legacyVariants` — provides labels for
+ *      ids that exist in the map; bootstraps empty entries for ids that
  *      only appear in the array (rare; defensive)
- *   4. `variantGroups` — bootstraps empty entries via SKU expansion when no
- *      map data exists for the resulting ids (defensive; the editor
- *      typically expands these into the map at save time)
- *
- * Per-location precedence within a variantId: canonical map → variantSpecs
- * — qty / price / compareAtPrice / availablePickup / featured / reserved
- * are all preserved from whichever source is authoritative.
+ *   3. `variantGroups` — bootstraps empty entries via SKU expansion when no
+ *      map data exists for the resulting ids. Per Path A (#399),
+ *      `variantGroups` is the option-dimension authoring source and is
+ *      consumed by the PDP; the projection here is purely additive.
  */
 function projectVariants(
   d: FirebaseFirestore.DocumentData
@@ -633,13 +626,11 @@ function projectVariants(
 
   // 1. canonical map
   ingestMap(d.variants);
-  // 2. deprecated alias map
-  ingestMap(d.variantSpecs);
 
-  // 3. legacy array — supplies labels and bootstraps id-only entries.
-  // Read from both `variants` (pre-#396 field name) and `legacyVariants`
-  // (new field name written by step-1 admin actions until step 3 migrates
-  // the editor onto the unified map).
+  // 2. legacy array — supplies labels and bootstraps id-only entries.
+  // Read from both `variants` (pre-unification field name) and
+  // `legacyVariants` (post-unification field name; still consumed by the
+  // PDP "see in store" fallback per Path A — #399).
   const legacyArr =
     docToLegacyVariants(d.legacyVariants) ?? docToLegacyVariants(d.variants);
   if (legacyArr) {
@@ -650,7 +641,7 @@ function projectVariants(
     }
   }
 
-  // 4. variantGroups — last-resort SKU expansion for ids missing from maps
+  // 3. variantGroups — last-resort SKU expansion for ids missing from maps
   const groups = docToVariantGroups(d.variantGroups);
   if (groups) {
     for (const sku of expandGroupsToSkus(groups)) {
@@ -667,8 +658,6 @@ function projectVariants(
  * Cartesian-product expansion of variantGroups into (variantId, label)
  * tuples. Mirrors `lib/variants/generateSkus.ts` exactly but is duplicated
  * here so the repo has zero outbound dependencies on storefront helpers.
- * Step 3 (#398) deletes both copies once the editor authors the unified
- * map directly.
  */
 function expandGroupsToSkus(
   groups: VariantGroup[]
@@ -737,9 +726,13 @@ export function recomputeProductIndexes(
  * Build the Firestore set/merge payload for a self-pruning write. Returns
  * an object ready to pass to `tx.set(ref, payload, { merge: true })`. Sets
  * the unified `variants` map + recomputed indexes + `updatedAt`, and uses
- * `FieldValue.delete()` sentinels to physically remove `variantGroups`,
- * the array-shaped `variants` (when present), and `variantSpecs` from the
- * stored doc in the same atomic write.
+ * `FieldValue.delete()` sentinels to physically remove the array-shaped
+ * legacy `variants` field and `legacyVariants` from the stored doc in the
+ * same atomic write.
+ *
+ * Note: `variantGroups` is NOT pruned here — per Path A (#399) it is the
+ * stable option-dimension authoring source and coexists with the unified
+ * `variants` map.
  */
 async function buildSelfPruningPayload(
   data: FirebaseFirestore.DocumentData,
@@ -755,19 +748,15 @@ async function buildSelfPruningPayload(
     featuredAt: indexes.featuredAt,
     updatedAt: now,
   };
-  // Self-prune legacy fields when present on the existing doc. Skipping the
-  // delete when absent keeps the set payload tight (no unnecessary writes).
-  if (data.variantGroups !== undefined) {
-    payload.variantGroups = FieldValue.delete();
-  }
+  // Self-prune legacy alias field when present on the existing doc.
+  // Skipping the delete when absent keeps the set payload tight.
+  // `variantGroups` is NOT pruned — per Path A (#399) it is the stable
+  // option-dimension authoring source.
   // The array-shape `variants` field is overwritten atomically by setting
   // `payload.variants` to the unified map above — Firestore replaces the
   // value entirely, so no FieldValue.delete is needed for that path.
   if (data.legacyVariants !== undefined) {
     payload.legacyVariants = FieldValue.delete();
-  }
-  if (data.variantSpecs !== undefined) {
-    payload.variantSpecs = FieldValue.delete();
   }
   return payload;
 }
@@ -839,8 +828,6 @@ export async function setVariantLocation(
     return docToProduct(snap.id, {
       ...data,
       variants: nextVariants,
-      variantSpecs: undefined,
-      variantGroups: undefined,
       inStockAt: indexes.inStockAt,
       pickupAt: indexes.pickupAt,
       featuredAt: indexes.featuredAt,
@@ -1041,8 +1028,8 @@ interface ReservationMeta {
  * tuples in a single Firestore transaction. Self-pruning: legacy fields on
  * each touched product are projected onto the unified `variants` map and
  * pruned in the same write. CRUCIALLY this preserves any pre-existing
- * `reserved` counts on the legacy variantSpecs entries — losing them would
- * silently release in-flight CheckoutSession holds.
+ * `reserved` counts on the legacy entries — losing them would silently
+ * release in-flight CheckoutSession holds.
  */
 export async function holdStock(
   items: HoldRequest[],

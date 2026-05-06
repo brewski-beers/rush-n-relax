@@ -8,7 +8,7 @@ import type { ProductVariantLocation } from '@/types/product';
 /**
  * Result returned by {@link setProductVariantStock}.
  *
- * Issue #311: surfaces variantSpecs writes inside the unified product editor.
+ * Issue #311: surfaces `variants` map writes inside the unified product editor.
  * Replaces the per-location `/admin/inventory/{locationId}` page (which is
  * being deprecated and redirected to `/admin/products`).
  */
@@ -99,7 +99,7 @@ export async function setProductVariantStock(
 
 /**
  * Rename a variant on a product. KISS: reads the product, mutates the
- * variantSpecs map's `label`, and writes back via setVariantLocation on
+ * `variants` map's `label`, and writes back via setVariantLocation on
  * an existing location entry (which carries the recompute side-effect).
  *
  * No locations? Returns ok:false — variant must have at least one

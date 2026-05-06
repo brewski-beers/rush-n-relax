@@ -395,7 +395,7 @@ describe('createProduct server action', () => {
       expect(payload.variants).toEqual({
         default: { label: 'Default', locations: {} },
       });
-      expect(payload.variantSpecs).toBeUndefined();
+      expect(payload.legacyVariants).toBeUndefined();
       expect(payload.inStockAt).toEqual([]);
       expect(payload.pickupAt).toEqual([]);
       expect(payload.featuredAt).toEqual([]);

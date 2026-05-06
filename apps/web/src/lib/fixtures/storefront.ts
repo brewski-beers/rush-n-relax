@@ -45,8 +45,8 @@ export interface ProductFixture {
 
 /**
  * Internal fixture for a single (product, location) inventory state. Powers
- * `buildProductDocuments` — folded into `Product.variantSpecs` per #312.
- * Not exported as a top-level fixture type any more.
+ * `buildProductDocuments` — folded into the unified `Product.variants` map
+ * (#395/#399). Not exported as a top-level fixture type any more.
  */
 interface LegacyInventoryFixture {
   locationId: string;
@@ -970,12 +970,12 @@ export function buildLocationSummaries(): LocationSummary[] {
 }
 
 export function buildProductDocuments(date: Date = fixtureDate): Product[] {
-  // Inventory was folded into the product document under #304/#312. The legacy
-  // inventory fixtures still drive what stock / pricing each product carries
-  // at each location; here we project them onto `variantSpecs` (map keyed by
-  // variantId) plus the denormalized `inStockAt` / `pickupAt` / `featuredAt`
-  // arrays — same shape `recomputeIndexes` in product.repository writes at
-  // runtime.
+  // Inventory is folded into the product document under the unified
+  // `variants` map (#395/#399) — keyed by variantId, each entry carrying a
+  // label and per-location pricing/availability. The internal fixture
+  // authoring shape (`LegacyInventoryFixture`) still uses one row per
+  // (product, location) so fixtures stay compact; the projection below
+  // emits the canonical map directly.
   const allInventory = [...ONLINE_VARIANT_FIXTURES, ...RETAIL_VARIANT_FIXTURES];
 
   return PRODUCT_FIXTURES.map(product => {
@@ -983,12 +983,11 @@ export function buildProductDocuments(date: Date = fixtureDate): Product[] {
     const pickupAt = new Set<string>();
     const featuredAt = new Set<string>();
 
-    // Build variantSpecs: { [variantId]: { label, locations: { [locationId]: {...} } } }
-    // Variantless products fall back to a single `default` variant key. Price
-    // is required on `ProductVariantLocation` — when no variantPricing entry
-    // exists for a (product, variant) pair, we skip writing that location so
-    // the resulting fixtures never contain malformed entries.
-    const variantSpecs: {
+    // Variantless products fall back to a single `default` variant key.
+    // Price is required on `ProductVariantLocation` — when no variantPricing
+    // entry exists for a (product, variant) pair, we skip writing that
+    // location so the resulting fixtures never contain malformed entries.
+    const variants: {
       [variantId: string]: {
         label: string;
         locations: {
@@ -1016,10 +1015,10 @@ export function buildProductDocuments(date: Date = fixtureDate): Product[] {
           const variantInStock =
             typeof entry.inStock === 'boolean' ? entry.inStock : item.inStock;
           const qty = variantInStock && item.quantity > 0 ? item.quantity : 0;
-          if (!variantSpecs[variantId]) {
-            variantSpecs[variantId] = { label: variantId, locations: {} };
+          if (!variants[variantId]) {
+            variants[variantId] = { label: variantId, locations: {} };
           }
-          variantSpecs[variantId].locations[item.locationId] = {
+          variants[variantId].locations[item.locationId] = {
             qty,
             price: entry.price,
             ...(entry.compareAtPrice !== undefined && {
@@ -1031,11 +1030,11 @@ export function buildProductDocuments(date: Date = fixtureDate): Product[] {
         }
       } else {
         // No variant-level pricing → seed a single `default` entry so the
-        // location still appears in variantSpecs (price defaults to 0).
-        if (!variantSpecs.default) {
-          variantSpecs.default = { label: 'Default', locations: {} };
+        // location still appears in the map (price defaults to 0).
+        if (!variants.default) {
+          variants.default = { label: 'Default', locations: {} };
         }
-        variantSpecs.default.locations[item.locationId] = {
+        variants.default.locations[item.locationId] = {
           qty: item.quantity,
           price: 0,
           ...(item.availablePickup && { availablePickup: true }),
@@ -1054,7 +1053,7 @@ export function buildProductDocuments(date: Date = fixtureDate): Product[] {
       status: product.status,
       coaUrl: product.coaUrl,
       availableAt: product.availableAt ?? [...LOCATION_SLUGS],
-      ...(Object.keys(variantSpecs).length > 0 && { variantSpecs }),
+      ...(Object.keys(variants).length > 0 && { variants }),
       inStockAt: [...inStockAt].sort(),
       pickupAt: [...pickupAt].sort(),
       featuredAt: [...featuredAt].sort(),
