@@ -1,9 +1,10 @@
 /**
  * E2E tests: variant pricing chain
  *
- * Tests against Firebase emulators. The online inventory fixture
- * (inventory/online) is seeded by scripts/seed-emulators.ts via
- * generate-emulator-artifacts.ts > buildOnlineInventoryDocuments().
+ * Tests against Firebase emulators. The product `variantSpecs` map
+ * (per #312, replaces the legacy inventory/online sub-collection) is seeded
+ * by scripts/seed-emulators.ts via buildProductDocuments() — fixture data
+ * lives in apps/web/src/lib/fixtures/storefront.ts.
  *
  * Flower product (slug: "flower") has variantPricing seeded with 5 variants.
  * For tests to pass, the emulator must be running with current seed data:

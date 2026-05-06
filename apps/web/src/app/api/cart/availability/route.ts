@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFirestore } from '@/lib/firebase/admin';
 import { LOCATION_SLUGS } from '@/lib/fixtures/storefront';
-import type { InventoryItem } from '@/types';
 
 /**
  * GET /api/cart/availability
@@ -10,9 +9,12 @@ import type { InventoryItem } from '@/types';
  *   items — JSON-encoded array of { productId: string; variantId: string }
  *
  * Returns per-location pickup eligibility for all retail locations.
- * A location is eligible only when:
- *   - The InventoryItem exists and availablePickup === true
- *   - variantPricing[variantId]?.inStock !== false (absent = in stock)
+ *
+ * Eligibility (post-#312, inventory folded into product.variantSpecs):
+ *   - The product document exists and has a `variantSpecs[variantId]` entry
+ *     for this `locationId`
+ *   - That entry's `availablePickup === true`
+ *   - That entry has available stock (qty - reserved > 0)
  *
  * Response shape:
  * {
@@ -24,8 +26,8 @@ import type { InventoryItem } from '@/types';
  *   }
  * }
  *
- * Performance: uses db.getAll() per location to batch all item reads into
- * L round trips (one per retail location) instead of L × N serial reads.
+ * Performance: one batched `getAll` per call — products are fetched once
+ * and reused across every retail location.
  */
 
 interface CartItemInput {
@@ -70,56 +72,48 @@ export async function GET(req: NextRequest) {
 
   const db = getAdminFirestore();
 
-  // One batch read per retail location instead of L × N serial reads.
-  const locationResults = await Promise.all(
-    RETAIL_SLUGS.map(async locationSlug => {
-      const refs = cartItems.map(({ productId }) =>
-        db.collection(`inventory/${locationSlug}/items`).doc(productId)
-      );
-
-      // getAll returns snapshots in the same order as refs
-      const snaps = await db.getAll(...refs);
-
-      const unavailableItems: string[] = [];
-
-      for (let i = 0; i < cartItems.length; i++) {
-        const { productId, variantId } = cartItems[i];
-        const snap = snaps[i];
-
-        if (!snap.exists) {
-          unavailableItems.push(productId);
-          continue;
-        }
-
-        const d = snap.data() as Record<string, unknown>;
-        const inv = docToPartialInventory(d);
-
-        if (!inv.availablePickup) {
-          unavailableItems.push(productId);
-          continue;
-        }
-
-        // variantPricing absence means "not yet configured" — treat as unavailable
-        const variantEntry = inv.variantPricing?.[variantId];
-        if (!variantEntry || variantEntry.inStock === false) {
-          unavailableItems.push(productId);
-        }
-      }
-
-      return {
-        locationSlug,
-        available: unavailableItems.length === 0,
-        unavailableItems,
-      };
-    })
+  // Single batched read of every cart product — same docs are reused across
+  // each retail location's eligibility evaluation.
+  const productRefs = cartItems.map(({ productId }) =>
+    db.collection('products').doc(productId)
   );
+  const productSnaps = await db.getAll(...productRefs);
 
   const locations: Record<
     string,
     { available: boolean; unavailableItems: string[] }
   > = {};
-  for (const { locationSlug, available, unavailableItems } of locationResults) {
-    locations[locationSlug] = { available, unavailableItems };
+
+  for (const locationSlug of RETAIL_SLUGS) {
+    const unavailableItems: string[] = [];
+
+    for (let i = 0; i < cartItems.length; i++) {
+      const { productId, variantId } = cartItems[i];
+      const snap = productSnaps[i];
+
+      if (!snap.exists) {
+        unavailableItems.push(productId);
+        continue;
+      }
+
+      const d = snap.data();
+      const loc = readVariantLocation(d, variantId, locationSlug);
+
+      if (!loc) {
+        unavailableItems.push(productId);
+        continue;
+      }
+
+      const available = (loc.qty ?? 0) - (loc.reserved ?? 0);
+      if (loc.availablePickup !== true || available <= 0) {
+        unavailableItems.push(productId);
+      }
+    }
+
+    locations[locationSlug] = {
+      available: unavailableItems.length === 0,
+      unavailableItems,
+    };
   }
 
   return NextResponse.json(
@@ -130,51 +124,36 @@ export async function GET(req: NextRequest) {
 
 // ── Private helpers ───────────────────────────────────────────────────────
 
+interface VariantLocationFields {
+  qty?: number;
+  reserved?: number;
+  availablePickup?: boolean;
+}
+
 /**
- * Extracts only the availability fields needed for cart checks.
- * Mirrors the invariants in inventory.repository: inStock=false forces
- * availablePickup to false regardless of the stored field value.
+ * Defensively reads `variantSpecs[variantId].locations[locationId]` from a
+ * product document. Returns null when any segment of the path is missing or
+ * malformed.
  */
-function docToPartialInventory(
-  d: Record<string, unknown>
-): Pick<InventoryItem, 'availablePickup' | 'variantPricing'> {
-  const rawQty = d.quantity;
-  const quantity =
-    typeof rawQty === 'number' && Number.isFinite(rawQty)
-      ? Math.max(0, Math.floor(rawQty))
-      : d.inStock
-        ? 1
-        : 0;
-  const inStock = quantity > 0;
-  // Cast through boolean — d.availablePickup is unknown
-  const availablePickup: boolean = inStock ? Boolean(d.availablePickup) : false;
-
-  // Defensively map variantPricing (mirrors inventory.repository)
-  let variantPricing: InventoryItem['variantPricing'];
-  const rawPricing = d.variantPricing;
-  if (
-    rawPricing &&
-    typeof rawPricing === 'object' &&
-    !Array.isArray(rawPricing)
-  ) {
-    const result: NonNullable<InventoryItem['variantPricing']> = {};
-    let hasEntry = false;
-    for (const [variantId, entry] of Object.entries(
-      rawPricing as Record<string, unknown>
-    )) {
-      if (!entry || typeof entry !== 'object') continue;
-      const e = entry as Record<string, unknown>;
-      if (typeof e.price !== 'number') continue;
-      result[variantId] = {
-        price: e.price,
-        compareAtPrice:
-          typeof e.compareAtPrice === 'number' ? e.compareAtPrice : undefined,
-        inStock: typeof e.inStock === 'boolean' ? e.inStock : undefined,
-      };
-      hasEntry = true;
-    }
-    if (hasEntry) variantPricing = result;
-  }
-
-  return { availablePickup, variantPricing };
+function readVariantLocation(
+  d: Record<string, unknown> | undefined,
+  variantId: string,
+  locationId: string
+): VariantLocationFields | null {
+  if (!d) return null;
+  const specs = d.variantSpecs;
+  if (!specs || typeof specs !== 'object') return null;
+  const variant = (specs as Record<string, unknown>)[variantId];
+  if (!variant || typeof variant !== 'object') return null;
+  const locs = (variant as Record<string, unknown>).locations;
+  if (!locs || typeof locs !== 'object') return null;
+  const loc = (locs as Record<string, unknown>)[locationId];
+  if (!loc || typeof loc !== 'object') return null;
+  const e = loc as Record<string, unknown>;
+  return {
+    qty: typeof e.qty === 'number' ? e.qty : undefined,
+    reserved: typeof e.reserved === 'number' ? e.reserved : undefined,
+    availablePickup:
+      typeof e.availablePickup === 'boolean' ? e.availablePickup : undefined,
+  };
 }

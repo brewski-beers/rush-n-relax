@@ -3,7 +3,11 @@
  * Server-side only (uses firebase-admin).
  */
 import { cache } from 'react';
-import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
+import {
+  getAdminFirestore,
+  toDate,
+  ONLINE_LOCATION_ID,
+} from '@/lib/firebase/admin';
 import type {
   Product,
   ProductVariant,
@@ -483,9 +487,8 @@ function stripUndefinedFields<T extends Record<string, unknown>>(
  * requested. The whole transaction is rolled back when this error is thrown,
  * so no partial writes survive.
  *
- * Owned by the product repository as of #306 (variant model). Re-exported
- * from the inventory repository for back-compat with existing call sites
- * (order start, agechecker webhook) until #312 cleanup.
+ * Owned by the product repository as of #306 (variant model). The legacy
+ * inventory.repository re-export was removed in #312.
  */
 export class InsufficientStockError extends Error {
   readonly productId: string;
@@ -597,7 +600,9 @@ function readVariantSpecs(
         }
         locations[locId] = {
           qty: loc.qty,
-          ...(typeof loc.reserved === 'number' ? { reserved: loc.reserved } : {}),
+          ...(typeof loc.reserved === 'number'
+            ? { reserved: loc.reserved }
+            : {}),
           price: loc.price,
           compareAtPrice:
             typeof loc.compareAtPrice === 'number'
@@ -884,6 +889,49 @@ export async function listProductsInStockAt(
   };
 }
 
+/**
+ * List active products marked `featured` at the given location, using the
+ * denormalized `featuredAt` array. Powers the homepage "What We Carry" rail
+ * (online location) and per-store featured strips. Replaces the legacy
+ * `listFeaturedInventory` / `listFeaturedAtLocation` helpers retired in #312.
+ */
+export async function listFeaturedProductsAt(
+  locationId: string,
+  opts: { limit?: number } = {}
+): Promise<ProductSummary[]> {
+  const limit = opts.limit ?? 25;
+  const snap = await productsCol()
+    .where('status', '==', 'active')
+    .where('featuredAt', 'array-contains', locationId)
+    .orderBy('name')
+    .limit(limit)
+    .get();
+  return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
+}
+
+/**
+ * Return the subset of the given product ids that are in stock at the online
+ * location. Single batched Firestore `getAll`. Empty input → empty Set.
+ * Replaces the legacy inventory-collection lookup retired in #312.
+ */
+export async function getOnlineInStockSet(
+  productIds: string[]
+): Promise<Set<string>> {
+  if (productIds.length === 0) return new Set();
+  const refs = productIds.map(id => productsCol().doc(id));
+  const snaps = await getAdminFirestore().getAll(...refs);
+  const result = new Set<string>();
+  for (const snap of snaps) {
+    if (!snap.exists) continue;
+    const data = snap.data();
+    const inStockAt = Array.isArray(data?.inStockAt)
+      ? (data.inStockAt as string[])
+      : [];
+    if (inStockAt.includes(ONLINE_LOCATION_ID)) result.add(snap.id);
+  }
+  return result;
+}
+
 // ── Reservation helpers (#361) ────────────────────────────────────────────
 
 /**
@@ -1056,9 +1104,7 @@ async function mutateReservations(
           ...loc,
           qty: nextQty,
           reserved: nextReserved,
-          ...(nextQty === 0
-            ? { availablePickup: false, featured: false }
-            : {}),
+          ...(nextQty === 0 ? { availablePickup: false, featured: false } : {}),
         };
       }
 
@@ -1086,8 +1132,7 @@ async function mutateReservations(
 
       for (const [beforeKey, before] of w.beforeMap) {
         const [variantId, locationId] = beforeKey.split('::');
-        const after =
-          w.variantSpecs[variantId]?.locations[locationId] ?? null;
+        const after = w.variantSpecs[variantId]?.locations[locationId] ?? null;
         const logRef = w.ref.collection('adjustments').doc();
         tx.create(logRef, {
           slug,

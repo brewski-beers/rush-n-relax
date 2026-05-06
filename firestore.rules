@@ -47,10 +47,6 @@ service cloud.firestore {
       allow read, write: if false;
     }
     // Inventory: Admin SDK only — all storefront reads go through Server Components.
-    match /inventory/{locationId}/items/{productId} {
-      allow read, write: if false;
-    }
-
     // Orders: Admin SDK only (customer PII + payment references)
     match /orders/{orderId} {
       allow read, write: if false;

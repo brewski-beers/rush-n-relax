@@ -10,15 +10,16 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import type { UserImportRecord } from 'firebase-admin/auth';
-import { getAdminFirestore, getAdminAuth } from '../apps/web/src/lib/firebase/admin';
+import {
+  getAdminFirestore,
+  getAdminAuth,
+} from '../apps/web/src/lib/firebase/admin';
 import {
   FIXTURE_TIMESTAMP,
   PROMO_FIXTURES,
   LOCATION_REVIEW_FIXTURES,
   buildLocationDocuments,
   buildProductDocuments,
-  buildOnlineInventoryDocuments,
-  buildRetailInventoryDocuments,
   buildCategoryDocuments,
   buildVariantTemplateDocuments,
   AUTH_USER_FIXTURES,
@@ -94,26 +95,6 @@ async function seedFirestoreDocuments() {
       .doc(product.slug)
       .set({ ...product });
     console.log(`✓ Firestore seeded: products/${product.slug}`);
-  }
-
-  for (const item of buildOnlineInventoryDocuments(now)) {
-    await db
-      .collection(`inventory/${item.locationId}/items`)
-      .doc(item.productId)
-      .set({ ...item });
-    console.log(
-      `✓ Firestore seeded: inventory/${item.locationId}/items/${item.productId}`
-    );
-  }
-
-  for (const item of buildRetailInventoryDocuments(now)) {
-    await db
-      .collection(`inventory/${item.locationId}/items`)
-      .doc(item.productId)
-      .set({ ...item });
-    console.log(
-      `✓ Firestore seeded: inventory/${item.locationId}/items/${item.productId}`
-    );
   }
 
   for (const promo of PROMO_FIXTURES) {

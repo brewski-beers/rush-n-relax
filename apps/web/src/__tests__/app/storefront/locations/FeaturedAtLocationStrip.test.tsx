@@ -1,15 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
-import type { ProductSummary, InventoryItem } from '@/types';
+import type { ProductSummary } from '@/types';
 
-const listFeaturedAtLocation = vi.fn();
-const listProductsByIds = vi.fn();
+const listFeaturedProductsAt = vi.fn();
 
 vi.mock('@/lib/repositories', () => ({
-  listFeaturedAtLocation: (...args: unknown[]) =>
-    listFeaturedAtLocation(...args) as unknown,
-  listProductsByIds: (...args: unknown[]) =>
-    listProductsByIds(...args) as unknown,
+  listFeaturedProductsAt: (...args: unknown[]) =>
+    listFeaturedProductsAt(...args) as unknown,
 }));
 
 vi.mock('@/lib/storage/url-cache', () => ({
@@ -32,17 +29,6 @@ vi.mock('@/components/ProductImage', () => ({
 
 import { FeaturedAtLocationStrip } from '@/app/(storefront)/locations/[slug]/FeaturedAtLocationStrip';
 
-function inv(productId: string): InventoryItem {
-  return {
-    productId,
-    locationId: 'oak-ridge',
-    inStock: true,
-    availablePickup: true,
-    featured: true,
-    quantity: 5,
-  } as unknown as InventoryItem;
-}
-
 function prod(id: string): ProductSummary {
   return {
     id,
@@ -55,19 +41,13 @@ function prod(id: string): ProductSummary {
   } as unknown as ProductSummary;
 }
 
-describe('FeaturedAtLocationStrip (#238)', () => {
+describe('FeaturedAtLocationStrip (#238) — post-#312 product-driven', () => {
   beforeEach(() => {
-    listFeaturedAtLocation.mockReset();
-    listProductsByIds.mockReset();
+    listFeaturedProductsAt.mockReset();
   });
 
   it('given location L has 3 featured in-stock products, /locations/L renders the strip with those 3', async () => {
-    listFeaturedAtLocation.mockResolvedValueOnce([
-      inv('p1'),
-      inv('p2'),
-      inv('p3'),
-    ]);
-    listProductsByIds.mockResolvedValueOnce([
+    listFeaturedProductsAt.mockResolvedValueOnce([
       prod('p1'),
       prod('p2'),
       prod('p3'),
@@ -84,7 +64,7 @@ describe('FeaturedAtLocationStrip (#238)', () => {
   });
 
   it('given location L has 0 featured in-stock products, /locations/L does NOT render the strip', async () => {
-    listFeaturedAtLocation.mockResolvedValueOnce([]);
+    listFeaturedProductsAt.mockResolvedValueOnce([]);
 
     const ui = await FeaturedAtLocationStrip({ locationId: 'maryville' });
     expect(ui).toBeNull();
@@ -92,8 +72,7 @@ describe('FeaturedAtLocationStrip (#238)', () => {
 
   it('caps the visible products at 6', async () => {
     const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    listFeaturedAtLocation.mockResolvedValueOnce(ids.map(inv));
-    listProductsByIds.mockResolvedValueOnce(ids.map(prod));
+    listFeaturedProductsAt.mockResolvedValueOnce(ids.map(prod));
 
     const ui = await FeaturedAtLocationStrip({ locationId: 'seymour' });
     const { queryByText } = render(<>{ui}</>);

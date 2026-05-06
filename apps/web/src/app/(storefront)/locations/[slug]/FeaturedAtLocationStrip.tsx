@@ -3,7 +3,7 @@ import { Card } from '@/components/Card';
 import { CardGrid } from '@/components/CardGrid';
 import { ProductImage } from '@/components/ProductImage';
 import { getStorageUrl } from '@/lib/storage/url-cache';
-import { listFeaturedAtLocation, listProductsByIds } from '@/lib/repositories';
+import { listFeaturedProductsAt } from '@/lib/repositories';
 
 const MAX_FEATURED = 6;
 
@@ -17,10 +17,8 @@ export async function FeaturedAtLocationStrip({
 }: {
   locationId: string;
 }) {
-  const items = await listFeaturedAtLocation(locationId);
-  if (items.length === 0) return null;
-
-  const products = await listProductsByIds(items.map(i => i.productId));
+  const products = await listFeaturedProductsAt(locationId);
+  if (products.length === 0) return null;
   const display = products.slice(0, MAX_FEATURED);
   if (display.length === 0) return null;
 

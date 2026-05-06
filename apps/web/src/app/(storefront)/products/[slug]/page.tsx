@@ -1,8 +1,6 @@
 import { notFound } from 'next/navigation';
 import {
   getProductBySlug,
-  getInventoryItem,
-  getOnlineInStockSet,
   getRelatedProducts,
 } from '@/lib/repositories';
 import { ONLINE_LOCATION_ID } from '@/lib/firebase/admin';
@@ -48,24 +46,20 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { slug } = await params;
-  const [product, onlineItem] = await Promise.all([
-    getProductBySlug(slug),
-    getInventoryItem(ONLINE_LOCATION_ID, slug),
-  ]);
+  const product = await getProductBySlug(slug);
   if (!product || product.status === 'archived') notFound();
 
   // Fetch more candidates than needed so we can drop any that aren't currently
-  // online + in stock without ending up with an empty strip.
+  // online + in stock without ending up with an empty strip. The candidate
+  // ProductSummary already carries `inStockAt` from the same product doc, so
+  // we can filter inline — no second round trip needed.
   const relatedCandidates = await getRelatedProducts(
     slug,
     product.category,
     12
   );
-  const relatedOnlineIds = await getOnlineInStockSet(
-    relatedCandidates.map(p => p.id)
-  );
   const relatedProducts = relatedCandidates
-    .filter(p => relatedOnlineIds.has(p.id))
+    .filter(p => p.inStockAt?.includes(ONLINE_LOCATION_ID))
     .slice(0, 6);
 
   // Resolve hero image URL server-side to avoid client-side Firebase Storage
@@ -113,8 +107,7 @@ export default async function ProductDetailPage({ params }: Props) {
         relatedProducts={relatedProducts}
         coaSignedUrl={coaSignedUrl}
         heroImageUrl={heroImageUrl}
-        variantPricing={onlineItem?.variantPricing}
-        itemInStock={onlineItem?.inStock ?? false}
+        onlineLocationId={ONLINE_LOCATION_ID}
       />
     </>
   );

@@ -2,8 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent, screen, within } from '@testing-library/react';
 import { CartProvider } from '@/contexts/CartContext';
 import ProductDetailClient from '@/app/(storefront)/products/[slug]/ProductDetailClient';
-import type { Product } from '@/types/product';
-import type { InventoryItem } from '@/types/inventory';
+import type { Product, ProductVariantSpec } from '@/types/product';
 
 vi.mock('next/link', () => ({
   default: ({
@@ -24,13 +23,30 @@ vi.mock('next/link', () => ({
 /**
  * Coverage for #309 — cart: pass variantId through cart → order.
  *
- * The variant-selector behavior on the PDP is the user-facing surface that
- * supplies variantId to the cart. These tests pin:
+ * Post-#312, pricing/availability comes from `Product.variantSpecs` keyed by
+ * locationId. These tests pin:
  *   1. Variants render with their labels.
- *   2. Out-of-stock variants are visually marked OOS and disabled.
+ *   2. Out-of-stock variants (qty=0 at the online location) are marked OOS.
  *   3. Selecting a variant updates the active selection (aria-pressed).
  *   4. The Add-to-Cart CTA reflects the selected variant's stock state.
  */
+
+const ONLINE = 'online';
+
+const baseSpecs: { [variantId: string]: ProductVariantSpec } = {
+  '3-5g': {
+    label: '3.5g',
+    locations: { [ONLINE]: { qty: 5, price: 2800 } },
+  },
+  '7g': {
+    label: '7g',
+    locations: { [ONLINE]: { qty: 0, price: 5000 } },
+  },
+  '14g': {
+    label: '14g',
+    locations: { [ONLINE]: { qty: 5, price: 9000 } },
+  },
+};
 
 const baseProduct: Product = {
   id: 'flower',
@@ -45,14 +61,10 @@ const baseProduct: Product = {
     { variantId: '7g', label: '7g' },
     { variantId: '14g', label: '14g' },
   ],
+  variantSpecs: baseSpecs,
+  inStockAt: [ONLINE],
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
-};
-
-const variantPricing: NonNullable<InventoryItem['variantPricing']> = {
-  '3-5g': { price: 2800, inStock: true },
-  '7g': { price: 5000, inStock: false },
-  '14g': { price: 9000, inStock: true },
 };
 
 function findVariantCard(label: string): HTMLButtonElement {
@@ -70,8 +82,7 @@ describe('ProductDetailClient — variant selector', () => {
         <ProductDetailClient
           product={baseProduct}
           relatedProducts={[]}
-          variantPricing={variantPricing}
-          itemInStock
+          onlineLocationId={ONLINE}
         />
       </CartProvider>
     );
@@ -87,8 +98,7 @@ describe('ProductDetailClient — variant selector', () => {
         <ProductDetailClient
           product={baseProduct}
           relatedProducts={[]}
-          variantPricing={variantPricing}
-          itemInStock
+          onlineLocationId={ONLINE}
         />
       </CartProvider>
     );
@@ -111,8 +121,7 @@ describe('ProductDetailClient — variant selector', () => {
         <ProductDetailClient
           product={baseProduct}
           relatedProducts={[]}
-          variantPricing={variantPricing}
-          itemInStock
+          onlineLocationId={ONLINE}
         />
       </CartProvider>
     );
@@ -132,9 +141,15 @@ describe('ProductDetailClient — variant selector', () => {
 
   it('disables Add to Cart when the (initial) selected variant is out of stock', () => {
     // Make the lowest-price variant OOS — that is the default selection.
-    const oosFirst: NonNullable<InventoryItem['variantPricing']> = {
-      '3-5g': { price: 2800, inStock: false },
-      '7g': { price: 5000, inStock: true },
+    const oosFirst: { [variantId: string]: ProductVariantSpec } = {
+      '3-5g': {
+        label: '3.5g',
+        locations: { [ONLINE]: { qty: 0, price: 2800 } },
+      },
+      '7g': {
+        label: '7g',
+        locations: { [ONLINE]: { qty: 5, price: 5000 } },
+      },
     };
 
     render(
@@ -146,10 +161,10 @@ describe('ProductDetailClient — variant selector', () => {
               { variantId: '3-5g', label: '3.5g' },
               { variantId: '7g', label: '7g' },
             ],
+            variantSpecs: oosFirst,
           }}
           relatedProducts={[]}
-          variantPricing={oosFirst}
-          itemInStock
+          onlineLocationId={ONLINE}
         />
       </CartProvider>
     );

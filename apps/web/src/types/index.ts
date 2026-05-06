@@ -33,13 +33,6 @@ export type {
   PendingUserInviteStatus,
 } from './user';
 export type {
-  InventoryItem,
-  InventoryItemSummary,
-  InventoryAdjustment,
-  InventoryAdjustmentReason,
-  InventoryAdjustmentSource,
-} from './inventory';
-export type {
   EmailTemplateId,
   OutboundEmailStatus,
   ContactSubmissionPayload,
