@@ -13,8 +13,8 @@
 import { useState, useTransition } from 'react';
 import type {
   Product,
+  ProductVariant,
   ProductVariantLocation,
-  ProductVariantSpec,
   LocationSummary,
 } from '@/types';
 import { setProductVariantStock } from '@/app/(admin)/admin/products/[slug]/edit/stock-actions';
@@ -31,19 +31,8 @@ export function VariantStockSection({
   locations,
   onlineLocationId,
 }: Props) {
-  const variantSpecs = product.variantSpecs;
-
-  if (!variantSpecs || Object.keys(variantSpecs).length === 0) {
-    return (
-      <fieldset className="admin-fieldset">
-        <legend>Variants &amp; Stock</legend>
-        <p className="admin-section-desc">
-          No variants yet. Define variant groups above and save the product —
-          stock controls will appear here on next load.
-        </p>
-      </fieldset>
-    );
-  }
+  const variants = product.variants ?? {};
+  const isEmpty = Object.keys(variants).length === 0;
 
   const allLocations: { id: string; label: string; isOnline: boolean }[] = [
     ...locations.map(l => ({ id: l.id, label: l.name, isOnline: false })),
@@ -58,15 +47,22 @@ export function VariantStockSection({
         for each variant. Variant labels are managed in the Variants section
         above.
       </p>
-      {Object.entries(variantSpecs).map(([variantId, spec]) => (
-        <VariantBlock
-          key={variantId}
-          slug={product.slug}
-          variantId={variantId}
-          spec={spec}
-          locations={allLocations}
-        />
-      ))}
+      {isEmpty ? (
+        <p className="admin-hint" role="status">
+          No variants on this product yet. Add a variant in the Variants section
+          above and save — stock controls will populate here.
+        </p>
+      ) : (
+        Object.entries(variants).map(([variantId, spec]) => (
+          <VariantBlock
+            key={variantId}
+            slug={product.slug}
+            variantId={variantId}
+            spec={spec}
+            locations={allLocations}
+          />
+        ))
+      )}
     </fieldset>
   );
 }
@@ -74,7 +70,7 @@ export function VariantStockSection({
 interface VariantBlockProps {
   slug: string;
   variantId: string;
-  spec: ProductVariantSpec;
+  spec: ProductVariant;
   locations: { id: string; label: string; isOnline: boolean }[];
 }
 

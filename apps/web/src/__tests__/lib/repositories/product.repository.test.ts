@@ -1048,3 +1048,190 @@ describe('money path — reserved preservation across legacy → unified project
     });
   });
 });
+
+// ── upsertProduct self-pruning matrix (#398) ──────────────────────────────
+//
+// The admin save path (createProduct / updateProduct server actions) writes
+// through `upsertProduct`. After #398 step 3 the helper must self-prune
+// legacy alias fields on the existing doc and write the unified `variants`
+// map — preserving any per-location stock/price data already persisted on
+// matching variantIds.
+
+describe('upsertProduct self-pruning (admin save path) (#398)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function stubExistingDoc(data: Record<string, unknown>) {
+    docGetMock.mockResolvedValueOnce({
+      exists: true,
+      data: () => data,
+    });
+  }
+
+  function stubMissingDoc() {
+    docGetMock.mockResolvedValueOnce({ exists: false, data: () => undefined });
+  }
+
+  describe('given a fresh doc (no existing variants — new product create)', () => {
+    it('writes the unified variants map and recomputed indexes', async () => {
+      stubMissingDoc();
+
+      await upsertProduct({
+        slug: 'fresh',
+        name: 'Fresh',
+        category: 'flower',
+        details: '',
+        availableAt: [],
+        status: 'active',
+        variants: {
+          default: { label: 'Default', locations: {} },
+        },
+        inStockAt: [],
+        pickupAt: [],
+        featuredAt: [],
+      });
+
+      expect(docSetMock).toHaveBeenCalledTimes(1);
+      const payload = docSetMock.mock.calls[0][0] as SelfPruningPayload;
+      expect(payload.variants).toEqual({
+        default: { label: 'Default', locations: {} },
+      });
+      expect(payload.legacyVariants).toBeUndefined();
+      expect(payload.variantSpecs).toBeUndefined();
+      expect(payload.inStockAt).toEqual([]);
+    });
+  });
+
+  describe('given an existing doc whose variants live only on variantGroups', () => {
+    it('seeds the supplied variants and leaves variantGroups untouched', async () => {
+      stubExistingDoc({
+        slug: 'grouped-only',
+        name: 'Grouped',
+        variantGroups: [
+          {
+            groupId: 'size',
+            label: 'Size',
+            combinable: false,
+            options: [{ optionId: '1g', label: '1g' }],
+          },
+        ],
+      });
+
+      await upsertProduct({
+        slug: 'grouped-only',
+        name: 'Grouped',
+        category: 'flower',
+        details: '',
+        availableAt: [],
+        status: 'active',
+        variants: { '1g': { label: '1g', locations: {} } },
+      });
+
+      const payload = docSetMock.mock.calls[0][0] as SelfPruningPayload;
+      expect(payload.variants).toEqual({
+        '1g': { label: '1g', locations: {} },
+      });
+      // variantGroups is the option-group definition (PDP UI input). Step 3
+      // intentionally leaves it on the doc — step 4 (#399) migrates the PDP
+      // off it.
+      expect('variantGroups' in payload).toBe(false);
+    });
+  });
+
+  describe('given an existing doc whose variants live only on the deprecated variantSpecs alias', () => {
+    it('preserves the per-location stock/price under the unified map and prunes variantSpecs', async () => {
+      stubExistingDoc({
+        slug: 'specs-only',
+        variantSpecs: {
+          default: {
+            label: 'Default',
+            locations: {
+              'oak-ridge': { qty: 12, price: 4200, reserved: 2 },
+            },
+          },
+        },
+      });
+
+      // Editor save: seeds the variant with empty locations — repo MUST
+      // preserve the existing per-location data.
+      await upsertProduct({
+        slug: 'specs-only',
+        name: 'Specs',
+        category: 'flower',
+        details: '',
+        availableAt: [],
+        status: 'active',
+        variants: { default: { label: 'Default', locations: {} } },
+      });
+
+      const payload = docSetMock.mock.calls[0][0] as SelfPruningPayload;
+      expect(payload.variants?.default.locations['oak-ridge']).toEqual({
+        qty: 12,
+        price: 4200,
+        reserved: 2,
+      });
+      // Legacy alias physically removed.
+      expect(payload.variantSpecs).toBe(fieldValueDeleteSentinel);
+      // Indexes recomputed from preserved data.
+      expect(payload.inStockAt).toContain('oak-ridge');
+    });
+  });
+
+  describe('given an existing doc with both variantGroups and legacyVariants (the four-state matrix)', () => {
+    it('projects both onto the unified map and prunes legacyVariants', async () => {
+      stubExistingDoc({
+        slug: 'both',
+        variantGroups: [
+          {
+            groupId: 'size',
+            label: 'Size',
+            combinable: false,
+            options: [{ optionId: 'eighth', label: '3.5g' }],
+          },
+        ],
+        legacyVariants: [{ variantId: 'eighth', label: '3.5g' }],
+      });
+
+      await upsertProduct({
+        slug: 'both',
+        name: 'Both',
+        category: 'flower',
+        details: '',
+        availableAt: [],
+        status: 'active',
+        variants: { eighth: { label: '3.5g', locations: {} } },
+      });
+
+      const payload = docSetMock.mock.calls[0][0] as SelfPruningPayload;
+      expect(payload.variants?.eighth.locations).toEqual({});
+      expect(payload.legacyVariants).toBe(fieldValueDeleteSentinel);
+    });
+  });
+
+  describe('given an editor save flips the regression-guard from #400 (legacyVariants only)', () => {
+    it('removes legacyVariants in the same write — closes the user-visible gap', async () => {
+      stubExistingDoc({
+        slug: 'legacy-only',
+        legacyVariants: [{ variantId: 'default', label: 'Default' }],
+      });
+
+      await upsertProduct({
+        slug: 'legacy-only',
+        name: 'Legacy',
+        category: 'flower',
+        details: '',
+        availableAt: [],
+        status: 'active',
+        variants: { default: { label: 'Default', locations: {} } },
+      });
+
+      const payload = docSetMock.mock.calls[0][0] as SelfPruningPayload;
+      expect(payload.legacyVariants).toBe(fieldValueDeleteSentinel);
+      expect(payload.variants?.default).toEqual({
+        label: 'Default',
+        locations: {},
+      });
+    });
+  });
+});

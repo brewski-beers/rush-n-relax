@@ -6,7 +6,6 @@ export type {
 export type {
   Product,
   ProductVariant,
-  ProductVariantSpec,
   ProductVariantLocation,
   LegacyProductVariant,
   VariantOption,
