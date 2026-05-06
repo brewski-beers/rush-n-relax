@@ -118,7 +118,7 @@ export default async function CheckoutVerifyPage({ params }: Props) {
           apiKey={apiKey}
           customerEmail={session.customerEmail}
           redirectUrl={redirectUrl}
-          isPreview={process.env.VERCEL_ENV === 'preview'}
+          showSimulator={process.env.VERCEL_ENV !== 'production'}
         />
 
         {/* Anti-bypass: AgeChecker requires a noscript meta-refresh that

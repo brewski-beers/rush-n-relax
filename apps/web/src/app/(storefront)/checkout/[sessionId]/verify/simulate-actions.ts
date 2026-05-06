@@ -8,10 +8,10 @@
  * `rnr-abc123.vercel.app`) — registering each one would be unworkable.
  *
  * These actions let KB exercise the full checkout chain on preview
- * deploys by short-circuiting the AgeChecker popup. They are gated by
- * `VERCEL_ENV === 'preview'` server-side as defense in depth — the UI
- * also hides the buttons on prod, but the action itself refuses to run
- * if invoked anywhere other than a preview deploy.
+ * deploys (and local dev) by short-circuiting the AgeChecker popup.
+ * They are gated by `VERCEL_ENV !== 'production'` server-side as
+ * defense in depth — the UI also hides the buttons on prod, but the
+ * action itself refuses to run if invoked in production.
  *
  * Pass: writes `ageVerifiedAt` via `markAgeVerified`, transitioning the
  *       session to `awaiting_payment`. The downstream redirect handler
@@ -27,9 +27,9 @@ import {
 
 const SIMULATE_VERIFICATION_ID = 'simulate-preview';
 
-function assertPreviewEnv(): void {
-  if (process.env.VERCEL_ENV !== 'preview') {
-    throw new Error('Simulate actions only allowed in preview env');
+function assertNonProductionEnv(): void {
+  if (process.env.VERCEL_ENV === 'production') {
+    throw new Error('Simulate actions disabled in production');
   }
 }
 
@@ -40,7 +40,7 @@ export interface SimulateActionResult {
 export async function simulateAgeVerifyPass(
   sessionId: string
 ): Promise<SimulateActionResult> {
-  assertPreviewEnv();
+  assertNonProductionEnv();
   await markAgeVerified(sessionId, SIMULATE_VERIFICATION_ID, new Date());
   return { ok: true };
 }
@@ -48,7 +48,7 @@ export async function simulateAgeVerifyPass(
 export async function simulateAgeVerifyDeny(
   sessionId: string
 ): Promise<SimulateActionResult> {
-  assertPreviewEnv();
+  assertNonProductionEnv();
   await markCheckoutSessionCancelled(sessionId);
   return { ok: true };
 }

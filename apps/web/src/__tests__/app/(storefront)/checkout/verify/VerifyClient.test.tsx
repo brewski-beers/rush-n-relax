@@ -83,8 +83,8 @@ describe('VerifyClient', () => {
     expect(btn).toHaveAttribute('href', '/api/checkout/sess_1/redirect');
   });
 
-  describe('preview-only simulate panel (#411)', () => {
-    it('does NOT render the simulate panel when isPreview is false', () => {
+  describe('non-production simulate panel (#411)', () => {
+    it('does NOT render the simulate panel when showSimulator is false', () => {
       render(
         <VerifyClient
           sessionId="sess_prod"
@@ -99,21 +99,21 @@ describe('VerifyClient', () => {
       expect(screen.queryByTestId('simulate-deny')).toBeNull();
     });
 
-    it('renders the simulate panel with both buttons when isPreview is true', () => {
+    it('renders the simulate panel with both buttons when showSimulator is true (preview/dev)', () => {
       render(
         <VerifyClient
           sessionId="sess_pre"
           apiKey="key"
           customerEmail={undefined}
           redirectUrl="/api/checkout/sess_pre/redirect"
-          isPreview
+          showSimulator
         />
       );
 
       expect(screen.getByTestId('preview-tools')).toBeInTheDocument();
       expect(screen.getByTestId('simulate-pass')).toBeInTheDocument();
       expect(screen.getByTestId('simulate-deny')).toBeInTheDocument();
-      expect(screen.getByText(/Preview only/i)).toBeInTheDocument();
+      expect(screen.getByText(/Non-production only/i)).toBeInTheDocument();
     });
 
     it('clicks Simulate Pass → calls simulateAgeVerifyPass and navigates to redirectUrl', async () => {
@@ -135,7 +135,7 @@ describe('VerifyClient', () => {
           apiKey="key"
           customerEmail={undefined}
           redirectUrl="/api/checkout/sess_pre/redirect"
-          isPreview
+          showSimulator
         />
       );
 
@@ -173,7 +173,7 @@ describe('VerifyClient', () => {
           apiKey="key"
           customerEmail={undefined}
           redirectUrl="/api/checkout/sess_pre/redirect"
-          isPreview
+          showSimulator
         />
       );
 

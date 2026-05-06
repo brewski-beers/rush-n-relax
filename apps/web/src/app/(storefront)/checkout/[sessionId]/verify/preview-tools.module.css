@@ -1,7 +1,7 @@
-/* #411 — Preview-only Simulate Pass / Deny panel.
+/* #411 — Non-production Simulate Pass / Deny panel.
    Visually distinct from the primary Proceed-to-Payment CTA so it is
    unmistakably a debug affordance. Renders only when the server-side
-   `VERCEL_ENV === 'preview'` check passes. */
+   `VERCEL_ENV !== 'production'` check passes (preview + local dev). */
 
 .previewTools {
   margin-top: var(--space-lg);

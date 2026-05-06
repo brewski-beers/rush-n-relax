@@ -49,20 +49,29 @@ describe('simulate-actions (#411)', () => {
       expect(verifiedAt).toBeInstanceOf(Date);
     });
 
+    it('given development env, when invoked, then marks the session age-verified', async () => {
+      process.env.VERCEL_ENV = 'development';
+
+      const result = await simulateAgeVerifyPass('sess_123');
+
+      expect(result).toEqual({ ok: true });
+      expect(markAgeVerifiedMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('given undefined VERCEL_ENV (local dev), when invoked, then marks the session age-verified', async () => {
+      delete process.env.VERCEL_ENV;
+
+      const result = await simulateAgeVerifyPass('sess_123');
+
+      expect(result).toEqual({ ok: true });
+      expect(markAgeVerifiedMock).toHaveBeenCalledTimes(1);
+    });
+
     it('given production env, when invoked, then refuses and never touches the repo', async () => {
       process.env.VERCEL_ENV = 'production';
 
       await expect(simulateAgeVerifyPass('sess_123')).rejects.toThrow(
-        /preview env/i
-      );
-      expect(markAgeVerifiedMock).not.toHaveBeenCalled();
-    });
-
-    it('given undefined VERCEL_ENV, when invoked, then refuses', async () => {
-      delete process.env.VERCEL_ENV;
-
-      await expect(simulateAgeVerifyPass('sess_123')).rejects.toThrow(
-        /preview env/i
+        /disabled in production/i
       );
       expect(markAgeVerifiedMock).not.toHaveBeenCalled();
     });
@@ -76,11 +85,20 @@ describe('simulate-actions (#411)', () => {
       expect(markCheckoutSessionCancelledMock).toHaveBeenCalledWith('sess_456');
     });
 
+    it('given undefined VERCEL_ENV (local dev), when invoked, then cancels the session', async () => {
+      delete process.env.VERCEL_ENV;
+
+      const result = await simulateAgeVerifyDeny('sess_456');
+
+      expect(result).toEqual({ ok: true });
+      expect(markCheckoutSessionCancelledMock).toHaveBeenCalledWith('sess_456');
+    });
+
     it('given production env, when invoked, then refuses and never touches the repo', async () => {
       process.env.VERCEL_ENV = 'production';
 
       await expect(simulateAgeVerifyDeny('sess_456')).rejects.toThrow(
-        /preview env/i
+        /disabled in production/i
       );
       expect(markCheckoutSessionCancelledMock).not.toHaveBeenCalled();
     });

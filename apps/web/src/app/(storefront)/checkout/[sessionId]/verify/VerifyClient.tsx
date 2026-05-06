@@ -18,10 +18,11 @@
  * #370 will extract this into a reusable `AgeCheckerGuard` component.
  * Until then we inline the binding here so this PR is self-contained.
  *
- * Preview-only simulate buttons (#411) render below the proceed CTA when
- * the server passes `isPreview === true`. Server reads `VERCEL_ENV`
- * directly so the panel is impossible to render on prod, regardless of
- * client-side env injection.
+ * Non-production simulate buttons (#411) render below the proceed CTA
+ * when the server passes `showSimulator === true` (i.e. `VERCEL_ENV !==
+ * 'production'`, covering Vercel preview deploys and local dev). Server
+ * reads `VERCEL_ENV` directly so the panel is impossible to render on
+ * prod, regardless of client-side env injection.
  */
 import Script from 'next/script';
 import { useEffect, useTransition } from 'react';
@@ -38,7 +39,7 @@ interface Props {
   apiKey: string;
   customerEmail: string | undefined;
   redirectUrl: string;
-  isPreview?: boolean;
+  showSimulator?: boolean;
 }
 
 const POPUP_SRC = 'https://cdn.agechecker.net/static/popup/v1/popup.js';
@@ -48,7 +49,7 @@ export function VerifyClient({
   apiKey,
   customerEmail,
   redirectUrl,
-  isPreview = false,
+  showSimulator = false,
 }: Props) {
   const [isPending, startTransition] = useTransition();
 
@@ -96,10 +97,10 @@ export function VerifyClient({
         Proceed to Payment
       </a>
 
-      {isPreview && (
+      {showSimulator && (
         <div className={previewStyles.previewTools} data-testid="preview-tools">
           <p className={previewStyles.warning}>
-            ⚠️ Preview only — bypasses real verification
+            ⚠️ Non-production only — bypasses real verification
           </p>
           <button
             type="button"
