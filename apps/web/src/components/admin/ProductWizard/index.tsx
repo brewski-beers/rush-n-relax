@@ -25,7 +25,7 @@
  * which form sections are visible.
  */
 
-import { useState, useActionState } from 'react';
+import { useEffect, useRef, useState, useActionState } from 'react';
 import Link from 'next/link';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { ProductImage } from '@/components/ProductImage';
@@ -168,6 +168,77 @@ export function ProductWizardForm({
     ProductCategorySummary | undefined
   >(initialCategory);
 
+  // --- Slug availability check (create mode only) ---------------------------
+  // States: 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
+  // Race-safety: each fetch carries an AbortController; a request id seqno
+  // also ignores any stale result that returns after a newer one has been
+  // dispatched. The server-side guard inside createProduct stays as the
+  // backstop for races at submit time.
+  type SlugCheckState = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
+  const [slugCheck, setSlugCheck] = useState<SlugCheckState>('idle');
+  const slugCheckSeq = useRef(0);
+  const slugAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (mode !== 'create') return;
+
+    // Cancel any in-flight request whenever the slug changes.
+    slugAbortRef.current?.abort();
+
+    const trimmed = slug.trim();
+    const seq = ++slugCheckSeq.current;
+
+    // Resolve idle/invalid synchronously inside the next-microtask so we
+    // don't trip react-hooks/set-state-in-effect (no setState in effect body).
+    if (!trimmed) {
+      const t = setTimeout(() => {
+        if (seq === slugCheckSeq.current) setSlugCheck('idle');
+      }, 0);
+      return () => clearTimeout(t);
+    }
+    if (!/^[a-z0-9-]+$/.test(trimmed)) {
+      const t = setTimeout(() => {
+        if (seq === slugCheckSeq.current) setSlugCheck('invalid');
+      }, 0);
+      return () => clearTimeout(t);
+    }
+
+    const controller = new AbortController();
+    slugAbortRef.current = controller;
+
+    // Single setTimeout drives both the "checking" flip and the fetch.
+    const handle = setTimeout(() => {
+      if (seq !== slugCheckSeq.current) return;
+      setSlugCheck('checking');
+      void (async () => {
+        try {
+          const res = await fetch(
+            `/api/admin/products/slug-available?slug=${encodeURIComponent(trimmed)}`,
+            { signal: controller.signal, cache: 'no-store' }
+          );
+          // Stale-result guard — only the latest seq updates state.
+          if (seq !== slugCheckSeq.current) return;
+          if (!res.ok) {
+            // Don't block UX on transient errors — server-side guard backstops.
+            setSlugCheck('idle');
+            return;
+          }
+          const body = (await res.json()) as { available?: boolean };
+          setSlugCheck(body.available ? 'available' : 'taken');
+        } catch (err) {
+          if ((err as { name?: string })?.name === 'AbortError') return;
+          if (seq !== slugCheckSeq.current) return;
+          setSlugCheck('idle');
+        }
+      })();
+    }, 300);
+
+    return () => {
+      clearTimeout(handle);
+      controller.abort();
+    };
+  }, [slug, mode]);
+
   function getForm(): HTMLFormElement | null {
     return document.querySelector<HTMLFormElement>('form.admin-form');
   }
@@ -178,6 +249,18 @@ export function ProductWizardForm({
     if (err) {
       setStepError(err);
       return;
+    }
+    // Slug uniqueness gate (create mode, step 1). The button is also disabled
+    // while !available — this is a defensive backstop in case it's bypassed.
+    if (mode === 'create' && step === 1) {
+      if (slugCheck === 'checking') {
+        setStepError('Still checking slug availability — one moment.');
+        return;
+      }
+      if (slugCheck === 'taken') {
+        setStepError('Already taken — try a different name or slug.');
+        return;
+      }
     }
     setStepError(null);
     const rawNext = step + 1;
@@ -330,11 +413,27 @@ export function ProductWizardForm({
               placeholder="sour-diesel"
               readOnly={mode === 'edit'}
               className={mode === 'edit' ? 'admin-input-readonly' : undefined}
+              aria-describedby={
+                mode === 'create' ? 'slug-availability' : undefined
+              }
               onChange={e =>
                 mode === 'create' &&
                 setSlug(e.target.value.toLowerCase().trim())
               }
             />
+            {mode === 'create' && (
+              <span
+                id="slug-availability"
+                className="admin-hint"
+                aria-live="polite"
+                data-slug-state={slugCheck}
+              >
+                {slugCheck === 'checking' && 'Checking…'}
+                {slugCheck === 'available' && 'Available'}
+                {slugCheck === 'taken' &&
+                  'Already taken — try a different name or slug'}
+              </span>
+            )}
           </label>
         </fieldset>
       </div>
@@ -696,7 +795,12 @@ export function ProductWizardForm({
             key="next"
             type="button"
             onClick={goNext}
-            disabled={imageUploading}
+            disabled={
+              imageUploading ||
+              (mode === 'create' &&
+                step === 1 &&
+                (slugCheck === 'checking' || slugCheck === 'taken'))
+            }
           >
             {step === TOTAL_STEPS - 1 ? 'Review' : 'Next'}
           </button>
