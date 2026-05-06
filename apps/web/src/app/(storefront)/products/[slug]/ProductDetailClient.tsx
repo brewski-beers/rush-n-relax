@@ -75,15 +75,15 @@ export default function ProductDetailClient({
    * preload it — fixing the LCP regression.
    */
   heroImageUrl?: string;
-  /** Online-store location ID — drives variant selector via product.variantSpecs */
+  /** Online-store location ID — drives variant selector via product.variants */
   onlineLocationId: string;
 }) {
-  // Resolve display variants from product.variantSpecs at the online location.
-  // Inventory was folded into the product document under #304/#312.
+  // Resolve display variants from the unified `product.variants` map at the
+  // online location (#397 step 2). Inventory was folded into the product
+  // document under #304/#312; #396 unified the variant shape.
   const displayVariants: DisplayVariant[] = resolveVariantPricing(
-    product.variantSpecs,
-    onlineLocationId,
-    product.legacyVariants
+    product.variants,
+    onlineLocationId
   );
   const hasOnlinePricing = displayVariants.length > 0;
 

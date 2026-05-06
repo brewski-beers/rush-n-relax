@@ -10,8 +10,9 @@ import { LOCATION_SLUGS } from '@/lib/fixtures/storefront';
  *
  * Returns per-location pickup eligibility for all retail locations.
  *
- * Eligibility (post-#312, inventory folded into product.variantSpecs):
- *   - The product document exists and has a `variantSpecs[variantId]` entry
+ * Eligibility (post-#312/#396, inventory folded into the unified
+ * `product.variants` map):
+ *   - The product document exists and has a `variants[variantId]` entry
  *     for this `locationId`
  *   - That entry's `availablePickup === true`
  *   - That entry has available stock (qty - reserved > 0)
@@ -131,9 +132,9 @@ interface VariantLocationFields {
 }
 
 /**
- * Defensively reads `variantSpecs[variantId].locations[locationId]` from a
+ * Defensively reads `variants[variantId].locations[locationId]` from a
  * product document. Returns null when any segment of the path is missing or
- * malformed.
+ * malformed. (#397 step 2 — unified variants map.)
  */
 function readVariantLocation(
   d: Record<string, unknown> | undefined,
@@ -141,9 +142,9 @@ function readVariantLocation(
   locationId: string
 ): VariantLocationFields | null {
   if (!d) return null;
-  const specs = d.variantSpecs;
-  if (!specs || typeof specs !== 'object') return null;
-  const variant = (specs as Record<string, unknown>)[variantId];
+  const variants = d.variants;
+  if (!variants || typeof variants !== 'object') return null;
+  const variant = (variants as Record<string, unknown>)[variantId];
   if (!variant || typeof variant !== 'object') return null;
   const locs = (variant as Record<string, unknown>).locations;
   if (!locs || typeof locs !== 'object') return null;

@@ -39,7 +39,8 @@ interface LocOverride {
   availablePickup?: boolean;
 }
 
-// Build a product Firestore document with variantSpecs entries per location
+// Build a product Firestore document with unified `variants` entries per
+// location (#397 step 2 — unified variants map).
 function makeProductData(
   variantId: string,
   perLocation: Partial<Record<string, LocOverride | null>>
@@ -58,7 +59,7 @@ function makeProductData(
     };
   }
   return {
-    variantSpecs: {
+    variants: {
       [variantId]: {
         label: variantId,
         locations,
