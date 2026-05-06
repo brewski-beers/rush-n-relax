@@ -270,8 +270,12 @@ describe('createProduct server action', () => {
       ];
 
       expect(payload.variantGroups).toEqual(variantGroups);
-      expect(Array.isArray(payload.variants)).toBe(true);
-      const variants = payload.variants as { label: string }[];
+      // Step 1 of #396: admin actions write the legacy SKU array under the
+      // renamed `legacyVariants` field so the canonical `variants` map can
+      // own that field name. Step 3 (#398) migrates the editor to author
+      // the unified map directly and deletes this field.
+      expect(Array.isArray(payload.legacyVariants)).toBe(true);
+      const variants = payload.legacyVariants as { label: string }[];
       expect(variants).toHaveLength(2);
       expect(variants.map(v => v.label)).toEqual(['1g', '3.5g']);
     });

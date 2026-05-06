@@ -83,7 +83,7 @@ export default function ProductDetailClient({
   const displayVariants: DisplayVariant[] = resolveVariantPricing(
     product.variantSpecs,
     onlineLocationId,
-    product.variants
+    product.legacyVariants
   );
   const hasOnlinePricing = displayVariants.length > 0;
 
@@ -430,8 +430,8 @@ export default function ProductDetailClient({
                 </div>
               )
             ) : (
-              product.variants &&
-              product.variants.length > 0 && (
+              product.legacyVariants &&
+              product.legacyVariants.length > 0 && (
                 <div className="product-pricing-block">
                   {variantGroups.length > 0 ? (
                     /* Group-aware "see in store" — same segmentation as the online path */
@@ -465,7 +465,7 @@ export default function ProductDetailClient({
                     <>
                       <span className="product-hero-tag-label">Sizes</span>
                       <div className="product-variant-grid">
-                        {product.variants.map(v => (
+                        {product.legacyVariants.map(v => (
                           <div
                             key={v.variantId}
                             className="product-variant-card product-variant-card--static"

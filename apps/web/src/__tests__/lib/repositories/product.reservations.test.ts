@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment,
-                  @typescript-eslint/no-unsafe-member-access,
-                  @typescript-eslint/no-unsafe-argument */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
@@ -24,9 +21,9 @@ const {
     ) => fn({ get: txGetMock, set: txSetMock, create: txCreateMock })
   );
 
-  const adjustmentsDoc = vi.fn(
-    () => ({ id: `adj-${Math.random().toString(36).slice(2)}` })
-  );
+  const adjustmentsDoc = vi.fn(() => ({
+    id: `adj-${Math.random().toString(36).slice(2)}`,
+  }));
   const adjustmentsCol = vi.fn(() => ({ doc: adjustmentsDoc }));
 
   const productDoc = vi.fn((id: string) => ({
@@ -110,13 +107,18 @@ describe('holdStock', () => {
     );
 
     await holdStock([
-      { productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 2 },
+      {
+        productId: 'blue-dream',
+        variantId: 'default',
+        locationId: 'online',
+        qty: 2,
+      },
     ]);
 
     expect(runTransactionMock).toHaveBeenCalledOnce();
     const [, payload] = txSetMock.mock.calls[0];
     const p = payload as Record<string, unknown>;
-    const specs = p.variantSpecs as Record<
+    const specs = p.variants as Record<
       string,
       { locations: Record<string, { reserved: number; qty: number }> }
     >;
@@ -135,11 +137,16 @@ describe('holdStock', () => {
     );
 
     await holdStock([
-      { productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 3 },
+      {
+        productId: 'blue-dream',
+        variantId: 'default',
+        locationId: 'online',
+        qty: 3,
+      },
     ]);
 
     const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
-    const specs = payload.variantSpecs as Record<
+    const specs = payload.variants as Record<
       string,
       { locations: Record<string, { reserved: number }> }
     >;
@@ -158,7 +165,12 @@ describe('holdStock', () => {
 
     await expect(
       holdStock([
-        { productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 2 },
+        {
+          productId: 'blue-dream',
+          variantId: 'default',
+          locationId: 'online',
+          qty: 2,
+        },
       ])
     ).rejects.toBeInstanceOf(InsufficientStockError);
     expect(txSetMock).not.toHaveBeenCalled();
@@ -176,7 +188,12 @@ describe('holdStock', () => {
     );
 
     await holdStock([
-      { productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 2 },
+      {
+        productId: 'blue-dream',
+        variantId: 'default',
+        locationId: 'online',
+        qty: 2,
+      },
     ]);
 
     const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
@@ -194,7 +211,14 @@ describe('holdStock', () => {
     );
 
     await holdStock(
-      [{ productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 1 }],
+      [
+        {
+          productId: 'blue-dream',
+          variantId: 'default',
+          locationId: 'online',
+          qty: 1,
+        },
+      ],
       { source: 'order', actor: 'webhook' }
     );
 
@@ -215,7 +239,12 @@ describe('holdStock', () => {
     );
     await expect(
       holdStock([
-        { productId: 'blue-dream', variantId: 'eighth', locationId: 'online', qty: 1 },
+        {
+          productId: 'blue-dream',
+          variantId: 'eighth',
+          locationId: 'online',
+          qty: 1,
+        },
       ])
     ).rejects.toThrow(/Variant 'eighth' not found/);
   });
@@ -235,11 +264,16 @@ describe('releaseStock', () => {
     );
 
     await releaseStock([
-      { productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 2 },
+      {
+        productId: 'blue-dream',
+        variantId: 'default',
+        locationId: 'online',
+        qty: 2,
+      },
     ]);
 
     const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
-    const specs = payload.variantSpecs as Record<
+    const specs = payload.variants as Record<
       string,
       { locations: Record<string, { reserved: number; qty: number }> }
     >;
@@ -258,11 +292,16 @@ describe('releaseStock', () => {
     );
 
     await releaseStock([
-      { productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 5 },
+      {
+        productId: 'blue-dream',
+        variantId: 'default',
+        locationId: 'online',
+        qty: 5,
+      },
     ]);
 
     const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
-    const specs = payload.variantSpecs as Record<
+    const specs = payload.variants as Record<
       string,
       { locations: Record<string, { reserved: number }> }
     >;
@@ -280,7 +319,12 @@ describe('releaseStock', () => {
     );
 
     await releaseStock([
-      { productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 2 },
+      {
+        productId: 'blue-dream',
+        variantId: 'default',
+        locationId: 'online',
+        qty: 2,
+      },
     ]);
 
     const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
@@ -302,11 +346,16 @@ describe('commitStock', () => {
     );
 
     await commitStock([
-      { productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 2 },
+      {
+        productId: 'blue-dream',
+        variantId: 'default',
+        locationId: 'online',
+        qty: 2,
+      },
     ]);
 
     const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
-    const specs = payload.variantSpecs as Record<
+    const specs = payload.variants as Record<
       string,
       { locations: Record<string, { qty: number; reserved: number }> }
     >;
@@ -333,11 +382,16 @@ describe('commitStock', () => {
     );
 
     await commitStock([
-      { productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 1 },
+      {
+        productId: 'blue-dream',
+        variantId: 'default',
+        locationId: 'online',
+        qty: 1,
+      },
     ]);
 
     const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;
-    const specs = payload.variantSpecs as Record<
+    const specs = payload.variants as Record<
       string,
       {
         locations: Record<
@@ -366,7 +420,12 @@ describe('commitStock', () => {
 
     await expect(
       commitStock([
-        { productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 2 },
+        {
+          productId: 'blue-dream',
+          variantId: 'default',
+          locationId: 'online',
+          qty: 2,
+        },
       ])
     ).rejects.toBeInstanceOf(InsufficientStockError);
     expect(txSetMock).not.toHaveBeenCalled();
@@ -388,7 +447,12 @@ describe('available-stock semantics', () => {
     );
 
     await holdStock([
-      { productId: 'blue-dream', variantId: 'default', locationId: 'online', qty: 1 },
+      {
+        productId: 'blue-dream',
+        variantId: 'default',
+        locationId: 'online',
+        qty: 1,
+      },
     ]);
 
     const payload = txSetMock.mock.calls[0][1] as Record<string, unknown>;

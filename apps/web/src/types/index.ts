@@ -8,6 +8,7 @@ export type {
   ProductVariant,
   ProductVariantSpec,
   ProductVariantLocation,
+  LegacyProductVariant,
   VariantOption,
   VariantGroup,
   NutritionFacts,

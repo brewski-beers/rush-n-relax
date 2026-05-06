@@ -1,11 +1,11 @@
 import type {
   VariantGroup,
   VariantOption,
-  ProductVariant,
+  LegacyProductVariant,
 } from '@/types/product';
 
 /**
- * Generates the flat ProductVariant[] from a VariantGroup[] definition.
+ * Generates the flat LegacyLegacyProductVariant[] from a VariantGroup[] definition.
  *
  * - Standalone groups (combinable: false): each option becomes its own SKU.
  * - Combinable groups (combinable: true): all combinable groups are
@@ -14,10 +14,10 @@ import type {
  * Example: Flavor ["Berry","Lemon"] × Weight ["1g","3.5g"] (both combinable)
  * → ["Berry | 1g", "Berry | 3.5g", "Lemon | 1g", "Lemon | 3.5g"]
  */
-export function generateSkus(groups: VariantGroup[]): ProductVariant[] {
+export function generateSkus(groups: VariantGroup[]): LegacyProductVariant[] {
   const combinable = groups.filter(g => g.combinable && g.options.length > 0);
   const standalone = groups.filter(g => !g.combinable && g.options.length > 0);
-  const result: ProductVariant[] = [];
+  const result: LegacyProductVariant[] = [];
 
   for (const group of standalone) {
     for (const opt of group.options) {

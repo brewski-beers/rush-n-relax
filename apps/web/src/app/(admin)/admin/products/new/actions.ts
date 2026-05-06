@@ -233,7 +233,7 @@ export async function createProduct(
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
     ...(variantGroups.length > 0 ? { variantGroups } : {}),
-    ...(variants.length > 0 ? { variants } : {}),
+    ...(variants.length > 0 ? { legacyVariants: variants } : {}),
     ...(extractionType !== undefined ? { extractionType } : {}),
     ...(hardwareType !== undefined ? { hardwareType } : {}),
     ...(volumeMl !== undefined ? { volumeMl } : {}),

@@ -5,7 +5,7 @@
  * `Product.variantSpecs` for the given location. No Firestore calls — safe
  * in both Server Components and client-side code.
  */
-import type { ProductVariant, ProductVariantSpec } from '@/types/product';
+import type { LegacyProductVariant, ProductVariantSpec } from '@/types/product';
 
 export interface DisplayVariant {
   variantId: string;
@@ -31,7 +31,7 @@ export interface DisplayVariant {
 export function resolveVariantPricing(
   variantSpecs: { [variantId: string]: ProductVariantSpec } | undefined,
   locationId: string,
-  legacyVariants?: ProductVariant[]
+  legacyVariants?: LegacyProductVariant[]
 ): DisplayVariant[] {
   if (!variantSpecs) return [];
 

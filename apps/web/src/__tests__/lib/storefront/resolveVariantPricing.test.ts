@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { resolveVariantPricing } from '@/lib/storefront/resolveVariantPricing';
-import type { ProductVariant, ProductVariantSpec } from '@/types/product';
+import type { LegacyProductVariant, ProductVariantSpec } from '@/types/product';
 
 const ONLINE = 'online';
 
-const FLOWER_VARIANTS: ProductVariant[] = [
+const FLOWER_VARIANTS: LegacyProductVariant[] = [
   { variantId: 'eighth', label: '3.5g' },
   { variantId: 'quarter', label: '7g' },
   { variantId: 'half', label: '14g' },

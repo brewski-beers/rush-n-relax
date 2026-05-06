@@ -18,7 +18,11 @@ import type {
   NutritionFacts,
 } from '@/types';
 
-const SETTABLE_STATUSES: ProductStatus[] = ['active', 'pending-reformulation', 'archived'];
+const SETTABLE_STATUSES: ProductStatus[] = [
+  'active',
+  'pending-reformulation',
+  'archived',
+];
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
@@ -59,7 +63,9 @@ export async function updateProduct(
   if (existing.status === 'compliance-hold') {
     status = 'compliance-hold';
   } else if (actor.role === 'owner') {
-    const rawStatus = formData.get('status')?.toString() as ProductStatus | undefined;
+    const rawStatus = formData.get('status')?.toString() as
+      | ProductStatus
+      | undefined;
     if (rawStatus && SETTABLE_STATUSES.includes(rawStatus)) {
       status = rawStatus;
     } else {
@@ -179,7 +185,8 @@ export async function updateProduct(
   const coaUrl = coaUrlRaw || existing.coaUrl;
 
   // ── Vendor product URL ─────────────────────────────────────────────────
-  const vendorProductUrlRaw = formData.get('vendorProductUrl')?.toString().trim() ?? '';
+  const vendorProductUrlRaw =
+    formData.get('vendorProductUrl')?.toString().trim() ?? '';
   const vendorProductUrl = vendorProductUrlRaw || existing.vendorProductUrl;
 
   // ── Variant groups + generated SKUs ──────────────────────────────────────
@@ -278,7 +285,7 @@ export async function updateProduct(
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
     ...(variantGroups.length > 0 ? { variantGroups } : {}),
-    ...(variants.length > 0 ? { variants } : {}),
+    ...(variants.length > 0 ? { legacyVariants: variants } : {}),
     ...(nutritionFacts !== undefined ? { nutritionFacts } : {}),
     ...(leaflyUrl ? { leaflyUrl } : {}),
     ...(vendorProductUrl ? { vendorProductUrl } : {}),

@@ -11,8 +11,8 @@ import {
 import type {
   Product,
   ProductVariant,
-  ProductVariantSpec,
   ProductVariantLocation,
+  LegacyProductVariant,
   VariantGroup,
   VariantOption,
   ProductSummary,
@@ -40,10 +40,6 @@ async function resolveCursor(
 
 // ── Read operations ───────────────────────────────────────────────────────
 
-/**
- * List all products regardless of status — admin use only.
- * Default limit: 50 (admin context).
- */
 export async function listAllProducts(
   opts: { limit?: number; cursor?: string } = {}
 ): Promise<PageResult<ProductSummary>> {
@@ -61,10 +57,6 @@ export async function listAllProducts(
   };
 }
 
-/**
- * List archived products only — admin use only, fetched on demand.
- * Default limit: 50 (admin context).
- */
 export async function listArchivedProducts(
   opts: { limit?: number; cursor?: string } = {}
 ): Promise<PageResult<ProductSummary>> {
@@ -85,10 +77,6 @@ export async function listArchivedProducts(
   };
 }
 
-/**
- * List all active products, ordered by name.
- * Default limit: 50 (admin context); use 25 for storefront.
- */
 export async function listProducts(
   opts: { limit?: number; cursor?: string } = {}
 ): Promise<PageResult<ProductSummary>> {
@@ -109,12 +97,6 @@ export async function listProducts(
   };
 }
 
-/**
- * Fetch products by their slugs (document IDs).
- * Used by storefront pages to join inventory results with product catalog data.
- * Returns results ordered by name. Silently skips missing or non-active slugs.
- * No pagination — callers pass an explicit slug list.
- */
 export async function listProductsByIds(
   slugs: string[]
 ): Promise<ProductSummary[]> {
@@ -130,10 +112,6 @@ export async function listProductsByIds(
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/**
- * List active products by category.
- * Default limit: 25 (storefront context).
- */
 export async function listProductsByCategory(
   category: string,
   opts: { limit?: number; cursor?: string } = {}
@@ -156,12 +134,6 @@ export async function listProductsByCategory(
   };
 }
 
-/**
- * Fetch a single product by slug.
- * Returns null if not found.
- * Wrapped with React cache() to deduplicate parallel calls within the same
- * request (e.g. generateMetadata + page component both reading the same slug).
- */
 export const getProductBySlug = cache(
   async (slug: string): Promise<Product | null> => {
     const doc = await productsCol().doc(slug).get();
@@ -172,10 +144,6 @@ export const getProductBySlug = cache(
   }
 );
 
-/**
- * List active products for a given vendor slug.
- * Default limit: 25 (storefront context).
- */
 export async function listProductsByVendor(
   vendorSlug: string,
   opts: { limit?: number; cursor?: string } = {}
@@ -198,16 +166,11 @@ export async function listProductsByVendor(
   };
 }
 
-/**
- * Fetch related products from the same category, excluding the given slug.
- * Used on the product detail page to replace the full-catalog listProducts() call.
- */
 export async function getRelatedProducts(
   excludeSlug: string,
   category: string,
   limit = 6
 ): Promise<ProductSummary[]> {
-  // Fetch one extra so we can exclude the current product and still return `limit` items
   const sameCategorySnap = await productsCol()
     .where('status', '==', 'active')
     .where('category', '==', category)
@@ -221,7 +184,6 @@ export async function getRelatedProducts(
 
   if (sameCategory.length >= limit) return sameCategory;
 
-  // Fall back to other active products so thin categories still surface suggestions.
   const needed = limit - sameCategory.length;
   const seenSlugs = new Set([excludeSlug, ...sameCategory.map(p => p.slug)]);
   const fillerSnap = await productsCol()
@@ -248,12 +210,6 @@ export async function upsertProduct(
   return data.slug;
 }
 
-/**
- * Explicitly delete top-level fields from a product document.
- * Used when a field must be removed entirely (e.g. featured image cleared).
- * `set({ merge: true })` with undefined values does NOT remove fields —
- * this function uses FieldValue.delete() to handle that case.
- */
 export async function clearProductFields(
   slug: string,
   fields: ('image' | 'images')[]
@@ -279,7 +235,6 @@ export async function setProductStatus(
 
 // ── Private helpers ───────────────────────────────────────────────────────
 
-/** Valid strain values for defensive mapping */
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
   'sativa',
@@ -291,6 +246,7 @@ function docToProductSummary(
   id: string,
   d: FirebaseFirestore.DocumentData
 ): ProductSummary {
+  const variants = projectVariants(d);
   return {
     id,
     slug: d.slug,
@@ -306,10 +262,14 @@ function docToProductSummary(
       VALID_STRAINS.has(d.strain as ProductStrain)
         ? (d.strain as ProductStrain)
         : undefined,
-    variants: docToVariants(d.variants),
+    legacyVariants:
+      docToLegacyVariants(d.legacyVariants) ?? docToLegacyVariants(d.variants),
     variantGroups: docToVariantGroups(d.variantGroups),
     leaflyUrl: d.leaflyUrl ?? undefined,
-    variantSpecs: readVariantSpecs(d),
+    variants,
+    // Mirror the unified map onto the deprecated `variantSpecs` alias so
+    // step-2/step-3 callers still find their data while migrations land.
+    variantSpecs: variants,
     inStockAt: Array.isArray(d.inStockAt)
       ? (d.inStockAt as string[])
       : undefined,
@@ -320,6 +280,7 @@ function docToProductSummary(
 }
 
 function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
+  const variants = projectVariants(d);
   return {
     id,
     slug: d.slug,
@@ -343,7 +304,8 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     effects: Array.isArray(d.effects) ? (d.effects as string[]) : undefined,
     flavors: Array.isArray(d.flavors) ? (d.flavors as string[]) : undefined,
     variantGroups: docToVariantGroups(d.variantGroups),
-    variants: docToVariants(d.variants),
+    legacyVariants:
+      docToLegacyVariants(d.legacyVariants) ?? docToLegacyVariants(d.variants),
     extractionType:
       typeof d.extractionType === 'string' ? d.extractionType : undefined,
     hardwareType:
@@ -353,7 +315,8 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
       typeof d.thcMgPerServing === 'number' ? d.thcMgPerServing : undefined,
     cbdMgPerServing:
       typeof d.cbdMgPerServing === 'number' ? d.cbdMgPerServing : undefined,
-    variantSpecs: readVariantSpecs(d),
+    variants,
+    variantSpecs: variants,
     inStockAt: Array.isArray(d.inStockAt)
       ? (d.inStockAt as string[])
       : undefined,
@@ -370,8 +333,6 @@ function docToLabResults(
   raw: FirebaseFirestore.DocumentData | undefined
 ): LabResults | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
-  // Narrow DocumentData's `any`-valued map to `unknown` so field reads are type-checked.
-
   const r = raw as Record<string, unknown>;
   return {
     thcPercent: typeof r.thcPercent === 'number' ? r.thcPercent : undefined,
@@ -382,10 +343,6 @@ function docToLabResults(
   };
 }
 
-/**
- * Defensively maps the variantGroups array from Firestore.
- * Groups or options missing required fields are silently skipped.
- */
 function docToVariantGroups(raw: unknown): VariantGroup[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const valid: VariantGroup[] = [];
@@ -414,18 +371,19 @@ function docToVariantGroups(raw: unknown): VariantGroup[] | undefined {
 }
 
 /**
- * Defensively maps the variants array from Firestore.
- * Entries missing required fields (variantId, label) are silently skipped.
+ * Defensively read the legacy array-shaped `variants` field. Returns
+ * undefined when the field is absent OR when it's already the unified map
+ * shape (post-self-pruning).
  */
-function docToVariants(raw: unknown): ProductVariant[] | undefined {
+function docToLegacyVariants(raw: unknown): LegacyProductVariant[] | undefined {
   if (!Array.isArray(raw)) return undefined;
-  const valid: ProductVariant[] = [];
+  const valid: LegacyProductVariant[] = [];
   for (const item of raw) {
     if (!item || typeof item !== 'object') continue;
     const v = item as Record<string, unknown>;
     if (typeof v.variantId !== 'string' || typeof v.label !== 'string')
       continue;
-    const variant: ProductVariant = {
+    const variant: LegacyProductVariant = {
       variantId: v.variantId,
       label: v.label,
     };
@@ -480,15 +438,12 @@ function stripUndefinedFields<T extends Record<string, unknown>>(
   ) as Partial<T>;
 }
 
-// ── Variant/location helpers (#306) ───────────────────────────────────────
+// ── Variant model unification (#396) ──────────────────────────────────────
 
 /**
  * Thrown when a transactional decrement detects fewer units available than
  * requested. The whole transaction is rolled back when this error is thrown,
  * so no partial writes survive.
- *
- * Owned by the product repository as of #306 (variant model). The legacy
- * inventory.repository re-export was removed in #312.
  */
 export class InsufficientStockError extends Error {
   readonly productId: string;
@@ -516,32 +471,187 @@ export class InsufficientStockError extends Error {
   }
 }
 
+export type VariantAdjustmentSource = 'admin' | 'order' | 'reconcile' | 'seed';
+
+interface VariantAdjustmentLog {
+  slug: string;
+  variantId: string;
+  locationId: string;
+  before: ProductVariantLocation | null;
+  after: ProductVariantLocation | null;
+  delta: number;
+  source: VariantAdjustmentSource;
+  actor?: string;
+  reason?: string;
+  createdAt: Date;
+}
+
+/**
+ * Read a single `ProductVariantLocation` defensively from raw Firestore
+ * data. Returns null when the entry is malformed (missing required `qty`/
+ * `price`).
+ *
+ * Critically, this preserves `reserved` — the in-flight CheckoutSession
+ * hold counter — so the legacy → unified projection performed by every
+ * write path does not silently release held units.
+ */
+function readLocation(raw: unknown): ProductVariantLocation | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const loc = raw as Record<string, unknown>;
+  if (typeof loc.qty !== 'number' || typeof loc.price !== 'number') return null;
+  const out: ProductVariantLocation = {
+    qty: loc.qty,
+    price: loc.price,
+  };
+  if (typeof loc.reserved === 'number') out.reserved = loc.reserved;
+  if (typeof loc.compareAtPrice === 'number')
+    out.compareAtPrice = loc.compareAtPrice;
+  if (typeof loc.availablePickup === 'boolean')
+    out.availablePickup = loc.availablePickup;
+  if (typeof loc.featured === 'boolean') out.featured = loc.featured;
+  return out;
+}
+
+/**
+ * Project any combination of legacy fields (`variantGroups`,
+ * `legacyVariants` / `variants` array, `variantSpecs`) AND the canonical
+ * `variants` map into a single unified `variants` map.
+ *
+ * Precedence (entries from earlier sources win on collision so any data
+ * already migrated to the canonical field is the source of truth):
+ *   1. `variants` (canonical map) — wins on label and locations
+ *   2. `variantSpecs` (deprecated map alias) — fills gaps
+ *   3. legacy array `variants` / `legacyVariants` — provides labels for
+ *      ids that exist in the maps; bootstraps empty entries for ids that
+ *      only appear in the array (rare; defensive)
+ *   4. `variantGroups` — bootstraps empty entries via SKU expansion when no
+ *      map data exists for the resulting ids (defensive; the editor
+ *      typically expands these into the map at save time)
+ *
+ * Per-location precedence within a variantId: canonical map → variantSpecs
+ * — qty / price / compareAtPrice / availablePickup / featured / reserved
+ * are all preserved from whichever source is authoritative.
+ */
+function projectVariants(
+  d: FirebaseFirestore.DocumentData
+): { [variantId: string]: ProductVariant } | undefined {
+  const out: { [variantId: string]: ProductVariant } = {};
+
+  const ingestMap = (raw: unknown) => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return;
+    for (const [variantId, v] of Object.entries(
+      raw as Record<string, unknown>
+    )) {
+      if (!v || typeof v !== 'object') continue;
+      const variant = v as Record<string, unknown>;
+      if (typeof variant.label !== 'string') continue;
+      const existing = out[variantId];
+      const locations: { [locationId: string]: ProductVariantLocation } =
+        existing ? { ...existing.locations } : {};
+      if (variant.locations && typeof variant.locations === 'object') {
+        for (const [locId, locRaw] of Object.entries(
+          variant.locations as Record<string, unknown>
+        )) {
+          if (locations[locId]) continue; // earlier source wins
+          const parsed = readLocation(locRaw);
+          if (parsed) locations[locId] = parsed;
+        }
+      }
+      if (existing) {
+        existing.locations = locations;
+      } else {
+        out[variantId] = { label: variant.label, locations };
+      }
+    }
+  };
+
+  // 1. canonical map
+  ingestMap(d.variants);
+  // 2. deprecated alias map
+  ingestMap(d.variantSpecs);
+
+  // 3. legacy array — supplies labels and bootstraps id-only entries.
+  // Read from both `variants` (pre-#396 field name) and `legacyVariants`
+  // (new field name written by step-1 admin actions until step 3 migrates
+  // the editor onto the unified map).
+  const legacyArr =
+    docToLegacyVariants(d.legacyVariants) ?? docToLegacyVariants(d.variants);
+  if (legacyArr) {
+    for (const v of legacyArr) {
+      if (!out[v.variantId]) {
+        out[v.variantId] = { label: v.label, locations: {} };
+      }
+    }
+  }
+
+  // 4. variantGroups — last-resort SKU expansion for ids missing from maps
+  const groups = docToVariantGroups(d.variantGroups);
+  if (groups) {
+    for (const sku of expandGroupsToSkus(groups)) {
+      if (!out[sku.variantId]) {
+        out[sku.variantId] = { label: sku.label, locations: {} };
+      }
+    }
+  }
+
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/**
+ * Cartesian-product expansion of variantGroups into (variantId, label)
+ * tuples. Mirrors `lib/variants/generateSkus.ts` exactly but is duplicated
+ * here so the repo has zero outbound dependencies on storefront helpers.
+ * Step 3 (#398) deletes both copies once the editor authors the unified
+ * map directly.
+ */
+function expandGroupsToSkus(
+  groups: VariantGroup[]
+): { variantId: string; label: string }[] {
+  const combinable = groups.filter(g => g.combinable && g.options.length > 0);
+  const standalone = groups.filter(g => !g.combinable && g.options.length > 0);
+  const result: { variantId: string; label: string }[] = [];
+  for (const g of standalone) {
+    for (const opt of g.options) {
+      result.push({ variantId: opt.optionId, label: opt.label });
+    }
+  }
+  if (combinable.length > 0) {
+    let matrix: VariantOption[][] = [[]];
+    for (const g of combinable) {
+      matrix = matrix.flatMap(combo => g.options.map(opt => [...combo, opt]));
+    }
+    for (const combo of matrix) {
+      result.push({
+        variantId: combo.map(o => o.optionId).join('-'),
+        label: combo.map(o => o.label).join(' | '),
+      });
+    }
+  }
+  return result;
+}
+
 /**
  * Recompute the denormalized `inStockAt` / `pickupAt` / `featuredAt`
- * arrays from the `variantSpecs` map. Pure function — no I/O.
+ * arrays from the unified `variants` map. Pure function — no I/O.
  *
- * - `inStockAt`: any variant has `qty > 0` at this location
- * - `pickupAt`: any variant has `qty > 0` AND `availablePickup === true`
- * - `featuredAt`: any variant has `qty > 0` AND `featured === true`
+ * Available stock is `qty - (reserved ?? 0)` — a SKU whose units are all
+ * held by in-flight CheckoutSessions does NOT contribute to any index.
  */
-function recomputeIndexes(
-  variantSpecs: { [variantId: string]: ProductVariantSpec } | undefined
+export function recomputeProductIndexes(
+  variants: { [variantId: string]: ProductVariant } | undefined
 ): { inStockAt: string[]; pickupAt: string[]; featuredAt: string[] } {
   const inStockAt = new Set<string>();
   const pickupAt = new Set<string>();
   const featuredAt = new Set<string>();
 
-  if (!variantSpecs) {
+  if (!variants) {
     return { inStockAt: [], pickupAt: [], featuredAt: [] };
   }
 
-  for (const variant of Object.values(variantSpecs)) {
+  for (const variant of Object.values(variants)) {
     if (!variant?.locations) continue;
     for (const [locationId, loc] of Object.entries(variant.locations)) {
       if (!loc || typeof loc.qty !== 'number') continue;
-      // #361 — denormalized indexes track AVAILABLE stock (qty minus held
-      // reservations), so the storefront stops surfacing a SKU as in-stock
-      // the moment its remaining units are entirely reserved.
       const available = loc.qty - (loc.reserved ?? 0);
       if (available <= 0) continue;
       inStockAt.add(locationId);
@@ -558,84 +668,55 @@ function recomputeIndexes(
 }
 
 /**
- * Audit log entry written to `products/{slug}/adjustments/{autoId}` whenever
- * a variant/location entry changes via the helpers in this file. Captures
- * before/after so an operator can reconstruct a manual edit or reconcile
- * an oversell. Source identifies the call site for traceability.
+ * Build the Firestore set/merge payload for a self-pruning write. Returns
+ * an object ready to pass to `tx.set(ref, payload, { merge: true })`. Sets
+ * the unified `variants` map + recomputed indexes + `updatedAt`, and uses
+ * `FieldValue.delete()` sentinels to physically remove `variantGroups`,
+ * the array-shaped `variants` (when present), and `variantSpecs` from the
+ * stored doc in the same atomic write.
  */
-export type VariantAdjustmentSource = 'admin' | 'order' | 'reconcile' | 'seed';
-
-interface VariantAdjustmentLog {
-  slug: string;
-  variantId: string;
-  locationId: string;
-  before: ProductVariantLocation | null;
-  after: ProductVariantLocation | null;
-  delta: number; // after.qty - before.qty (0 when entry was non-stock metadata only)
-  source: VariantAdjustmentSource;
-  actor?: string;
-  reason?: string;
-  createdAt: Date;
-}
-
-function readVariantSpecs(
-  d: FirebaseFirestore.DocumentData
-): { [variantId: string]: ProductVariantSpec } | undefined {
-  const raw = d.variantSpecs;
-  if (!raw || typeof raw !== 'object') return undefined;
-  const out: { [variantId: string]: ProductVariantSpec } = {};
-  for (const [variantId, v] of Object.entries(raw as Record<string, unknown>)) {
-    if (!v || typeof v !== 'object') continue;
-    const variant = v as Record<string, unknown>;
-    if (typeof variant.label !== 'string') continue;
-    const locations: { [locationId: string]: ProductVariantLocation } = {};
-    if (variant.locations && typeof variant.locations === 'object') {
-      for (const [locId, locRaw] of Object.entries(
-        variant.locations as Record<string, unknown>
-      )) {
-        if (!locRaw || typeof locRaw !== 'object') continue;
-        const loc = locRaw as Record<string, unknown>;
-        if (typeof loc.qty !== 'number' || typeof loc.price !== 'number') {
-          continue;
-        }
-        locations[locId] = {
-          qty: loc.qty,
-          ...(typeof loc.reserved === 'number'
-            ? { reserved: loc.reserved }
-            : {}),
-          price: loc.price,
-          compareAtPrice:
-            typeof loc.compareAtPrice === 'number'
-              ? loc.compareAtPrice
-              : undefined,
-          availablePickup:
-            typeof loc.availablePickup === 'boolean'
-              ? loc.availablePickup
-              : undefined,
-          featured:
-            typeof loc.featured === 'boolean' ? loc.featured : undefined,
-        } satisfies ProductVariantLocation;
-      }
-    }
-    out[variantId] = {
-      label: variant.label,
-      locations,
-    } satisfies ProductVariantSpec;
+async function buildSelfPruningPayload(
+  data: FirebaseFirestore.DocumentData,
+  nextVariants: { [variantId: string]: ProductVariant },
+  now: Date
+): Promise<Record<string, unknown>> {
+  const { FieldValue } = await import('firebase-admin/firestore');
+  const indexes = recomputeProductIndexes(nextVariants);
+  const payload: Record<string, unknown> = {
+    variants: nextVariants,
+    inStockAt: indexes.inStockAt,
+    pickupAt: indexes.pickupAt,
+    featuredAt: indexes.featuredAt,
+    updatedAt: now,
+  };
+  // Self-prune legacy fields when present on the existing doc. Skipping the
+  // delete when absent keeps the set payload tight (no unnecessary writes).
+  if (data.variantGroups !== undefined) {
+    payload.variantGroups = FieldValue.delete();
   }
-  return Object.keys(out).length > 0 ? out : undefined;
+  // The array-shape `variants` field is overwritten atomically by setting
+  // `payload.variants` to the unified map above — Firestore replaces the
+  // value entirely, so no FieldValue.delete is needed for that path.
+  if (data.legacyVariants !== undefined) {
+    payload.legacyVariants = FieldValue.delete();
+  }
+  if (data.variantSpecs !== undefined) {
+    payload.variantSpecs = FieldValue.delete();
+  }
+  return payload;
 }
 
 /**
- * Set or replace a single variant/location entry on a product. Recomputes
- * the denormalized index arrays and writes an audit log document under
+ * Set or replace a single variant/location entry on a product.
+ *
+ * Self-pruning (#396): projects any legacy fields onto the unified
+ * `variants` map and prunes them in the same Firestore write. Recomputes
+ * the denormalized indexes and writes an audit-log doc under
  * `products/{slug}/adjustments`.
  *
- * Runs in a single Firestore transaction so the entry write, index
- * recomputation, and audit log are atomic.
- *
- * Throws when the product does not exist or when `variantSpecs[variantId]`
- * is missing — this helper does not bootstrap variants (the catalog editor
- * is responsible for creating them).
+ * Throws when the product does not exist or when the resolved
+ * `variants[variantId]` is missing — this helper does not bootstrap new
+ * variants (the catalog editor is responsible for creating them).
  */
 export async function setVariantLocation(
   slug: string,
@@ -657,32 +738,22 @@ export async function setVariantLocation(
       throw new Error(`Product '${slug}' not found`);
     }
     const data = snap.data() ?? {};
-    const variantSpecs = readVariantSpecs(data) ?? {};
-    const existingVariant = variantSpecs[variantId];
+    const variants = projectVariants(data) ?? {};
+    const existingVariant = variants[variantId];
     if (!existingVariant) {
       throw new Error(`Variant '${variantId}' not found on product '${slug}'`);
     }
 
     const before = existingVariant.locations[locationId] ?? null;
     const nextLocations = { ...existingVariant.locations, [locationId]: patch };
-    const nextVariantSpecs: { [variantId: string]: ProductVariantSpec } = {
-      ...variantSpecs,
+    const nextVariants: { [variantId: string]: ProductVariant } = {
+      ...variants,
       [variantId]: { ...existingVariant, locations: nextLocations },
     };
-    const indexes = recomputeIndexes(nextVariantSpecs);
 
     const now = new Date();
-    tx.set(
-      ref,
-      {
-        variantSpecs: nextVariantSpecs,
-        inStockAt: indexes.inStockAt,
-        pickupAt: indexes.pickupAt,
-        featuredAt: indexes.featuredAt,
-        updatedAt: now,
-      },
-      { merge: true }
-    );
+    const payload = await buildSelfPruningPayload(data, nextVariants, now);
+    tx.set(ref, payload, { merge: true });
 
     const logRef = ref.collection('adjustments').doc();
     tx.create(logRef, {
@@ -698,9 +769,12 @@ export async function setVariantLocation(
       createdAt: now,
     } satisfies VariantAdjustmentLog);
 
+    const indexes = recomputeProductIndexes(nextVariants);
     return docToProduct(snap.id, {
       ...data,
-      variantSpecs: nextVariantSpecs,
+      variants: nextVariants,
+      variantSpecs: undefined,
+      variantGroups: undefined,
       inStockAt: indexes.inStockAt,
       pickupAt: indexes.pickupAt,
       featuredAt: indexes.featuredAt,
@@ -712,19 +786,7 @@ export async function setVariantLocation(
 /**
  * Atomically decrement stock for a list of variant/location items across
  * (potentially) multiple products in a single Firestore transaction.
- *
- * 1. Read every referenced product doc
- * 2. Validate `variantSpecs[variantId].locations[locationId].qty >= qty`
- *    for each item, accumulating per-product decrements so multiple lines
- *    against the same product/variant compose correctly
- * 3. Apply decrements via a recomputed map (FieldValue.increment is unsafe
- *    here because we also need to recompute `inStockAt`/`pickupAt`/`featuredAt`
- *    based on the post-decrement state)
- * 4. Recompute denormalized indexes for each touched product
- * 5. Throw `InsufficientStockError` on any shortage — the whole transaction
- *    rolls back, so no writes survive
- * 6. Write one audit log entry per item under
- *    `products/{slug}/adjustments`
+ * Self-prunes legacy fields on every touched product (#396).
  */
 export async function decrementVariantStock(
   items: {
@@ -742,22 +804,18 @@ export async function decrementVariantStock(
   if (items.length === 0) return;
 
   const db = getAdminFirestore();
-
-  // Group by slug so each product is read at most once per transaction.
   const slugs = [...new Set(items.map(i => i.slug))];
 
   await db.runTransaction(async tx => {
     const refs = slugs.map(s => productsCol().doc(s));
     const snaps = await Promise.all(refs.map(r => tx.get(r)));
 
-    // Build per-slug working state
     const working = new Map<
       string,
       {
         ref: FirebaseFirestore.DocumentReference;
         data: FirebaseFirestore.DocumentData;
-        variantSpecs: { [variantId: string]: ProductVariantSpec };
-        // before snapshot per (variantId, locationId)
+        variants: { [variantId: string]: ProductVariant };
         beforeMap: Map<string, ProductVariantLocation | null>;
       }
     >();
@@ -768,25 +826,21 @@ export async function decrementVariantStock(
         throw new Error(`Product '${slugs[i]}' not found`);
       }
       const data = snap.data() ?? {};
-      const variantSpecs = readVariantSpecs(data) ?? {};
+      const variants = projectVariants(data) ?? {};
       working.set(slugs[i], {
         ref: refs[i],
         data,
-        variantSpecs,
+        variants,
         beforeMap: new Map(),
       });
     }
 
-    // Apply decrements — this loop both validates and mutates the in-memory
-    // variantSpecs maps. Multiple lines against the same product/variant
-    // compose because each iteration reads the running state.
     for (const item of items) {
       const w = working.get(item.slug);
       if (!w) {
-        // unreachable: slugs derives from items
         throw new Error(`Product '${item.slug}' not loaded`);
       }
-      const variant = w.variantSpecs[item.variantId];
+      const variant = w.variants[item.variantId];
       if (!variant) {
         throw new Error(
           `Variant '${item.variantId}' not found on product '${item.slug}'`
@@ -803,7 +857,6 @@ export async function decrementVariantStock(
           item.variantId
         );
       }
-      // Capture original before-state once (first touch wins).
       const beforeKey = `${item.variantId}::${item.locationId}`;
       if (!w.beforeMap.has(beforeKey)) {
         w.beforeMap.set(beforeKey, { ...loc });
@@ -813,11 +866,9 @@ export async function decrementVariantStock(
       const nextLoc: ProductVariantLocation = {
         ...loc,
         qty: nextQty,
-        // Mirror the inventory invariant: when a SKU sells out, drop pickup
-        // and featured flags so the storefront stops surfacing it.
         ...(nextQty === 0 ? { availablePickup: false, featured: false } : {}),
       };
-      w.variantSpecs[item.variantId] = {
+      w.variants[item.variantId] = {
         ...variant,
         locations: { ...variant.locations, [item.locationId]: nextLoc },
       };
@@ -825,25 +876,13 @@ export async function decrementVariantStock(
 
     const now = new Date();
 
-    // Write each touched product + its audit logs
     for (const [slug, w] of working) {
-      const indexes = recomputeIndexes(w.variantSpecs);
-      tx.set(
-        w.ref,
-        {
-          variantSpecs: w.variantSpecs,
-          inStockAt: indexes.inStockAt,
-          pickupAt: indexes.pickupAt,
-          featuredAt: indexes.featuredAt,
-          updatedAt: now,
-        },
-        { merge: true }
-      );
+      const payload = await buildSelfPruningPayload(w.data, w.variants, now);
+      tx.set(w.ref, payload, { merge: true });
 
-      // One audit row per (variantId, locationId) touched on this product.
       for (const [beforeKey, before] of w.beforeMap) {
         const [variantId, locationId] = beforeKey.split('::');
-        const after = w.variantSpecs[variantId]?.locations[locationId] ?? null;
+        const after = w.variants[variantId]?.locations[locationId] ?? null;
         const logRef = w.ref.collection('adjustments').doc();
         tx.create(logRef, {
           slug,
@@ -862,11 +901,6 @@ export async function decrementVariantStock(
   });
 }
 
-/**
- * List active products that have at least one variant in stock at the given
- * location, using the denormalized `inStockAt` array. Default limit: 25
- * (storefront context).
- */
 export async function listProductsInStockAt(
   locationId: string,
   opts: { limit?: number; cursor?: string } = {}
@@ -889,12 +923,6 @@ export async function listProductsInStockAt(
   };
 }
 
-/**
- * List active products marked `featured` at the given location, using the
- * denormalized `featuredAt` array. Powers the homepage "What We Carry" rail
- * (online location) and per-store featured strips. Replaces the legacy
- * `listFeaturedInventory` / `listFeaturedAtLocation` helpers retired in #312.
- */
 export async function listFeaturedProductsAt(
   locationId: string,
   opts: { limit?: number } = {}
@@ -909,11 +937,6 @@ export async function listFeaturedProductsAt(
   return snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
 }
 
-/**
- * Return the subset of the given product ids that are in stock at the online
- * location. Single batched Firestore `getAll`. Empty input → empty Set.
- * Replaces the legacy inventory-collection lookup retired in #312.
- */
 export async function getOnlineInStockSet(
   productIds: string[]
 ): Promise<Set<string>> {
@@ -932,12 +955,8 @@ export async function getOnlineInStockSet(
   return result;
 }
 
-// ── Reservation helpers (#361) ────────────────────────────────────────────
+// ── Reservation helpers (#361) — money path ───────────────────────────────
 
-/**
- * A single hold/release/commit request targeting a (product, variant,
- * location) tuple. Mirrored on `CheckoutSessionHold` (#360).
- */
 export interface HoldRequest {
   productId: string;
   variantId: string;
@@ -953,20 +972,11 @@ interface ReservationMeta {
 
 /**
  * Atomically increment `reserved` across one or more product/variant/location
- * tuples in a single Firestore transaction.
- *
- * Validates `(qty - reserved) >= requested qty` for each line, accumulating
- * per-product holds so multiple lines against the same SKU compose
- * correctly. Throws `InsufficientStockError` on any shortage — the whole
- * transaction rolls back and no partial holds survive.
- *
- * Recomputes denormalized `inStockAt` / `pickupAt` / `featuredAt` indexes
- * because available stock is now `qty - reserved`.
- *
- * Audit log: writes one row per (variantId, locationId) touched per product
- * to `products/{slug}/adjustments` with source `'order'` (override via meta).
- * Delta is 0 because `qty` is unchanged — the row records the reservation
- * via the before/after snapshots.
+ * tuples in a single Firestore transaction. Self-pruning: legacy fields on
+ * each touched product are projected onto the unified `variants` map and
+ * pruned in the same write. CRUCIALLY this preserves any pre-existing
+ * `reserved` counts on the legacy variantSpecs entries — losing them would
+ * silently release in-flight CheckoutSession holds.
  */
 export async function holdStock(
   items: HoldRequest[],
@@ -975,12 +985,6 @@ export async function holdStock(
   await mutateReservations(items, 'hold', meta);
 }
 
-/**
- * Atomic decrement of `reserved` — releases held units back to the available
- * pool. No-op safe when called with already-zero reserved entries (clamps at 0
- * rather than throwing) so callers can release on cancellation/expiry without
- * coordinating with the original hold.
- */
 export async function releaseStock(
   items: HoldRequest[],
   meta: ReservationMeta = {}
@@ -988,15 +992,6 @@ export async function releaseStock(
   await mutateReservations(items, 'release', meta);
 }
 
-/**
- * Atomic decrement of BOTH `qty` and `reserved` — used after payment capture
- * to convert a hold into a real stock decrement. Equivalent to (a) the legacy
- * `decrementVariantStock` for `qty` plus (b) `releaseStock` for `reserved`,
- * but guaranteed atomic.
- *
- * If `qty` falls to 0, `availablePickup` and `featured` are cleared (mirrors
- * `decrementVariantStock`). Indexes are recomputed.
- */
 export async function commitStock(
   items: HoldRequest[],
   meta: ReservationMeta = {}
@@ -1025,7 +1020,7 @@ async function mutateReservations(
       {
         ref: FirebaseFirestore.DocumentReference;
         data: FirebaseFirestore.DocumentData;
-        variantSpecs: { [variantId: string]: ProductVariantSpec };
+        variants: { [variantId: string]: ProductVariant };
         beforeMap: Map<string, ProductVariantLocation | null>;
       }
     >();
@@ -1036,11 +1031,11 @@ async function mutateReservations(
         throw new Error(`Product '${slugs[i]}' not found`);
       }
       const data = snap.data() ?? {};
-      const variantSpecs = readVariantSpecs(data) ?? {};
+      const variants = projectVariants(data) ?? {};
       working.set(slugs[i], {
         ref: refs[i],
         data,
-        variantSpecs,
+        variants,
         beforeMap: new Map(),
       });
     }
@@ -1050,7 +1045,7 @@ async function mutateReservations(
       if (!w) {
         throw new Error(`Product '${item.productId}' not loaded`);
       }
-      const variant = w.variantSpecs[item.variantId];
+      const variant = w.variants[item.variantId];
       if (!variant) {
         throw new Error(
           `Variant '${item.variantId}' not found on product '${item.productId}'`
@@ -1084,11 +1079,9 @@ async function mutateReservations(
         }
         nextLoc = { ...loc, reserved: reserved + item.qty };
       } else if (op === 'release') {
-        // Clamp at 0 — release is idempotent / no-op-safe.
         const nextReserved = Math.max(0, reserved - item.qty);
         nextLoc = { ...loc, reserved: nextReserved };
       } else {
-        // commit: decrement qty AND reserved atomically.
         if (loc.qty < item.qty) {
           throw new InsufficientStockError(
             item.locationId,
@@ -1108,7 +1101,7 @@ async function mutateReservations(
         };
       }
 
-      w.variantSpecs[item.variantId] = {
+      w.variants[item.variantId] = {
         ...variant,
         locations: { ...variant.locations, [item.locationId]: nextLoc },
       };
@@ -1117,22 +1110,12 @@ async function mutateReservations(
     const now = new Date();
 
     for (const [slug, w] of working) {
-      const indexes = recomputeIndexes(w.variantSpecs);
-      tx.set(
-        w.ref,
-        {
-          variantSpecs: w.variantSpecs,
-          inStockAt: indexes.inStockAt,
-          pickupAt: indexes.pickupAt,
-          featuredAt: indexes.featuredAt,
-          updatedAt: now,
-        },
-        { merge: true }
-      );
+      const payload = await buildSelfPruningPayload(w.data, w.variants, now);
+      tx.set(w.ref, payload, { merge: true });
 
       for (const [beforeKey, before] of w.beforeMap) {
         const [variantId, locationId] = beforeKey.split('::');
-        const after = w.variantSpecs[variantId]?.locations[locationId] ?? null;
+        const after = w.variants[variantId]?.locations[locationId] ?? null;
         const logRef = w.ref.collection('adjustments').doc();
         tx.create(logRef, {
           slug,
