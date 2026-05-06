@@ -30,8 +30,7 @@ export default async function CheckoutVerifyPage({ params }: Props) {
   }
 
   const expired =
-    session.expiresAt instanceof Date &&
-    session.expiresAt < new Date();
+    session.expiresAt instanceof Date && session.expiresAt < new Date();
 
   // Only `awaiting_id` and `awaiting_payment` are still actionable on this
   // page. Once verified, the popup binding is harmless (no element bound).
@@ -119,6 +118,7 @@ export default async function CheckoutVerifyPage({ params }: Props) {
           apiKey={apiKey}
           customerEmail={session.customerEmail}
           redirectUrl={redirectUrl}
+          isPreview={process.env.VERCEL_ENV === 'preview'}
         />
 
         {/* Anti-bypass: AgeChecker requires a noscript meta-refresh that

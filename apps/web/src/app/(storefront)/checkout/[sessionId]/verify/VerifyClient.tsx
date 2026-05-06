@@ -17,17 +17,28 @@
  *
  * #370 will extract this into a reusable `AgeCheckerGuard` component.
  * Until then we inline the binding here so this PR is self-contained.
+ *
+ * Preview-only simulate buttons (#411) render below the proceed CTA when
+ * the server passes `isPreview === true`. Server reads `VERCEL_ENV`
+ * directly so the panel is impossible to render on prod, regardless of
+ * client-side env injection.
  */
 import Script from 'next/script';
-import { useEffect } from 'react';
+import { useEffect, useTransition } from 'react';
 import type { AgeCheckerConfig } from '@/types/agechecker-window';
 import '@/types/agechecker-window';
+import {
+  simulateAgeVerifyPass,
+  simulateAgeVerifyDeny,
+} from './simulate-actions';
+import previewStyles from './preview-tools.module.css';
 
 interface Props {
   sessionId: string;
   apiKey: string;
   customerEmail: string | undefined;
   redirectUrl: string;
+  isPreview?: boolean;
 }
 
 const POPUP_SRC = 'https://cdn.agechecker.net/static/popup/v1/popup.js';
@@ -37,7 +48,10 @@ export function VerifyClient({
   apiKey,
   customerEmail,
   redirectUrl,
+  isPreview = false,
 }: Props) {
+  const [isPending, startTransition] = useTransition();
+
   // Assign AgeCheckerConfig synchronously on the client BEFORE the popup
   // script tag mounts. `useEffect` runs after the DOM is committed but
   // before next/script's `afterInteractive` strategy injects the tag,
@@ -51,6 +65,20 @@ export function VerifyClient({
     };
     window.AgeCheckerConfig = config;
   }, [apiKey, sessionId, customerEmail]);
+
+  const handleSimulatePass = () => {
+    startTransition(async () => {
+      await simulateAgeVerifyPass(sessionId);
+      window.location.href = redirectUrl;
+    });
+  };
+
+  const handleSimulateDeny = () => {
+    startTransition(async () => {
+      await simulateAgeVerifyDeny(sessionId);
+      window.location.href = `/checkout/cancelled?session=${encodeURIComponent(sessionId)}`;
+    });
+  };
 
   return (
     <>
@@ -67,6 +95,32 @@ export function VerifyClient({
       >
         Proceed to Payment
       </a>
+
+      {isPreview && (
+        <div className={previewStyles.previewTools} data-testid="preview-tools">
+          <p className={previewStyles.warning}>
+            ⚠️ Preview only — bypasses real verification
+          </p>
+          <button
+            type="button"
+            onClick={handleSimulatePass}
+            disabled={isPending}
+            className={`btn btn-secondary ${previewStyles.passButton}`}
+            data-testid="simulate-pass"
+          >
+            Simulate Pass
+          </button>
+          <button
+            type="button"
+            onClick={handleSimulateDeny}
+            disabled={isPending}
+            className="btn btn-secondary"
+            data-testid="simulate-deny"
+          >
+            Simulate Deny
+          </button>
+        </div>
+      )}
     </>
   );
 }
