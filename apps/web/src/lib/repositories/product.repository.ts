@@ -200,13 +200,83 @@ export async function getRelatedProducts(
 
 // ── Write operations ──────────────────────────────────────────────────────
 
+/**
+ * Upsert a product document. Self-pruning (#398): when the caller supplies
+ * a `variants` map OR the existing document has any legacy variant fields
+ * (`variantGroups`-only stays untouched here — it's still authored), we
+ *
+ *   1. Read the existing document.
+ *   2. Project any legacy fields onto the unified `variants` map.
+ *   3. Merge any supplied `variants` (preserving existing per-location data
+ *      — qty / price / compareAtPrice / availablePickup / featured /
+ *      reserved — when the caller seeds an entry with empty locations).
+ *   4. Recompute denormalized indexes (`inStockAt` / `pickupAt` /
+ *      `featuredAt`).
+ *   5. Delete the legacy alias fields (`legacyVariants`, `variantSpecs`)
+ *      via `FieldValue.delete()` in the same write.
+ *
+ * `variantGroups` (option-group definitions used by the storefront PDP for
+ * the multi-dimensional selector) is NOT pruned here — it remains an
+ * authored field on the product doc. Step 4 (#399) will migrate the PDP
+ * away from it.
+ */
 export async function upsertProduct(
   data: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<string> {
   const col = productsCol();
+  const ref = col.doc(data.slug);
   const now = new Date();
-  const payload = stripUndefinedFields({ ...data, updatedAt: now });
-  await col.doc(data.slug).set(payload, { merge: true });
+
+  const existingSnap = await ref.get();
+  const existingData = existingSnap.exists ? (existingSnap.data() ?? {}) : {};
+  const existingVariants = projectVariants(existingData) ?? {};
+
+  // Caller-supplied `variants` (unified map). May be undefined when the
+  // caller doesn't touch variants this round (e.g. status-only edits).
+  const suppliedVariants = data.variants;
+
+  // Build the next unified variants map by merging supplied entries onto
+  // the existing projected map. Per-location data on the existing entry is
+  // preserved when the caller passes an empty `locations` payload for that
+  // variantId — this is how the editor seeds new variants without
+  // clobbering admin-managed stock.
+  let nextVariants: { [variantId: string]: ProductVariant } | undefined;
+  if (suppliedVariants !== undefined) {
+    const merged: { [variantId: string]: ProductVariant } = {};
+    for (const [variantId, v] of Object.entries(suppliedVariants)) {
+      const existing = existingVariants[variantId];
+      const locations =
+        Object.keys(v.locations ?? {}).length === 0 && existing
+          ? existing.locations
+          : v.locations;
+      merged[variantId] = { label: v.label, locations: locations ?? {} };
+    }
+    nextVariants = merged;
+  }
+
+  const { FieldValue } = await import('firebase-admin/firestore');
+  const payload: Record<string, unknown> = stripUndefinedFields({
+    ...data,
+    updatedAt: now,
+  });
+
+  if (nextVariants !== undefined) {
+    payload.variants = nextVariants;
+    const indexes = recomputeProductIndexes(nextVariants);
+    payload.inStockAt = indexes.inStockAt;
+    payload.pickupAt = indexes.pickupAt;
+    payload.featuredAt = indexes.featuredAt;
+  }
+
+  // Self-prune legacy alias fields when present on the existing doc.
+  if (existingData.legacyVariants !== undefined) {
+    payload.legacyVariants = FieldValue.delete();
+  }
+  if (existingData.variantSpecs !== undefined) {
+    payload.variantSpecs = FieldValue.delete();
+  }
+
+  await ref.set(payload, { merge: true });
   return data.slug;
 }
 
@@ -267,9 +337,6 @@ function docToProductSummary(
     variantGroups: docToVariantGroups(d.variantGroups),
     leaflyUrl: d.leaflyUrl ?? undefined,
     variants,
-    // Mirror the unified map onto the deprecated `variantSpecs` alias so
-    // step-2/step-3 callers still find their data while migrations land.
-    variantSpecs: variants,
     inStockAt: Array.isArray(d.inStockAt)
       ? (d.inStockAt as string[])
       : undefined,
@@ -316,7 +383,6 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     cbdMgPerServing:
       typeof d.cbdMgPerServing === 'number' ? d.cbdMgPerServing : undefined,
     variants,
-    variantSpecs: variants,
     inStockAt: Array.isArray(d.inStockAt)
       ? (d.inStockAt as string[])
       : undefined,

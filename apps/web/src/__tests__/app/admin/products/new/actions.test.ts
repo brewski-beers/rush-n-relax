@@ -252,9 +252,13 @@ describe('createProduct server action', () => {
 
       const variantGroups = [
         {
-          key: 'flower-weight',
+          groupId: 'flower-weight',
+          label: 'Weight',
           combinable: false,
-          options: [{ label: '1g' }, { label: '3.5g' }],
+          options: [
+            { optionId: '1g', label: '1g' },
+            { optionId: '3-5g', label: '3.5g' },
+          ],
         },
       ];
 
@@ -270,14 +274,13 @@ describe('createProduct server action', () => {
       ];
 
       expect(payload.variantGroups).toEqual(variantGroups);
-      // Step 1 of #396: admin actions write the legacy SKU array under the
-      // renamed `legacyVariants` field so the canonical `variants` map can
-      // own that field name. Step 3 (#398) migrates the editor to author
-      // the unified map directly and deletes this field.
-      expect(Array.isArray(payload.legacyVariants)).toBe(true);
-      const variants = payload.legacyVariants as { label: string }[];
-      expect(variants).toHaveLength(2);
-      expect(variants.map(v => v.label)).toEqual(['1g', '3.5g']);
+      // #398 step 3: admin actions now seed the unified `variants` map
+      // directly from the generated SKUs. The legacy `legacyVariants` field
+      // is no longer written — `upsertProduct` self-prunes it on persist.
+      expect(payload.legacyVariants).toBeUndefined();
+      const variants = payload.variants as Record<string, { label: string }>;
+      expect(Object.keys(variants)).toHaveLength(2);
+      expect(Object.values(variants).map(v => v.label)).toEqual(['1g', '3.5g']);
     });
   });
 
@@ -371,8 +374,8 @@ describe('createProduct server action', () => {
     });
   });
 
-  describe('given a valid payload, the product seeds the new variantSpecs shape (#359)', () => {
-    it('seeds variantSpecs.default with empty locations and empty index arrays', async () => {
+  describe('given a valid payload, the product seeds the unified variants map (#398)', () => {
+    it('seeds variants.default with empty locations and empty index arrays', async () => {
       stubAuthorisedActor();
       getProductBySlugMock.mockResolvedValue(null);
 
@@ -389,9 +392,10 @@ describe('createProduct server action', () => {
       ];
 
       expect(payload.price).toBe(4200);
-      expect(payload.variantSpecs).toEqual({
+      expect(payload.variants).toEqual({
         default: { label: 'Default', locations: {} },
       });
+      expect(payload.variantSpecs).toBeUndefined();
       expect(payload.inStockAt).toEqual([]);
       expect(payload.pickupAt).toEqual([]);
       expect(payload.featuredAt).toEqual([]);

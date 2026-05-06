@@ -103,13 +103,6 @@ export interface ProductVariant {
 }
 
 /**
- * @deprecated Renamed to `ProductVariant` in #396 step 1. Retained as an
- * alias so step-2/step-3 callers (storefront, admin editor) keep compiling.
- * Removed in #398 step 3.
- */
-export type ProductVariantSpec = ProductVariant;
-
-/**
  * Legacy array-shaped variant entry. Predates the unified map — authored on
  * the `Product.legacyVariants` field by older fixtures and the catalog
  * editor. The product repository projects these onto the unified
@@ -197,12 +190,6 @@ export interface Product {
    */
   variants?: { [variantId: string]: ProductVariant };
   /**
-   * @deprecated #396 step 1 — alias of the unified `variants` map populated
-   * on read so step-2/step-3 callers compile. Repository writes prune this
-   * field from new docs. Removed in #398 step 3.
-   */
-  variantSpecs?: { [variantId: string]: ProductVariant };
-  /**
    * Denormalized list of location IDs where this product has at least one
    * variant with `qty - (reserved ?? 0) > 0`. Recomputed by the product
    * repository on every write. Powers storefront list queries via
@@ -253,7 +240,6 @@ export type ProductSummary = Pick<
   | 'variantGroups'
   | 'leaflyUrl'
   | 'variants'
-  | 'variantSpecs'
   | 'inStockAt'
   | 'featuredAt'
 >;

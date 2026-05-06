@@ -68,7 +68,7 @@ function stubProduct(opts: StubProductOpts = {}) {
     details: '...',
     availableAt: [],
     status: 'active',
-    variantSpecs: {
+    variants: {
       [variantId]: {
         label: variantId === 'default' ? 'Default' : variantId,
         locations: {

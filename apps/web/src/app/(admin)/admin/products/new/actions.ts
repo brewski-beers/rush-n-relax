@@ -9,7 +9,12 @@ import {
   listActiveCategories,
 } from '@/lib/repositories';
 import { generateSkus } from '@/lib/variants/generateSkus';
-import type { NutritionFacts, ProductStrain, VariantGroup } from '@/types';
+import type {
+  NutritionFacts,
+  ProductStrain,
+  ProductVariant,
+  VariantGroup,
+} from '@/types';
 
 const VALID_STRAINS = new Set<ProductStrain>([
   'indica',
@@ -174,7 +179,22 @@ export async function createProduct(
   const variantGroups: VariantGroup[] = variantGroupsRaw
     ? (JSON.parse(variantGroupsRaw as string) as VariantGroup[])
     : [];
-  const variants = generateSkus(variantGroups);
+  const skus = generateSkus(variantGroups);
+
+  // Seed the unified `variants` map (#398). When variant groups are defined
+  // each generated SKU becomes an entry with an empty `locations` map —
+  // pricing/qty are populated through the Variants & Stock section of the
+  // product editor. When no groups are defined we still seed a `default`
+  // variant so the stock editor has a target.
+  const seededVariants: { [variantId: string]: ProductVariant } =
+    skus.length > 0
+      ? Object.fromEntries(
+          skus.map(sku => [
+            sku.variantId,
+            { label: sku.label, locations: {} } satisfies ProductVariant,
+          ])
+        )
+      : { default: { label: 'Default', locations: {} } };
 
   // ── Nutrition Facts — shown when category has requiresNutritionFacts flag ----
   let nutritionFacts: NutritionFacts | undefined;
@@ -218,9 +238,9 @@ export async function createProduct(
     image: featuredImagePath,
     availableAt,
     status: 'active',
-    // #359: seed the new variantSpecs map with a single `default` variant
-    // so the inventory editor (#358) has a valid target for setVariantLocation.
-    variantSpecs: { default: { label: 'Default', locations: {} } },
+    // #398: seed the unified `variants` map directly. The repo's
+    // upsertProduct self-prunes any legacy fields and recomputes indexes.
+    variants: seededVariants,
     inStockAt: [],
     pickupAt: [],
     featuredAt: [],
@@ -233,7 +253,6 @@ export async function createProduct(
     ...(flavors !== undefined ? { flavors } : {}),
     ...(labResults !== undefined ? { labResults } : {}),
     ...(variantGroups.length > 0 ? { variantGroups } : {}),
-    ...(variants.length > 0 ? { legacyVariants: variants } : {}),
     ...(extractionType !== undefined ? { extractionType } : {}),
     ...(hardwareType !== undefined ? { hardwareType } : {}),
     ...(volumeMl !== undefined ? { volumeMl } : {}),

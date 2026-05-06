@@ -44,7 +44,7 @@ export async function setProductVariantStock(
     return { ok: false, error: `Product '${slug}' not found.` };
   }
 
-  const variant = product.variantSpecs?.[variantId];
+  const variant = product.variants?.[variantId];
   if (!variant) {
     return {
       ok: false,
