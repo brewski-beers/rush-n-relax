@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent, screen, within } from '@testing-library/react';
 import { CartProvider } from '@/contexts/CartContext';
 import ProductDetailClient from '@/app/(storefront)/products/[slug]/ProductDetailClient';
-import type { Product, ProductVariantSpec } from '@/types/product';
+import type { Product, ProductVariant } from '@/types/product';
 
 vi.mock('next/link', () => ({
   default: ({
@@ -23,8 +23,8 @@ vi.mock('next/link', () => ({
 /**
  * Coverage for #309 — cart: pass variantId through cart → order.
  *
- * Post-#312, pricing/availability comes from `Product.variantSpecs` keyed by
- * locationId. These tests pin:
+ * Post-#312/#396, pricing/availability comes from the unified
+ * `Product.variants` map keyed by locationId. These tests pin:
  *   1. Variants render with their labels.
  *   2. Out-of-stock variants (qty=0 at the online location) are marked OOS.
  *   3. Selecting a variant updates the active selection (aria-pressed).
@@ -33,7 +33,7 @@ vi.mock('next/link', () => ({
 
 const ONLINE = 'online';
 
-const baseSpecs: { [variantId: string]: ProductVariantSpec } = {
+const baseVariants: { [variantId: string]: ProductVariant } = {
   '3-5g': {
     label: '3.5g',
     locations: { [ONLINE]: { qty: 5, price: 2800 } },
@@ -56,12 +56,7 @@ const baseProduct: Product = {
   details: 'Top-shelf indoor.',
   status: 'active',
   availableAt: ['online'],
-  legacyVariants: [
-    { variantId: '3-5g', label: '3.5g' },
-    { variantId: '7g', label: '7g' },
-    { variantId: '14g', label: '14g' },
-  ],
-  variantSpecs: baseSpecs,
+  variants: baseVariants,
   inStockAt: [ONLINE],
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
@@ -141,7 +136,7 @@ describe('ProductDetailClient — variant selector', () => {
 
   it('disables Add to Cart when the (initial) selected variant is out of stock', () => {
     // Make the lowest-price variant OOS — that is the default selection.
-    const oosFirst: { [variantId: string]: ProductVariantSpec } = {
+    const oosFirst: { [variantId: string]: ProductVariant } = {
       '3-5g': {
         label: '3.5g',
         locations: { [ONLINE]: { qty: 0, price: 2800 } },
@@ -157,11 +152,7 @@ describe('ProductDetailClient — variant selector', () => {
         <ProductDetailClient
           product={{
             ...baseProduct,
-            legacyVariants: [
-              { variantId: '3-5g', label: '3.5g' },
-              { variantId: '7g', label: '7g' },
-            ],
-            variantSpecs: oosFirst,
+            variants: oosFirst,
           }}
           relatedProducts={[]}
           onlineLocationId={ONLINE}
