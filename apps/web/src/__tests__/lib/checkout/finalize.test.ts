@@ -1,0 +1,283 @@
+/**
+ * BDD coverage for `finalizeCheckoutSession` (#368).
+ *
+ * The finalizer is the heart of the money-path: it turns a paid Clover
+ * CheckoutSession into a real Order. Coverage is organized around the
+ * four ticket acceptance scenarios.
+ */
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { CheckoutSession } from '@/types/checkout-session';
+
+const mocks = vi.hoisted(() => ({
+  getCheckoutSession: vi.fn(),
+  createOrder: vi.fn(),
+  commitStock: vi.fn(),
+  markCheckoutSessionCompleted: vi.fn(),
+  markCheckoutSessionCancelled: vi.fn(),
+  transitionStatus: vi.fn(),
+  getCloverPaymentForOrder: vi.fn(),
+  refundCloverPayment: vi.fn(),
+  isLivePaymentsEnabled: vi.fn(),
+}));
+
+vi.mock('@/lib/repositories', () => ({
+  getCheckoutSession: mocks.getCheckoutSession,
+  createOrder: mocks.createOrder,
+  commitStock: mocks.commitStock,
+  markCheckoutSessionCompleted: mocks.markCheckoutSessionCompleted,
+  markCheckoutSessionCancelled: mocks.markCheckoutSessionCancelled,
+  transitionStatus: mocks.transitionStatus,
+}));
+
+vi.mock('@/lib/clover/checkout', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/clover/checkout')>(
+    '@/lib/clover/checkout'
+  );
+  return {
+    ...actual,
+    getCloverPaymentForOrder: mocks.getCloverPaymentForOrder,
+    refundCloverPayment: mocks.refundCloverPayment,
+  };
+});
+
+vi.mock('@/lib/test-mode', () => ({
+  isLivePaymentsEnabled: mocks.isLivePaymentsEnabled,
+}));
+
+import { finalizeCheckoutSession } from '@/lib/checkout/finalize';
+
+function makeSession(
+  overrides: Partial<CheckoutSession> = {}
+): CheckoutSession {
+  return {
+    id: 'clover-sess-1',
+    items: [
+      {
+        productId: 'p1',
+        variantId: 'default',
+        productName: 'Blue Dream',
+        quantity: 2,
+        unitPrice: 1500,
+        lineTotal: 3000,
+      },
+    ],
+    subtotal: 3000,
+    tax: 270,
+    total: 3270,
+    locationId: 'online',
+    deliveryAddress: {
+      name: 'Buyer',
+      line1: '1 Main St',
+      city: 'Knoxville',
+      state: 'TN',
+      zip: '37902',
+    },
+    customerEmail: 'b@example.com',
+    status: 'awaiting_payment',
+    ageVerifiedAt: new Date('2026-05-01T00:00:00Z'),
+    verificationId: 'agechecker-x',
+    holds: [
+      { productId: 'p1', variantId: 'default', locationId: 'online', qty: 2 },
+    ],
+    cloverCheckoutSessionId: 'clover-sess-1',
+    createdAt: new Date('2026-05-01T00:00:00Z'),
+    updatedAt: new Date('2026-05-01T00:00:00Z'),
+    expiresAt: new Date('2026-05-02T00:00:00Z'),
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  for (const fn of Object.values(mocks)) fn.mockReset();
+  mocks.isLivePaymentsEnabled.mockReturnValue(true);
+  mocks.markCheckoutSessionCompleted.mockResolvedValue(undefined);
+  mocks.markCheckoutSessionCancelled.mockResolvedValue(undefined);
+  mocks.transitionStatus.mockResolvedValue(undefined);
+  mocks.refundCloverPayment.mockResolvedValue({ refundId: 'r-1' });
+});
+
+describe('finalizeCheckoutSession (#368)', () => {
+  describe('paid → order created with status paid', () => {
+    it('creates an order, commits stock, marks session completed', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(makeSession());
+      mocks.getCloverPaymentForOrder.mockResolvedValue({
+        result: 'SUCCESS',
+        paymentId: 'pay-123',
+      });
+      mocks.createOrder.mockResolvedValue('ord-1');
+      mocks.commitStock.mockResolvedValue(undefined);
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out).toEqual({ kind: 'paid', orderId: 'ord-1' });
+
+      const [orderArg] = mocks.createOrder.mock.calls[0];
+      expect(orderArg.status).toBe('paid');
+      expect(orderArg.cloverPaymentId).toBe('pay-123');
+      expect(orderArg.cloverCheckoutSessionId).toBe('clover-sess-1');
+      expect(orderArg.items).toHaveLength(1);
+
+      expect(mocks.commitStock).toHaveBeenCalledOnce();
+      expect(mocks.markCheckoutSessionCompleted).toHaveBeenCalledWith(
+        'clover-sess-1',
+        'ord-1'
+      );
+    });
+  });
+
+  describe('declined / unpaid → no order created, session left awaiting', () => {
+    it('returns awaiting when Clover reports PENDING', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(makeSession());
+      mocks.getCloverPaymentForOrder.mockResolvedValue({ result: 'PENDING' });
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out.kind).toBe('awaiting');
+      expect(mocks.createOrder).not.toHaveBeenCalled();
+      expect(mocks.commitStock).not.toHaveBeenCalled();
+      expect(mocks.markCheckoutSessionCompleted).not.toHaveBeenCalled();
+    });
+
+    it('cancels the session (no order) when Clover reports FAIL', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(makeSession());
+      mocks.getCloverPaymentForOrder.mockResolvedValue({ result: 'FAIL' });
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out.kind).toBe('declined');
+      expect(mocks.createOrder).not.toHaveBeenCalled();
+      expect(mocks.markCheckoutSessionCancelled).toHaveBeenCalledWith(
+        'clover-sess-1'
+      );
+    });
+
+    it('returns awaiting when no Clover orderId is supplied (live mode)', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(makeSession());
+      mocks.isLivePaymentsEnabled.mockReturnValue(true);
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+      });
+
+      expect(out.kind).toBe('awaiting');
+      expect(mocks.createOrder).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('already-completed session → render existing order (idempotent)', () => {
+    it('short-circuits without creating a second order', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(
+        makeSession({ status: 'completed', orderId: 'ord-existing' })
+      );
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out).toEqual({
+        kind: 'already-completed',
+        orderId: 'ord-existing',
+      });
+      expect(mocks.createOrder).not.toHaveBeenCalled();
+      expect(mocks.commitStock).not.toHaveBeenCalled();
+      expect(mocks.getCloverPaymentForOrder).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('commit failure → refund + cancellation path', () => {
+    it('refunds the Clover payment, cancels the order, and cancels the session', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(makeSession());
+      mocks.getCloverPaymentForOrder.mockResolvedValue({
+        result: 'SUCCESS',
+        paymentId: 'pay-XYZ',
+      });
+      mocks.createOrder.mockResolvedValue('ord-2');
+      mocks.commitStock.mockRejectedValue(new Error('insufficient stock'));
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out).toEqual({
+        kind: 'commit-failed',
+        sessionId: 'clover-sess-1',
+        orderId: 'ord-2',
+      });
+      expect(mocks.refundCloverPayment).toHaveBeenCalledWith('pay-XYZ');
+      expect(mocks.transitionStatus).toHaveBeenCalledWith(
+        'ord-2',
+        'cancelled',
+        'system',
+        expect.objectContaining({
+          reason: expect.stringContaining('commit-stock failed'),
+        })
+      );
+      expect(mocks.markCheckoutSessionCancelled).toHaveBeenCalledWith(
+        'clover-sess-1'
+      );
+      // Session was NOT marked completed.
+      expect(mocks.markCheckoutSessionCompleted).not.toHaveBeenCalled();
+    });
+
+    it('still cancels statuses even if the refund call fails (loud log, no throw)', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(makeSession());
+      mocks.getCloverPaymentForOrder.mockResolvedValue({
+        result: 'SUCCESS',
+        paymentId: 'pay-XYZ',
+      });
+      mocks.createOrder.mockResolvedValue('ord-2');
+      mocks.commitStock.mockRejectedValue(new Error('boom'));
+      mocks.refundCloverPayment.mockRejectedValue(new Error('clover 500'));
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out.kind).toBe('commit-failed');
+      expect(errSpy).toHaveBeenCalled();
+      expect(mocks.transitionStatus).toHaveBeenCalled();
+      expect(mocks.markCheckoutSessionCancelled).toHaveBeenCalled();
+    });
+  });
+
+  describe('test-mode fallback (live payments off)', () => {
+    it('promotes to paid even without a Clover orderId when kill switch is OFF', async () => {
+      mocks.isLivePaymentsEnabled.mockReturnValue(false);
+      mocks.getCheckoutSession.mockResolvedValue(makeSession());
+      mocks.createOrder.mockResolvedValue('ord-stub');
+      mocks.commitStock.mockResolvedValue(undefined);
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+      });
+
+      expect(out).toEqual({ kind: 'paid', orderId: 'ord-stub' });
+      const [orderArg] = mocks.createOrder.mock.calls[0];
+      // No Clover paymentId in stub mode — must not write the field.
+      expect(orderArg.cloverPaymentId).toBeUndefined();
+    });
+  });
+
+  describe('unknown session', () => {
+    it('throws a clear error so the route can redirect home', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(null);
+
+      await expect(
+        finalizeCheckoutSession({ cloverCheckoutSessionId: 'nope' })
+      ).rejects.toThrow(/not found/);
+    });
+  });
+});
