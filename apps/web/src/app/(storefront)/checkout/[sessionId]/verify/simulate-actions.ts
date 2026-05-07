@@ -21,6 +21,7 @@
  *       reconciler cron (#369).
  */
 import {
+  getCheckoutSession,
   markAgeVerified,
   markCheckoutSessionCancelled,
 } from '@/lib/repositories';
@@ -41,7 +42,16 @@ export async function simulateAgeVerifyPass(
   sessionId: string
 ): Promise<SimulateActionResult> {
   assertNonProductionEnv();
-  await markAgeVerified(sessionId, SIMULATE_VERIFICATION_ID, new Date());
+  const session = await getCheckoutSession(sessionId);
+  if (!session) {
+    throw new Error(`CheckoutSession '${sessionId}' not found`);
+  }
+  // Idempotent: only flip when still in the pre-verify state. The
+  // CheckoutSession transition graph forbids `awaiting_payment ->
+  // awaiting_payment`, so a second click would otherwise throw.
+  if (session.status === 'awaiting_id') {
+    await markAgeVerified(sessionId, SIMULATE_VERIFICATION_ID, new Date());
+  }
   return { ok: true };
 }
 
@@ -49,6 +59,16 @@ export async function simulateAgeVerifyDeny(
   sessionId: string
 ): Promise<SimulateActionResult> {
   assertNonProductionEnv();
-  await markCheckoutSessionCancelled(sessionId);
+  const session = await getCheckoutSession(sessionId);
+  if (!session) {
+    throw new Error(`CheckoutSession '${sessionId}' not found`);
+  }
+  // Idempotent: only cancel from non-terminal states.
+  if (
+    session.status === 'awaiting_id' ||
+    session.status === 'awaiting_payment'
+  ) {
+    await markCheckoutSessionCancelled(sessionId);
+  }
   return { ok: true };
 }

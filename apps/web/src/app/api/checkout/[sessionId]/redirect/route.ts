@@ -127,5 +127,15 @@ function redirectToClover(url: string | undefined): NextResponse {
       { status: 500 }
     );
   }
+  // `NextResponse.redirect()` requires an absolute URL. A relative value
+  // (historically produced by the stub path) throws a generic error and
+  // surfaces as a 500 to the client. Validate up front and emit a clearer
+  // diagnostic so future regressions are easy to triage.
+  if (!URL.canParse(url)) {
+    return NextResponse.json(
+      { error: 'Clover checkout URL is not absolute', url },
+      { status: 500 }
+    );
+  }
   return NextResponse.redirect(url, 302);
 }
