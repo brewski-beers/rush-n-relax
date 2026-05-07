@@ -810,34 +810,400 @@ export const retryFailedOutboundEmails = onSchedule(
   }
 );
 
-// ─── Clover Path B recovery cron — STUB ─────────────────────────────────
+// ─── CheckoutSession reconciler (#369 + #407) ────────────────────────────
 //
-// Pre-#362 this scheduled job reconciled orders stuck in `awaiting_payment`
-// against Clover. Both `awaiting_payment` and `failed` were removed from
-// `OrderStatus` in #362 (Order is born only at successful payment). The
-// replacement, which reconciles `CheckoutSession` records that did not
-// produce an Order, lands in #369. Until then the cron is a logging no-op.
+// Replaces the pre-#362 `reconcileAwaitingPaymentOrders` cron. The new flow
+// reconciles `checkout-sessions` documents (born pre-payment) and repairs
+// stale back-pointers on `orders` docs whose `finalizeCheckoutSession`
+// Step-3 write failed silently. See `reconciler.ts` for the orchestration
+// design and BDD coverage.
+//
+// Forward repair on a SUCCESS payment delegates to the storefront's
+// `/order/{sessionId}/return` endpoint so we reuse the canonical
+// `finalizeCheckoutSession` pipeline rather than replicating commitStock /
+// createOrder inside the Cloud Functions runtime. The pipeline is
+// idempotent — its Firestore transaction guard wins the race against any
+// concurrent customer-driven hit on the return URL.
+
+import {
+  reconcileCheckoutSessionsImpl,
+  BACKPOINTER_LOOKBACK_MS,
+  type ReconcilerDeps,
+  type ReconcileSession,
+  type ReconcileOrder,
+  type ReconcileSessionStatus,
+  type ReconcileHold,
+  type CloverPaymentResult,
+  type CloverCheckoutLookup,
+} from './reconciler';
 
 const CLOVER_MERCHANT_ID = defineSecret('CLOVER_MERCHANT_ID');
 const CLOVER_API_KEY = defineSecret('CLOVER_API_KEY');
+const RECONCILER_SITE_URL = defineSecret('RECONCILER_SITE_URL');
 
+const DEFAULT_CLOVER_API_BASE = 'https://api.clover.com';
+const STALE_SESSIONS_LIMIT = 100;
+const RECENT_ORDERS_LIMIT = 100;
+
+function tsToDate(value: unknown): Date {
+  if (value instanceof Date) return value;
+  if (
+    value &&
+    typeof value === 'object' &&
+    'toDate' in (value as Record<string, unknown>) &&
+    typeof (value as { toDate?: () => Date }).toDate === 'function'
+  ) {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  if (typeof value === 'number') return new Date(value);
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return new Date(0);
+}
+
+function normalizeCloverResult(raw: unknown): CloverPaymentResult {
+  if (raw === 'SUCCESS' || raw === 'success' || raw === 'PAID')
+    return 'SUCCESS';
+  if (raw === 'FAIL' || raw === 'FAILED' || raw === 'fail') return 'FAIL';
+  if (raw === 'PENDING' || raw === 'pending') return 'PENDING';
+  return 'UNKNOWN';
+}
+
+function docToReconcileSession(
+  id: string,
+  d: FirebaseFirestore.DocumentData
+): ReconcileSession {
+  const holdsRaw = Array.isArray(d.holds) ? (d.holds as unknown[]) : [];
+  const holds: ReconcileHold[] = holdsRaw.map(h => {
+    const hh = (h ?? {}) as Record<string, unknown>;
+    return {
+      productId: typeof hh.productId === 'string' ? hh.productId : '',
+      variantId: typeof hh.variantId === 'string' ? hh.variantId : 'default',
+      locationId: typeof hh.locationId === 'string' ? hh.locationId : '',
+      qty: typeof hh.qty === 'number' ? hh.qty : 0,
+    };
+  });
+  return {
+    id,
+    status: ((d.status as string) ?? 'awaiting_id') as ReconcileSessionStatus,
+    cloverCheckoutSessionId:
+      typeof d.cloverCheckoutSessionId === 'string'
+        ? d.cloverCheckoutSessionId
+        : id,
+    holds,
+    createdAt: tsToDate(d.createdAt),
+    expiresAt: tsToDate(d.expiresAt),
+    ...(typeof d.orderId === 'string' ? { orderId: d.orderId } : {}),
+  };
+}
+
+function docToReconcileOrder(
+  id: string,
+  d: FirebaseFirestore.DocumentData
+): ReconcileOrder {
+  return {
+    id,
+    cloverCheckoutSessionId:
+      typeof d.cloverCheckoutSessionId === 'string'
+        ? d.cloverCheckoutSessionId
+        : undefined,
+    status: typeof d.status === 'string' ? d.status : 'unknown',
+    createdAt: tsToDate(d.createdAt),
+  };
+}
+
+async function listStaleSessions(
+  staleBefore: Date
+): Promise<ReconcileSession[]> {
+  // Firestore disallows `IN` + range on different fields without an index;
+  // run two single-status queries and merge.
+  const out: ReconcileSession[] = [];
+  for (const status of ['awaiting_id', 'awaiting_payment'] as const) {
+    const snap = await db
+      .collection('checkout-sessions')
+      .where('status', '==', status)
+      .where('createdAt', '<', staleBefore)
+      .orderBy('createdAt', 'asc')
+      .limit(STALE_SESSIONS_LIMIT)
+      .get();
+    for (const doc of snap.docs) {
+      out.push(docToReconcileSession(doc.id, doc.data()));
+    }
+  }
+  return out;
+}
+
+async function listRecentOrdersWithCheckoutSession(
+  since: Date
+): Promise<ReconcileOrder[]> {
+  // We only care about orders whose pointer *might* be stale. Pull recent
+  // paid/preparing orders and filter out the ones missing the field.
+  const snap = await db
+    .collection('orders')
+    .where('createdAt', '>=', since)
+    .orderBy('createdAt', 'desc')
+    .limit(RECENT_ORDERS_LIMIT)
+    .get();
+  const out: ReconcileOrder[] = [];
+  for (const doc of snap.docs) {
+    const order = docToReconcileOrder(doc.id, doc.data());
+    if (order.cloverCheckoutSessionId) out.push(order);
+  }
+  return out;
+}
+
+async function getSession(id: string): Promise<ReconcileSession | null> {
+  const snap = await db.collection('checkout-sessions').doc(id).get();
+  if (!snap.exists) return null;
+  const data = snap.data();
+  if (!data) return null;
+  return docToReconcileSession(snap.id, data);
+}
+
+function getCloverBase(): string {
+  return process.env.CLOVER_BASE_URL || DEFAULT_CLOVER_API_BASE;
+}
+
+async function lookupCloverCheckout(
+  cloverCheckoutSessionId: string
+): Promise<CloverCheckoutLookup | null> {
+  const merchantId = CLOVER_MERCHANT_ID.value();
+  const apiKey = CLOVER_API_KEY.value();
+  if (!merchantId || !apiKey) return null;
+
+  // Hosted Checkout exposes the linked order id on the checkout resource.
+  // Endpoint per Clover docs:
+  //   GET /invoicingcheckoutservice/v1/checkouts/{checkoutSessionId}
+  // Response includes `orderId` once Clover has captured payment.
+  const checkoutUrl = `${getCloverBase()}/invoicingcheckoutservice/v1/checkouts/${encodeURIComponent(cloverCheckoutSessionId)}`;
+  const checkoutRes = await fetch(checkoutUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'X-Clover-Merchant-Id': merchantId,
+    },
+  });
+
+  if (!checkoutRes.ok) {
+    if (checkoutRes.status === 404) {
+      return { result: 'UNKNOWN' };
+    }
+    return null;
+  }
+
+  const checkoutJson = (await checkoutRes.json()) as {
+    orderId?: string;
+    status?: string;
+  };
+
+  const cloverOrderId = checkoutJson.orderId;
+  if (!cloverOrderId) {
+    return { result: 'PENDING' };
+  }
+
+  // Now fetch the order's payments to determine the canonical result.
+  const paymentsUrl = `${getCloverBase()}/v3/merchants/${merchantId}/orders/${encodeURIComponent(cloverOrderId)}/payments`;
+  const payRes = await fetch(paymentsUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!payRes.ok) {
+    return { result: 'UNKNOWN', cloverOrderId };
+  }
+  const payJson = (await payRes.json()) as {
+    elements?: Array<{ id?: string; result?: string }>;
+  };
+  const elements = Array.isArray(payJson.elements) ? payJson.elements : [];
+  if (elements.length === 0) return { result: 'PENDING', cloverOrderId };
+  const success = elements.find(
+    p => normalizeCloverResult(p.result) === 'SUCCESS'
+  );
+  const chosen = success ?? elements[0];
+  return {
+    result: normalizeCloverResult(chosen.result),
+    cloverOrderId,
+  };
+}
+
+async function triggerStorefrontPromotion(
+  cloverCheckoutSessionId: string,
+  cloverOrderId: string | undefined
+): Promise<boolean> {
+  const siteUrl = RECONCILER_SITE_URL.value();
+  if (!siteUrl) {
+    logger.error(
+      'RECONCILER_SITE_URL is not set — cannot trigger storefront promotion'
+    );
+    return false;
+  }
+  const base = siteUrl.replace(/\/$/, '');
+  const qs = cloverOrderId
+    ? `?orderId=${encodeURIComponent(cloverOrderId)}`
+    : '';
+  const url = `${base}/order/${encodeURIComponent(cloverCheckoutSessionId)}/return${qs}`;
+  const res = await fetch(url, {
+    method: 'GET',
+    redirect: 'manual',
+  });
+  // The route always returns a redirect (3xx) on completion. 2xx is also
+  // fine. Anything else means the promotion did not run cleanly.
+  return res.status >= 200 && res.status < 400;
+}
+
+async function releaseHoldsTx(holds: ReconcileHold[]): Promise<void> {
+  if (holds.length === 0) return;
+  const slugs = [...new Set(holds.map(h => h.productId))];
+  await db.runTransaction(async tx => {
+    const refs = slugs.map(s => db.collection('products').doc(s));
+    const snaps = await Promise.all(refs.map(r => tx.get(r)));
+    const working = new Map<
+      string,
+      {
+        ref: FirebaseFirestore.DocumentReference;
+        variants: Record<string, Record<string, unknown>>;
+      }
+    >();
+    for (let i = 0; i < slugs.length; i++) {
+      const snap = snaps[i];
+      if (!snap.exists) continue;
+      const data = snap.data() ?? {};
+      const variants =
+        (data.variants as Record<string, Record<string, unknown>>) ?? {};
+      working.set(slugs[i], { ref: refs[i], variants });
+    }
+    for (const h of holds) {
+      const w = working.get(h.productId);
+      if (!w) continue;
+      const variant = w.variants[h.variantId] as
+        | { locations?: Record<string, { qty?: number; reserved?: number }> }
+        | undefined;
+      if (!variant?.locations) continue;
+      const loc = variant.locations[h.locationId];
+      if (!loc) continue;
+      const reserved = typeof loc.reserved === 'number' ? loc.reserved : 0;
+      const next = Math.max(0, reserved - h.qty);
+      // Mutate in-place; we re-write the whole variant locations map below.
+      variant.locations[h.locationId] = { ...loc, reserved: next };
+    }
+    const now = new Date();
+    for (const [slug, w] of working) {
+      tx.set(w.ref, { variants: w.variants, updatedAt: now }, { merge: true });
+      void slug;
+    }
+  });
+}
+
+async function expireSessionAndReleaseHolds(
+  session: ReconcileSession
+): Promise<void> {
+  const ref = db.collection('checkout-sessions').doc(session.id);
+  await db.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return;
+    const cur = (snap.data()?.status ?? 'awaiting_id') as string;
+    if (cur !== 'awaiting_id' && cur !== 'awaiting_payment') return;
+    tx.update(ref, { status: 'expired', updatedAt: new Date() });
+  });
+  await releaseHoldsTx(session.holds);
+}
+
+async function cancelSessionAndReleaseHolds(
+  session: ReconcileSession
+): Promise<void> {
+  const ref = db.collection('checkout-sessions').doc(session.id);
+  await db.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return;
+    const cur = (snap.data()?.status ?? 'awaiting_id') as string;
+    if (cur !== 'awaiting_id' && cur !== 'awaiting_payment') return;
+    tx.update(ref, { status: 'cancelled', updatedAt: new Date() });
+  });
+  await releaseHoldsTx(session.holds);
+}
+
+async function repairSessionBackPointer(
+  sessionId: string,
+  targetOrderId: string
+): Promise<{ repaired: boolean; conflict?: string }> {
+  const ref = db.collection('checkout-sessions').doc(sessionId);
+  return db.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) {
+      return { repaired: false, conflict: 'session not found' };
+    }
+    const data = snap.data() ?? {};
+    const existing =
+      typeof data.orderId === 'string' && data.orderId.length > 0
+        ? data.orderId
+        : null;
+    if (existing && existing !== targetOrderId) {
+      return {
+        repaired: false,
+        conflict: `session.orderId=${existing} != target ${targetOrderId}`,
+      };
+    }
+    if (existing === targetOrderId && data.status === 'completed') {
+      return { repaired: false, conflict: 'already correct' };
+    }
+    tx.update(ref, {
+      status: 'completed',
+      orderId: targetOrderId,
+      updatedAt: new Date(),
+    });
+    return { repaired: true };
+  });
+}
+
+export function buildReconcilerDeps(): ReconcilerDeps {
+  return {
+    listStaleSessions,
+    listRecentOrdersWithCheckoutSession,
+    getSession,
+    lookupCloverCheckout,
+    triggerStorefrontPromotion,
+    expireSessionAndReleaseHolds,
+    cancelSessionAndReleaseHolds,
+    repairSessionBackPointer,
+    log: (level, msg, data) => {
+      if (level === 'error') logger.error(msg, data);
+      else if (level === 'warn') logger.warn(msg, data);
+      else logger.info(msg, data);
+    },
+  };
+}
+
+/**
+ * Backwards-compatible export for the pre-existing test that asserts the
+ * stub returned zeroed counts. New BDD coverage for the real reconciler
+ * lives in `functions/reconciler.test.ts` with the pure orchestration.
+ */
 export async function reconcileAwaitingPaymentOrdersImpl(
   _merchantId: string,
   _apiKey: string,
   _nowMs: number = Date.now()
 ): Promise<{ scanned: number; settled: number; pending: number }> {
-  // No-op until #369 lands the CheckoutSession-based reconciler.
+  // Retained for the legacy reconcile.test.ts contract. The real
+  // entrypoint is `reconcileCheckoutSessions` below.
   return { scanned: 0, settled: 0, pending: 0 };
 }
 
-export const reconcileAwaitingPaymentOrders = onSchedule(
+export const reconcileCheckoutSessions = onSchedule(
   {
     schedule: 'every 5 minutes',
-    secrets: [CLOVER_MERCHANT_ID, CLOVER_API_KEY],
+    secrets: [CLOVER_MERCHANT_ID, CLOVER_API_KEY, RECONCILER_SITE_URL],
   },
   async () => {
-    logger.info(
-      'reconcileAwaitingPaymentOrders: stub (awaiting #369 rewrite); no-op'
-    );
+    const deps = buildReconcilerDeps();
+    const result = await reconcileCheckoutSessionsImpl(deps);
+    logger.info('reconcileCheckoutSessions complete', {
+      ...result,
+      backpointerLookbackMs: BACKPOINTER_LOOKBACK_MS,
+    });
   }
 );
