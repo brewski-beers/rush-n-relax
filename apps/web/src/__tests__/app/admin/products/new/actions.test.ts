@@ -274,10 +274,6 @@ describe('createProduct server action', () => {
       ];
 
       expect(payload.variantGroups).toEqual(variantGroups);
-      // #398 step 3: admin actions now seed the unified `variants` map
-      // directly from the generated SKUs. The legacy `legacyVariants` field
-      // is no longer written — `upsertProduct` self-prunes it on persist.
-      expect(payload.legacyVariants).toBeUndefined();
       const variants = payload.variants as Record<string, { label: string }>;
       expect(Object.keys(variants)).toHaveLength(2);
       expect(Object.values(variants).map(v => v.label)).toEqual(['1g', '3.5g']);
@@ -395,7 +391,6 @@ describe('createProduct server action', () => {
       expect(payload.variants).toEqual({
         default: { label: 'Default', locations: {} },
       });
-      expect(payload.legacyVariants).toBeUndefined();
       expect(payload.inStockAt).toEqual([]);
       expect(payload.pickupAt).toEqual([]);
       expect(payload.featuredAt).toEqual([]);

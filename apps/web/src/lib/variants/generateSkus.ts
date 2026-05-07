@@ -1,11 +1,18 @@
-import type {
-  VariantGroup,
-  VariantOption,
-  LegacyProductVariant,
-} from '@/types/product';
+import type { VariantGroup, VariantOption } from '@/types/product';
 
 /**
- * Generates the flat LegacyLegacyProductVariant[] from a VariantGroup[] definition.
+ * A single generated SKU descriptor — the (variantId, label) pair derived
+ * from a VariantGroup[] definition. Consumed by the admin product editor
+ * to seed the unified `Product.variants` map with empty per-location
+ * entries (pricing/qty are filled in later via the stock editor).
+ */
+export interface GeneratedSku {
+  variantId: string;
+  label: string;
+}
+
+/**
+ * Generates the flat SKU list from a VariantGroup[] definition.
  *
  * - Standalone groups (combinable: false): each option becomes its own SKU.
  * - Combinable groups (combinable: true): all combinable groups are
@@ -14,10 +21,10 @@ import type {
  * Example: Flavor ["Berry","Lemon"] × Weight ["1g","3.5g"] (both combinable)
  * → ["Berry | 1g", "Berry | 3.5g", "Lemon | 1g", "Lemon | 3.5g"]
  */
-export function generateSkus(groups: VariantGroup[]): LegacyProductVariant[] {
+export function generateSkus(groups: VariantGroup[]): GeneratedSku[] {
   const combinable = groups.filter(g => g.combinable && g.options.length > 0);
   const standalone = groups.filter(g => !g.combinable && g.options.length > 0);
-  const result: LegacyProductVariant[] = [];
+  const result: GeneratedSku[] = [];
 
   for (const group of standalone) {
     for (const opt of group.options) {

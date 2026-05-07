@@ -430,59 +430,69 @@ export default function ProductDetailClient({
                 </div>
               )
             ) : (
-              product.legacyVariants &&
-              product.legacyVariants.length > 0 && (
-                <div className="product-pricing-block">
-                  {variantGroups.length > 0 ? (
-                    /* Group-aware "see in store" — same segmentation as the online path */
-                    variantGroups.map(group => (
-                      <div
-                        key={group.groupId}
-                        className="product-variant-group-block"
-                      >
-                        <span className="product-hero-tag-label">
-                          {group.label}
-                        </span>
-                        <div className="product-variant-grid">
-                          {group.options.map(opt => (
-                            <div
-                              key={opt.optionId}
-                              className="product-variant-card product-variant-card--static"
-                            >
-                              <span className="product-variant-card-size">
-                                {opt.label}
-                              </span>
-                              <span className="product-variant-card-price">
-                                See in store
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    /* Legacy flat fallback — products without variantGroups */
-                    <>
-                      <span className="product-hero-tag-label">Sizes</span>
-                      <div className="product-variant-grid">
-                        {product.legacyVariants.map(v => (
-                          <div
-                            key={v.variantId}
-                            className="product-variant-card product-variant-card--static"
-                          >
-                            <span className="product-variant-card-size">
-                              {v.label}
-                            </span>
-                            <span className="product-variant-card-price">
-                              See in store
-                            </span>
+              (() => {
+                // Fallback "see in store" render — surfaces variant labels
+                // when the product has no online pricing. Prefers the
+                // option-dimension authoring source (variantGroups, Path A
+                // / #399); falls back to the unified `variants` map for
+                // products without groups. Both sources are populated by
+                // the product repository's `projectVariants` helper.
+                if (variantGroups.length > 0) {
+                  return (
+                    <div className="product-pricing-block">
+                      {variantGroups.map(group => (
+                        <div
+                          key={group.groupId}
+                          className="product-variant-group-block"
+                        >
+                          <span className="product-hero-tag-label">
+                            {group.label}
+                          </span>
+                          <div className="product-variant-grid">
+                            {group.options.map(opt => (
+                              <div
+                                key={opt.optionId}
+                                className="product-variant-card product-variant-card--static"
+                              >
+                                <span className="product-variant-card-size">
+                                  {opt.label}
+                                </span>
+                                <span className="product-variant-card-price">
+                                  See in store
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+                const fallbackEntries = Object.entries(
+                  product.variants ?? {}
+                ).filter(([id]) => id !== 'default');
+                if (fallbackEntries.length === 0) return null;
+                return (
+                  <div className="product-pricing-block">
+                    <span className="product-hero-tag-label">Sizes</span>
+                    <div className="product-variant-grid">
+                      {fallbackEntries.map(([variantId, v]) => (
+                        <div
+                          key={variantId}
+                          className="product-variant-card product-variant-card--static"
+                        >
+                          <span className="product-variant-card-size">
+                            {v.label}
+                          </span>
+                          <span className="product-variant-card-price">
+                            See in store
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()
             )}
 
             {/* Primary CTA — above the fold */}
