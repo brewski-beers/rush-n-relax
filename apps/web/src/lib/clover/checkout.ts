@@ -57,13 +57,6 @@ function getCloverBaseUrl(): string {
   return process.env.CLOVER_BASE_URL || DEFAULT_CLOVER_API_BASE;
 }
 
-function stubResponse(orderId: string): CheckoutSession {
-  return {
-    redirectUrl: `/checkout/stub?order=${encodeURIComponent(orderId)}`,
-    provider: 'stub',
-  };
-}
-
 function resolveSiteOrigin(): string {
   // Vercel injects VERCEL_URL (host only, no scheme) on every deployment.
   const vercel = process.env.VERCEL_URL;
@@ -71,6 +64,16 @@ function resolveSiteOrigin(): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
   if (explicit) return explicit.replace(/\/$/, '');
   return 'http://localhost:3000';
+}
+
+function stubResponse(orderId: string): CheckoutSession {
+  // Must be absolute — `NextResponse.redirect()` rejects relative URLs and
+  // throws at the redirect handler, surfacing as a 500 in preview/dev.
+  const origin = resolveSiteOrigin();
+  return {
+    redirectUrl: `${origin}/checkout/stub?order=${encodeURIComponent(orderId)}`,
+    provider: 'stub',
+  };
 }
 
 export async function createCloverCheckoutSession(

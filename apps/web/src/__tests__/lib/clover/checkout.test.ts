@@ -42,6 +42,9 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
     });
     expect(res.provider).toBe('stub');
     expect(res.redirectUrl).toContain('/checkout/stub');
+    // Stub URL must be absolute — `NextResponse.redirect()` rejects
+    // relative URLs and surfaces as a 500 in preview/dev.
+    expect(URL.canParse(res.redirectUrl)).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -57,7 +60,23 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
       amount: 1000,
     });
     expect(res.provider).toBe('stub');
+    expect(URL.canParse(res.redirectUrl)).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('stub redirectUrl uses VERCEL_URL host with https scheme when present', async () => {
+    setEnv({
+      CLOVER_LIVE_PAYMENTS_ENABLED: undefined,
+      VERCEL_URL: 'rnr-abc123.vercel.app',
+    });
+    const res = await createCloverCheckoutSession({
+      orderId: 'ord_v',
+      amount: 100,
+    });
+    expect(res.provider).toBe('stub');
+    expect(res.redirectUrl).toBe(
+      'https://rnr-abc123.vercel.app/checkout/stub?order=ord_v'
+    );
   });
 
   it('calls the real Clover API when kill switch ON + credentials present and points redirectUrl at /return (#279)', async () => {

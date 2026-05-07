@@ -1,0 +1,22 @@
+/* #411 — Non-production Simulate Pass / Deny panel.
+   Visually distinct from the primary Proceed-to-Payment CTA so it is
+   unmistakably a debug affordance. Renders only when the server-side
+   `VERCEL_ENV !== 'production'` check passes (preview + local dev). */
+
+.previewTools {
+  margin-top: var(--space-lg);
+  padding: var(--space-sm);
+  border: 2px dashed var(--color-warning);
+  background: var(--color-warning-bg);
+  border-radius: 8px;
+}
+
+.warning {
+  font-weight: 600;
+  color: var(--color-warning);
+  margin-bottom: var(--space-xs);
+}
+
+.passButton {
+  margin-right: var(--space-xs);
+}
