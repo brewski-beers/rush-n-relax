@@ -3,34 +3,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CartContext } from '@/contexts/CartContext';
 import type { CartContextValue, CartItem } from '@/contexts/CartContext';
 
-// Mock AgeCheckerModal — we test that CartPage wires it correctly
-// (open prop, onComplete callback), not the modal's internal widget logic.
-// The modal has its own dedicated tests.
-vi.mock('@/components/AgeCheckerModal/AgeCheckerModal', () => ({
-  AgeCheckerModal: ({
-    open,
-    onComplete,
-    onClose,
-  }: {
-    open: boolean;
-    onComplete: (r: { status: 'pass'; verificationId: string }) => void;
-    onClose: () => void;
-  }) =>
-    open ? (
-      <div data-testid="agechecker-modal">
-        <button
-          type="button"
-          onClick={() =>
-            onComplete({ status: 'pass', verificationId: 'verif-stub-1' })
-          }
-        >
-          Simulate Pass
-        </button>
-        <button type="button" onClick={onClose}>
-          Cancel
-        </button>
-      </div>
-    ) : null,
+const pushMock = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: pushMock,
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }));
 
 vi.mock('next/link', () => ({
@@ -104,66 +87,144 @@ function fillForm(state = 'TN') {
   });
 }
 
-describe('CartPage — AgeCheckerModal wiring', () => {
+describe('CartPage — single-button checkout', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    pushMock.mockReset();
   });
 
-  it('disables Verify Age button until form valid + state shippable', () => {
-    renderCart();
-    const btn = screen.getByRole('button', { name: /verify age/i });
-    expect(btn).toBeDisabled();
-  });
-
-  it('keeps Verify Age disabled when state is non-shippable', () => {
-    renderCart();
-    fillForm('ID');
-    const btn = screen.getByRole('button', { name: /verify age/i });
-    expect(btn).toBeDisabled();
-  });
-
-  it('opens AgeCheckerModal on Verify Age click when form valid + state shippable', () => {
-    renderCart();
-    fillForm('TN');
-    const btn = screen.getByRole('button', { name: /verify age/i });
-    expect(btn).not.toBeDisabled();
-    expect(screen.queryByTestId('agechecker-modal')).not.toBeInTheDocument();
-    fireEvent.click(btn);
-    expect(screen.getByTestId('agechecker-modal')).toBeInTheDocument();
-  });
-
-  it('on pass outcome, POSTs verificationId to /api/order/start and redirects to /order/[id]', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ orderId: 'order-xyz' }),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    const assignMock = vi.fn();
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, assign: assignMock },
+  describe('validation gates', () => {
+    it('Given an empty form, When the cart loads, Then the Checkout button is disabled', () => {
+      renderCart();
+      const btn = screen.getByRole('button', { name: /checkout/i });
+      expect(btn).toBeDisabled();
     });
 
-    renderCart();
-    fillForm('TN');
-    fireEvent.click(screen.getByRole('button', { name: /verify age/i }));
-    fireEvent.click(screen.getByRole('button', { name: /simulate pass/i }));
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/order/start',
-        expect.objectContaining({ method: 'POST' })
-      );
+    it('Given a form filled with a non-shippable state, When validated, Then the Checkout button stays disabled', () => {
+      renderCart();
+      fillForm('ID');
+      const btn = screen.getByRole('button', { name: /checkout/i });
+      expect(btn).toBeDisabled();
     });
-    const callBody = JSON.parse(
-      // Justified cast: mock arg shape known.
-      (fetchMock.mock.calls[0][1] as { body: string }).body
-    ) as { verificationId: string; deliveryAddress: { state: string } };
-    expect(callBody.verificationId).toBe('verif-stub-1');
-    expect(callBody.deliveryAddress.state).toBe('TN');
 
-    await waitFor(() => {
-      expect(assignMock).toHaveBeenCalledWith('/order/order-xyz');
+    it('Given a complete shippable form, When validated, Then the Checkout button is enabled', () => {
+      renderCart();
+      fillForm('TN');
+      const btn = screen.getByRole('button', { name: /checkout/i });
+      expect(btn).not.toBeDisabled();
+    });
+  });
+
+  describe('redirect on success', () => {
+    it('Given a valid cart, When Checkout is clicked, Then it POSTs to /api/checkout/session and pushes the redirectUrl', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            sessionId: 'sess-123',
+            redirectUrl: '/checkout/sess-123/verify',
+          }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      renderCart();
+      fillForm('TN');
+      fireEvent.click(screen.getByRole('button', { name: /checkout/i }));
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          '/api/checkout/session',
+          expect.objectContaining({ method: 'POST' })
+        );
+      });
+
+      const callBody = JSON.parse(
+        // Justified cast: mock arg shape known.
+        (fetchMock.mock.calls[0][1] as { body: string }).body
+      ) as {
+        deliveryAddress: { state: string };
+        locationId: string;
+        customerEmail?: string;
+      };
+      expect(callBody.deliveryAddress.state).toBe('TN');
+      expect(callBody.locationId).toBe('online');
+      expect(callBody.customerEmail).toBe('kb@example.com');
+
+      await waitFor(() => {
+        expect(pushMock).toHaveBeenCalledWith('/checkout/sess-123/verify');
+      });
+    });
+
+    it('does not render any AgeChecker modal element', () => {
+      renderCart();
+      fillForm('TN');
+      expect(screen.queryByTestId('agechecker-modal')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /verify age/i })
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('error handling', () => {
+    it('Given a 409 shortage response, When Checkout is clicked, Then the inline error from the server is shown and no redirect occurs', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 409,
+        json: () =>
+          Promise.resolve({
+            error: 'Insufficient stock',
+            productId: 'p1',
+            variantId: 'v1',
+            available: 0,
+            requested: 1,
+          }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      renderCart();
+      fillForm('TN');
+      fireEvent.click(screen.getByRole('button', { name: /checkout/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent(
+          /insufficient stock/i
+        );
+      });
+      expect(pushMock).not.toHaveBeenCalled();
+    });
+
+    it('Given a generic Clover failure (500 with no redirectUrl), When Checkout is clicked, Then a fallback error is shown', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ error: 'Clover unavailable' }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      renderCart();
+      fillForm('TN');
+      fireEvent.click(screen.getByRole('button', { name: /checkout/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent(
+          /clover unavailable/i
+        );
+      });
+      expect(pushMock).not.toHaveBeenCalled();
+    });
+
+    it('Given a network error (fetch rejects), When Checkout is clicked, Then a network error is shown', async () => {
+      const fetchMock = vi.fn().mockRejectedValue(new Error('boom'));
+      vi.stubGlobal('fetch', fetchMock);
+
+      renderCart();
+      fillForm('TN');
+      fireEvent.click(screen.getByRole('button', { name: /checkout/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toHaveTextContent(/network error/i);
+      });
+      expect(pushMock).not.toHaveBeenCalled();
     });
   });
 });
