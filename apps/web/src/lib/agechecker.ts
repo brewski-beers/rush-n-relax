@@ -2,9 +2,9 @@
  * AgeChecker.Net integration helpers.
  *
  * The customer-facing verification flow runs entirely in the browser via
- * the AgeChecker JS widget (see `components/AgeCheckerModal/`). The widget
- * returns a `verificationId` on success, which the cart POSTs to
- * `/api/order/start`.
+ * the AgeChecker JS widget (see `components/AgeCheckerGuard/`). The widget
+ * returns a `verificationId` on success, which the verify page submits as
+ * part of the checkout-session flow.
  *
  * Server-side, this module owns:
  *   - inbound webhook authentication (`verifyAgeCheckerSignature`)
