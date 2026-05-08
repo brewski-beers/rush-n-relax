@@ -102,25 +102,6 @@ export interface ProductVariant {
 }
 
 /**
- * Legacy array-shaped variant entry. Predates the unified map — authored on
- * the `Product.legacyVariants` field by older catalog seed data. The product
- * repository projects these onto the unified `Product.variants` map at write
- * time and self-prunes the legacy field.
- *
- * STABLE pending PDP refactor (#399 / Path A): the storefront PDP still
- * reads this field for the "see in store" multi-dim fallback when no
- * unified `variants` data exists. Removal is tracked separately and is
- * out of scope for the variant-model unification (#395).
- */
-export interface LegacyProductVariant {
-  variantId: string;
-  label: string;
-  weight?: { value: number; unit: 'g' | 'oz' };
-  quantity?: number;
-  dose?: { value: number; unit: 'mg' | 'mcg' };
-}
-
-/**
  * Firestore document shape for a product.
  * Lives at: products/{slug}
  *
@@ -174,26 +155,13 @@ export interface Product {
    */
   variantGroups?: VariantGroup[];
   /**
-   * STABLE pending PDP refactor (#399 / Path A). Legacy hand-authored
-   * variant array still consumed by the storefront PDP for the "see in
-   * store" fallback when no unified `variants` data exists. Repo writes
-   * self-prune this field on save through `upsertProduct`; reads
-   * back-populate it from the array when present so PDP code can keep
-   * working until the fallback is migrated.
-   */
-  legacyVariants?: LegacyProductVariant[];
-  /**
    * Unified variant catalogue. Map-keyed by variantId; each entry carries a
    * label and per-location pricing/availability/reservation. Variantless
    * products use the single `default` key. This is the canonical pricing
    * and stock source — read by storefront, admin, and cart-availability.
    *
-   * Self-pruning contract: every repository write path projects any
-   * `legacyVariants` onto this map — preserving qty / price /
-   * compareAtPrice / availablePickup / featured / reserved when variantIds
-   * match — and deletes the legacy field in the same Firestore write.
-   * `variantGroups` is intentionally NOT pruned — it is a stable
-   * authored field per Path A.
+   * `variantGroups` (option-dimension authoring source, Path A / #399)
+   * coexists with this map; neither subsumes the other.
    */
   variants?: { [variantId: string]: ProductVariant };
   /**
@@ -243,7 +211,6 @@ export type ProductSummary = Pick<
   | 'availableAt'
   | 'vendorSlug'
   | 'strain'
-  | 'legacyVariants'
   | 'variantGroups'
   | 'leaflyUrl'
   | 'variants'

@@ -725,11 +725,9 @@ describe('recomputeProductIndexes', () => {
 //
 // Every mutation method (setVariantLocation / decrementVariantStock /
 // holdStock / releaseStock / commitStock) must:
-//   1. Project any `legacyVariants` array onto the unified `variants` map
-//      BEFORE applying the mutation.
+//   1. Project any pre-unification array-shaped `variants` onto the
+//      unified `variants` map BEFORE applying the mutation.
 //   2. Write the unified map back as `variants`.
-//   3. Physically delete `legacyVariants` (when present) via
-//      FieldValue.delete() in the SAME write payload.
 //
 // `variantGroups` is NOT pruned — per Path A (#399) it is the stable
 // option-dimension authoring source.
@@ -767,7 +765,6 @@ interface SelfPruningPayload {
     { label: string; locations: Record<string, Record<string, unknown>> }
   >;
   variantGroups?: unknown;
-  legacyVariants?: unknown;
   inStockAt?: string[];
   [k: string]: unknown;
 }
@@ -815,45 +812,6 @@ describe('self-pruning write contract (#396)', () => {
     });
   });
 
-  describe('given a doc that still carries legacyVariants alongside the canonical map', () => {
-    it('writes through the canonical map and prunes legacyVariants in the same write', async () => {
-      txGetMock.mockResolvedValueOnce(
-        txProductSnap('legacy-mixed', {
-          variants: {
-            default: {
-              label: 'Default',
-              locations: {
-                'oak-ridge': { qty: 2, price: 1500, reserved: 1 },
-              },
-            },
-          },
-          legacyVariants: [{ variantId: 'default', label: 'Default' }],
-        })
-      );
-
-      await setVariantLocation('legacy-mixed', 'default', 'seymour', {
-        qty: 3,
-        price: 1500,
-      });
-
-      const payload = txSetMock.mock.calls[0][1] as SelfPruningPayload;
-
-      // Patched location written under unified map
-      expect(payload.variants?.default.locations.seymour).toEqual({
-        qty: 3,
-        price: 1500,
-      });
-      // Pre-existing oak-ridge entry preserved including `reserved`
-      expect(payload.variants?.default.locations['oak-ridge']).toEqual({
-        qty: 2,
-        price: 1500,
-        reserved: 1,
-      });
-      // legacyVariants physically removed in the same write
-      expect(payload.legacyVariants).toBe(fieldValueDeleteSentinel);
-    });
-  });
-
   describe('given a doc with neither legacy field present (canonical only)', () => {
     it('writes the unified map and does NOT emit FieldValue.delete sentinels for absent fields', async () => {
       txGetMock.mockResolvedValueOnce(
@@ -880,7 +838,6 @@ describe('self-pruning write contract (#396)', () => {
       });
       // No legacy fields present → no delete sentinels emitted
       expect('variantGroups' in payload).toBe(false);
-      expect('legacyVariants' in payload).toBe(false);
     });
   });
 });
@@ -1059,7 +1016,6 @@ describe('upsertProduct self-pruning (admin save path) (#398)', () => {
       expect(payload.variants).toEqual({
         default: { label: 'Default', locations: {} },
       });
-      expect(payload.legacyVariants).toBeUndefined();
       expect(payload.inStockAt).toEqual([]);
     });
   });
@@ -1099,10 +1055,10 @@ describe('upsertProduct self-pruning (admin save path) (#398)', () => {
     });
   });
 
-  describe('given an existing doc whose variants live on the canonical map alongside legacyVariants', () => {
-    it('preserves the per-location stock/price under the unified map and prunes legacyVariants', async () => {
+  describe('given an existing doc with per-location stock on the canonical map (editor reseeds with empty locations)', () => {
+    it('preserves the per-location stock/price under the unified map', async () => {
       stubExistingDoc({
-        slug: 'canonical-with-legacy',
+        slug: 'canonical-existing',
         variants: {
           default: {
             label: 'Default',
@@ -1111,13 +1067,12 @@ describe('upsertProduct self-pruning (admin save path) (#398)', () => {
             },
           },
         },
-        legacyVariants: [{ variantId: 'default', label: 'Default' }],
       });
 
       // Editor save: seeds the variant with empty locations — repo MUST
       // preserve the existing per-location data.
       await upsertProduct({
-        slug: 'canonical-with-legacy',
+        slug: 'canonical-existing',
         name: 'Specs',
         category: 'flower',
         details: '',
@@ -1132,67 +1087,8 @@ describe('upsertProduct self-pruning (admin save path) (#398)', () => {
         price: 4200,
         reserved: 2,
       });
-      // Legacy field physically removed.
-      expect(payload.legacyVariants).toBe(fieldValueDeleteSentinel);
       // Indexes recomputed from preserved data.
       expect(payload.inStockAt).toContain('oak-ridge');
-    });
-  });
-
-  describe('given an existing doc with both variantGroups and legacyVariants (the four-state matrix)', () => {
-    it('projects both onto the unified map and prunes legacyVariants', async () => {
-      stubExistingDoc({
-        slug: 'both',
-        variantGroups: [
-          {
-            groupId: 'size',
-            label: 'Size',
-            combinable: false,
-            options: [{ optionId: 'eighth', label: '3.5g' }],
-          },
-        ],
-        legacyVariants: [{ variantId: 'eighth', label: '3.5g' }],
-      });
-
-      await upsertProduct({
-        slug: 'both',
-        name: 'Both',
-        category: 'flower',
-        details: '',
-        availableAt: [],
-        status: 'active',
-        variants: { eighth: { label: '3.5g', locations: {} } },
-      });
-
-      const payload = docSetMock.mock.calls[0][0] as SelfPruningPayload;
-      expect(payload.variants?.eighth.locations).toEqual({});
-      expect(payload.legacyVariants).toBe(fieldValueDeleteSentinel);
-    });
-  });
-
-  describe('given an editor save flips the regression-guard from #400 (legacyVariants only)', () => {
-    it('removes legacyVariants in the same write — closes the user-visible gap', async () => {
-      stubExistingDoc({
-        slug: 'legacy-only',
-        legacyVariants: [{ variantId: 'default', label: 'Default' }],
-      });
-
-      await upsertProduct({
-        slug: 'legacy-only',
-        name: 'Legacy',
-        category: 'flower',
-        details: '',
-        availableAt: [],
-        status: 'active',
-        variants: { default: { label: 'Default', locations: {} } },
-      });
-
-      const payload = docSetMock.mock.calls[0][0] as SelfPruningPayload;
-      expect(payload.legacyVariants).toBe(fieldValueDeleteSentinel);
-      expect(payload.variants?.default).toEqual({
-        label: 'Default',
-        locations: {},
-      });
     });
   });
 });
