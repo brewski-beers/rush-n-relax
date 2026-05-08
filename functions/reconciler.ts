@@ -68,6 +68,21 @@ export interface CloverCheckoutLookup {
   cloverOrderId?: string;
 }
 
+/**
+ * Refund-pending queue row (#406). Mirrors the storefront repository's
+ * `RefundPendingRecord` shape — kept here as a separate type to avoid a
+ * cross-package import from `functions/` into `apps/web/`.
+ */
+export interface RefundPendingRow {
+  cloverPaymentId: string;
+  orderId: string;
+  sessionId: string;
+  attemptedAt: Date;
+  lastAttemptedAt: Date;
+  retryCount: number;
+  lastError: string;
+}
+
 export interface ReconcilerDeps {
   /**
    * Sessions in `awaiting_id` or `awaiting_payment` whose `createdAt` is
@@ -118,6 +133,25 @@ export interface ReconcilerDeps {
     targetOrderId: string
   ): Promise<{ repaired: boolean; conflict?: string }>;
 
+  // ─── Refund-pending queue (#406) ────────────────────────────────
+  /**
+   * Refund-pending rows eligible for retry: `retryCount < maxRetries`
+   * AND exponential backoff window elapsed.
+   */
+  listRefundsPendingForRetry(opts: {
+    maxRetries: number;
+    now: Date;
+  }): Promise<RefundPendingRow[]>;
+  /** Attempt a Clover refund for the given payment id. Throws on failure. */
+  retryCloverRefund(cloverPaymentId: string): Promise<void>;
+  /** Delete a refund-pending row after a successful retry. */
+  deleteRefundPending(cloverPaymentId: string): Promise<void>;
+  /** Increment retryCount + record lastError after a failed retry. */
+  markRefundPendingRetryFailed(
+    cloverPaymentId: string,
+    error: string
+  ): Promise<void>;
+
   /** Structured logger. */
   log(level: 'info' | 'warn' | 'error', msg: string, data?: unknown): void;
 }
@@ -131,12 +165,19 @@ export interface ReconcileResult {
   backPointersRepaired: number;
   backPointerConflicts: number;
   errors: number;
+  // Refund-pending queue counters (#406).
+  refundsRetried: number;
+  refundsRecovered: number;
+  refundsFailed: number;
+  refundsExhausted: number;
 }
 
 /** Sessions younger than this are left to the return URL handler. */
 export const SETTLE_WINDOW_MS = 15 * 60 * 1000;
 /** Look back this far for back-pointer repair candidates. */
 export const BACKPOINTER_LOOKBACK_MS = 24 * 60 * 60 * 1000;
+/** Max retry attempts before a refund-pending row is left for manual intervention. */
+export const REFUND_RETRY_MAX = 5;
 
 export async function reconcileCheckoutSessionsImpl(
   deps: ReconcilerDeps,
@@ -151,6 +192,10 @@ export async function reconcileCheckoutSessionsImpl(
     backPointersRepaired: 0,
     backPointerConflicts: 0,
     errors: 0,
+    refundsRetried: 0,
+    refundsRecovered: 0,
+    refundsFailed: 0,
+    refundsExhausted: 0,
   };
 
   const staleBefore = new Date(nowMs - SETTLE_WINDOW_MS);
@@ -314,6 +359,92 @@ export async function reconcileCheckoutSessionsImpl(
         orderId: order.id,
         err: String(err),
       });
+    }
+  }
+
+  // ─── Direction 3: refund-pending sweep (#406) ─────────────────────
+  let refundQueue: RefundPendingRow[];
+  try {
+    refundQueue = await deps.listRefundsPendingForRetry({
+      maxRetries: REFUND_RETRY_MAX,
+      now: new Date(nowMs),
+    });
+  } catch (err) {
+    deps.log('error', 'listRefundsPendingForRetry failed', {
+      err: String(err),
+    });
+    return result;
+  }
+
+  for (const row of refundQueue) {
+    if (row.retryCount >= REFUND_RETRY_MAX) {
+      // Defensive — repository should already filter these out, but
+      // surface loudly so monitoring catches the exhausted-retry case.
+      result.refundsExhausted += 1;
+      deps.log(
+        'error',
+        'refund-pending exhausted retries — manual intervention required',
+        {
+          cloverPaymentId: row.cloverPaymentId,
+          orderId: row.orderId,
+          sessionId: row.sessionId,
+          retryCount: row.retryCount,
+          lastError: row.lastError,
+        }
+      );
+      continue;
+    }
+
+    result.refundsRetried += 1;
+    try {
+      await deps.retryCloverRefund(row.cloverPaymentId);
+      try {
+        await deps.deleteRefundPending(row.cloverPaymentId);
+        result.refundsRecovered += 1;
+        deps.log('info', 'refund-pending recovered via retry', {
+          cloverPaymentId: row.cloverPaymentId,
+          orderId: row.orderId,
+        });
+      } catch (delErr) {
+        result.errors += 1;
+        deps.log('error', 'deleteRefundPending failed after successful retry', {
+          cloverPaymentId: row.cloverPaymentId,
+          err: String(delErr),
+        });
+      }
+    } catch (refundErr) {
+      const detail =
+        refundErr instanceof Error ? refundErr.message : String(refundErr);
+      try {
+        await deps.markRefundPendingRetryFailed(row.cloverPaymentId, detail);
+      } catch (markErr) {
+        deps.log('error', 'markRefundPendingRetryFailed failed', {
+          cloverPaymentId: row.cloverPaymentId,
+          err: String(markErr),
+        });
+      }
+      const nextCount = row.retryCount + 1;
+      if (nextCount >= REFUND_RETRY_MAX) {
+        result.refundsExhausted += 1;
+        deps.log(
+          'error',
+          'refund-pending exhausted retries after this attempt',
+          {
+            cloverPaymentId: row.cloverPaymentId,
+            orderId: row.orderId,
+            sessionId: row.sessionId,
+            retryCount: nextCount,
+            lastError: detail,
+          }
+        );
+      } else {
+        result.refundsFailed += 1;
+        deps.log('warn', 'refund-pending retry failed — will retry', {
+          cloverPaymentId: row.cloverPaymentId,
+          retryCount: nextCount,
+          err: detail,
+        });
+      }
     }
   }
 

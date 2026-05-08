@@ -44,6 +44,7 @@ import {
 import {
   commitStock,
   createOrder,
+  enqueueRefundPending,
   getCheckoutSession,
   markCheckoutSessionCancelled,
   markCheckoutSessionCompleted,
@@ -217,6 +218,21 @@ async function compensateOnCommitFailure(c: CompensationInput): Promise<void> {
       console.error(
         `[finalizeCheckoutSession] REFUND FAILED for payment ${c.cloverPaymentId} (order ${c.orderId}): ${detail}`
       );
+      // Enqueue for cron retry — don't drop the failure on the floor (#406).
+      try {
+        await enqueueRefundPending({
+          cloverPaymentId: c.cloverPaymentId,
+          orderId: c.orderId,
+          sessionId: c.sessionId,
+          error: detail,
+          createdBy: 'finalize',
+        });
+      } catch (enqueueErr) {
+        console.error(
+          `[finalizeCheckoutSession] failed to enqueue refund-pending for payment ${c.cloverPaymentId}`,
+          enqueueErr
+        );
+      }
     }
   }
 

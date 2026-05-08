@@ -828,6 +828,7 @@ export const retryFailedOutboundEmails = onSchedule(
 import {
   reconcileCheckoutSessionsImpl,
   BACKPOINTER_LOOKBACK_MS,
+  REFUND_RETRY_MAX,
   type ReconcilerDeps,
   type ReconcileSession,
   type ReconcileOrder,
@@ -835,6 +836,7 @@ import {
   type ReconcileHold,
   type CloverPaymentResult,
   type CloverCheckoutLookup,
+  type RefundPendingRow,
 } from './reconciler';
 
 const CLOVER_MERCHANT_ID = defineSecret('CLOVER_MERCHANT_ID');
@@ -1160,6 +1162,98 @@ async function repairSessionBackPointer(
   });
 }
 
+// ─── Refund-pending adapters (#406) ─────────────────────────────────────
+
+function backoffMsForRetry(retryCount: number): number {
+  const minutes = 2 ** Math.max(0, retryCount);
+  return minutes * 60 * 1000;
+}
+
+function docToRefundPendingRow(
+  id: string,
+  d: FirebaseFirestore.DocumentData
+): RefundPendingRow {
+  return {
+    cloverPaymentId:
+      typeof d.cloverPaymentId === 'string' ? d.cloverPaymentId : id,
+    orderId: typeof d.orderId === 'string' ? d.orderId : '',
+    sessionId: typeof d.sessionId === 'string' ? d.sessionId : '',
+    attemptedAt: tsToDate(d.attemptedAt),
+    lastAttemptedAt: tsToDate(d.lastAttemptedAt),
+    retryCount: typeof d.retryCount === 'number' ? d.retryCount : 0,
+    lastError: typeof d.lastError === 'string' ? d.lastError : '',
+  };
+}
+
+async function listRefundsPendingForRetryAdapter(opts: {
+  maxRetries: number;
+  now: Date;
+}): Promise<RefundPendingRow[]> {
+  const snap = await db
+    .collection('refunds-pending')
+    .where('retryCount', '<', opts.maxRetries)
+    .orderBy('retryCount', 'asc')
+    .limit(100)
+    .get();
+  const out: RefundPendingRow[] = [];
+  const nowMs = opts.now.getTime();
+  for (const doc of snap.docs) {
+    const row = docToRefundPendingRow(doc.id, doc.data());
+    const earliest =
+      row.lastAttemptedAt.getTime() + backoffMsForRetry(row.retryCount);
+    if (earliest <= nowMs) out.push(row);
+  }
+  return out;
+}
+
+async function retryCloverRefund(cloverPaymentId: string): Promise<void> {
+  const merchantId = CLOVER_MERCHANT_ID.value();
+  const apiKey = CLOVER_API_KEY.value();
+  if (!merchantId || !apiKey) {
+    throw new Error('Clover credentials not configured');
+  }
+  const url = `${getCloverBase()}/v3/merchants/${merchantId}/payments/${encodeURIComponent(cloverPaymentId)}/refunds`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fullRefund: true }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `Clover refund failed (${res.status}): ${text.slice(0, 200)}`
+    );
+  }
+}
+
+async function deleteRefundPendingAdapter(
+  cloverPaymentId: string
+): Promise<void> {
+  await db.collection('refunds-pending').doc(cloverPaymentId).delete();
+}
+
+async function markRefundPendingRetryFailedAdapter(
+  cloverPaymentId: string,
+  error: string
+): Promise<void> {
+  const ref = db.collection('refunds-pending').doc(cloverPaymentId);
+  const truncated = error.length > 500 ? error.slice(0, 500) : error;
+  await db.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return;
+    const data = snap.data() ?? {};
+    const prev = typeof data.retryCount === 'number' ? data.retryCount : 0;
+    tx.update(ref, {
+      retryCount: prev + 1,
+      lastAttemptedAt: new Date(),
+      lastError: truncated,
+    });
+  });
+}
+
 export function buildReconcilerDeps(): ReconcilerDeps {
   return {
     listStaleSessions,
@@ -1170,6 +1264,10 @@ export function buildReconcilerDeps(): ReconcilerDeps {
     expireSessionAndReleaseHolds,
     cancelSessionAndReleaseHolds,
     repairSessionBackPointer,
+    listRefundsPendingForRetry: listRefundsPendingForRetryAdapter,
+    retryCloverRefund,
+    deleteRefundPending: deleteRefundPendingAdapter,
+    markRefundPendingRetryFailed: markRefundPendingRetryFailedAdapter,
     log: (level, msg, data) => {
       if (level === 'error') logger.error(msg, data);
       else if (level === 'warn') logger.warn(msg, data);
@@ -1204,6 +1302,7 @@ export const reconcileCheckoutSessions = onSchedule(
     logger.info('reconcileCheckoutSessions complete', {
       ...result,
       backpointerLookbackMs: BACKPOINTER_LOOKBACK_MS,
+      refundRetryMax: REFUND_RETRY_MAX,
     });
   }
 );

@@ -103,6 +103,20 @@ export {
 } from './variant-template.repository';
 
 export {
+  enqueueRefundPending,
+  listRefundsPendingForRetry,
+  markRefundPendingRetryFailed,
+  deleteRefundPending,
+  backoffMsFor,
+} from './refund-pending.repository';
+export type {
+  RefundPendingRecord,
+  RefundPendingSource,
+  EnqueueRefundPendingInput,
+  ListRefundsPendingForRetryOptions,
+} from './refund-pending.repository';
+
+export {
   createCheckoutSession,
   getCheckoutSession,
   markAgeVerified,

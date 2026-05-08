@@ -77,6 +77,13 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Refund-pending queue (#406): failed Clover refunds awaiting cron
+    // retry. Admin SDK only — written by finalizeCheckoutSession on
+    // refund failure, retried + deleted by the reconciler Cloud Function.
+    match /refunds-pending/{paymentId} {
+      allow read, write: if false;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

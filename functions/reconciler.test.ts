@@ -5,7 +5,9 @@ import {
   type ReconcileSession,
   type ReconcileOrder,
   type CloverCheckoutLookup,
+  type RefundPendingRow,
   SETTLE_WINDOW_MS,
+  REFUND_RETRY_MAX,
 } from './reconciler';
 
 /**
@@ -44,6 +46,10 @@ function makeDeps(overrides: Partial<ReconcilerDeps> = {}): ReconcilerDeps {
     expireSessionAndReleaseHolds: vi.fn(async () => undefined),
     cancelSessionAndReleaseHolds: vi.fn(async () => undefined),
     repairSessionBackPointer: vi.fn(async () => ({ repaired: true })),
+    listRefundsPendingForRetry: vi.fn(async () => []),
+    retryCloverRefund: vi.fn(async () => undefined),
+    deleteRefundPending: vi.fn(async () => undefined),
+    markRefundPendingRetryFailed: vi.fn(async () => undefined),
     log: vi.fn(),
     ...overrides,
   };
@@ -282,5 +288,120 @@ describe('reconcileCheckoutSessionsImpl — error isolation', () => {
 
     expect(listRecentOrdersWithCheckoutSession).not.toHaveBeenCalled();
     expect(result.scanned).toBe(0);
+  });
+});
+
+// ─── Refund-pending sweep (#406) ──────────────────────────────────────────
+
+function makeRefundRow(
+  overrides: Partial<RefundPendingRow> = {}
+): RefundPendingRow {
+  return {
+    cloverPaymentId: 'pay-1',
+    orderId: 'ord-1',
+    sessionId: 'sess-1',
+    attemptedAt: new Date(NOW_MS - 60 * 60 * 1000),
+    lastAttemptedAt: new Date(NOW_MS - 60 * 60 * 1000),
+    retryCount: 0,
+    lastError: 'clover 500',
+    ...overrides,
+  };
+}
+
+describe('reconcileCheckoutSessionsImpl — refund-pending sweep (#406)', () => {
+  it('Given an eligible refund-pending row, When the cron runs, Then it retries and deletes on success', async () => {
+    const row = makeRefundRow();
+    const retryCloverRefund = vi.fn(async () => undefined);
+    const deleteRefundPending = vi.fn(async () => undefined);
+    const deps = makeDeps({
+      listRefundsPendingForRetry: vi.fn(async () => [row]),
+      retryCloverRefund,
+      deleteRefundPending,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(retryCloverRefund).toHaveBeenCalledWith('pay-1');
+    expect(deleteRefundPending).toHaveBeenCalledWith('pay-1');
+    expect(result.refundsRetried).toBe(1);
+    expect(result.refundsRecovered).toBe(1);
+    expect(result.refundsFailed).toBe(0);
+  });
+
+  it('Given a refund retry that fails, When the cron runs, Then markRetryFailed is called and refundsFailed is counted', async () => {
+    const row = makeRefundRow({ retryCount: 1 });
+    const retryCloverRefund = vi.fn(async () => {
+      throw new Error('clover still down');
+    });
+    const markRefundPendingRetryFailed = vi.fn(async () => undefined);
+    const deleteRefundPending = vi.fn(async () => undefined);
+    const deps = makeDeps({
+      listRefundsPendingForRetry: vi.fn(async () => [row]),
+      retryCloverRefund,
+      markRefundPendingRetryFailed,
+      deleteRefundPending,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(markRefundPendingRetryFailed).toHaveBeenCalledWith(
+      'pay-1',
+      expect.stringContaining('clover still down')
+    );
+    expect(deleteRefundPending).not.toHaveBeenCalled();
+    expect(result.refundsRetried).toBe(1);
+    expect(result.refundsFailed).toBe(1);
+    expect(result.refundsRecovered).toBe(0);
+    expect(result.refundsExhausted).toBe(0);
+  });
+
+  it('Given a row whose next failure crosses MAX_RETRIES, When the cron runs, Then it logs at error level as exhausted', async () => {
+    const row = makeRefundRow({ retryCount: REFUND_RETRY_MAX - 1 });
+    const log = vi.fn();
+    const deps = makeDeps({
+      listRefundsPendingForRetry: vi.fn(async () => [row]),
+      retryCloverRefund: vi.fn(async () => {
+        throw new Error('still failing');
+      }),
+      log,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(result.refundsExhausted).toBe(1);
+    expect(result.refundsFailed).toBe(0);
+    const errorCalls = log.mock.calls.filter(c => c[0] === 'error');
+    expect(errorCalls.length).toBeGreaterThan(0);
+  });
+
+  it('Given a row already at MAX_RETRIES somehow surfacing in the list, When the cron runs, Then it skips retry and logs exhausted', async () => {
+    const row = makeRefundRow({ retryCount: REFUND_RETRY_MAX });
+    const retryCloverRefund = vi.fn(async () => undefined);
+    const deps = makeDeps({
+      listRefundsPendingForRetry: vi.fn(async () => [row]),
+      retryCloverRefund,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(retryCloverRefund).not.toHaveBeenCalled();
+    expect(result.refundsExhausted).toBe(1);
+    expect(result.refundsRetried).toBe(0);
+  });
+
+  it('Given listRefundsPendingForRetry throws, When the cron runs, Then it logs and continues without crashing', async () => {
+    const log = vi.fn();
+    const deps = makeDeps({
+      listRefundsPendingForRetry: vi.fn(async () => {
+        throw new Error('firestore down');
+      }),
+      log,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(result.refundsRetried).toBe(0);
+    const errorCalls = log.mock.calls.filter(c => c[0] === 'error');
+    expect(errorCalls.length).toBeGreaterThan(0);
   });
 });
