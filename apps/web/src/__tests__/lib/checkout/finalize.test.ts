@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   markCheckoutSessionCompleted: vi.fn(),
   markCheckoutSessionCancelled: vi.fn(),
   transitionStatus: vi.fn(),
+  enqueueRefundPending: vi.fn(),
   getCloverPaymentForOrder: vi.fn(),
   refundCloverPayment: vi.fn(),
   isLivePaymentsEnabled: vi.fn(),
@@ -27,6 +28,7 @@ vi.mock('@/lib/repositories', () => ({
   markCheckoutSessionCompleted: mocks.markCheckoutSessionCompleted,
   markCheckoutSessionCancelled: mocks.markCheckoutSessionCancelled,
   transitionStatus: mocks.transitionStatus,
+  enqueueRefundPending: mocks.enqueueRefundPending,
 }));
 
 vi.mock('@/lib/clover/checkout', async () => {
@@ -94,6 +96,7 @@ beforeEach(() => {
   mocks.markCheckoutSessionCancelled.mockResolvedValue(undefined);
   mocks.transitionStatus.mockResolvedValue(undefined);
   mocks.refundCloverPayment.mockResolvedValue({ refundId: 'r-1' });
+  mocks.enqueueRefundPending.mockResolvedValue(undefined);
 });
 
 describe('finalizeCheckoutSession (#368)', () => {
@@ -250,6 +253,55 @@ describe('finalizeCheckoutSession (#368)', () => {
       expect(errSpy).toHaveBeenCalled();
       expect(mocks.transitionStatus).toHaveBeenCalled();
       expect(mocks.markCheckoutSessionCancelled).toHaveBeenCalled();
+    });
+
+    it('enqueues a refund-pending row when the refund call fails (#406)', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(makeSession());
+      mocks.getCloverPaymentForOrder.mockResolvedValue({
+        result: 'SUCCESS',
+        paymentId: 'pay-QUEUE',
+      });
+      mocks.createOrder.mockResolvedValue('ord-q');
+      mocks.commitStock.mockRejectedValue(new Error('insufficient'));
+      mocks.refundCloverPayment.mockRejectedValue(new Error('clover 503'));
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out.kind).toBe('commit-failed');
+      expect(mocks.enqueueRefundPending).toHaveBeenCalledOnce();
+      const [arg] = mocks.enqueueRefundPending.mock.calls[0];
+      expect(arg).toEqual(
+        expect.objectContaining({
+          cloverPaymentId: 'pay-QUEUE',
+          orderId: 'ord-q',
+          sessionId: 'clover-sess-1',
+          createdBy: 'finalize',
+        })
+      );
+      expect(typeof arg.error).toBe('string');
+      expect(arg.error.length).toBeGreaterThan(0);
+    });
+
+    it('does NOT enqueue a refund-pending row when the refund succeeds (#406)', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(makeSession());
+      mocks.getCloverPaymentForOrder.mockResolvedValue({
+        result: 'SUCCESS',
+        paymentId: 'pay-OK',
+      });
+      mocks.createOrder.mockResolvedValue('ord-ok');
+      mocks.commitStock.mockRejectedValue(new Error('boom'));
+      // refundCloverPayment resolves by default (beforeEach).
+
+      await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(mocks.enqueueRefundPending).not.toHaveBeenCalled();
     });
   });
 
