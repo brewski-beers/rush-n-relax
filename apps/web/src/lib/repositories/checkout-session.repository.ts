@@ -37,13 +37,8 @@ export class InvalidCheckoutSessionTransitionError extends Error {
   readonly from: CheckoutSessionStatus | null;
   readonly to: CheckoutSessionStatus;
 
-  constructor(
-    from: CheckoutSessionStatus | null,
-    to: CheckoutSessionStatus
-  ) {
-    super(
-      `Invalid checkout session transition: ${from ?? 'null'} → ${to}`
-    );
+  constructor(from: CheckoutSessionStatus | null, to: CheckoutSessionStatus) {
+    super(`Invalid checkout session transition: ${from ?? 'null'} → ${to}`);
     this.name = 'InvalidCheckoutSessionTransitionError';
     this.from = from;
     this.to = to;
@@ -139,6 +134,21 @@ export async function markAgeVerified(
     ageVerifiedAt: verifiedAt,
     verificationId,
   });
+}
+
+/**
+ * Atomically claim a session for finalization (#405). Transitions
+ * `awaiting_payment → in_flight`. Only the first concurrent caller wins;
+ * subsequent calls throw `InvalidCheckoutSessionTransitionError` because
+ * `in_flight` is not a legal source for an inbound `in_flight` transition.
+ *
+ * The transaction in `runTransition` is the lock — readers within the
+ * same tx see the pre-flip status, writers serialize.
+ */
+export async function markCheckoutSessionInFlight(
+  id: string
+): Promise<CheckoutSession> {
+  return runTransition(id, 'in_flight', {});
 }
 
 export async function markCheckoutSessionCompleted(

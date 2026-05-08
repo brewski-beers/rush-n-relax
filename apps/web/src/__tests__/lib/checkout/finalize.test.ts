@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   getCheckoutSession: vi.fn(),
   createOrder: vi.fn(),
   commitStock: vi.fn(),
+  markCheckoutSessionInFlight: vi.fn(),
   markCheckoutSessionCompleted: vi.fn(),
   markCheckoutSessionCancelled: vi.fn(),
   transitionStatus: vi.fn(),
@@ -21,15 +22,26 @@ const mocks = vi.hoisted(() => ({
   isLivePaymentsEnabled: vi.fn(),
 }));
 
-vi.mock('@/lib/repositories', () => ({
-  getCheckoutSession: mocks.getCheckoutSession,
-  createOrder: mocks.createOrder,
-  commitStock: mocks.commitStock,
-  markCheckoutSessionCompleted: mocks.markCheckoutSessionCompleted,
-  markCheckoutSessionCancelled: mocks.markCheckoutSessionCancelled,
-  transitionStatus: mocks.transitionStatus,
-  enqueueRefundPending: mocks.enqueueRefundPending,
-}));
+vi.mock('@/lib/repositories', async () => {
+  // Use the real InvalidCheckoutSessionTransitionError so `instanceof`
+  // checks inside finalize.ts (#405 race-claim path) work as expected.
+  const actual =
+    await vi.importActual<typeof import('@/lib/repositories')>(
+      '@/lib/repositories'
+    );
+  return {
+    getCheckoutSession: mocks.getCheckoutSession,
+    createOrder: mocks.createOrder,
+    commitStock: mocks.commitStock,
+    markCheckoutSessionInFlight: mocks.markCheckoutSessionInFlight,
+    markCheckoutSessionCompleted: mocks.markCheckoutSessionCompleted,
+    markCheckoutSessionCancelled: mocks.markCheckoutSessionCancelled,
+    transitionStatus: mocks.transitionStatus,
+    enqueueRefundPending: mocks.enqueueRefundPending,
+    InvalidCheckoutSessionTransitionError:
+      actual.InvalidCheckoutSessionTransitionError,
+  };
+});
 
 vi.mock('@/lib/clover/checkout', async () => {
   const actual = await vi.importActual<typeof import('@/lib/clover/checkout')>(
@@ -92,6 +104,7 @@ function makeSession(
 beforeEach(() => {
   for (const fn of Object.values(mocks)) fn.mockReset();
   mocks.isLivePaymentsEnabled.mockReturnValue(true);
+  mocks.markCheckoutSessionInFlight.mockResolvedValue(undefined);
   mocks.markCheckoutSessionCompleted.mockResolvedValue(undefined);
   mocks.markCheckoutSessionCancelled.mockResolvedValue(undefined);
   mocks.transitionStatus.mockResolvedValue(undefined);
@@ -320,6 +333,159 @@ describe('finalizeCheckoutSession (#368)', () => {
       const [orderArg] = mocks.createOrder.mock.calls[0];
       // No Clover paymentId in stub mode — must not write the field.
       expect(orderArg.cloverPaymentId).toBeUndefined();
+    });
+  });
+
+  describe('concurrent promotion → race-safe claim (#405)', () => {
+    it('losing caller returns already-completed once winner finishes', async () => {
+      // Winner has already flipped session → completed and stamped orderId.
+      // The claim transaction throws InvalidCheckoutSessionTransitionError
+      // (in_flight is not a legal source for awaiting_payment → in_flight).
+      const { InvalidCheckoutSessionTransitionError } =
+        await vi.importActual<typeof import('@/lib/repositories')>(
+          '@/lib/repositories'
+        );
+      mocks.getCheckoutSession
+        // First read: still appears awaiting_payment to this caller.
+        .mockResolvedValueOnce(makeSession())
+        // Second read (after claim throws): winner has finished.
+        .mockResolvedValueOnce(
+          makeSession({ status: 'completed', orderId: 'ord-winner' })
+        );
+      mocks.getCloverPaymentForOrder.mockResolvedValue({
+        result: 'SUCCESS',
+        paymentId: 'pay-loser',
+      });
+      mocks.markCheckoutSessionInFlight.mockRejectedValue(
+        new InvalidCheckoutSessionTransitionError('in_flight', 'in_flight')
+      );
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out).toEqual({
+        kind: 'already-completed',
+        orderId: 'ord-winner',
+      });
+      // Crucially: loser must NOT createOrder or commitStock.
+      expect(mocks.createOrder).not.toHaveBeenCalled();
+      expect(mocks.commitStock).not.toHaveBeenCalled();
+    });
+
+    it('losing caller returns awaiting while winner is still in_flight', async () => {
+      const { InvalidCheckoutSessionTransitionError } =
+        await vi.importActual<typeof import('@/lib/repositories')>(
+          '@/lib/repositories'
+        );
+      mocks.getCheckoutSession
+        .mockResolvedValueOnce(makeSession())
+        .mockResolvedValueOnce(makeSession({ status: 'in_flight' }));
+      mocks.getCloverPaymentForOrder.mockResolvedValue({
+        result: 'SUCCESS',
+        paymentId: 'pay-loser',
+      });
+      mocks.markCheckoutSessionInFlight.mockRejectedValue(
+        new InvalidCheckoutSessionTransitionError('in_flight', 'in_flight')
+      );
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out.kind).toBe('awaiting');
+      expect(mocks.createOrder).not.toHaveBeenCalled();
+      expect(mocks.commitStock).not.toHaveBeenCalled();
+    });
+
+    it('losing caller returns declined when winner cancelled (commit failed)', async () => {
+      const { InvalidCheckoutSessionTransitionError } =
+        await vi.importActual<typeof import('@/lib/repositories')>(
+          '@/lib/repositories'
+        );
+      mocks.getCheckoutSession
+        .mockResolvedValueOnce(makeSession())
+        .mockResolvedValueOnce(makeSession({ status: 'cancelled' }));
+      mocks.getCloverPaymentForOrder.mockResolvedValue({
+        result: 'SUCCESS',
+        paymentId: 'pay-loser',
+      });
+      mocks.markCheckoutSessionInFlight.mockRejectedValue(
+        new InvalidCheckoutSessionTransitionError('in_flight', 'in_flight')
+      );
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out.kind).toBe('declined');
+      expect(mocks.createOrder).not.toHaveBeenCalled();
+    });
+
+    it('Promise.all([finalize, finalize]) yields exactly one Order + one stock commit', async () => {
+      // Simulate the real race: both callers see `awaiting_payment` on
+      // initial read; only one wins the in-flight claim.
+      const { InvalidCheckoutSessionTransitionError } =
+        await vi.importActual<typeof import('@/lib/repositories')>(
+          '@/lib/repositories'
+        );
+      mocks.getCheckoutSession.mockImplementation(async () =>
+        makeSession({ status: 'awaiting_payment' })
+      );
+      mocks.getCloverPaymentForOrder.mockResolvedValue({
+        result: 'SUCCESS',
+        paymentId: 'pay-race',
+      });
+      mocks.createOrder.mockResolvedValue('ord-race');
+      mocks.commitStock.mockResolvedValue(undefined);
+
+      let claims = 0;
+      let winnerOrderId: string | undefined;
+      mocks.markCheckoutSessionInFlight.mockImplementation(async () => {
+        claims += 1;
+        if (claims === 1) return undefined; // winner
+        throw new InvalidCheckoutSessionTransitionError(
+          'in_flight',
+          'in_flight'
+        );
+      });
+      mocks.markCheckoutSessionCompleted.mockImplementation(
+        async (_id, oid) => {
+          winnerOrderId = oid;
+        }
+      );
+      // Loser's second-read sees the winner's completed state.
+      // We cannot know order; have getCheckoutSession's second invocation
+      // for the loser return completed. Use a counter on getCheckoutSession.
+      let reads = 0;
+      mocks.getCheckoutSession.mockImplementation(async () => {
+        reads += 1;
+        // Reads 1 and 2 are the initial reads of both callers.
+        if (reads <= 2) return makeSession({ status: 'awaiting_payment' });
+        return makeSession({
+          status: 'completed',
+          orderId: winnerOrderId ?? 'ord-race',
+        });
+      });
+
+      const [a, b] = await Promise.all([
+        finalizeCheckoutSession({
+          cloverCheckoutSessionId: 'clover-sess-1',
+          cloverOrderId: 'clover-ord-1',
+        }),
+        finalizeCheckoutSession({
+          cloverCheckoutSessionId: 'clover-sess-1',
+          cloverOrderId: 'clover-ord-1',
+        }),
+      ]);
+
+      const kinds = [a.kind, b.kind].sort();
+      expect(kinds).toEqual(['already-completed', 'paid']);
+      expect(mocks.createOrder).toHaveBeenCalledOnce();
+      expect(mocks.commitStock).toHaveBeenCalledOnce();
     });
   });
 

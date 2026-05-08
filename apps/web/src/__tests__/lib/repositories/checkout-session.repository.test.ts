@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment,
-                  @typescript-eslint/no-unsafe-member-access,
-                  @typescript-eslint/no-unsafe-argument,
-                  @typescript-eslint/require-await */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface FakeDocSnap {
@@ -77,6 +73,7 @@ import {
   markAgeVerified,
   markCheckoutSessionCancelled,
   markCheckoutSessionCompleted,
+  markCheckoutSessionInFlight,
   markCheckoutSessionExpired,
 } from '@/lib/repositories/checkout-session.repository';
 import type {
@@ -253,15 +250,39 @@ describe('checkout-session.repository', () => {
 
     it('throws when session does not exist', async () => {
       txGetMock.mockResolvedValueOnce({ exists: false });
+      await expect(markAgeVerified('missing', 'v', new Date())).rejects.toThrow(
+        /not found/
+      );
+    });
+  });
+
+  describe('markCheckoutSessionInFlight (#405)', () => {
+    it('atomically claims awaiting_payment → in_flight', async () => {
+      txGetMock.mockResolvedValueOnce(makeSnap('awaiting_payment'));
+      const result = await markCheckoutSessionInFlight('clover-sess-abc');
+      const [, patch] = txUpdateMock.mock.calls[0];
+      expect(patch.status).toBe('in_flight');
+      expect(result.status).toBe('in_flight');
+    });
+
+    it('rejects a second concurrent claim (in_flight is not a legal source)', async () => {
+      txGetMock.mockResolvedValueOnce(makeSnap('in_flight'));
       await expect(
-        markAgeVerified('missing', 'v', new Date())
-      ).rejects.toThrow(/not found/);
+        markCheckoutSessionInFlight('clover-sess-abc')
+      ).rejects.toThrow(InvalidCheckoutSessionTransitionError);
+    });
+
+    it('rejects claim from awaiting_id (must verify ID first)', async () => {
+      txGetMock.mockResolvedValueOnce(makeSnap('awaiting_id'));
+      await expect(
+        markCheckoutSessionInFlight('clover-sess-abc')
+      ).rejects.toThrow(InvalidCheckoutSessionTransitionError);
     });
   });
 
   describe('markCheckoutSessionCompleted', () => {
-    it('transitions awaiting_payment → completed and stamps orderId', async () => {
-      txGetMock.mockResolvedValueOnce(makeSnap('awaiting_payment'));
+    it('transitions in_flight → completed and stamps orderId (#405)', async () => {
+      txGetMock.mockResolvedValueOnce(makeSnap('in_flight'));
       const result = await markCheckoutSessionCompleted(
         'clover-sess-abc',
         'order-123'
@@ -270,6 +291,15 @@ describe('checkout-session.repository', () => {
       expect(patch.status).toBe('completed');
       expect(patch.orderId).toBe('order-123');
       expect(result.status).toBe('completed');
+    });
+
+    it('rejects illegal direct awaiting_payment → completed transition (#405)', async () => {
+      // Post-#405 the only path to `completed` is via `in_flight` so the
+      // race-claim is the only place an Order id is minted.
+      txGetMock.mockResolvedValueOnce(makeSnap('awaiting_payment'));
+      await expect(
+        markCheckoutSessionCompleted('clover-sess-abc', 'order-123')
+      ).rejects.toThrow(InvalidCheckoutSessionTransitionError);
     });
 
     it('rejects illegal direct awaiting_id → completed transition', async () => {
@@ -298,6 +328,12 @@ describe('checkout-session.repository', () => {
   describe('markCheckoutSessionCancelled', () => {
     it('transitions awaiting_payment → cancelled', async () => {
       txGetMock.mockResolvedValueOnce(makeSnap('awaiting_payment'));
+      const result = await markCheckoutSessionCancelled('clover-sess-abc');
+      expect(result.status).toBe('cancelled');
+    });
+
+    it('transitions in_flight → cancelled (compensation path, #405)', async () => {
+      txGetMock.mockResolvedValueOnce(makeSnap('in_flight'));
       const result = await markCheckoutSessionCancelled('clover-sess-abc');
       expect(result.status).toBe('cancelled');
     });

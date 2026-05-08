@@ -120,6 +120,7 @@ export {
   createCheckoutSession,
   getCheckoutSession,
   markAgeVerified,
+  markCheckoutSessionInFlight,
   markCheckoutSessionCompleted,
   markCheckoutSessionExpired,
   markCheckoutSessionCancelled,
