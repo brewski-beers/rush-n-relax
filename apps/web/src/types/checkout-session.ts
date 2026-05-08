@@ -6,10 +6,16 @@
  * customer completes ID verification and Clover Hosted Checkout.
  *
  * Lifecycle:
- *   awaiting_id ── awaiting_payment ── completed
+ *   awaiting_id ── awaiting_payment ── in_flight ── completed
+ *                                                └── cancelled
  *                                  └── cancelled
  *                                  └── expired
  *   awaiting_id can also transition directly to cancelled or expired.
+ *
+ *   `in_flight` is the atomic claim state for `finalizeCheckoutSession`
+ *   (#405): only the first concurrent caller wins the
+ *   awaiting_payment → in_flight transition, preventing double Order
+ *   creation and double stock commit during the ~200ms promotion window.
  *
  * All access is server-side via Admin SDK. No client reads/writes.
  */
@@ -18,6 +24,7 @@ import type { OrderItem, ShippingAddress } from './order';
 export type CheckoutSessionStatus =
   | 'awaiting_id'
   | 'awaiting_payment'
+  | 'in_flight'
   | 'completed'
   | 'expired'
   | 'cancelled';
@@ -78,7 +85,8 @@ export const CHECKOUT_SESSION_TRANSITIONS: Record<
   CheckoutSessionStatus[]
 > = {
   awaiting_id: ['awaiting_payment', 'cancelled', 'expired'],
-  awaiting_payment: ['completed', 'cancelled', 'expired'],
+  awaiting_payment: ['in_flight', 'cancelled', 'expired'],
+  in_flight: ['completed', 'cancelled'],
   completed: [],
   cancelled: [],
   expired: [],

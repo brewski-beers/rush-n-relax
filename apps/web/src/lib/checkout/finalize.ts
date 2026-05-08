@@ -5,12 +5,20 @@
  * checkout flow. Called from `GET /order/{cloverCheckoutSessionId}/return`
  * after the customer is redirected back from Clover Hosted Checkout.
  *
- * ## Idempotency
+ * ## Idempotency & concurrency
  *
  * Keyed on `CheckoutSession.status === 'completed'`. A refresh of the
  * return URL after success short-circuits and returns the existing
- * `orderId`. The Firestore transaction in `markCheckoutSessionCompleted`
- * (#360) is the lock — only the first caller wins the status flip.
+ * `orderId`.
+ *
+ * Two concurrent return-URL hits during the ~200ms promotion window
+ * could both pass the early `status === 'completed'` check. To prevent
+ * double Order creation and double stock commit, `promote()` first
+ * atomically claims the session via `markCheckoutSessionInFlight`
+ * (`awaiting_payment → in_flight`, transactional). Only the winning
+ * caller proceeds; losers see `InvalidCheckoutSessionTransitionError`
+ * and re-read the session to return `{ kind: 'already-completed' }`
+ * once the winner finishes (#405).
  *
  * ## Atomicity & compensation
  *
@@ -46,8 +54,10 @@ import {
   createOrder,
   enqueueRefundPending,
   getCheckoutSession,
+  InvalidCheckoutSessionTransitionError,
   markCheckoutSessionCancelled,
   markCheckoutSessionCompleted,
+  markCheckoutSessionInFlight,
   transitionStatus,
 } from '@/lib/repositories';
 import type { CheckoutSession } from '@/types/checkout-session';
@@ -141,6 +151,31 @@ async function promote(
   session: CheckoutSession,
   cloverPaymentId: string | undefined
 ): Promise<FinalizeOutcome> {
+  // Step 0 — atomically claim the session (#405). Transition
+  // `awaiting_payment → in_flight` inside a transaction. The losing
+  // caller in a race throws InvalidCheckoutSessionTransitionError; we
+  // re-read and return the winner's orderId (or wait-state if the
+  // winner has not finished writing it yet).
+  try {
+    await markCheckoutSessionInFlight(session.id);
+  } catch (claimErr) {
+    if (claimErr instanceof InvalidCheckoutSessionTransitionError) {
+      const fresh = await loadSession(session.id);
+      if (fresh?.status === 'completed' && fresh.orderId) {
+        return { kind: 'already-completed', orderId: fresh.orderId };
+      }
+      // Winner is still in-flight, or session ended in cancelled/expired.
+      // Return `awaiting` so the caller renders the holding page; the
+      // next refresh will resolve to `already-completed` (or `declined`
+      // if the winner's commit failed).
+      if (fresh?.status === 'cancelled' || fresh?.status === 'expired') {
+        return { kind: 'declined', sessionId: session.id };
+      }
+      return { kind: 'awaiting', sessionId: session.id };
+    }
+    throw claimErr;
+  }
+
   // Step 1 — create the Order document.
   const orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt' | 'testMode'> =
     {
