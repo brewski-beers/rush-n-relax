@@ -199,10 +199,10 @@ export async function updateProduct(
 
   // Write the unified `variants` map directly. Each SKU is seeded with
   // empty locations; the repo's upsertProduct preserves any existing
-  // per-location qty/price/reserved data on matching variantIds and prunes
-  // the `legacyVariants` alias field in the same write. When no variant
-  // groups are configured we keep the editor's existing single `default`
-  // variant so the Variants & Stock section has a target to render.
+  // per-location qty/price/reserved data on matching variantIds. When no
+  // variant groups are configured we keep the editor's existing single
+  // `default` variant so the Variants & Stock section has a target to
+  // render.
   const seededVariants: { [variantId: string]: ProductVariant } =
     skus.length > 0
       ? Object.fromEntries(

@@ -29,8 +29,9 @@ export interface DisplayVariant {
  * - Returns `[]` when `variants` is undefined/empty.
  *
  * #397 step 2 of variant-model unification: signature reads the unified
- * `variants` map directly. The legacy `legacyVariants?` parameter (added
- * in PR #383) was dropped — labels come from the map entries themselves.
+ * `variants` map directly. The legacy array-shaped variant parameter
+ * (added in PR #383) was dropped — labels come from the map entries
+ * themselves.
  */
 export function resolveVariantPricing(
   variants: { [variantId: string]: ProductVariant } | undefined,

@@ -97,49 +97,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "jack-herer",
@@ -239,49 +197,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "zkittlez",
@@ -381,49 +297,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "super-lemon-haze",
@@ -523,49 +397,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "kush-mints",
@@ -665,49 +497,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "bubble-gum",
@@ -807,49 +597,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "og-kush",
@@ -950,49 +698,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "granddaddy-purple",
@@ -1093,49 +799,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "sour-diesel",
@@ -1236,49 +900,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "girl-scout-cookies",
@@ -1379,49 +1001,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wedding-cake",
@@ -1522,49 +1102,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "gelato",
@@ -1665,49 +1203,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "purple-punch",
@@ -1808,49 +1304,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "pineapple-express",
@@ -1951,49 +1405,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "trainwreck",
@@ -2094,49 +1506,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "northern-lights",
@@ -2237,49 +1607,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "ak-47",
@@ -2380,49 +1708,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "white-widow",
@@ -2523,49 +1809,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "super-silver-haze",
@@ -2666,49 +1910,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "strawberry-cough",
@@ -2809,49 +2011,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "amnesia-haze",
@@ -2952,49 +2112,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "chemdawg",
@@ -3095,49 +2213,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "durban-poison",
@@ -3238,49 +2314,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "gorilla-glue-4",
@@ -3381,49 +2415,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "runtz",
@@ -3524,49 +2516,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "do-si-dos",
@@ -3667,49 +2617,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "mimosa",
@@ -3810,49 +2718,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cereal-milk",
@@ -3953,49 +2819,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "mac-1",
@@ -4096,49 +2920,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "ice-cream-cake",
@@ -4239,49 +3021,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "sunset-sherbet",
@@ -4382,49 +3122,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "forbidden-fruit",
@@ -4525,49 +3223,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "mango-kush",
@@ -4668,49 +3324,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "lemon-skunk",
@@ -4811,49 +3425,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "purple-haze",
@@ -4954,49 +3526,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "death-star",
@@ -5097,49 +3627,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "tropicana-cookies",
@@ -5240,49 +3728,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "ghost-train-haze",
@@ -5383,49 +3829,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "skywalker-og",
@@ -5526,49 +3930,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "headband",
@@ -5669,49 +4031,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "banana-kush",
@@ -5812,49 +4132,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "tangie",
@@ -5955,49 +4233,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "moby-dick",
@@ -6098,49 +4334,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "lavender-jones",
@@ -6241,49 +4435,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cherry-pie",
@@ -6384,49 +4536,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "king-louis-xiii",
@@ -6527,49 +4637,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "fire-og",
@@ -6670,49 +4738,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "garlic-breath",
@@ -6813,49 +4839,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "animal-mints",
@@ -6956,49 +4940,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "biscotti",
@@ -7099,49 +5041,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "papaya",
@@ -7242,49 +5142,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "shark-shock",
@@ -7385,49 +5243,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "platinum-og",
@@ -7528,49 +5344,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "zookies",
@@ -7671,49 +5445,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "layer-cake",
@@ -7814,49 +5546,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "orange-cookies",
@@ -7957,49 +5647,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "la-confidential",
@@ -8100,49 +5748,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "critical-mass",
@@ -8243,49 +5849,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "gushers",
@@ -8386,49 +5950,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "permanent-marker",
@@ -8529,49 +6051,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "jealousy",
@@ -8672,49 +6152,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "jokerz-candy",
@@ -8815,49 +6253,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "3-5g",
-        "label": "3.5g",
-        "weight": {
-          "value": 3.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "7g",
-        "label": "7g",
-        "weight": {
-          "value": 7,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "14g",
-        "label": "14g",
-        "weight": {
-          "value": 14,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "28g",
-        "label": "28g",
-        "weight": {
-          "value": 28,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-mango-gummies",
@@ -8922,25 +6318,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-watermelon-gummies",
@@ -9005,25 +6383,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-strawberry-lemonade-gummies",
@@ -9101,33 +6461,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wyld-raspberry-gummies",
@@ -9192,25 +6526,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "50mg",
-        "label": "50mg",
-        "dose": {
-          "value": 50,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wyld-huckleberry-gummies",
@@ -9275,25 +6591,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "50mg",
-        "label": "50mg",
-        "dose": {
-          "value": 50,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wyld-elderberry-gummies",
@@ -9358,25 +6656,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wyld-peach-gummies",
@@ -9441,25 +6721,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "50mg",
-        "label": "50mg",
-        "dose": {
-          "value": 50,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cannaelite-dark-chocolate-bar",
@@ -9524,25 +6786,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cannaelite-milk-chocolate-bar",
@@ -9607,25 +6851,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cannaelite-white-chocolate-raspberry-bar",
@@ -9690,25 +6916,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-sour-apple-belts",
@@ -9773,25 +6981,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wyld-marionberry-gummies",
@@ -9856,25 +7046,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "50mg",
-        "label": "50mg",
-        "dose": {
-          "value": 50,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cannaelite-peanut-butter-cups",
@@ -9939,25 +7111,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-blueberry-gummies",
@@ -10035,33 +7189,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wyld-pear-gummies",
@@ -10126,25 +7254,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "50mg",
-        "label": "50mg",
-        "dose": {
-          "value": 50,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cannaelite-caramel-chews",
@@ -10209,25 +7319,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-tropical-mix-gummies",
@@ -10292,25 +7384,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wyld-blood-orange-gummies",
@@ -10375,25 +7449,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "50mg",
-        "label": "50mg",
-        "dose": {
-          "value": 50,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cannaelite-mint-chocolate-bar",
@@ -10458,25 +7514,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-cherry-cola-gummies",
@@ -10554,33 +7592,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wyld-lemon-gummies",
@@ -10645,25 +7657,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "50mg",
-        "label": "50mg",
-        "dose": {
-          "value": 50,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cannaelite-almond-toffee-crunch",
@@ -10728,25 +7722,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-grapefruit-gummies",
@@ -10811,25 +7787,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wyld-cbd-thc-gummies",
@@ -10894,25 +7852,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "50mg",
-        "label": "50mg",
-        "dose": {
-          "value": 50,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cannaelite-cookies-cream-bar",
@@ -10977,25 +7917,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-sour-worm-gummies",
@@ -11060,25 +7982,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wyld-blackberry-gummies",
@@ -11143,25 +8047,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "50mg",
-        "label": "50mg",
-        "dose": {
-          "value": 50,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cannaelite-hazelnut-truffle",
@@ -11226,25 +8112,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-passion-fruit-gummies",
@@ -11322,33 +8190,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "5mg",
-        "label": "5mg",
-        "dose": {
-          "value": 5,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "10mg",
-        "label": "10mg",
-        "dose": {
-          "value": 10,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wyld-pineapple-gummies",
@@ -11413,25 +8255,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "25mg",
-        "label": "25mg",
-        "dose": {
-          "value": 25,
-          "unit": "mg"
-        }
-      },
-      {
-        "variantId": "50mg",
-        "label": "50mg",
-        "dose": {
-          "value": 50,
-          "unit": "mg"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "blue-dream-distillate-cart",
@@ -11496,25 +8320,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "og-kush-live-resin-cart",
@@ -11579,25 +8385,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "sour-diesel-full-spectrum-disposable",
@@ -11662,25 +8450,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "granddaddy-purple-distillate-disposable",
@@ -11745,25 +8515,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "girl-scout-cookies-live-resin-cartridge",
@@ -11828,25 +8580,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "gelato-live-rosin-cartridge",
@@ -11911,25 +8645,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "strawberry-cough-full-spectrum-cart",
@@ -11994,25 +8710,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "gorilla-glue-distillate-cart",
@@ -12077,25 +8775,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "runtz-live-resin-disposable",
@@ -12160,25 +8840,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "durban-poison-sativa-distillate",
@@ -12243,25 +8905,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "purple-punch-indica-disposable",
@@ -12326,25 +8970,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "watermelon-z-full-spectrum-cart",
@@ -12409,25 +9035,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "mimosa-live-resin-cart",
@@ -12492,25 +9100,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "ice-cream-cake-distillate-disposable",
@@ -12575,25 +9165,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "mac-1-live-rosin-cart",
@@ -12658,25 +9230,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "northern-lights-broad-spectrum-cart",
@@ -12741,25 +9295,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "trainwreck-sativa-cart",
@@ -12824,25 +9360,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wedding-cake-live-resin-disposable",
@@ -12907,25 +9425,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "tropicana-cookies-distillate-cart",
@@ -12990,25 +9490,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "chemdawg-live-resin-cart",
@@ -13073,25 +9555,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "skywalker-og-indica-disposable",
@@ -13156,25 +9620,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "banana-kush-full-spectrum-cart",
@@ -13239,25 +9685,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "lemon-haze-distillate-disposable",
@@ -13322,25 +9750,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "forbidden-fruit-live-rosin-cart",
@@ -13405,25 +9815,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cereal-milk-live-resin-cart",
@@ -13488,25 +9880,7 @@
     "updatedAt": "2026-04-19T03:13:10.915735+00:00",
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-cart",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g-cart",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "uncle-skunks-lemon-ginger-sparkling-water",
@@ -13572,19 +9946,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "uncle-skunks-watermelon-sparkling-water",
@@ -13650,19 +10012,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "uncle-skunks-mango-fizz",
@@ -13729,19 +10079,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "uncle-skunks-black-cherry-sparkling-water",
@@ -13807,19 +10145,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-citrus-burst-thc-soda",
@@ -13885,19 +10211,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-peach-iced-tea-thc",
@@ -13964,19 +10278,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "uncle-skunks-cucumber-mint-sparkling-water",
@@ -14042,19 +10344,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-berry-blast-sparkling-lemonade",
@@ -14121,19 +10411,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "uncle-skunks-classic-cola",
@@ -14199,19 +10477,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-blood-orange-spritzer",
@@ -14277,19 +10543,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "uncle-skunks-tropical-punch",
@@ -14355,19 +10609,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-strawberry-agua-fresca",
@@ -14433,19 +10675,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "uncle-skunks-grapefruit-sparkling-water",
@@ -14512,19 +10742,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-lavender-lemonade",
@@ -14591,19 +10809,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "uncle-skunks-pineapple-coconut-water",
@@ -14669,19 +10875,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "enjoy-root-beer-float-soda",
@@ -14747,19 +10941,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "single-can",
-        "label": "Single Can",
-        "quantity": 1
-      },
-      {
-        "variantId": "2-pack",
-        "label": "2-pack",
-        "quantity": 2
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "gelato-live-rosin",
@@ -14821,25 +11003,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "gg4-shatter",
@@ -14901,25 +11065,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "sour-diesel-wax",
@@ -14981,25 +11127,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wedding-cake-badder",
@@ -15061,25 +11189,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "blue-dream-live-sugar",
@@ -15141,25 +11251,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "og-kush-crumble",
@@ -15221,25 +11313,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "purple-punch-rosin",
@@ -15301,25 +11375,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "mac-1-live-resin",
@@ -15381,25 +11437,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "runtz-diamonds",
@@ -15461,25 +11499,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "northern-lights-hash",
@@ -15541,25 +11561,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "strawberry-cough-live-resin",
@@ -15621,25 +11623,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "ice-cream-cake-badder",
@@ -15701,25 +11685,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "durban-poison-shatter",
@@ -15781,25 +11747,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cherry-pie-live-sugar",
@@ -15861,25 +11809,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "forbidden-fruit-wax",
@@ -15941,25 +11871,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g",
-        "label": "0.5g",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        }
-      },
-      {
-        "variantId": "1g",
-        "label": "1g",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        }
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "blue-dream-pre-roll",
@@ -16076,63 +11988,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "og-kush-pre-roll",
@@ -16249,63 +12105,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "sour-diesel-pre-roll",
@@ -16422,63 +12222,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "granddaddy-purple-infused-pre-roll",
@@ -16595,63 +12339,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "gelato-infused-pre-roll",
@@ -16768,63 +12456,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "wedding-cake-pre-roll",
@@ -16941,63 +12573,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "runtz-pre-roll",
@@ -17114,63 +12690,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "ghost-train-haze-pre-roll",
@@ -17287,63 +12807,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "purple-punch-pre-roll",
@@ -17460,63 +12924,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "mac-1-infused-pre-roll",
@@ -17633,63 +13041,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "durban-poison-pre-roll",
@@ -17806,63 +13158,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "ice-cream-cake-pre-roll",
@@ -17979,63 +13275,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "0-5g-1-pack",
-        "label": "0.5g / 1-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "0-5g-2-pack",
-        "label": "0.5g / 2-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "0-5g-5-pack",
-        "label": "0.5g / 5-pack",
-        "weight": {
-          "value": 0.5,
-          "unit": "g"
-        },
-        "quantity": 5
-      },
-      {
-        "variantId": "1g-1-pack",
-        "label": "1g / 1-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 1
-      },
-      {
-        "variantId": "1g-2-pack",
-        "label": "1g / 2-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 2
-      },
-      {
-        "variantId": "1g-5-pack",
-        "label": "1g / 5-pack",
-        "weight": {
-          "value": 1,
-          "unit": "g"
-        },
-        "quantity": 5
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cbd-relief-balm",
@@ -18075,14 +13315,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "thc-cbd-body-lotion",
@@ -18122,14 +13355,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cbd-cooling-gel",
@@ -18169,14 +13395,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "thc-massage-oil",
@@ -18216,14 +13435,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cbd-sleep-salve",
@@ -18263,14 +13475,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "full-spectrum-pain-patch",
@@ -18310,14 +13515,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cbd-lip-balm",
@@ -18357,14 +13555,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "thc-cbd-muscle-rub",
@@ -18404,14 +13595,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cbd-full-spectrum-tincture-1000mg",
@@ -18451,14 +13635,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "thc-tincture-500mg",
@@ -18498,14 +13675,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "1-1-cbd-thc-tincture-1000mg",
@@ -18545,14 +13715,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "sleep-tincture-cbn-500mg",
@@ -18592,14 +13755,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "high-dose-thc-tincture-2000mg",
@@ -18639,14 +13795,7 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   },
   {
     "id": "cbd-isolate-tincture-1500mg",
@@ -18686,13 +13835,6 @@
     },
     "inStockAt": ["online"],
     "pickupAt": [],
-    "featuredAt": [],
-    "legacyVariants": [
-      {
-        "variantId": "1-pack",
-        "label": "1-pack",
-        "quantity": 1
-      }
-    ]
+    "featuredAt": []
   }
 ]

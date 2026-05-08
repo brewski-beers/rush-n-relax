@@ -1,0 +1,286 @@
+import { describe, it, expect, vi } from 'vitest';
+import {
+  reconcileCheckoutSessionsImpl,
+  type ReconcilerDeps,
+  type ReconcileSession,
+  type ReconcileOrder,
+  type CloverCheckoutLookup,
+  SETTLE_WINDOW_MS,
+} from './reconciler';
+
+/**
+ * BDD coverage for the dual-direction CheckoutSession reconciler (#369 + #407).
+ *
+ * The reconciler is structured as pure orchestration over an injected
+ * dependency surface. Tests stub each adapter and assert the high-level
+ * decisions (promote / expire / cancel / pending / repair / conflict).
+ */
+
+const NOW_MS = Date.UTC(2026, 4, 6, 12, 0, 0);
+
+function makeSession(
+  overrides: Partial<ReconcileSession> = {}
+): ReconcileSession {
+  return {
+    id: 'sess_1',
+    status: 'awaiting_payment',
+    cloverCheckoutSessionId: 'sess_1',
+    holds: [
+      { productId: 'p1', variantId: 'default', locationId: 'online', qty: 1 },
+    ],
+    createdAt: new Date(NOW_MS - 30 * 60 * 1000),
+    expiresAt: new Date(NOW_MS + 60 * 60 * 1000),
+    ...overrides,
+  };
+}
+
+function makeDeps(overrides: Partial<ReconcilerDeps> = {}): ReconcilerDeps {
+  return {
+    listStaleSessions: vi.fn(async () => []),
+    listRecentOrdersWithCheckoutSession: vi.fn(async () => []),
+    getSession: vi.fn(async () => null),
+    lookupCloverCheckout: vi.fn(async () => null),
+    triggerStorefrontPromotion: vi.fn(async () => true),
+    expireSessionAndReleaseHolds: vi.fn(async () => undefined),
+    cancelSessionAndReleaseHolds: vi.fn(async () => undefined),
+    repairSessionBackPointer: vi.fn(async () => ({ repaired: true })),
+    log: vi.fn(),
+    ...overrides,
+  };
+}
+
+describe('reconcileCheckoutSessionsImpl — forward repair (#369)', () => {
+  it('Given a stale session with a Clover SUCCESS payment, When the cron runs, Then it triggers the storefront promotion and counts it', async () => {
+    const session = makeSession();
+    const triggerStorefrontPromotion = vi.fn(async () => true);
+    const deps = makeDeps({
+      listStaleSessions: vi.fn(async () => [session]),
+      lookupCloverCheckout: vi.fn(
+        async (): Promise<CloverCheckoutLookup> => ({
+          result: 'SUCCESS',
+          cloverOrderId: 'ord_clover_1',
+        })
+      ),
+      triggerStorefrontPromotion,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(triggerStorefrontPromotion).toHaveBeenCalledWith(
+      'sess_1',
+      'ord_clover_1'
+    );
+    expect(result.promoted).toBe(1);
+    expect(result.scanned).toBe(1);
+    expect(result.errors).toBe(0);
+  });
+
+  it('Given a stale session whose Clover payment FAILED, When the cron runs, Then it cancels and releases holds', async () => {
+    const session = makeSession();
+    const cancelSessionAndReleaseHolds = vi.fn(async () => undefined);
+    const deps = makeDeps({
+      listStaleSessions: vi.fn(async () => [session]),
+      lookupCloverCheckout: vi.fn(
+        async (): Promise<CloverCheckoutLookup> => ({ result: 'FAIL' })
+      ),
+      cancelSessionAndReleaseHolds,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(cancelSessionAndReleaseHolds).toHaveBeenCalledWith(session);
+    expect(result.declined).toBe(1);
+  });
+
+  it('Given a stale session whose Clover payment is PENDING, When the cron runs, Then it leaves the session alone for the next tick', async () => {
+    const session = makeSession();
+    const triggerStorefrontPromotion = vi.fn(async () => true);
+    const deps = makeDeps({
+      listStaleSessions: vi.fn(async () => [session]),
+      lookupCloverCheckout: vi.fn(
+        async (): Promise<CloverCheckoutLookup> => ({ result: 'PENDING' })
+      ),
+      triggerStorefrontPromotion,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(triggerStorefrontPromotion).not.toHaveBeenCalled();
+    expect(result.pending).toBe(1);
+    expect(result.promoted).toBe(0);
+  });
+
+  it('Given an expired session past its expiresAt, When the cron runs, Then it expires and releases holds without calling Clover', async () => {
+    const session = makeSession({
+      expiresAt: new Date(NOW_MS - 1000),
+    });
+    const expireSessionAndReleaseHolds = vi.fn(async () => undefined);
+    const lookupCloverCheckout = vi.fn(
+      async (): Promise<CloverCheckoutLookup> => ({ result: 'SUCCESS' })
+    );
+    const deps = makeDeps({
+      listStaleSessions: vi.fn(async () => [session]),
+      expireSessionAndReleaseHolds,
+      lookupCloverCheckout,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(expireSessionAndReleaseHolds).toHaveBeenCalledWith(session);
+    expect(lookupCloverCheckout).not.toHaveBeenCalled();
+    expect(result.expired).toBe(1);
+  });
+
+  it('uses SETTLE_WINDOW_MS to compute the staleBefore boundary passed to listStaleSessions', async () => {
+    const listStaleSessions = vi.fn(async () => []);
+    const deps = makeDeps({ listStaleSessions });
+
+    await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    const arg = listStaleSessions.mock.calls[0][0] as Date;
+    expect(arg.getTime()).toBe(NOW_MS - SETTLE_WINDOW_MS);
+  });
+
+  it('skips sessions whose status raced into a terminal state since the query', async () => {
+    const session = makeSession({ status: 'completed' });
+    const lookupCloverCheckout = vi.fn();
+    const deps = makeDeps({
+      listStaleSessions: vi.fn(async () => [session]),
+      lookupCloverCheckout,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(lookupCloverCheckout).not.toHaveBeenCalled();
+    expect(result.scanned).toBe(1);
+    expect(result.promoted).toBe(0);
+  });
+});
+
+describe('reconcileCheckoutSessionsImpl — back-pointer repair (#407)', () => {
+  it('Given a paid order whose linked session has no orderId, When the cron runs, Then it patches the session pointer', async () => {
+    const order: ReconcileOrder = {
+      id: 'ord_1',
+      cloverCheckoutSessionId: 'sess_1',
+      status: 'paid',
+      createdAt: new Date(NOW_MS - 60 * 1000),
+    };
+    const session = makeSession({
+      status: 'awaiting_payment',
+      orderId: undefined,
+    });
+    const repairSessionBackPointer = vi.fn(async () => ({ repaired: true }));
+    const deps = makeDeps({
+      listRecentOrdersWithCheckoutSession: vi.fn(async () => [order]),
+      getSession: vi.fn(async () => session),
+      repairSessionBackPointer,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(repairSessionBackPointer).toHaveBeenCalledWith('sess_1', 'ord_1');
+    expect(result.backPointersRepaired).toBe(1);
+    expect(result.backPointerConflicts).toBe(0);
+  });
+
+  it('Given an order whose session already points at it, When the cron runs, Then it skips the back-pointer repair', async () => {
+    const order: ReconcileOrder = {
+      id: 'ord_1',
+      cloverCheckoutSessionId: 'sess_1',
+      status: 'paid',
+      createdAt: new Date(NOW_MS - 60 * 1000),
+    };
+    const session = makeSession({ status: 'completed', orderId: 'ord_1' });
+    const repairSessionBackPointer = vi.fn(async () => ({ repaired: true }));
+    const deps = makeDeps({
+      listRecentOrdersWithCheckoutSession: vi.fn(async () => [order]),
+      getSession: vi.fn(async () => session),
+      repairSessionBackPointer,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(repairSessionBackPointer).not.toHaveBeenCalled();
+    expect(result.backPointersRepaired).toBe(0);
+  });
+
+  it('Given a session already linked to a DIFFERENT order, When the cron runs, Then it records a conflict and does not overwrite', async () => {
+    const order: ReconcileOrder = {
+      id: 'ord_2',
+      cloverCheckoutSessionId: 'sess_1',
+      status: 'paid',
+      createdAt: new Date(NOW_MS - 60 * 1000),
+    };
+    const session = makeSession({ status: 'completed', orderId: 'ord_1' });
+    const repairSessionBackPointer = vi.fn(async () => ({
+      repaired: false,
+      conflict: 'session.orderId=ord_1 != target ord_2',
+    }));
+    const deps = makeDeps({
+      listRecentOrdersWithCheckoutSession: vi.fn(async () => [order]),
+      getSession: vi.fn(async () => session),
+      repairSessionBackPointer,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(result.backPointerConflicts).toBe(1);
+    expect(result.backPointersRepaired).toBe(0);
+  });
+
+  it('skips back-pointer repair for cancelled orders', async () => {
+    const order: ReconcileOrder = {
+      id: 'ord_x',
+      cloverCheckoutSessionId: 'sess_x',
+      status: 'cancelled',
+      createdAt: new Date(NOW_MS - 60 * 1000),
+    };
+    const getSession = vi.fn();
+    const deps = makeDeps({
+      listRecentOrdersWithCheckoutSession: vi.fn(async () => [order]),
+      getSession,
+    });
+
+    await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(getSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('reconcileCheckoutSessionsImpl — error isolation', () => {
+  it('continues processing remaining sessions when one Clover lookup throws', async () => {
+    const a = makeSession({ id: 'a', cloverCheckoutSessionId: 'a' });
+    const b = makeSession({ id: 'b', cloverCheckoutSessionId: 'b' });
+    const lookupCloverCheckout = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce({ result: 'SUCCESS', cloverOrderId: 'ord_b' });
+    const triggerStorefrontPromotion = vi.fn(async () => true);
+    const deps = makeDeps({
+      listStaleSessions: vi.fn(async () => [a, b]),
+      lookupCloverCheckout,
+      triggerStorefrontPromotion,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(result.errors).toBe(1);
+    expect(result.promoted).toBe(1);
+    expect(triggerStorefrontPromotion).toHaveBeenCalledWith('b', 'ord_b');
+  });
+
+  it('returns early without touching back-pointer repair when listStaleSessions throws', async () => {
+    const listRecentOrdersWithCheckoutSession = vi.fn(async () => []);
+    const deps = makeDeps({
+      listStaleSessions: vi.fn(async () => {
+        throw new Error('firestore down');
+      }),
+      listRecentOrdersWithCheckoutSession,
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(listRecentOrdersWithCheckoutSession).not.toHaveBeenCalled();
+    expect(result.scanned).toBe(0);
+  });
+});

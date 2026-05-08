@@ -12,7 +12,6 @@ import type {
   Product,
   ProductVariant,
   ProductVariantLocation,
-  LegacyProductVariant,
   VariantGroup,
   VariantOption,
   ProductSummary,
@@ -212,8 +211,6 @@ export async function getRelatedProducts(
  *      reserved — when the caller seeds an entry with empty locations).
  *   4. Recompute denormalized indexes (`inStockAt` / `pickupAt` /
  *      `featuredAt`).
- *   5. Delete the legacy alias field `legacyVariants` via
- *      `FieldValue.delete()` in the same write.
  *
  * `variantGroups` (option-group definitions used by the storefront PDP for
  * the multi-dimensional selector) is NOT pruned here — per Path A (#399)
@@ -254,7 +251,6 @@ export async function upsertProduct(
     nextVariants = merged;
   }
 
-  const { FieldValue } = await import('firebase-admin/firestore');
   const payload: Record<string, unknown> = stripUndefinedFields({
     ...data,
     updatedAt: now,
@@ -266,11 +262,6 @@ export async function upsertProduct(
     payload.inStockAt = indexes.inStockAt;
     payload.pickupAt = indexes.pickupAt;
     payload.featuredAt = indexes.featuredAt;
-  }
-
-  // Self-prune legacy alias field when present on the existing doc.
-  if (existingData.legacyVariants !== undefined) {
-    payload.legacyVariants = FieldValue.delete();
   }
 
   await ref.set(payload, { merge: true });
@@ -329,8 +320,6 @@ function docToProductSummary(
       VALID_STRAINS.has(d.strain as ProductStrain)
         ? (d.strain as ProductStrain)
         : undefined,
-    legacyVariants:
-      docToLegacyVariants(d.legacyVariants) ?? docToLegacyVariants(d.variants),
     variantGroups: docToVariantGroups(d.variantGroups),
     leaflyUrl: d.leaflyUrl ?? undefined,
     variants,
@@ -368,8 +357,6 @@ function docToProduct(id: string, d: FirebaseFirestore.DocumentData): Product {
     effects: Array.isArray(d.effects) ? (d.effects as string[]) : undefined,
     flavors: Array.isArray(d.flavors) ? (d.flavors as string[]) : undefined,
     variantGroups: docToVariantGroups(d.variantGroups),
-    legacyVariants:
-      docToLegacyVariants(d.legacyVariants) ?? docToLegacyVariants(d.variants),
     extractionType:
       typeof d.extractionType === 'string' ? d.extractionType : undefined,
     hardwareType:
@@ -434,41 +421,26 @@ function docToVariantGroups(raw: unknown): VariantGroup[] | undefined {
 }
 
 /**
- * Defensively read the legacy array-shaped `variants` field. Returns
- * undefined when the field is absent OR when it's already the unified map
- * shape (post-self-pruning).
+ * Defensively read a legacy array-shaped `variants` field as bare
+ * (variantId, label) pairs. Returns undefined when the field is absent or
+ * when it's already the unified map shape (post-self-pruning).
+ *
+ * Used solely by `projectVariants` to back-fill labels for pre-unification
+ * docs whose `variants` field still lives in array form. Per-variant
+ * metadata (weight/quantity/dose) is not read — it was unused at every
+ * call site and the field has been removed (#404 / Option C).
  */
-function docToLegacyVariants(raw: unknown): LegacyProductVariant[] | undefined {
+function readLegacyVariantArray(
+  raw: unknown
+): { variantId: string; label: string }[] | undefined {
   if (!Array.isArray(raw)) return undefined;
-  const valid: LegacyProductVariant[] = [];
+  const valid: { variantId: string; label: string }[] = [];
   for (const item of raw) {
     if (!item || typeof item !== 'object') continue;
     const v = item as Record<string, unknown>;
     if (typeof v.variantId !== 'string' || typeof v.label !== 'string')
       continue;
-    const variant: LegacyProductVariant = {
-      variantId: v.variantId,
-      label: v.label,
-    };
-    if (v.weight && typeof v.weight === 'object') {
-      const w = v.weight as Record<string, unknown>;
-      if (typeof w.value === 'number' && (w.unit === 'g' || w.unit === 'oz')) {
-        variant.weight = { value: w.value, unit: w.unit };
-      }
-    }
-    if (typeof v.quantity === 'number') {
-      variant.quantity = v.quantity;
-    }
-    if (v.dose && typeof v.dose === 'object') {
-      const dose = v.dose as Record<string, unknown>;
-      if (
-        typeof dose.value === 'number' &&
-        (dose.unit === 'mg' || dose.unit === 'mcg')
-      ) {
-        variant.dose = { value: dose.value, unit: dose.unit };
-      }
-    }
-    valid.push(variant);
+    valid.push({ variantId: v.variantId, label: v.label });
   }
   return valid.length > 0 ? valid : undefined;
 }
@@ -576,16 +548,15 @@ function readLocation(raw: unknown): ProductVariantLocation | null {
 }
 
 /**
- * Project any combination of legacy fields (`legacyVariants` / `variants`
- * array, `variantGroups`) AND the canonical `variants` map into a single
+ * Project any combination of legacy array-shape `variants` (pre-unification
+ * docs) and `variantGroups` AND the canonical `variants` map into a single
  * unified `variants` map.
  *
  * Precedence (entries from earlier sources win on collision so any data
  * already on the canonical field is the source of truth):
  *   1. `variants` (canonical map) — wins on label and locations
- *   2. legacy array `variants` / `legacyVariants` — provides labels for
- *      ids that exist in the map; bootstraps empty entries for ids that
- *      only appear in the array (rare; defensive)
+ *   2. legacy array-shape `variants` field (pre-unification docs) —
+ *      provides labels and bootstraps id-only entries
  *   3. `variantGroups` — bootstraps empty entries via SKU expansion when no
  *      map data exists for the resulting ids. Per Path A (#399),
  *      `variantGroups` is the option-dimension authoring source and is
@@ -627,12 +598,9 @@ function projectVariants(
   // 1. canonical map
   ingestMap(d.variants);
 
-  // 2. legacy array — supplies labels and bootstraps id-only entries.
-  // Read from both `variants` (pre-unification field name) and
-  // `legacyVariants` (post-unification field name; still consumed by the
-  // PDP "see in store" fallback per Path A — #399).
-  const legacyArr =
-    docToLegacyVariants(d.legacyVariants) ?? docToLegacyVariants(d.variants);
+  // 2. legacy array-shape `variants` field (pre-unification docs) —
+  // supplies labels and bootstraps id-only entries.
+  const legacyArr = readLegacyVariantArray(d.variants);
   if (legacyArr) {
     for (const v of legacyArr) {
       if (!out[v.variantId]) {
@@ -723,42 +691,30 @@ export function recomputeProductIndexes(
 }
 
 /**
- * Build the Firestore set/merge payload for a self-pruning write. Returns
+ * Build the Firestore set/merge payload for a write. Returns
  * an object ready to pass to `tx.set(ref, payload, { merge: true })`. Sets
- * the unified `variants` map + recomputed indexes + `updatedAt`, and uses
- * `FieldValue.delete()` sentinels to physically remove the array-shaped
- * legacy `variants` field and `legacyVariants` from the stored doc in the
- * same atomic write.
+ * the unified `variants` map + recomputed indexes + `updatedAt`. The
+ * array-shape `variants` field (pre-unification docs) is overwritten
+ * atomically by setting `payload.variants` to the unified map — Firestore
+ * replaces the value entirely.
  *
  * Note: `variantGroups` is NOT pruned here — per Path A (#399) it is the
  * stable option-dimension authoring source and coexists with the unified
  * `variants` map.
  */
-async function buildSelfPruningPayload(
-  data: FirebaseFirestore.DocumentData,
+function buildSelfPruningPayload(
+  _data: FirebaseFirestore.DocumentData,
   nextVariants: { [variantId: string]: ProductVariant },
   now: Date
-): Promise<Record<string, unknown>> {
-  const { FieldValue } = await import('firebase-admin/firestore');
+): Record<string, unknown> {
   const indexes = recomputeProductIndexes(nextVariants);
-  const payload: Record<string, unknown> = {
+  return {
     variants: nextVariants,
     inStockAt: indexes.inStockAt,
     pickupAt: indexes.pickupAt,
     featuredAt: indexes.featuredAt,
     updatedAt: now,
   };
-  // Self-prune legacy alias field when present on the existing doc.
-  // Skipping the delete when absent keeps the set payload tight.
-  // `variantGroups` is NOT pruned — per Path A (#399) it is the stable
-  // option-dimension authoring source.
-  // The array-shape `variants` field is overwritten atomically by setting
-  // `payload.variants` to the unified map above — Firestore replaces the
-  // value entirely, so no FieldValue.delete is needed for that path.
-  if (data.legacyVariants !== undefined) {
-    payload.legacyVariants = FieldValue.delete();
-  }
-  return payload;
 }
 
 /**
@@ -807,7 +763,7 @@ export async function setVariantLocation(
     };
 
     const now = new Date();
-    const payload = await buildSelfPruningPayload(data, nextVariants, now);
+    const payload = buildSelfPruningPayload(data, nextVariants, now);
     tx.set(ref, payload, { merge: true });
 
     const logRef = ref.collection('adjustments').doc();
@@ -930,7 +886,7 @@ export async function decrementVariantStock(
     const now = new Date();
 
     for (const [slug, w] of working) {
-      const payload = await buildSelfPruningPayload(w.data, w.variants, now);
+      const payload = buildSelfPruningPayload(w.data, w.variants, now);
       tx.set(w.ref, payload, { merge: true });
 
       for (const [beforeKey, before] of w.beforeMap) {
@@ -1163,7 +1119,7 @@ async function mutateReservations(
     const now = new Date();
 
     for (const [slug, w] of working) {
-      const payload = await buildSelfPruningPayload(w.data, w.variants, now);
+      const payload = buildSelfPruningPayload(w.data, w.variants, now);
       tx.set(w.ref, payload, { merge: true });
 
       for (const [beforeKey, before] of w.beforeMap) {
