@@ -177,6 +177,30 @@ describe('CheckoutVerifyPage', () => {
     );
   });
 
+  it('renders the page (degraded) when createAgeCheckerSession throws — does not 500', async () => {
+    getCheckoutSessionMock.mockResolvedValue(buildSession());
+    createAgeCheckerSessionMock.mockRejectedValue(
+      new Error('AgeChecker session/create failed: 400 — code=invalid_key')
+    );
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const page = await CheckoutVerifyPage({
+      params: Promise.resolve({ sessionId: 'sess_1' }),
+    });
+    render(page);
+
+    // Page still renders — the order summary is present.
+    expect(screen.getByText(/demo gummies/i)).toBeInTheDocument();
+    // No session was persisted because creation failed.
+    expect(setAgeCheckerSessionIdMock).not.toHaveBeenCalled();
+    // The failure was logged loudly.
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[agechecker] session/create failed',
+      expect.objectContaining({ sessionId: 'sess_1' })
+    );
+    errorSpy.mockRestore();
+  });
+
   it('does NOT call createAgeCheckerSession when ageCheckerSessionId is already set', async () => {
     getCheckoutSessionMock.mockResolvedValue(
       buildSession({ ageCheckerSessionId: 'ac-existing-uuid' })

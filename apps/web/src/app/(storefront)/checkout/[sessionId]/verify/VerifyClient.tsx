@@ -38,10 +38,12 @@ interface Props {
   sessionId: string;
   apiKey: string;
   /**
-   * Server-created AgeChecker session UUID — required so the popup's
-   * verification result is POSTed to our webhook with metadata.order set.
+   * Server-created AgeChecker session UUID — needed so the popup's
+   * verification result is PUT to our webhook with metadata.order set.
+   * `undefined` in the degraded path where `session/create` failed: the
+   * popup still loads (so the page renders) but the callback won't fire.
    */
-  ageCheckerSessionId: string;
+  ageCheckerSessionId: string | undefined;
   customerEmail: string | undefined;
   redirectUrl: string;
   showSimulator?: boolean;
@@ -68,7 +70,7 @@ export function VerifyClient({
       element: '#proceed-to-payment',
       key: apiKey,
       order: sessionId,
-      session: ageCheckerSessionId,
+      ...(ageCheckerSessionId ? { session: ageCheckerSessionId } : {}),
       ...(customerEmail ? { email: customerEmail } : {}),
     };
     window.AgeCheckerConfig = config;

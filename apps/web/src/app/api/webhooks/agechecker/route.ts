@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import {
   isAgeCheckerTestMode,
+  normalizeStatus,
   verifyAgeCheckerSignature,
   verifyVerificationId,
-  type AgeCheckStatus,
 } from '@/lib/agechecker';
 import {
   getCheckoutSession,
@@ -15,64 +15,45 @@ import {
 } from '@/lib/repositories';
 
 /**
- * AgeChecker webhook handler (post-#367).
+ * AgeChecker verification callback handler.
  *
- * Authoritative outcome for ID verification. Operates on `CheckoutSession`
- * (not Order — orders are not created until Clover capture). The `order`
- * field on the AgeChecker payload carries our **CheckoutSession id**, not
- * an Order id.
+ * AgeChecker delivers the result via **HTTP PUT** (not POST) to the
+ * `callback_url` registered on the server-created session. The body is
+ * minimal — `{ uuid, status, reason? }` — and contains NO `metadata` and
+ * NO `order`. To resolve our `CheckoutSession`, we must call
+ * `GET /v1/status/{uuid}` (via `verifyVerificationId`), which both reads
+ * back `metadata.order` AND serves as defense-in-depth (a forged callback
+ * cannot fake `accepted` — the AgeChecker API is the source of truth).
  *
- * Responsibilities:
- *   1. Verify HMAC signature (`x-agechecker-signature` header).
- *   2. Defense in depth: re-fetch the verificationId via `verifyVerificationId`.
- *      Reject if the lookup says the id is not actually `pass`.
- *   3. On `pass` → `markAgeVerified(sessionId, verificationId, verifiedAt)`
- *      (transitions `awaiting_id` → `awaiting_payment`).
- *   4. On `deny` / `underage` → `markCheckoutSessionCancelled(sessionId)` plus
- *      `releaseStock(session.holds)` so the storefront sees honest stock.
- *   5. On `pending` / `manual_review` → log only, no state change.
- *   6. Idempotent: if the session is already past `awaiting_id`, ack 200.
+ * Authentication: `X-AgeChecker-Signature` = base64 HMAC-SHA1 of the body,
+ * keyed with the account secret.
+ *
+ * Outcome handling (driven by the `/v1/status` lookup, not the callback
+ * body):
+ *   - `accepted` → `markAgeVerified(sessionId, uuid, verifiedAt)`
+ *     (transitions `awaiting_id` → `awaiting_payment`).
+ *   - `denied`   → `markCheckoutSessionCancelled(sessionId)` +
+ *     `releaseStock(session.holds)`.
+ *   - `signature` / `photo_id` / `phone_validation` / `sms_sent` /
+ *     `pending` → non-terminal step-up; log only, no state change.
+ *   - Idempotent: if the session is already past `awaiting_id`, ack 200.
  *
  * No Order is created here. Order creation runs from the Clover capture
  * webhook + reconciliation cron (#373 family).
+ *
+ * Note: `POST` is exported as a defensive alias to `PUT` — costs nothing
+ * and tolerates AgeChecker config drift / manual replays.
  */
-interface AgeCheckerWebhookPayload {
-  verificationId?: string;
+interface AgeCheckerCallbackPayload {
+  /** AgeChecker verification (or session) uuid. */
+  uuid?: string;
+  /** Wire status — typically `accepted` or `denied` in the callback. */
   status?: string;
-  /**
-   * Carries our CheckoutSession id (Clover Hosted Checkout session id).
-   * Named `order` upstream for legacy compatibility with AgeChecker's
-   * widget config — kept that way to avoid touching the customer-facing
-   * widget contract.
-   */
-  order?: string;
-  verifiedAt?: string | number;
-  email?: string;
+  /** Deny reason, when `status === 'denied'`. */
+  reason?: string;
 }
 
-function normalizeStatus(raw: unknown): AgeCheckStatus {
-  if (typeof raw !== 'string') return 'pending';
-  const v = raw.toLowerCase();
-  if (v === 'pass' || v === 'passed' || v === 'approved' || v === 'verified') {
-    return 'pass';
-  }
-  if (v === 'deny' || v === 'denied' || v === 'rejected' || v === 'fail' || v === 'failed') {
-    return 'deny';
-  }
-  if (v === 'underage') return 'underage';
-  if (v === 'manual_review' || v === 'manual' || v === 'review') {
-    return 'manual_review';
-  }
-  return 'pending';
-}
-
-function parseDate(raw: unknown): Date | undefined {
-  if (typeof raw !== 'string' && typeof raw !== 'number') return undefined;
-  const d = new Date(raw);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-}
-
-export async function POST(req: Request): Promise<NextResponse> {
+export async function PUT(req: Request): Promise<NextResponse> {
   const rawBody = await req.text();
   const signature = req.headers.get('x-agechecker-signature');
 
@@ -80,61 +61,63 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
-  let payload: AgeCheckerWebhookPayload;
+  let payload: AgeCheckerCallbackPayload;
   try {
-    payload = JSON.parse(rawBody) as AgeCheckerWebhookPayload;
+    payload = JSON.parse(rawBody) as AgeCheckerCallbackPayload;
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const verificationId = payload.verificationId;
-  const status = normalizeStatus(payload.status);
-  const sessionId = payload.order;
-
-  // Non-terminal outcomes: log only.
-  if (status === 'pending' || status === 'manual_review') {
-    console.warn('[agechecker] non-terminal outcome', {
-      verificationId,
-      status,
-      sessionId,
-    });
-    return NextResponse.json({ received: true, handled: false });
+  const uuid = payload.uuid;
+  if (!uuid) {
+    return NextResponse.json({ error: 'Missing uuid' }, { status: 400 });
   }
 
-  if (!verificationId) {
-    return NextResponse.json(
-      { error: 'Missing verificationId' },
-      { status: 400 }
-    );
-  }
+  // The callback body has no metadata — resolve the CheckoutSession id and
+  // the authoritative outcome by hitting `GET /v1/status/{uuid}`. This is
+  // also the defense-in-depth check: we trust the AgeChecker API over the
+  // callback body's `status`.
+  const lookup = await verifyVerificationId(uuid);
+  const sessionId =
+    typeof lookup.metadata?.order === 'string'
+      ? lookup.metadata.order
+      : undefined;
+
   if (!sessionId) {
-    console.warn('[agechecker] terminal outcome without sessionId', {
-      verificationId,
-      status,
+    console.warn('[agechecker] callback uuid has no resolvable order', {
+      uuid,
+      lookupStatus: lookup.status,
+      callbackStatus: payload.status,
     });
     return NextResponse.json({ received: true, handled: false });
   }
 
-  // Defense in depth: re-fetch the verificationId. A forged "pass" webhook
-  // cannot bypass verification — we trust the AgeChecker API over the payload.
-  const lookup = await verifyVerificationId(verificationId);
+  // Authoritative status comes from the lookup. `lookup.valid` is the only
+  // signal that means "AgeChecker says accepted"; otherwise fall back to
+  // the normalized lookup status (deny / pending / step-up).
+  const status = lookup.valid ? 'pass' : normalizeStatus(lookup.status);
 
-  if (status === 'pass' && !lookup.valid) {
+  // Non-terminal step-up statuses: log only, ack 200, no state change.
+  if (status === 'pending' || status === 'manual_review') {
+    console.warn('[agechecker] non-terminal outcome — step-up required', {
+      uuid,
+      sessionId,
+      lookupStatus: lookup.status,
+      callbackStatus: payload.status,
+      reason: payload.reason,
+    });
+    return NextResponse.json({ received: true, handled: false });
+  }
+
+  const session = await getCheckoutSession(sessionId);
+  if (!session) {
     return NextResponse.json(
-      { error: 'verificationId failed lookup' },
-      { status: 401 }
+      { error: 'CheckoutSession not found' },
+      { status: 404 }
     );
   }
 
   if (status === 'pass') {
-    const session = await getCheckoutSession(sessionId);
-    if (!session) {
-      return NextResponse.json(
-        { error: 'CheckoutSession not found' },
-        { status: 404 }
-      );
-    }
-
     // Idempotent: already verified → ack.
     if (session.status !== 'awaiting_id') {
       return NextResponse.json({
@@ -144,11 +127,10 @@ export async function POST(req: Request): Promise<NextResponse> {
       });
     }
 
-    const verifiedAt =
-      lookup.verifiedAt ?? parseDate(payload.verifiedAt) ?? new Date();
+    const verifiedAt = lookup.verifiedAt ?? new Date();
 
     try {
-      await markAgeVerified(sessionId, verificationId, verifiedAt);
+      await markAgeVerified(sessionId, uuid, verifiedAt);
     } catch (err) {
       if (err instanceof InvalidCheckoutSessionTransitionError) {
         return NextResponse.json({
@@ -163,16 +145,8 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ received: true, handled: true });
   }
 
-  // Terminal denial: deny / underage (or pass-downgraded-by-lookup).
+  // Terminal denial: deny / underage.
   if (status === 'deny' || status === 'underage') {
-    const session = await getCheckoutSession(sessionId);
-    if (!session) {
-      return NextResponse.json(
-        { error: 'CheckoutSession not found' },
-        { status: 404 }
-      );
-    }
-
     // Idempotent: already cancelled / past awaiting_id → ack without redo.
     if (session.status === 'cancelled') {
       return NextResponse.json({
@@ -195,8 +169,8 @@ export async function POST(req: Request): Promise<NextResponse> {
       throw err;
     }
 
-    // Release the holds so storefront stock is honest. Non-fatal if it fails;
-    // the cron sweep will eventually reconcile.
+    // Release the holds so storefront stock is honest. Non-fatal if it
+    // fails; the cron sweep will eventually reconcile.
     const holds: HoldRequest[] = (session.holds ?? []).map(h => ({
       productId: h.productId,
       variantId: h.variantId,
@@ -228,3 +202,9 @@ export async function POST(req: Request): Promise<NextResponse> {
   });
   return NextResponse.json({ received: true, handled: false });
 }
+
+/**
+ * Defensive alias — AgeChecker uses PUT, but accepting POST as well costs
+ * nothing and tolerates config drift / manual replays.
+ */
+export const POST = PUT;
