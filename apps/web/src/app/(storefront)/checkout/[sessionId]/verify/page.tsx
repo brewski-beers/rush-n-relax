@@ -1,5 +1,12 @@
 import { redirect } from 'next/navigation';
-import { getCheckoutSession } from '@/lib/repositories/checkout-session.repository';
+import {
+  getCheckoutSession,
+  setAgeCheckerSessionId,
+} from '@/lib/repositories/checkout-session.repository';
+import {
+  createAgeCheckerSession,
+  resolveAgeCheckerCallbackBase,
+} from '@/lib/agechecker';
 import { formatCents } from '@/utils/currency';
 import { TestModeBanner } from '@/components/TestModeBanner';
 import { VerifyClient } from './VerifyClient';
@@ -44,6 +51,23 @@ export default async function CheckoutVerifyPage({ params }: Props) {
   }
 
   const apiKey = process.env.NEXT_PUBLIC_AGECHECKER_API_KEY ?? '';
+
+  // Lazily create the AgeChecker server-side session on first verify-page
+  // load. The popup needs the resulting UUID to associate verification
+  // with our callback_url + metadata.order — without it, AgeChecker never
+  // POSTs to /api/webhooks/agechecker. Idempotent: persisted via
+  // setAgeCheckerSessionId which no-ops if already set.
+  let ageCheckerSessionId = session.ageCheckerSessionId;
+  if (!ageCheckerSessionId) {
+    const base = resolveAgeCheckerCallbackBase();
+    const { sessionUuid } = await createAgeCheckerSession({
+      checkoutSessionId: session.id,
+      callbackUrl: `${base}/api/webhooks/agechecker`,
+      customerEmail: session.customerEmail,
+    });
+    await setAgeCheckerSessionId(session.id, sessionUuid);
+    ageCheckerSessionId = sessionUuid;
+  }
   // Per AgeChecker docs the redirect target is where the popup hands the
   // customer once verification completes. The session id is enough — the
   // server route resolves the session and forwards to Clover.
@@ -116,6 +140,7 @@ export default async function CheckoutVerifyPage({ params }: Props) {
         <VerifyClient
           sessionId={session.id}
           apiKey={apiKey}
+          ageCheckerSessionId={ageCheckerSessionId}
           customerEmail={session.customerEmail}
           redirectUrl={redirectUrl}
           showSimulator={process.env.VERCEL_ENV !== 'production'}

@@ -81,8 +81,14 @@ function makeSession(over: Partial<CheckoutSession> = {}): CheckoutSession {
     status: 'awaiting_id',
     ageVerifiedAt: null,
     verificationId: null,
+    ageCheckerSessionId: null,
     holds: [
-      { productId: 'prod-a', variantId: 'default', locationId: 'online', qty: 2 },
+      {
+        productId: 'prod-a',
+        variantId: 'default',
+        locationId: 'online',
+        qty: 2,
+      },
     ],
     cloverCheckoutSessionId: 'sess-1',
     createdAt: new Date('2026-05-01T00:00:00Z'),
@@ -135,7 +141,9 @@ describe('POST /api/webhooks/agechecker', () => {
   describe('given status=pass with a valid verificationId and an awaiting_id session', () => {
     it('marks the session age-verified and returns 200 handled=true', async () => {
       getCheckoutSessionMock.mockResolvedValue(makeSession());
-      markAgeVerifiedMock.mockResolvedValue(makeSession({ status: 'awaiting_payment' }));
+      markAgeVerifiedMock.mockResolvedValue(
+        makeSession({ status: 'awaiting_payment' })
+      );
 
       const res = await POST(
         makeRequest({ verificationId: 'v1', status: 'pass', order: 'sess-1' })
@@ -161,7 +169,11 @@ describe('POST /api/webhooks/agechecker', () => {
       });
 
       const res = await POST(
-        makeRequest({ verificationId: 'forged', status: 'pass', order: 'sess-1' })
+        makeRequest({
+          verificationId: 'forged',
+          status: 'pass',
+          order: 'sess-1',
+        })
       );
 
       expect(res.status).toBe(401);
@@ -173,7 +185,12 @@ describe('POST /api/webhooks/agechecker', () => {
     it('cancels the session and releases the holds', async () => {
       const session = makeSession({
         holds: [
-          { productId: 'p1', variantId: 'default', locationId: 'online', qty: 3 },
+          {
+            productId: 'p1',
+            variantId: 'default',
+            locationId: 'online',
+            qty: 3,
+          },
           { productId: 'p2', variantId: 'v2', locationId: 'online', qty: 1 },
         ],
       });
@@ -193,7 +210,12 @@ describe('POST /api/webhooks/agechecker', () => {
       expect(releaseStockMock).toHaveBeenCalledTimes(1);
       expect(releaseStockMock).toHaveBeenCalledWith(
         [
-          { productId: 'p1', variantId: 'default', locationId: 'online', qty: 3 },
+          {
+            productId: 'p1',
+            variantId: 'default',
+            locationId: 'online',
+            qty: 3,
+          },
           { productId: 'p2', variantId: 'v2', locationId: 'online', qty: 1 },
         ],
         expect.objectContaining({ actor: 'webhook:agechecker' })
@@ -209,7 +231,11 @@ describe('POST /api/webhooks/agechecker', () => {
       );
 
       const res = await POST(
-        makeRequest({ verificationId: 'v1', status: 'underage', order: 'sess-1' })
+        makeRequest({
+          verificationId: 'v1',
+          status: 'underage',
+          order: 'sess-1',
+        })
       );
 
       expect(res.status).toBe(200);
@@ -221,7 +247,11 @@ describe('POST /api/webhooks/agechecker', () => {
   describe('given status=pending or status=manual_review', () => {
     it('logs only and does not mutate state', async () => {
       const res = await POST(
-        makeRequest({ verificationId: 'v1', status: 'pending', order: 'sess-1' })
+        makeRequest({
+          verificationId: 'v1',
+          status: 'pending',
+          order: 'sess-1',
+        })
       );
       expect(res.status).toBe(200);
       const body = (await res.json()) as { handled: boolean };
@@ -232,7 +262,11 @@ describe('POST /api/webhooks/agechecker', () => {
       expect(releaseStockMock).not.toHaveBeenCalled();
 
       const res2 = await POST(
-        makeRequest({ verificationId: 'v1', status: 'manual_review', order: 'sess-1' })
+        makeRequest({
+          verificationId: 'v1',
+          status: 'manual_review',
+          order: 'sess-1',
+        })
       );
       expect(res2.status).toBe(200);
       const body2 = (await res2.json()) as { handled: boolean };

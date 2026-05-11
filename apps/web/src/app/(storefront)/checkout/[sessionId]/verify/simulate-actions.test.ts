@@ -44,6 +44,7 @@ function sessionWith(
     },
     ageVerifiedAt: null,
     verificationId: null,
+    ageCheckerSessionId: null,
     holds: [],
     cloverCheckoutSessionId: 'sess_123',
     cloverCheckoutUrl: 'https://example.com/c/abc',

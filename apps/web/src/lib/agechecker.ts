@@ -41,6 +41,146 @@ export interface VerifyVerificationIdResult {
 
 const DEFAULT_API_BASE = 'https://api.agechecker.net';
 const VERIFICATION_PATH = '/api/verification'; // GET {base}{path}/{uuid}
+const SESSION_CREATE_PATH = '/v1/session/create';
+
+export interface CreateAgeCheckerSessionInput {
+  /** Our CheckoutSession id. Bound to AgeChecker `metadata.order`. */
+  checkoutSessionId: string;
+  /**
+   * Absolute URL AgeChecker will POST verification results to. Must be
+   * publicly reachable HTTPS; we throw if the caller supplies a relative
+   * or empty value.
+   */
+  callbackUrl: string;
+  customerEmail?: string;
+}
+
+export interface CreateAgeCheckerSessionResult {
+  /** AgeChecker-issued session UUID — passed to the popup as `session`. */
+  sessionUuid: string;
+}
+
+/**
+ * Create an AgeChecker verification session server-side. This is the ONLY
+ * way to register a `callback_url` + `metadata.order` with AgeChecker —
+ * the browser-side `AgeCheckerConfig` object does not accept those keys.
+ *
+ * Test mode: when `AGECHECKER_TEST_MODE=true`, returns a stub UUID
+ * without a network call. Mirrors the pattern in `verifyVerificationId`.
+ *
+ * Endpoint: `POST {AGECHECKER_API_BASE}/v1/session/create`
+ * Auth:     `Authorization: Bearer {AGECHECKER_API_KEY}`
+ *
+ * Response shape is defensively decoded — AgeChecker docs reference
+ * `uuid` but related endpoints have used `session_uuid` / `id` in the
+ * wild, so we accept any of the three.
+ */
+export async function createAgeCheckerSession(
+  input: CreateAgeCheckerSessionInput
+): Promise<CreateAgeCheckerSessionResult> {
+  if (!input.checkoutSessionId) {
+    throw new Error('checkoutSessionId is required');
+  }
+  if (!input.callbackUrl || !/^https?:\/\//.test(input.callbackUrl)) {
+    throw new Error(
+      `callbackUrl must be an absolute http(s) URL — got '${input.callbackUrl}'`
+    );
+  }
+
+  if (isAgeCheckerTestMode()) {
+    const stub = `test-session-${crypto.randomBytes(8).toString('hex')}`;
+    return { sessionUuid: stub };
+  }
+
+  const apiKey = process.env.AGECHECKER_API_KEY;
+  if (!apiKey) {
+    throw new Error('AGECHECKER_API_KEY is not set');
+  }
+
+  const base = process.env.AGECHECKER_API_BASE ?? DEFAULT_API_BASE;
+  const url = `${base}${SESSION_CREATE_PATH}`;
+
+  const body = {
+    callback_url: input.callbackUrl,
+    metadata: { order: input.checkoutSessionId },
+    contact_customer: false,
+    ...(input.customerEmail ? { email: input.customerEmail } : {}),
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(body),
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `AgeChecker session/create failed: ${res.status} ${res.statusText} ${text}`
+    );
+  }
+
+  const parsed: unknown = await res.json().catch(() => null);
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('AgeChecker session/create returned non-JSON body');
+  }
+
+  // Unwrap `data` / `session` wrapper if present.
+  const record = (
+    'data' in parsed &&
+    typeof (parsed as Record<string, unknown>).data === 'object'
+      ? (parsed as Record<string, unknown>).data
+      : 'session' in parsed &&
+          typeof (parsed as Record<string, unknown>).session === 'object'
+        ? (parsed as Record<string, unknown>).session
+        : parsed
+  ) as Record<string, unknown>;
+
+  const sessionUuid =
+    typeof record.uuid === 'string'
+      ? record.uuid
+      : typeof record.session_uuid === 'string'
+        ? record.session_uuid
+        : typeof record.id === 'string'
+          ? record.id
+          : null;
+
+  if (!sessionUuid) {
+    console.error(
+      '[agechecker] session/create response missing uuid/session_uuid/id',
+      parsed
+    );
+    throw new Error('AgeChecker session/create response missing session id');
+  }
+
+  return { sessionUuid };
+}
+
+/**
+ * Resolve the absolute base URL used for the AgeChecker callback. Prefers
+ * `SITE_URL` (set per Vercel env); falls back to `https://${VERCEL_URL}`
+ * for preview deployments where `SITE_URL` is not explicitly configured.
+ * Throws if neither is available — calls must not silently default to
+ * production.
+ */
+export function resolveAgeCheckerCallbackBase(): string {
+  const siteUrl = process.env.SITE_URL;
+  if (siteUrl && /^https?:\/\//.test(siteUrl)) {
+    return siteUrl.replace(/\/$/, '');
+  }
+  const vercelUrl = process.env.VERCEL_URL;
+  if (vercelUrl) {
+    return `https://${vercelUrl.replace(/\/$/, '')}`;
+  }
+  throw new Error(
+    'Cannot resolve AgeChecker callback base — set SITE_URL or VERCEL_URL'
+  );
+}
 
 export function isAgeCheckerTestMode(): boolean {
   return process.env.AGECHECKER_TEST_MODE === 'true';

@@ -37,6 +37,11 @@ import previewStyles from './preview-tools.module.css';
 interface Props {
   sessionId: string;
   apiKey: string;
+  /**
+   * Server-created AgeChecker session UUID — required so the popup's
+   * verification result is POSTed to our webhook with metadata.order set.
+   */
+  ageCheckerSessionId: string;
   customerEmail: string | undefined;
   redirectUrl: string;
   showSimulator?: boolean;
@@ -47,6 +52,7 @@ const POPUP_SRC = 'https://cdn.agechecker.net/static/popup/v1/popup.js';
 export function VerifyClient({
   sessionId,
   apiKey,
+  ageCheckerSessionId,
   customerEmail,
   redirectUrl,
   showSimulator = false,
@@ -62,10 +68,11 @@ export function VerifyClient({
       element: '#proceed-to-payment',
       key: apiKey,
       order: sessionId,
+      session: ageCheckerSessionId,
       ...(customerEmail ? { email: customerEmail } : {}),
     };
     window.AgeCheckerConfig = config;
-  }, [apiKey, sessionId, customerEmail]);
+  }, [apiKey, sessionId, ageCheckerSessionId, customerEmail]);
 
   const handleSimulatePass = () => {
     startTransition(async () => {

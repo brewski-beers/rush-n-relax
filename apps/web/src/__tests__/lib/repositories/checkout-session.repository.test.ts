@@ -75,6 +75,7 @@ import {
   markCheckoutSessionCompleted,
   markCheckoutSessionInFlight,
   markCheckoutSessionExpired,
+  setAgeCheckerSessionId,
 } from '@/lib/repositories/checkout-session.repository';
 import type {
   CheckoutSession,
@@ -147,6 +148,7 @@ describe('checkout-session.repository', () => {
       expect(payload.status).toBe('awaiting_id');
       expect(payload.ageVerifiedAt).toBeNull();
       expect(payload.verificationId).toBeNull();
+      expect(payload.ageCheckerSessionId).toBeNull();
       expect(payload.createdAt).toBeInstanceOf(Date);
       expect(payload.updatedAt).toBeInstanceOf(Date);
       expect(payload.expiresAt).toEqual(baseInput.expiresAt);
@@ -215,6 +217,7 @@ describe('checkout-session.repository', () => {
       expect(session!.status).toBe('awaiting_id');
       expect(session!.ageVerifiedAt).toBeNull();
       expect(session!.verificationId).toBeNull();
+      expect(session!.ageCheckerSessionId).toBeNull();
       expect(session!.holds).toHaveLength(1);
       expect(session!.holds[0].variantId).toBe('default');
     });
@@ -336,6 +339,40 @@ describe('checkout-session.repository', () => {
       txGetMock.mockResolvedValueOnce(makeSnap('in_flight'));
       const result = await markCheckoutSessionCancelled('clover-sess-abc');
       expect(result.status).toBe('cancelled');
+    });
+  });
+
+  describe('setAgeCheckerSessionId', () => {
+    it('writes the field when currently null', async () => {
+      txGetMock.mockResolvedValueOnce(
+        makeSnap('awaiting_id', { ageCheckerSessionId: null })
+      );
+      await setAgeCheckerSessionId('clover-sess-abc', 'ac-uuid-new');
+      expect(txUpdateMock).toHaveBeenCalledOnce();
+      const [, patch] = txUpdateMock.mock.calls[0];
+      expect(patch.ageCheckerSessionId).toBe('ac-uuid-new');
+      expect(patch.updatedAt).toBeInstanceOf(Date);
+    });
+
+    it('is idempotent — does not overwrite when already set', async () => {
+      txGetMock.mockResolvedValueOnce(
+        makeSnap('awaiting_id', { ageCheckerSessionId: 'ac-existing' })
+      );
+      await setAgeCheckerSessionId('clover-sess-abc', 'ac-new');
+      expect(txUpdateMock).not.toHaveBeenCalled();
+    });
+
+    it('throws when sessionId not found', async () => {
+      txGetMock.mockResolvedValueOnce({ exists: false });
+      await expect(setAgeCheckerSessionId('missing', 'ac-x')).rejects.toThrow(
+        /not found/
+      );
+    });
+
+    it('throws when ageCheckerSessionId arg is empty', async () => {
+      await expect(
+        setAgeCheckerSessionId('clover-sess-abc', '')
+      ).rejects.toThrow(/required/);
     });
   });
 

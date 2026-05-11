@@ -62,6 +62,13 @@ export interface CheckoutSession {
   ageVerifiedAt: Date | null;
   /** AgeChecker session id — null until verification completes. */
   verificationId: string | null;
+  /**
+   * AgeChecker session UUID created server-side via `/v1/session/create`.
+   * Required so the AgeChecker popup posts its callback to our webhook
+   * with `metadata.order = <this session id>`. Null until the verify page
+   * lazily creates the AgeChecker session on first load.
+   */
+  ageCheckerSessionId: string | null;
   /** Stock holds taken when the session was created. */
   holds: CheckoutSessionHold[];
   /** Clover Hosted Checkout session id — set at session creation. */

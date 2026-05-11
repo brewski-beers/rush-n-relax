@@ -11,6 +11,13 @@ export interface AgeCheckerConfig {
   key: string;
   order: string;
   email?: string;
+  /**
+   * Server-created AgeChecker session UUID (from `POST /v1/session/create`).
+   * Required for the popup to associate its verification with the
+   * server-supplied `callback_url` + `metadata.order`. Without it,
+   * AgeChecker will not POST a webhook to our handler.
+   */
+  session?: string;
 }
 
 declare global {

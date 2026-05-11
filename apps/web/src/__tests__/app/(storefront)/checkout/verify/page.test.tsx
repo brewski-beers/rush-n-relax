@@ -1,8 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-const { getCheckoutSessionMock, redirectMock } = vi.hoisted(() => ({
+const {
+  getCheckoutSessionMock,
+  setAgeCheckerSessionIdMock,
+  createAgeCheckerSessionMock,
+  redirectMock,
+} = vi.hoisted(() => ({
   getCheckoutSessionMock: vi.fn(),
+  setAgeCheckerSessionIdMock: vi.fn(),
+  createAgeCheckerSessionMock: vi.fn(),
   redirectMock: vi.fn((_url: string) => {
     throw new Error('NEXT_REDIRECT');
   }),
@@ -12,12 +19,15 @@ vi.mock('next/navigation', () => ({
   redirect: redirectMock,
 }));
 
-vi.mock(
-  '@/lib/repositories/checkout-session.repository',
-  () => ({
-    getCheckoutSession: getCheckoutSessionMock,
-  })
-);
+vi.mock('@/lib/repositories/checkout-session.repository', () => ({
+  getCheckoutSession: getCheckoutSessionMock,
+  setAgeCheckerSessionId: setAgeCheckerSessionIdMock,
+}));
+
+vi.mock('@/lib/agechecker', () => ({
+  createAgeCheckerSession: createAgeCheckerSessionMock,
+  resolveAgeCheckerCallbackBase: () => 'https://rushnrelax.com',
+}));
 
 vi.mock('@/components/TestModeBanner', () => ({
   TestModeBanner: () => null,
@@ -32,7 +42,9 @@ vi.mock('next/script', () => ({
 import CheckoutVerifyPage from '@/app/(storefront)/checkout/[sessionId]/verify/page';
 import type { CheckoutSession } from '@/types/checkout-session';
 
-function buildSession(overrides: Partial<CheckoutSession> = {}): CheckoutSession {
+function buildSession(
+  overrides: Partial<CheckoutSession> = {}
+): CheckoutSession {
   const now = new Date();
   return {
     id: 'sess_1',
@@ -61,6 +73,7 @@ function buildSession(overrides: Partial<CheckoutSession> = {}): CheckoutSession
     status: 'awaiting_id',
     ageVerifiedAt: null,
     verificationId: null,
+    ageCheckerSessionId: null,
     holds: [],
     cloverCheckoutSessionId: 'sess_1',
     createdAt: now,
@@ -73,6 +86,12 @@ function buildSession(overrides: Partial<CheckoutSession> = {}): CheckoutSession
 beforeEach(() => {
   redirectMock.mockClear();
   getCheckoutSessionMock.mockReset();
+  setAgeCheckerSessionIdMock.mockReset();
+  createAgeCheckerSessionMock.mockReset();
+  createAgeCheckerSessionMock.mockResolvedValue({
+    sessionUuid: 'ac-sess-uuid-new',
+  });
+  setAgeCheckerSessionIdMock.mockResolvedValue(undefined);
   process.env.NEXT_PUBLIC_AGECHECKER_API_KEY = 'test-pub-key';
 });
 
@@ -90,9 +109,7 @@ describe('CheckoutVerifyPage', () => {
     expect(screen.getByText(/jane buyer/i)).toBeInTheDocument();
     const proceed = screen.getByTestId('proceed-to-payment');
     expect(proceed).toHaveAttribute('id', 'proceed-to-payment');
-    expect(proceed.getAttribute('href')).toBe(
-      '/api/checkout/sess_1/redirect'
-    );
+    expect(proceed.getAttribute('href')).toBe('/api/checkout/sess_1/redirect');
   });
 
   it('mounts the AgeChecker popup script with afterInteractive strategy', async () => {
@@ -138,6 +155,40 @@ describe('CheckoutVerifyPage', () => {
     expect(redirectMock).toHaveBeenCalledWith(
       expect.stringMatching(/^\/cart\?toast=session-expired/)
     );
+  });
+
+  it('creates + persists an AgeChecker session when ageCheckerSessionId is null', async () => {
+    getCheckoutSessionMock.mockResolvedValue(buildSession());
+
+    const page = await CheckoutVerifyPage({
+      params: Promise.resolve({ sessionId: 'sess_1' }),
+    });
+    render(page);
+
+    expect(createAgeCheckerSessionMock).toHaveBeenCalledTimes(1);
+    expect(createAgeCheckerSessionMock).toHaveBeenCalledWith({
+      checkoutSessionId: 'sess_1',
+      callbackUrl: 'https://rushnrelax.com/api/webhooks/agechecker',
+      customerEmail: 'jane@example.com',
+    });
+    expect(setAgeCheckerSessionIdMock).toHaveBeenCalledWith(
+      'sess_1',
+      'ac-sess-uuid-new'
+    );
+  });
+
+  it('does NOT call createAgeCheckerSession when ageCheckerSessionId is already set', async () => {
+    getCheckoutSessionMock.mockResolvedValue(
+      buildSession({ ageCheckerSessionId: 'ac-existing-uuid' })
+    );
+
+    const page = await CheckoutVerifyPage({
+      params: Promise.resolve({ sessionId: 'sess_1' }),
+    });
+    render(page);
+
+    expect(createAgeCheckerSessionMock).not.toHaveBeenCalled();
+    expect(setAgeCheckerSessionIdMock).not.toHaveBeenCalled();
   });
 
   it('redirects to /cart when the session is in a terminal state', async () => {

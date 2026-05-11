@@ -37,6 +37,7 @@ describe('VerifyClient', () => {
       <VerifyClient
         sessionId="sess_abc"
         apiKey="pub-key-123"
+        ageCheckerSessionId="ac-sess-uuid-1"
         customerEmail="buyer@example.com"
         redirectUrl="/api/checkout/sess_abc/redirect"
       />
@@ -46,6 +47,7 @@ describe('VerifyClient', () => {
       element: '#proceed-to-payment',
       key: 'pub-key-123',
       order: 'sess_abc',
+      session: 'ac-sess-uuid-1',
       email: 'buyer@example.com',
     });
 
@@ -59,6 +61,7 @@ describe('VerifyClient', () => {
       <VerifyClient
         sessionId="sess_xyz"
         apiKey="pub-key"
+        ageCheckerSessionId="ac-uuid"
         customerEmail={undefined}
         redirectUrl="/api/checkout/sess_xyz/redirect"
       />
@@ -73,6 +76,7 @@ describe('VerifyClient', () => {
       <VerifyClient
         sessionId="sess_1"
         apiKey="key"
+        ageCheckerSessionId="ac-uuid"
         customerEmail={undefined}
         redirectUrl="/api/checkout/sess_1/redirect"
       />
@@ -89,6 +93,7 @@ describe('VerifyClient', () => {
         <VerifyClient
           sessionId="sess_prod"
           apiKey="key"
+          ageCheckerSessionId="ac-uuid"
           customerEmail={undefined}
           redirectUrl="/api/checkout/sess_prod/redirect"
         />
@@ -104,6 +109,7 @@ describe('VerifyClient', () => {
         <VerifyClient
           sessionId="sess_pre"
           apiKey="key"
+          ageCheckerSessionId="ac-uuid"
           customerEmail={undefined}
           redirectUrl="/api/checkout/sess_pre/redirect"
           showSimulator
@@ -133,6 +139,7 @@ describe('VerifyClient', () => {
         <VerifyClient
           sessionId="sess_pre"
           apiKey="key"
+          ageCheckerSessionId="ac-uuid"
           customerEmail={undefined}
           redirectUrl="/api/checkout/sess_pre/redirect"
           showSimulator
@@ -171,6 +178,7 @@ describe('VerifyClient', () => {
         <VerifyClient
           sessionId="sess_pre"
           apiKey="key"
+          ageCheckerSessionId="ac-uuid"
           customerEmail={undefined}
           redirectUrl="/api/checkout/sess_pre/redirect"
           showSimulator
