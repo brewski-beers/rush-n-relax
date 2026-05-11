@@ -86,6 +86,7 @@ export async function createCheckoutSession(
     status: 'awaiting_id',
     ageVerifiedAt: null,
     verificationId: null,
+    ageCheckerSessionId: null,
     holds: input.holds,
     cloverCheckoutSessionId: input.cloverCheckoutSessionId,
     ...(input.cloverCheckoutUrl !== undefined
@@ -149,6 +150,39 @@ export async function markCheckoutSessionInFlight(
   id: string
 ): Promise<CheckoutSession> {
   return runTransition(id, 'in_flight', {});
+}
+
+/**
+ * Persist the server-created AgeChecker session UUID against the
+ * CheckoutSession. Idempotent: if the field is already set, the call is a
+ * no-op (no overwrite) so concurrent page loads can't churn the value
+ * mid-verification. Runs inside a Firestore transaction.
+ */
+export async function setAgeCheckerSessionId(
+  id: string,
+  ageCheckerSessionId: string
+): Promise<void> {
+  if (!ageCheckerSessionId) {
+    throw new Error('ageCheckerSessionId is required');
+  }
+  const db = getAdminFirestore();
+  const ref = checkoutSessionsCol().doc(id);
+  await db.runTransaction(async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) {
+      throw new Error(`CheckoutSession '${id}' not found`);
+    }
+    const data = snap.data();
+    const current =
+      data && typeof data.ageCheckerSessionId === 'string'
+        ? data.ageCheckerSessionId
+        : null;
+    if (current) return; // already set — idempotent no-op
+    tx.update(ref, {
+      ageCheckerSessionId,
+      updatedAt: new Date(),
+    });
+  });
 }
 
 export async function markCheckoutSessionCompleted(
@@ -256,6 +290,8 @@ function docToCheckoutSession(
     ageVerifiedAt: d.ageVerifiedAt ? toDate(d.ageVerifiedAt) : null,
     verificationId:
       typeof d.verificationId === 'string' ? d.verificationId : null,
+    ageCheckerSessionId:
+      typeof d.ageCheckerSessionId === 'string' ? d.ageCheckerSessionId : null,
     holds,
     cloverCheckoutSessionId:
       typeof d.cloverCheckoutSessionId === 'string'

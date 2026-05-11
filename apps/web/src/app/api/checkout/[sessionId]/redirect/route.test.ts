@@ -34,6 +34,7 @@ function baseSession(over: Partial<CheckoutSession> = {}): CheckoutSession {
     status: 'awaiting_id',
     ageVerifiedAt: null,
     verificationId: null,
+    ageCheckerSessionId: null,
     holds: [],
     cloverCheckoutSessionId: SESSION_ID,
     cloverCheckoutUrl: CLOVER_URL,

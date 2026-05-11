@@ -119,9 +119,7 @@ describe('verifyVerificationId', () => {
   });
 
   it('does not throw on non-2xx response — returns valid:false', async () => {
-    fetchMock.mockResolvedValue(
-      new Response('not found', { status: 404 })
-    );
+    fetchMock.mockResolvedValue(new Response('not found', { status: 404 }));
     const result = await verifyVerificationId('uuid');
     expect(result.valid).toBe(false);
   });
@@ -166,5 +164,166 @@ describe('verifyVerificationId', () => {
     await verifyVerificationId('weird id/with/slashes');
     const [url] = fetchMock.mock.calls[0];
     expect(url).toContain('weird%20id%2Fwith%2Fslashes');
+  });
+});
+
+describe('createAgeCheckerSession', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    process.env = { ...ORIGINAL_ENV };
+    delete process.env.AGECHECKER_TEST_MODE;
+    process.env.AGECHECKER_API_KEY = 'test-key';
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    process.env = { ...ORIGINAL_ENV };
+  });
+
+  it('test mode returns a stub session without network call', async () => {
+    setEnv({ AGECHECKER_TEST_MODE: 'true' });
+    const { createAgeCheckerSession } = await import('@/lib/agechecker');
+    const res = await createAgeCheckerSession({
+      checkoutSessionId: 'sess_1',
+      callbackUrl: 'https://example.com/api/webhooks/agechecker',
+    });
+    expect(res.sessionUuid).toMatch(/^test-session-/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('POSTs callback_url + metadata.order and returns the uuid (happy path)', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ uuid: 'ac-uuid-99' }), {
+        status: 201,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    const { createAgeCheckerSession } = await import('@/lib/agechecker');
+    const res = await createAgeCheckerSession({
+      checkoutSessionId: 'sess_42',
+      callbackUrl: 'https://rushnrelax.com/api/webhooks/agechecker',
+      customerEmail: 'buyer@example.com',
+    });
+    expect(res.sessionUuid).toBe('ac-uuid-99');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://api.agechecker.net/v1/session/create');
+    const body = JSON.parse(init.body);
+    expect(body).toMatchObject({
+      callback_url: 'https://rushnrelax.com/api/webhooks/agechecker',
+      metadata: { order: 'sess_42' },
+      contact_customer: false,
+      email: 'buyer@example.com',
+    });
+    expect(init.headers.Authorization).toBe('Bearer test-key');
+  });
+
+  it('accepts session_uuid or id as alternate response field names', async () => {
+    const { createAgeCheckerSession } = await import('@/lib/agechecker');
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ session_uuid: 'alt-1' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    const r1 = await createAgeCheckerSession({
+      checkoutSessionId: 's',
+      callbackUrl: 'https://x.test/cb',
+    });
+    expect(r1.sessionUuid).toBe('alt-1');
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ id: 'alt-2' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    const r2 = await createAgeCheckerSession({
+      checkoutSessionId: 's',
+      callbackUrl: 'https://x.test/cb',
+    });
+    expect(r2.sessionUuid).toBe('alt-2');
+  });
+
+  it('throws on non-2xx response', async () => {
+    fetchMock.mockResolvedValue(
+      new Response('boom', { status: 500, statusText: 'Server Error' })
+    );
+    const { createAgeCheckerSession } = await import('@/lib/agechecker');
+    await expect(
+      createAgeCheckerSession({
+        checkoutSessionId: 's',
+        callbackUrl: 'https://x.test/cb',
+      })
+    ).rejects.toThrow(/session\/create failed: 500/);
+  });
+
+  it('throws when AGECHECKER_API_KEY is missing', async () => {
+    delete process.env.AGECHECKER_API_KEY;
+    const { createAgeCheckerSession } = await import('@/lib/agechecker');
+    await expect(
+      createAgeCheckerSession({
+        checkoutSessionId: 's',
+        callbackUrl: 'https://x.test/cb',
+      })
+    ).rejects.toThrow(/AGECHECKER_API_KEY is not set/);
+  });
+
+  it('throws when callbackUrl is not absolute', async () => {
+    const { createAgeCheckerSession } = await import('@/lib/agechecker');
+    await expect(
+      createAgeCheckerSession({
+        checkoutSessionId: 's',
+        callbackUrl: '/api/webhooks/agechecker',
+      })
+    ).rejects.toThrow(/callbackUrl must be an absolute/);
+  });
+
+  it('throws when response is missing all known uuid field names', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ unrelated: 'x' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    const { createAgeCheckerSession } = await import('@/lib/agechecker');
+    await expect(
+      createAgeCheckerSession({
+        checkoutSessionId: 's',
+        callbackUrl: 'https://x.test/cb',
+      })
+    ).rejects.toThrow(/missing session id/);
+  });
+});
+
+describe('resolveAgeCheckerCallbackBase', () => {
+  const SAVED = { ...process.env };
+  afterEach(() => {
+    process.env = { ...SAVED };
+  });
+
+  it('prefers SITE_URL when set', async () => {
+    process.env.SITE_URL = 'https://rushnrelax.com';
+    delete process.env.VERCEL_URL;
+    const { resolveAgeCheckerCallbackBase } = await import('@/lib/agechecker');
+    expect(resolveAgeCheckerCallbackBase()).toBe('https://rushnrelax.com');
+  });
+
+  it('falls back to https://VERCEL_URL for preview deployments', async () => {
+    delete process.env.SITE_URL;
+    process.env.VERCEL_URL = 'rnr-pr-123.vercel.app';
+    const { resolveAgeCheckerCallbackBase } = await import('@/lib/agechecker');
+    expect(resolveAgeCheckerCallbackBase()).toBe(
+      'https://rnr-pr-123.vercel.app'
+    );
+  });
+
+  it('throws when neither SITE_URL nor VERCEL_URL is set', async () => {
+    delete process.env.SITE_URL;
+    delete process.env.VERCEL_URL;
+    const { resolveAgeCheckerCallbackBase } = await import('@/lib/agechecker');
+    expect(() => resolveAgeCheckerCallbackBase()).toThrow(/Cannot resolve/);
   });
 });

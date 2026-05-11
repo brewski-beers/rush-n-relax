@@ -1,6 +1,15 @@
 'use client';
 
 /**
+ * NOTE (2026-05-11): Currently UNUSED in production code paths. The
+ * active verify page binds the popup via `VerifyClient` directly (see
+ * `app/(storefront)/checkout/[sessionId]/verify/VerifyClient.tsx`). This
+ * component is retained as a reference / future-extraction target but is
+ * NOT a path that ever fires a real AgeChecker verification today. If
+ * you start importing it from a page, mirror the `session` (server-
+ * issued AgeChecker session UUID) plumbing that `VerifyClient` already
+ * does — without it, AgeChecker will never POST to our webhook.
+ *
  * AgeCheckerGuard — wires the AgeChecker.Net Client API popup to the
  * "proceed to payment" button on the verify page.
  *

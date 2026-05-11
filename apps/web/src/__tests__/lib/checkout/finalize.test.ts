@@ -90,6 +90,7 @@ function makeSession(
     status: 'awaiting_payment',
     ageVerifiedAt: new Date('2026-05-01T00:00:00Z'),
     verificationId: 'agechecker-x',
+    ageCheckerSessionId: 'ac-uuid-x',
     holds: [
       { productId: 'p1', variantId: 'default', locationId: 'online', qty: 2 },
     ],
