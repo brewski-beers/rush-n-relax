@@ -114,6 +114,26 @@ export async function finalizeCheckoutSession(
     return { kind: 'declined', sessionId: session.id };
   }
 
+  // Compliance guard (#audit B5): never mint an Order for a session that
+  // hasn't cleared age verification. The only states allowed past here are
+  // `awaiting_payment` (verified, awaiting Clover) and `in_flight` (a
+  // concurrent promote — `promote()` resolves that race itself). An
+  // `awaiting_id` session — or any session missing `ageVerifiedAt` — must
+  // not become an Order regardless of what Clover reports; the caller
+  // (return route / reconciler) renders the holding state and retries. A
+  // session that is somehow *paid* while still unverified is pathological
+  // and needs ops attention — surface it loudly.
+  if (
+    (session.status !== 'awaiting_payment' && session.status !== 'in_flight') ||
+    session.ageVerifiedAt === null
+  ) {
+    console.warn(
+      '[finalizeCheckoutSession] refusing to promote an age-unverified session',
+      { sessionId: session.id, status: session.status }
+    );
+    return { kind: 'awaiting', sessionId: session.id };
+  }
+
   // 2. Confirm payment with Clover. The return URL is NOT guaranteed to
   //    carry the Clover order id as a query param, so when it's absent we
   //    self-serve: ask Clover for the order id linked to this checkout

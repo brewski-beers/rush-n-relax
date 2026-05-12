@@ -148,6 +148,40 @@ describe('finalizeCheckoutSession (#368)', () => {
     });
   });
 
+  describe('compliance guard — age verification (#audit B5)', () => {
+    it('refuses to promote a session still at awaiting_id (age not verified) — returns awaiting, no order, no Clover lookup', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(
+        makeSession({ status: 'awaiting_id', ageVerifiedAt: null })
+      );
+      mocks.isLivePaymentsEnabled.mockReturnValue(true);
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out.kind).toBe('awaiting');
+      expect(mocks.getCloverPaymentForOrder).not.toHaveBeenCalled();
+      expect(mocks.getCloverOrderIdForCheckout).not.toHaveBeenCalled();
+      expect(mocks.createOrder).not.toHaveBeenCalled();
+      expect(mocks.markCheckoutSessionInFlight).not.toHaveBeenCalled();
+    });
+
+    it('refuses to promote an awaiting_payment session whose ageVerifiedAt is somehow null', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(
+        makeSession({ status: 'awaiting_payment', ageVerifiedAt: null })
+      );
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        cloverOrderId: 'clover-ord-1',
+      });
+
+      expect(out.kind).toBe('awaiting');
+      expect(mocks.createOrder).not.toHaveBeenCalled();
+    });
+  });
+
   describe('declined / unpaid → no order created, session left awaiting', () => {
     it('returns awaiting when Clover reports PENDING', async () => {
       mocks.getCheckoutSession.mockResolvedValue(makeSession());

@@ -116,13 +116,13 @@ describe('reconcileCheckoutSessionsImpl — forward repair (#369)', () => {
     expect(result.promoted).toBe(0);
   });
 
-  it('Given an expired session past its expiresAt, When the cron runs, Then it expires and releases holds without calling Clover', async () => {
+  it('Given an expired session with no resolvable Clover payment, When the cron runs, Then it checks Clover FIRST and only then expires + releases holds (#audit B3)', async () => {
     const session = makeSession({
       expiresAt: new Date(NOW_MS - 1000),
     });
     const expireSessionAndReleaseHolds = vi.fn(async () => undefined);
     const lookupCloverCheckout = vi.fn(
-      async (): Promise<CloverCheckoutLookup> => ({ result: 'SUCCESS' })
+      async (): Promise<CloverCheckoutLookup> => ({ result: 'PENDING' })
     );
     const deps = makeDeps({
       listStaleSessions: vi.fn(async () => [session]),
@@ -132,9 +132,42 @@ describe('reconcileCheckoutSessionsImpl — forward repair (#369)', () => {
 
     const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
 
+    // Payment status is checked before expiry now — only because there is
+    // no resolvable payment do we go ahead and expire.
+    expect(lookupCloverCheckout).toHaveBeenCalledWith(
+      session.cloverCheckoutSessionId
+    );
     expect(expireSessionAndReleaseHolds).toHaveBeenCalledWith(session);
-    expect(lookupCloverCheckout).not.toHaveBeenCalled();
     expect(result.expired).toBe(1);
+  });
+
+  it('Given an expired session that nonetheless has a Clover SUCCESS payment, When the cron runs, Then it promotes the order rather than expiring (#audit B3 — payment wins over expiry)', async () => {
+    const session = makeSession({
+      expiresAt: new Date(NOW_MS - 1000),
+    });
+    const expireSessionAndReleaseHolds = vi.fn(async () => undefined);
+    const triggerStorefrontPromotion = vi.fn(async () => true);
+    const deps = makeDeps({
+      listStaleSessions: vi.fn(async () => [session]),
+      expireSessionAndReleaseHolds,
+      triggerStorefrontPromotion,
+      lookupCloverCheckout: vi.fn(
+        async (): Promise<CloverCheckoutLookup> => ({
+          result: 'SUCCESS',
+          cloverOrderId: 'ord_clover_late',
+        })
+      ),
+    });
+
+    const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
+
+    expect(triggerStorefrontPromotion).toHaveBeenCalledWith(
+      'sess_1',
+      'ord_clover_late'
+    );
+    expect(expireSessionAndReleaseHolds).not.toHaveBeenCalled();
+    expect(result.promoted).toBe(1);
+    expect(result.expired).toBe(0);
   });
 
   it('uses SETTLE_WINDOW_MS to compute the staleBefore boundary passed to listStaleSessions', async () => {
