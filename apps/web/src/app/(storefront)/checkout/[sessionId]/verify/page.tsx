@@ -55,18 +55,36 @@ export default async function CheckoutVerifyPage({ params }: Props) {
   // Lazily create the AgeChecker server-side session on first verify-page
   // load. The popup needs the resulting UUID to associate verification
   // with our callback_url + metadata.order — without it, AgeChecker never
-  // POSTs to /api/webhooks/agechecker. Idempotent: persisted via
+  // PUTs to /api/webhooks/agechecker. Idempotent: persisted via
   // setAgeCheckerSessionId which no-ops if already set.
-  let ageCheckerSessionId = session.ageCheckerSessionId;
+  //
+  // Degraded path: if session/create fails (bad creds, AgeChecker outage,
+  // contract mismatch) we log loudly and render the page WITHOUT a
+  // `session` in the popup config rather than 500ing — a rendered page +
+  // logged error beats a white screen. The popup still loads, but the
+  // verification callback won't fire, so the customer can't progress past
+  // payment.
+  // TODO(launch-critical): this degraded render means checkout is broken —
+  // wire an alert on `[agechecker] session/create failed` log lines.
+  let ageCheckerSessionId: string | undefined =
+    session.ageCheckerSessionId ?? undefined;
   if (!ageCheckerSessionId) {
-    const base = resolveAgeCheckerCallbackBase();
-    const { sessionUuid } = await createAgeCheckerSession({
-      checkoutSessionId: session.id,
-      callbackUrl: `${base}/api/webhooks/agechecker`,
-      customerEmail: session.customerEmail,
-    });
-    await setAgeCheckerSessionId(session.id, sessionUuid);
-    ageCheckerSessionId = sessionUuid;
+    try {
+      const base = resolveAgeCheckerCallbackBase();
+      const { sessionUuid } = await createAgeCheckerSession({
+        checkoutSessionId: session.id,
+        callbackUrl: `${base}/api/webhooks/agechecker`,
+        customerEmail: session.customerEmail,
+      });
+      await setAgeCheckerSessionId(session.id, sessionUuid);
+      ageCheckerSessionId = sessionUuid;
+    } catch (err) {
+      console.error('[agechecker] session/create failed', {
+        sessionId: session.id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+      ageCheckerSessionId = undefined;
+    }
   }
   // Per AgeChecker docs the redirect target is where the popup hands the
   // customer once verification completes. The session id is enough — the

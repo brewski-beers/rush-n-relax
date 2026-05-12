@@ -1,5 +1,10 @@
+import crypto from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { verifyVerificationId } from '@/lib/agechecker';
+import {
+  normalizeStatus,
+  verifyAgeCheckerSignature,
+  verifyVerificationId,
+} from '@/lib/agechecker';
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -18,13 +23,40 @@ function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   });
 }
 
+describe('normalizeStatus', () => {
+  it.each([
+    ['accepted', 'pass'],
+    ['pass', 'pass'],
+    ['approved', 'pass'],
+    ['denied', 'deny'],
+    ['deny', 'deny'],
+    ['rejected', 'deny'],
+    ['underage', 'underage'],
+    ['manual_review', 'manual_review'],
+    ['signature', 'pending'],
+    ['photo_id', 'pending'],
+    ['phone_validation', 'pending'],
+    ['sms_sent', 'pending'],
+    ['pending', 'pending'],
+    ['something-unknown', 'pending'],
+  ] as const)('maps %s → %s', (raw, expected) => {
+    expect(normalizeStatus(raw)).toBe(expected);
+  });
+
+  it('returns pending for non-string input', () => {
+    expect(normalizeStatus(undefined)).toBe('pending');
+    expect(normalizeStatus(42)).toBe('pending');
+  });
+});
+
 describe('verifyVerificationId', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     process.env = { ...ORIGINAL_ENV };
     delete process.env.AGECHECKER_TEST_MODE;
-    process.env.AGECHECKER_API_KEY = 'test-key';
+    process.env.AGECHECKER_SECRET = 'acct-secret';
+    process.env.AGECHECKER_API_KEY = 'domain-key';
     fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -40,8 +72,8 @@ describe('verifyVerificationId', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('returns valid:false when API key is missing', async () => {
-    delete process.env.AGECHECKER_API_KEY;
+  it('returns valid:false when the account secret is missing', async () => {
+    delete process.env.AGECHECKER_SECRET;
     const result = await verifyVerificationId('abc-123');
     expect(result.valid).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -58,18 +90,22 @@ describe('verifyVerificationId', () => {
 
   it('test mode: still hits network for non-test-verify ids', async () => {
     setEnv({ AGECHECKER_TEST_MODE: 'true' });
-    fetchMock.mockResolvedValue(jsonResponse({ status: 'pass' }));
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'accepted' }));
     const result = await verifyVerificationId('real-id-123');
     expect(fetchMock).toHaveBeenCalled();
     expect(result.valid).toBe(true);
   });
 
-  it('returns valid:true for status=pass', async () => {
+  it('returns valid:true for status=accepted and reads verification.completed_at + buyer.email', async () => {
     fetchMock.mockResolvedValue(
       jsonResponse({
-        status: 'pass',
-        verified_at: '2026-05-04T12:00:00Z',
-        email: 'buyer@example.com',
+        status: 'accepted',
+        verification: {
+          buyer: { email: 'buyer@example.com' },
+          created: '2026-05-04T11:00:00Z',
+          completed_at: '2026-05-04T12:00:00Z',
+        },
+        metadata: { order: 'sess_42' },
       })
     );
     const result = await verifyVerificationId('uuid-abc');
@@ -77,32 +113,28 @@ describe('verifyVerificationId', () => {
     expect(result.status).toBe('pass');
     expect(result.verifiedAt?.toISOString()).toBe('2026-05-04T12:00:00.000Z');
     expect(result.customerEmail).toBe('buyer@example.com');
+    expect(result.metadata).toEqual({ order: 'sess_42' });
   });
 
-  it('unwraps a {data: {...}} envelope', async () => {
+  it('falls back to verification.created when completed_at is absent', async () => {
     fetchMock.mockResolvedValue(
-      jsonResponse({ data: { status: 'pass', email: 'a@b.co' } })
+      jsonResponse({
+        status: 'accepted',
+        verification: { created: '2026-05-04T11:00:00Z' },
+      })
     );
     const result = await verifyVerificationId('uuid-abc');
-    expect(result.valid).toBe(true);
-    expect(result.customerEmail).toBe('a@b.co');
-  });
-
-  it('unwraps a {verification: {...}} envelope', async () => {
-    fetchMock.mockResolvedValue(
-      jsonResponse({ verification: { status: 'pass' } })
-    );
-    const result = await verifyVerificationId('uuid-abc');
-    expect(result.valid).toBe(true);
+    expect(result.verifiedAt?.toISOString()).toBe('2026-05-04T11:00:00.000Z');
   });
 
   it.each([
-    ['deny', 'deny'],
+    ['denied', 'deny'],
     ['underage', 'underage'],
     ['pending', 'pending'],
-    ['manual_review', 'manual_review'],
+    ['signature', 'pending'],
+    ['photo_id', 'pending'],
   ] as const)(
-    'returns valid:false for non-pass status %s',
+    'returns valid:false for non-accepted status %s',
     async (raw, expected) => {
       fetchMock.mockResolvedValue(jsonResponse({ status: raw }));
       const result = await verifyVerificationId('uuid');
@@ -135,32 +167,41 @@ describe('verifyVerificationId', () => {
     expect(result.valid).toBe(false);
   });
 
-  it('sends Authorization: Bearer header with API key', async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ status: 'pass' }));
+  it('sends X-AgeChecker-Secret (and optional X-AgeChecker-Key) headers', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'accepted' }));
     await verifyVerificationId('uuid-xyz');
     const [, init] = fetchMock.mock.calls[0];
-    expect(init.headers.Authorization).toBe('Bearer test-key');
+    expect(init.headers['X-AgeChecker-Secret']).toBe('acct-secret');
+    expect(init.headers['X-AgeChecker-Key']).toBe('domain-key');
+    expect(init.headers.Authorization).toBeUndefined();
   });
 
-  it('hits AGECHECKER_API_BASE override when set', async () => {
+  it('omits X-AgeChecker-Key when AGECHECKER_API_KEY is unset', async () => {
+    delete process.env.AGECHECKER_API_KEY;
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'accepted' }));
+    await verifyVerificationId('uuid-xyz');
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers['X-AgeChecker-Key']).toBeUndefined();
+    expect(init.headers['X-AgeChecker-Secret']).toBe('acct-secret');
+  });
+
+  it('hits AGECHECKER_API_BASE override on the /v1/status path when set', async () => {
     setEnv({ AGECHECKER_API_BASE: 'https://staging.agechecker.example' });
-    fetchMock.mockResolvedValue(jsonResponse({ status: 'pass' }));
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'accepted' }));
     await verifyVerificationId('uuid-xyz');
     const [url] = fetchMock.mock.calls[0];
-    expect(url).toBe(
-      'https://staging.agechecker.example/api/verification/uuid-xyz'
-    );
+    expect(url).toBe('https://staging.agechecker.example/v1/status/uuid-xyz');
   });
 
-  it('defaults to https://api.agechecker.net', async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ status: 'pass' }));
+  it('defaults to https://api.agechecker.net/v1/status/{uuid}', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'accepted' }));
     await verifyVerificationId('uuid-xyz');
     const [url] = fetchMock.mock.calls[0];
-    expect(url).toBe('https://api.agechecker.net/api/verification/uuid-xyz');
+    expect(url).toBe('https://api.agechecker.net/v1/status/uuid-xyz');
   });
 
   it('url-encodes the id', async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ status: 'pass' }));
+    fetchMock.mockResolvedValue(jsonResponse({ status: 'accepted' }));
     await verifyVerificationId('weird id/with/slashes');
     const [url] = fetchMock.mock.calls[0];
     expect(url).toContain('weird%20id%2Fwith%2Fslashes');
@@ -173,7 +214,8 @@ describe('createAgeCheckerSession', () => {
   beforeEach(() => {
     process.env = { ...ORIGINAL_ENV };
     delete process.env.AGECHECKER_TEST_MODE;
-    process.env.AGECHECKER_API_KEY = 'test-key';
+    process.env.AGECHECKER_API_KEY = 'domain-key';
+    process.env.AGECHECKER_SECRET = 'acct-secret';
     fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -194,7 +236,7 @@ describe('createAgeCheckerSession', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('POSTs callback_url + metadata.order and returns the uuid (happy path)', async () => {
+  it('POSTs key+secret with options.{callback_url,metadata,contact_customer} and returns uuid', async () => {
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({ uuid: 'ac-uuid-99' }), {
         status: 201,
@@ -212,12 +254,35 @@ describe('createAgeCheckerSession', () => {
     expect(url).toBe('https://api.agechecker.net/v1/session/create');
     const body = JSON.parse(init.body);
     expect(body).toMatchObject({
-      callback_url: 'https://rushnrelax.com/api/webhooks/agechecker',
-      metadata: { order: 'sess_42' },
-      contact_customer: false,
-      email: 'buyer@example.com',
+      key: 'domain-key',
+      secret: 'acct-secret',
+      flow_type: 'default',
+      options: {
+        contact_customer: false,
+        callback_url: 'https://rushnrelax.com/api/webhooks/agechecker',
+        metadata: { order: 'sess_42' },
+        email: 'buyer@example.com',
+      },
     });
-    expect(init.headers.Authorization).toBe('Bearer test-key');
+    // No Bearer auth — auth is the key/secret body fields.
+    expect(init.headers.Authorization).toBeUndefined();
+  });
+
+  it('does not include email under options when no customerEmail is given', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ uuid: 'u' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    const { createAgeCheckerSession } = await import('@/lib/agechecker');
+    await createAgeCheckerSession({
+      checkoutSessionId: 's',
+      callbackUrl: 'https://x.test/cb',
+    });
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(init.body);
+    expect(body.options.email).toBeUndefined();
   });
 
   it('accepts session_uuid or id as alternate response field names', async () => {
@@ -247,9 +312,18 @@ describe('createAgeCheckerSession', () => {
     expect(r2.sessionUuid).toBe('alt-2');
   });
 
-  it('throws on non-2xx response', async () => {
+  it('throws on non-2xx response and surfaces error.code + error.message', async () => {
     fetchMock.mockResolvedValue(
-      new Response('boom', { status: 500, statusText: 'Server Error' })
+      new Response(
+        JSON.stringify({
+          error: { code: 'invalid_key', message: 'Bad domain key' },
+        }),
+        {
+          status: 400,
+          statusText: 'Bad Request',
+          headers: { 'content-type': 'application/json' },
+        }
+      )
     );
     const { createAgeCheckerSession } = await import('@/lib/agechecker');
     await expect(
@@ -257,10 +331,12 @@ describe('createAgeCheckerSession', () => {
         checkoutSessionId: 's',
         callbackUrl: 'https://x.test/cb',
       })
-    ).rejects.toThrow(/session\/create failed: 500/);
+    ).rejects.toThrow(
+      /session\/create failed: 400.*invalid_key.*Bad domain key/
+    );
   });
 
-  it('throws when AGECHECKER_API_KEY is missing', async () => {
+  it('throws when AGECHECKER_API_KEY (domain key) is missing', async () => {
     delete process.env.AGECHECKER_API_KEY;
     const { createAgeCheckerSession } = await import('@/lib/agechecker');
     await expect(
@@ -268,7 +344,18 @@ describe('createAgeCheckerSession', () => {
         checkoutSessionId: 's',
         callbackUrl: 'https://x.test/cb',
       })
-    ).rejects.toThrow(/AGECHECKER_API_KEY is not set/);
+    ).rejects.toThrow(/AGECHECKER_API_KEY/);
+  });
+
+  it('throws when AGECHECKER_SECRET (account secret) is missing', async () => {
+    delete process.env.AGECHECKER_SECRET;
+    const { createAgeCheckerSession } = await import('@/lib/agechecker');
+    await expect(
+      createAgeCheckerSession({
+        checkoutSessionId: 's',
+        callbackUrl: 'https://x.test/cb',
+      })
+    ).rejects.toThrow(/AGECHECKER_SECRET/);
   });
 
   it('throws when callbackUrl is not absolute', async () => {
@@ -295,6 +382,66 @@ describe('createAgeCheckerSession', () => {
         callbackUrl: 'https://x.test/cb',
       })
     ).rejects.toThrow(/missing session id/);
+  });
+});
+
+describe('verifyAgeCheckerSignature (HMAC-SHA1 / base64)', () => {
+  beforeEach(() => {
+    process.env = { ...ORIGINAL_ENV };
+    delete process.env.AGECHECKER_TEST_MODE;
+    process.env.AGECHECKER_SECRET = 'acct-secret';
+  });
+
+  afterEach(() => {
+    process.env = { ...ORIGINAL_ENV };
+  });
+
+  function sign(body: string, secret = 'acct-secret'): string {
+    return crypto.createHmac('sha1', secret).update(body).digest('base64');
+  }
+
+  it('accepts a base64 HMAC-SHA1 over the raw body', () => {
+    const raw = '{"uuid":"v1","status":"accepted"}';
+    expect(verifyAgeCheckerSignature(raw, sign(raw))).toBe(true);
+  });
+
+  it('accepts a signature computed over the re-stringified parsed body', () => {
+    // AgeChecker's NodeJS example keys over JSON.stringify(parsedBody);
+    // the bytes we receive may have different whitespace.
+    const raw = '{ "uuid": "v1",  "status": "accepted" }';
+    const restringified = JSON.stringify(JSON.parse(raw));
+    expect(verifyAgeCheckerSignature(raw, sign(restringified))).toBe(true);
+  });
+
+  it('rejects a SHA256/hex signature (the old, wrong scheme)', () => {
+    const raw = '{"uuid":"v1"}';
+    const wrong = crypto
+      .createHmac('sha256', 'acct-secret')
+      .update(raw)
+      .digest('hex');
+    expect(verifyAgeCheckerSignature(raw, wrong)).toBe(false);
+  });
+
+  it('rejects when the signature was keyed with the wrong secret', () => {
+    const raw = '{"uuid":"v1"}';
+    expect(verifyAgeCheckerSignature(raw, sign(raw, 'not-the-secret'))).toBe(
+      false
+    );
+  });
+
+  it('rejects a missing signature header', () => {
+    expect(verifyAgeCheckerSignature('{}', null)).toBe(false);
+  });
+
+  it('rejects when AGECHECKER_SECRET is unset', () => {
+    delete process.env.AGECHECKER_SECRET;
+    const raw = '{"uuid":"v1"}';
+    expect(verifyAgeCheckerSignature(raw, sign(raw))).toBe(false);
+  });
+
+  it('bypasses verification in test mode', () => {
+    process.env.AGECHECKER_TEST_MODE = 'true';
+    expect(verifyAgeCheckerSignature('anything', null)).toBe(true);
   });
 });
 

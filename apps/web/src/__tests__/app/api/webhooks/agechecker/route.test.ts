@@ -36,6 +36,34 @@ vi.mock('@/lib/agechecker', () => ({
   verifyAgeCheckerSignature: verifyAgeCheckerSignatureMock,
   verifyVerificationId: verifyVerificationIdMock,
   isAgeCheckerTestMode: isAgeCheckerTestModeMock,
+  // Real normalizeStatus — pure function, no need to mock it.
+  normalizeStatus: (raw: unknown): string => {
+    if (typeof raw !== 'string') return 'pending';
+    const v = raw.toLowerCase();
+    if (
+      v === 'accepted' ||
+      v === 'pass' ||
+      v === 'passed' ||
+      v === 'approved' ||
+      v === 'verified'
+    ) {
+      return 'pass';
+    }
+    if (
+      v === 'denied' ||
+      v === 'deny' ||
+      v === 'rejected' ||
+      v === 'fail' ||
+      v === 'failed'
+    ) {
+      return 'deny';
+    }
+    if (v === 'underage') return 'underage';
+    if (v === 'manual_review' || v === 'manual' || v === 'review') {
+      return 'manual_review';
+    }
+    return 'pending';
+  },
 }));
 
 vi.mock('@/lib/repositories', () => ({
@@ -47,7 +75,7 @@ vi.mock('@/lib/repositories', () => ({
     InvalidCheckoutSessionTransitionErrorClass,
 }));
 
-import { POST } from '@/app/api/webhooks/agechecker/route';
+import { PUT, POST } from '@/app/api/webhooks/agechecker/route';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -57,7 +85,7 @@ function makeRequest(body: unknown, signature: string | null = 'sig'): Request {
   };
   if (signature !== null) headers['x-agechecker-signature'] = signature;
   return new Request('http://localhost/api/webhooks/agechecker', {
-    method: 'POST',
+    method: 'PUT',
     headers,
     body: typeof body === 'string' ? body : JSON.stringify(body),
   });
@@ -98,33 +126,43 @@ function makeSession(over: Partial<CheckoutSession> = {}): CheckoutSession {
   };
 }
 
+/** Default `verifyVerificationId` lookup result: accepted, order=sess-1. */
+function acceptedLookup(over: Record<string, unknown> = {}) {
+  return {
+    valid: true,
+    status: 'pass' as const,
+    verifiedAt: new Date('2026-05-02T12:00:00Z'),
+    metadata: { order: 'sess-1' },
+    ...over,
+  };
+}
+
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-describe('POST /api/webhooks/agechecker', () => {
+describe('PUT /api/webhooks/agechecker', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     verifyAgeCheckerSignatureMock.mockReturnValue(true);
     isAgeCheckerTestModeMock.mockReturnValue(false);
-    verifyVerificationIdMock.mockResolvedValue({
-      valid: true,
-      status: 'pass',
-      verifiedAt: new Date('2026-05-02T12:00:00Z'),
-    });
+    verifyVerificationIdMock.mockResolvedValue(acceptedLookup());
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
+  it('exports POST as a defensive alias of PUT', () => {
+    expect(POST).toBe(PUT);
+  });
+
   describe('given an invalid signature', () => {
     it('returns 401 and writes nothing', async () => {
       verifyAgeCheckerSignatureMock.mockReturnValue(false);
 
-      const res = await POST(
-        makeRequest({ verificationId: 'v1', status: 'pass', order: 'sess-1' })
-      );
+      const res = await PUT(makeRequest({ uuid: 'v1', status: 'accepted' }));
 
       expect(res.status).toBe(401);
+      expect(verifyVerificationIdMock).not.toHaveBeenCalled();
       expect(getCheckoutSessionMock).not.toHaveBeenCalled();
       expect(markAgeVerifiedMock).not.toHaveBeenCalled();
       expect(releaseStockMock).not.toHaveBeenCalled();
@@ -133,56 +171,83 @@ describe('POST /api/webhooks/agechecker', () => {
 
   describe('given a malformed JSON body', () => {
     it('returns 400', async () => {
-      const res = await POST(makeRequest('not json{'));
+      const res = await PUT(makeRequest('not json{'));
       expect(res.status).toBe(400);
     });
   });
 
-  describe('given status=pass with a valid verificationId and an awaiting_id session', () => {
-    it('marks the session age-verified and returns 200 handled=true', async () => {
+  describe('given a body with no uuid', () => {
+    it('returns 400', async () => {
+      const res = await PUT(makeRequest({ status: 'accepted' }));
+      expect(res.status).toBe(400);
+      expect(verifyVerificationIdMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('given the lookup cannot resolve metadata.order', () => {
+    it('acks 200 handled=false and touches no session', async () => {
+      verifyVerificationIdMock.mockResolvedValue({
+        valid: false,
+        status: 'pending',
+      });
+      const res = await PUT(
+        makeRequest({ uuid: 'orphan', status: 'accepted' })
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { handled: boolean };
+      expect(body.handled).toBe(false);
+      expect(getCheckoutSessionMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('given the lookup says accepted and the session is awaiting_id', () => {
+    it('marks the session age-verified using the lookup metadata.order + verifiedAt', async () => {
       getCheckoutSessionMock.mockResolvedValue(makeSession());
       markAgeVerifiedMock.mockResolvedValue(
         makeSession({ status: 'awaiting_payment' })
       );
 
-      const res = await POST(
-        makeRequest({ verificationId: 'v1', status: 'pass', order: 'sess-1' })
-      );
+      const res = await PUT(makeRequest({ uuid: 'v1', status: 'accepted' }));
 
       expect(res.status).toBe(200);
       const body = (await res.json()) as { handled: boolean };
       expect(body.handled).toBe(true);
+      expect(getCheckoutSessionMock).toHaveBeenCalledWith('sess-1');
       expect(markAgeVerifiedMock).toHaveBeenCalledWith(
         'sess-1',
         'v1',
-        expect.any(Date)
+        new Date('2026-05-02T12:00:00Z')
       );
       expect(releaseStockMock).not.toHaveBeenCalled();
     });
   });
 
-  describe('given status=pass but the API lookup says the verificationId is not a pass', () => {
-    it('returns 401 and does not mark the session', async () => {
-      verifyVerificationIdMock.mockResolvedValue({
-        valid: false,
-        status: 'pending',
-      });
-
-      const res = await POST(
-        makeRequest({
-          verificationId: 'forged',
-          status: 'pass',
-          order: 'sess-1',
-        })
+  describe('given the callback body says accepted but the lookup says denied', () => {
+    it('treats it as a denial — cancels + releases stock (the lookup is authoritative)', async () => {
+      verifyVerificationIdMock.mockResolvedValue(
+        acceptedLookup({ valid: false, status: 'deny' })
+      );
+      getCheckoutSessionMock.mockResolvedValue(makeSession());
+      markCheckoutSessionCancelledMock.mockResolvedValue(
+        makeSession({ status: 'cancelled' })
       );
 
-      expect(res.status).toBe(401);
+      const res = await PUT(
+        makeRequest({ uuid: 'forged', status: 'accepted' })
+      );
+
+      expect(res.status).toBe(200);
       expect(markAgeVerifiedMock).not.toHaveBeenCalled();
+      expect(markCheckoutSessionCancelledMock).toHaveBeenCalledWith('sess-1');
+      expect(releaseStockMock).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('given status=deny and a session with holds', () => {
+  describe('given the lookup says denied and a session with holds', () => {
     it('cancels the session and releases the holds', async () => {
+      verifyVerificationIdMock.mockResolvedValue(
+        acceptedLookup({ valid: false, status: 'deny' })
+      );
       const session = makeSession({
         holds: [
           {
@@ -199,9 +264,7 @@ describe('POST /api/webhooks/agechecker', () => {
         makeSession({ status: 'cancelled' })
       );
 
-      const res = await POST(
-        makeRequest({ verificationId: 'v1', status: 'deny', order: 'sess-1' })
-      );
+      const res = await PUT(makeRequest({ uuid: 'v1', status: 'denied' }));
 
       expect(res.status).toBe(200);
       const body = (await res.json()) as { handled: boolean };
@@ -223,36 +286,22 @@ describe('POST /api/webhooks/agechecker', () => {
     });
   });
 
-  describe('given status=underage', () => {
-    it('cancels the session and releases holds (same as deny)', async () => {
-      getCheckoutSessionMock.mockResolvedValue(makeSession());
-      markCheckoutSessionCancelledMock.mockResolvedValue(
-        makeSession({ status: 'cancelled' })
-      );
-
-      const res = await POST(
-        makeRequest({
-          verificationId: 'v1',
-          status: 'underage',
-          order: 'sess-1',
-        })
-      );
-
-      expect(res.status).toBe(200);
-      expect(markCheckoutSessionCancelledMock).toHaveBeenCalledWith('sess-1');
-      expect(releaseStockMock).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('given status=pending or status=manual_review', () => {
+  describe.each([
+    'signature',
+    'photo_id',
+    'phone_validation',
+    'sms_sent',
+    'pending',
+  ] as const)('given a non-terminal step-up status %s', step => {
     it('logs only and does not mutate state', async () => {
-      const res = await POST(
-        makeRequest({
-          verificationId: 'v1',
-          status: 'pending',
-          order: 'sess-1',
-        })
-      );
+      verifyVerificationIdMock.mockResolvedValue({
+        valid: false,
+        status: 'pending',
+        metadata: { order: 'sess-1' },
+      });
+
+      const res = await PUT(makeRequest({ uuid: 'v1', status: step }));
+
       expect(res.status).toBe(200);
       const body = (await res.json()) as { handled: boolean };
       expect(body.handled).toBe(false);
@@ -260,29 +309,16 @@ describe('POST /api/webhooks/agechecker', () => {
       expect(markAgeVerifiedMock).not.toHaveBeenCalled();
       expect(markCheckoutSessionCancelledMock).not.toHaveBeenCalled();
       expect(releaseStockMock).not.toHaveBeenCalled();
-
-      const res2 = await POST(
-        makeRequest({
-          verificationId: 'v1',
-          status: 'manual_review',
-          order: 'sess-1',
-        })
-      );
-      expect(res2.status).toBe(200);
-      const body2 = (await res2.json()) as { handled: boolean };
-      expect(body2.handled).toBe(false);
     });
   });
 
-  describe('given a re-fired pass webhook for a session already past awaiting_id', () => {
+  describe('given a re-fired accepted callback for a session already past awaiting_id', () => {
     it('is idempotent — acks 200 without re-marking', async () => {
       getCheckoutSessionMock.mockResolvedValue(
         makeSession({ status: 'awaiting_payment', ageVerifiedAt: new Date() })
       );
 
-      const res = await POST(
-        makeRequest({ verificationId: 'v1', status: 'pass', order: 'sess-1' })
-      );
+      const res = await PUT(makeRequest({ uuid: 'v1', status: 'accepted' }));
 
       expect(res.status).toBe(200);
       const body = (await res.json()) as { handled: boolean; reason?: string };
@@ -300,9 +336,7 @@ describe('POST /api/webhooks/agechecker', () => {
         )
       );
 
-      const res = await POST(
-        makeRequest({ verificationId: 'v1', status: 'pass', order: 'sess-1' })
-      );
+      const res = await PUT(makeRequest({ uuid: 'v1', status: 'accepted' }));
 
       expect(res.status).toBe(200);
       const body = (await res.json()) as { handled: boolean; reason?: string };
@@ -310,15 +344,16 @@ describe('POST /api/webhooks/agechecker', () => {
     });
   });
 
-  describe('given a re-fired deny webhook for a session already cancelled', () => {
+  describe('given a re-fired denied callback for a session already cancelled', () => {
     it('is idempotent — acks without re-releasing holds', async () => {
+      verifyVerificationIdMock.mockResolvedValue(
+        acceptedLookup({ valid: false, status: 'deny' })
+      );
       getCheckoutSessionMock.mockResolvedValue(
         makeSession({ status: 'cancelled' })
       );
 
-      const res = await POST(
-        makeRequest({ verificationId: 'v1', status: 'deny', order: 'sess-1' })
-      );
+      const res = await PUT(makeRequest({ uuid: 'v1', status: 'denied' }));
 
       expect(res.status).toBe(200);
       expect(markCheckoutSessionCancelledMock).not.toHaveBeenCalled();
@@ -326,44 +361,29 @@ describe('POST /api/webhooks/agechecker', () => {
     });
   });
 
-  describe('given a terminal payload missing the sessionId (order field)', () => {
-    it('acks 200 handled=false and does not look up any session', async () => {
-      const res = await POST(
-        makeRequest({ verificationId: 'v1', status: 'pass' })
-      );
-      expect(res.status).toBe(200);
-      const body = (await res.json()) as { handled: boolean };
-      expect(body.handled).toBe(false);
-      expect(getCheckoutSessionMock).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('given status=pass for a sessionId that does not exist', () => {
+  describe('given the lookup resolves accepted for a sessionId that does not exist', () => {
     it('returns 404', async () => {
+      verifyVerificationIdMock.mockResolvedValue(
+        acceptedLookup({ metadata: { order: 'gone' } })
+      );
       getCheckoutSessionMock.mockResolvedValue(null);
 
-      const res = await POST(
-        makeRequest({ verificationId: 'v1', status: 'pass', order: 'gone' })
-      );
+      const res = await PUT(makeRequest({ uuid: 'v1', status: 'accepted' }));
 
       expect(res.status).toBe(404);
       expect(markAgeVerifiedMock).not.toHaveBeenCalled();
     });
   });
 
-  describe('given the AgeChecker payload reports pass but creates no Order', () => {
+  describe('given the AgeChecker callback reports accepted', () => {
     it('does not invoke any order-creation repository', async () => {
       getCheckoutSessionMock.mockResolvedValue(makeSession());
       markAgeVerifiedMock.mockResolvedValue(
         makeSession({ status: 'awaiting_payment' })
       );
 
-      await POST(
-        makeRequest({ verificationId: 'v1', status: 'pass', order: 'sess-1' })
-      );
+      await PUT(makeRequest({ uuid: 'v1', status: 'accepted' }));
 
-      // The route module imports nothing from order repos — sanity-check by
-      // confirming only checkout-session helpers were called.
       expect(markAgeVerifiedMock).toHaveBeenCalledTimes(1);
       expect(markCheckoutSessionCancelledMock).not.toHaveBeenCalled();
     });
