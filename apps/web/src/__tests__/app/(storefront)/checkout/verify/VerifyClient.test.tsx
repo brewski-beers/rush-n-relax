@@ -1,5 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import type { AgeCheckerConfig } from '@/types/agechecker-window';
 
 vi.mock('next/script', () => ({
   default: ({ src, ...rest }: { src: string; [k: string]: unknown }) => (
@@ -43,13 +44,15 @@ describe('VerifyClient', () => {
       />
     );
 
-    expect(window.AgeCheckerConfig).toEqual({
+    expect(window.AgeCheckerConfig).toMatchObject({
       element: '#proceed-to-payment',
       key: 'pub-key-123',
       order: 'sess_abc',
       session: 'ac-sess-uuid-1',
       email: 'buyer@example.com',
     });
+    // Lifecycle hook for the client-driven confirm path is wired.
+    expect(typeof window.AgeCheckerConfig?.onstatuschanged).toBe('function');
 
     // Element id matches AgeCheckerConfig.element selector — the popup
     // can find it on the page when it loads.
@@ -85,6 +88,98 @@ describe('VerifyClient', () => {
     const btn = screen.getByTestId('proceed-to-payment');
     expect(btn).toHaveAttribute('id', 'proceed-to-payment');
     expect(btn).toHaveAttribute('href', '/api/checkout/sess_1/redirect');
+  });
+
+  describe('client-driven age confirmation (popup hooks)', () => {
+    let fetchMock: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+      vi.stubGlobal('fetch', fetchMock);
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    function renderAndGetConfig(sessionId = 'sess_hook'): AgeCheckerConfig {
+      render(
+        <VerifyClient
+          sessionId={sessionId}
+          apiKey="key"
+          ageCheckerSessionId="ac-uuid"
+          customerEmail={undefined}
+          redirectUrl={`/api/checkout/${sessionId}/redirect`}
+        />
+      );
+      const config = window.AgeCheckerConfig;
+      if (!config) throw new Error('AgeCheckerConfig not set');
+      return config;
+    }
+
+    it('POSTs the verification uuid to /confirm-age when status changes to accepted', async () => {
+      const config = renderAndGetConfig('sess_hook');
+
+      config.onstatuschanged?.({ uuid: 'verif-xyz', status: 'accepted' });
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      });
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('/api/checkout/sess_hook/confirm-age');
+      expect(init.method).toBe('POST');
+      expect(init.keepalive).toBe(true);
+      expect(JSON.parse(init.body as string)).toEqual({
+        verificationUuid: 'verif-xyz',
+      });
+    });
+
+    it('POSTs once even if accepted fires multiple times', async () => {
+      const config = renderAndGetConfig();
+      config.onstatuschanged?.({ uuid: 'v1', status: 'accepted' });
+      config.onstatuschanged?.({ uuid: 'v1', status: 'accepted' });
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('POSTs on a denied status too (server cancels + releases)', async () => {
+      const config = renderAndGetConfig('sess_d');
+      config.onstatuschanged?.({ uuid: 'v-denied', status: 'denied' });
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      });
+      const [url] = fetchMock.mock.calls[0] as [string];
+      expect(url).toBe('/api/checkout/sess_d/confirm-age');
+    });
+
+    it('does NOT POST for intermediate step-up statuses', async () => {
+      const config = renderAndGetConfig();
+      config.onstatuschanged?.({ uuid: 'v1', status: 'photo_id' });
+      config.onstatuschanged?.({ uuid: 'v1', status: 'signature' });
+      config.onstatuschanged?.({ uuid: 'v1', status: 'pending' });
+
+      // give any async work a tick
+      await new Promise(r => setTimeout(r, 10));
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('retries the confirm POST on a 5xx then succeeds', async () => {
+      fetchMock
+        .mockResolvedValueOnce({ ok: false, status: 503 })
+        .mockResolvedValueOnce({ ok: true, status: 200 });
+
+      const config = renderAndGetConfig();
+      config.onstatuschanged?.({ uuid: 'v1', status: 'accepted' });
+
+      await waitFor(
+        () => {
+          expect(fetchMock).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 2000 }
+      );
+    });
   });
 
   describe('non-production simulate panel (#411)', () => {
