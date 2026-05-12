@@ -143,11 +143,12 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
         { productId: 'p1', variantId: 'default', locationId: 'online', qty: 2 },
       ]);
 
-      // Clover invoked with the SERVER-COMPUTED total + priced items — NOT
-      // the client's stale `total: 1100`.
+      // Clover invoked with the SERVER-COMPUTED total + tax + priced
+      // items — never the client's stale figures.
       expect(createCloverCheckoutSessionMock).toHaveBeenCalledTimes(1);
       const cloverArg = createCloverCheckoutSessionMock.mock.calls[0][0];
       expect(cloverArg.amount).toBe(1093);
+      expect(cloverArg.tax).toBe(93);
       expect(cloverArg.customerEmail).toBe('jane@example.com');
       expect(cloverArg.items).toEqual(PRICED.items);
 

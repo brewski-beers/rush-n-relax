@@ -184,15 +184,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // ── Step 2: mint Clover Hosted Checkout session. ───────────────────
-  // Use a synthetic orderId derived from time — no real Order exists
-  // until payment success. Clover only needs an opaque correlation
-  // string for its return URL.
+  // `provisionalOrderId` is the doc-id fallback for the *stub* provider
+  // (which never calls Clover — see `cloverCheckoutSessionId` below) and
+  // backs `stubResponse()`'s `/checkout/stub?order=` URL. The LIVE
+  // success redirect is assembled by Clover from the
+  // `{CHECKOUT_SESSION_ID}` token, so it never uses this synthetic id.
   const provisionalOrderId = `cs_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
   let cloverSession;
   try {
     cloverSession = await createCloverCheckoutSession({
       orderId: provisionalOrderId,
       amount: priced.total,
+      tax: priced.tax,
       ...(body.customerEmail ? { customerEmail: body.customerEmail } : {}),
       items: priced.items,
     });

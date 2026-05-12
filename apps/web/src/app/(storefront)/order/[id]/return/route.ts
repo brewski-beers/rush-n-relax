@@ -2,10 +2,12 @@
  * GET /order/[id]/return — Clover Hosted Checkout return URL (#368).
  *
  * `[id]` is the Clover Hosted Checkout session id, which is also the
- * Firestore doc id of the corresponding `CheckoutSession` (#360). This
- * route is the PRIMARY moment an Order document is created — see
- * `lib/checkout/finalize.ts` for the orchestration, idempotency story,
- * and refund-on-commit-failure compensation.
+ * Firestore doc id of the corresponding `CheckoutSession` (#360). Clover
+ * substitutes the `{CHECKOUT_SESSION_ID}` token in `redirectUrls.success`
+ * (set in `lib/clover/checkout.ts`) with that id when it redirects the
+ * customer here. This route is the PRIMARY moment an Order document is
+ * created — see `lib/checkout/finalize.ts` for the orchestration,
+ * idempotency story, and refund-on-commit-failure compensation.
  *
  * Behavior:
  *   - paid (and not yet promoted) → create order, redirect to /order/{orderId}
@@ -14,10 +16,12 @@
  *   - declined / commit-failed    → redirect to /checkout/cancelled?session={id}
  *   - missing session             → redirect home
  *
- * Clover appends an `orderId` query parameter on redirect — we forward it
- * to `finalizeCheckoutSession` for payment lookup. When absent (or when
- * the live-payments kill switch is OFF) the finalizer falls back to the
- * stub success path so dev flows work without real credentials.
+ * We opportunistically forward an `?orderId=` query param if Clover
+ * appends one — but it is NOT guaranteed. When absent, `finalizeCheckoutSession`
+ * discovers the Clover order id itself via
+ * `GET /invoicingcheckoutservice/v1/checkouts/{id}` before falling back
+ * to `awaiting`. When the live-payments kill switch is OFF the finalizer
+ * takes the stub success path so dev flows work without real credentials.
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { finalizeCheckoutSession } from '@/lib/checkout/finalize';

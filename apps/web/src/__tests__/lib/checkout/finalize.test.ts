@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   transitionStatus: vi.fn(),
   enqueueRefundPending: vi.fn(),
   getCloverPaymentForOrder: vi.fn(),
+  getCloverOrderIdForCheckout: vi.fn(),
   refundCloverPayment: vi.fn(),
   isLivePaymentsEnabled: vi.fn(),
 }));
@@ -50,6 +51,7 @@ vi.mock('@/lib/clover/checkout', async () => {
   return {
     ...actual,
     getCloverPaymentForOrder: mocks.getCloverPaymentForOrder,
+    getCloverOrderIdForCheckout: mocks.getCloverOrderIdForCheckout,
     refundCloverPayment: mocks.refundCloverPayment,
   };
 });
@@ -111,6 +113,7 @@ beforeEach(() => {
   mocks.transitionStatus.mockResolvedValue(undefined);
   mocks.refundCloverPayment.mockResolvedValue({ refundId: 'r-1' });
   mocks.enqueueRefundPending.mockResolvedValue(undefined);
+  mocks.getCloverOrderIdForCheckout.mockResolvedValue(null);
 });
 
 describe('finalizeCheckoutSession (#368)', () => {
@@ -177,16 +180,61 @@ describe('finalizeCheckoutSession (#368)', () => {
       );
     });
 
-    it('returns awaiting when no Clover orderId is supplied (live mode)', async () => {
+    it('returns awaiting when no Clover orderId is supplied and discovery also comes up empty (live mode)', async () => {
       mocks.getCheckoutSession.mockResolvedValue(makeSession());
       mocks.isLivePaymentsEnabled.mockReturnValue(true);
+      mocks.getCloverOrderIdForCheckout.mockResolvedValue(null);
 
       const out = await finalizeCheckoutSession({
         cloverCheckoutSessionId: 'clover-sess-1',
       });
 
       expect(out.kind).toBe('awaiting');
+      // Self-service discovery was attempted against the checkout session id.
+      expect(mocks.getCloverOrderIdForCheckout).toHaveBeenCalledWith(
+        'clover-sess-1'
+      );
+      expect(mocks.getCloverPaymentForOrder).not.toHaveBeenCalled();
       expect(mocks.createOrder).not.toHaveBeenCalled();
+    });
+
+    it('discovers the Clover order id via the checkout resource when the return URL omits it, then promotes', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(makeSession());
+      mocks.isLivePaymentsEnabled.mockReturnValue(true);
+      mocks.getCloverOrderIdForCheckout.mockResolvedValue('discovered-ord-9');
+      mocks.getCloverPaymentForOrder.mockResolvedValue({
+        result: 'SUCCESS',
+        paymentId: 'pay-disc',
+      });
+      mocks.createOrder.mockResolvedValue('ord-disc');
+      mocks.commitStock.mockResolvedValue(undefined);
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+        // no cloverOrderId — must be discovered
+      });
+
+      expect(mocks.getCloverOrderIdForCheckout).toHaveBeenCalledWith(
+        'clover-sess-1'
+      );
+      expect(mocks.getCloverPaymentForOrder).toHaveBeenCalledWith(
+        'discovered-ord-9'
+      );
+      expect(out).toEqual({ kind: 'paid', orderId: 'ord-disc' });
+    });
+
+    it('does not attempt discovery when live payments are OFF (stub success path)', async () => {
+      mocks.getCheckoutSession.mockResolvedValue(makeSession());
+      mocks.isLivePaymentsEnabled.mockReturnValue(false);
+      mocks.createOrder.mockResolvedValue('ord-stub');
+      mocks.commitStock.mockResolvedValue(undefined);
+
+      const out = await finalizeCheckoutSession({
+        cloverCheckoutSessionId: 'clover-sess-1',
+      });
+
+      expect(mocks.getCloverOrderIdForCheckout).not.toHaveBeenCalled();
+      expect(out).toEqual({ kind: 'paid', orderId: 'ord-stub' });
     });
   });
 

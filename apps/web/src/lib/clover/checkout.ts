@@ -14,20 +14,43 @@
  * Only when BOTH gates pass do we invoke the real Clover hosted-checkout API.
  *
  * Path B notes (#279): payment confirmation cannot rely on app-level
- * webhooks. The Hosted Checkout `redirectUrl` is set to the new return
- * route at `/order/{orderId}/return`, which reconciles status by GETting
- * the payment from the merchant's orders endpoint. A 5-min recovery cron
+ * webhooks. The Hosted Checkout `redirectUrls.success` is set to the
+ * return route at `/order/{CHECKOUT_SESSION_ID}/return` — Clover
+ * substitutes the `{CHECKOUT_SESSION_ID}` token with the checkout
+ * session id at redirect time, which is also our CheckoutSession
+ * Firestore doc id. That route reconciles status by GETting the payment
+ * from the merchant's orders endpoint. A 5-min recovery cron
  * (functions/index.ts) catches sessions where the customer never returns.
  *
- * Docs: https://docs.clover.com/docs/using-checkout-api
+ * Redirect contract (per Clover Hosted Checkout docs — see
+ * https://docs.clover.com/dev/docs/redirecting-customers):
+ *   "redirectUrls": {
+ *     "success": "https://store.example/order/{CHECKOUT_SESSION_ID}/return",
+ *     "failure": "https://store.example/checkout/cancelled?error={ERROR_CODE}"
+ *   }
+ * Both must be HTTPS. The legacy singular `redirectUrl` string is NOT
+ * honoured by Hosted Checkout — Clover silently ignores it and the
+ * customer is stranded on Clover's "Payment Received" page (the bug this
+ * change fixes).
+ *
+ * Docs: https://docs.clover.com/dev/docs/creating-a-hosted-checkout-session
  */
 import { isLivePaymentsEnabled } from '@/lib/test-mode';
 import type { OrderItem } from '@/types';
 
 export interface CheckoutSessionInput {
   orderId: string;
-  /** cents */
+  /** cents — the total amount Clover should charge (subtotal + tax). */
   amount: number;
+  /**
+   * cents — sales tax portion of `amount`. Appended to the Clover cart as
+   * a synthetic "Sales Tax" line item so the cart sums to `amount`
+   * (Hosted Checkout charges Σ lineItems, not a separate `total`). When
+   * omitted or 0, no tax line item is added. Defaults to
+   * `amount − Σ(unitPrice·quantity)` is intentionally NOT done here —
+   * callers pass it explicitly.
+   */
+  tax?: number;
   customerEmail?: string;
   /** Line items required by Clover's shoppingCart payload. */
   items?: OrderItem[];
@@ -99,15 +122,27 @@ export async function createCloverCheckoutSession(
     price: item.unitPrice,
   }));
 
-  // #279 — Path B return-URL reconciliation. After payment the customer is
-  // redirected to /order/{id}/return which calls Clover to read payment
-  // status and transitions the order. Append `?session=` so the return
-  // route can resolve the Clover checkout/order id without a Firestore
-  // read first.
+  // Tax is not a separate field on the Hosted Checkout cart — Clover
+  // charges the SUM of lineItems. Append a synthetic "Sales Tax" line so
+  // the cart total equals `input.amount` (subtotal + tax). Without this
+  // the customer is undercharged by exactly the tax amount.
+  if (typeof input.tax === 'number' && input.tax > 0) {
+    lineItems.push({ name: 'Sales Tax', unitQty: 1, price: input.tax });
+  }
+
+  // #279 — Path B return-URL reconciliation. After payment Clover
+  // redirects to redirectUrls.success, substituting `{CHECKOUT_SESSION_ID}`
+  // with the checkout session id (== our CheckoutSession Firestore doc
+  // id). That route calls Clover to read payment status and promotes the
+  // session to an Order. On decline Clover redirects to
+  // redirectUrls.failure with `{ERROR_CODE}` substituted.
   const body = {
     customer: input.customerEmail ? { email: input.customerEmail } : undefined,
     shoppingCart: { lineItems },
-    redirectUrl: `${origin}/order/${input.orderId}/return`,
+    redirectUrls: {
+      success: `${origin}/order/{CHECKOUT_SESSION_ID}/return`,
+      failure: `${origin}/checkout/cancelled?error={ERROR_CODE}`,
+    },
   };
 
   const res = await fetch(
@@ -170,6 +205,55 @@ function getCloverCreds(): CloverCredentials | null {
   const apiKey = process.env.CLOVER_API_KEY;
   if (!merchantId || !apiKey) return null;
   return { merchantId, apiKey };
+}
+
+/**
+ * Look up the Clover **order id** linked to a Hosted Checkout session.
+ *
+ * Endpoint per Clover docs:
+ *   GET {CLOVER_BASE_URL}/invoicingcheckoutservice/v1/checkouts/{checkoutSessionId}
+ *
+ * The response carries an `orderId` once Clover has captured payment and
+ * linked an order to the checkout. This is the robust way to discover the
+ * Clover order id on the return path — we do NOT rely on Clover appending
+ * an `?orderId=` query param to the success redirect (unconfirmed).
+ *
+ * Returns:
+ *   - `string`  — the Clover order id, once linked.
+ *   - `null`    — credentials missing, order not yet linked, or a non-2xx
+ *                 response (caller treats all of these as "can't resolve
+ *                 yet → leave the session awaiting").
+ */
+export async function getCloverOrderIdForCheckout(
+  cloverCheckoutSessionId: string
+): Promise<string | null> {
+  const creds = getCloverCreds();
+  if (!creds) return null;
+
+  const url = `${getCloverBaseUrl()}/invoicingcheckoutservice/v1/checkouts/${encodeURIComponent(cloverCheckoutSessionId)}`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${creds.apiKey}`,
+        'Content-Type': 'application/json',
+        'X-Clover-Merchant-Id': creds.merchantId,
+      },
+    });
+  } catch {
+    // Network blip — caller falls back to awaiting; cron retries.
+    return null;
+  }
+  if (!res.ok) return null;
+
+  // Justified cast: Clover checkout resource shape is documented but not
+  // typed in our codebase. We only read the `orderId` field.
+  const json = (await res.json().catch(() => null)) as {
+    orderId?: string;
+  } | null;
+  const orderId = json?.orderId;
+  return typeof orderId === 'string' && orderId.length > 0 ? orderId : null;
 }
 
 function normalizeResult(raw: unknown): CloverPaymentResult {
