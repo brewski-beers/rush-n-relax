@@ -15,9 +15,10 @@ const {
 // Re-export the real InsufficientStockError class so `instanceof` checks
 // in the route module match the error thrown from the mock.
 vi.mock('@/lib/repositories', async () => {
-  const actual = await vi.importActual<
-    typeof import('@/lib/repositories')
-  >('@/lib/repositories');
+  const actual =
+    await vi.importActual<typeof import('@/lib/repositories')>(
+      '@/lib/repositories'
+    );
   return {
     ...actual,
     holdStock: holdStockMock,
@@ -116,10 +117,11 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
         },
       ]);
 
-      // Clover invoked with cart total + items + email
+      // Clover invoked with cart total + tax + items + email
       expect(createCloverCheckoutSessionMock).toHaveBeenCalledTimes(1);
       const cloverArg = createCloverCheckoutSessionMock.mock.calls[0][0];
       expect(cloverArg.amount).toBe(1100);
+      expect(cloverArg.tax).toBe(100);
       expect(cloverArg.customerEmail).toBe('jane@example.com');
       expect(cloverArg.items).toEqual(VALID_BODY.items);
 
