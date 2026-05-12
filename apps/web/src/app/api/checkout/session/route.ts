@@ -198,6 +198,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       tax: priced.tax,
       ...(body.customerEmail ? { customerEmail: body.customerEmail } : {}),
       items: priced.items,
+      // Prefill Clover's hosted-checkout customer object with the buyer
+      // name the customer already entered in our cart.
+      deliveryAddress: body.deliveryAddress,
     });
   } catch (err) {
     // Clover failed — release the holds we just took so reserved stock

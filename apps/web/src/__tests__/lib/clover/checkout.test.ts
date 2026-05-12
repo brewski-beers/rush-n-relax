@@ -5,6 +5,7 @@ import {
   getCloverOrderIdForCheckout,
   getCloverPaymentForOrder,
   refundCloverPayment,
+  splitCustomerName,
 } from '@/lib/clover/checkout';
 
 const ORIGINAL_ENV = { ...process.env };
@@ -218,6 +219,145 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
       shoppingCart: { lineItems: Array<{ name: string }> };
     };
     expect(body.shoppingCart.lineItems.map(li => li.name)).toEqual(['Gummy']);
+  });
+
+  it('prefills the customer object with split firstName/lastName + email from deliveryAddress', async () => {
+    setEnv({
+      CLOVER_LIVE_PAYMENTS_ENABLED: 'true',
+      CLOVER_MERCHANT_ID: 'M_PROD',
+      CLOVER_API_KEY: 'K_PROD',
+      VERCEL_URL: 'rushnrelax.com',
+    });
+    const fetchSpy = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ href: 'x', id: 'y' }), { status: 200 })
+      );
+    await createCloverCheckoutSession({
+      orderId: 'ord_pf',
+      amount: 1000,
+      customerEmail: 'jane@example.com',
+      deliveryAddress: {
+        name: 'Jane Q Public',
+        line1: '123 Main St',
+        city: 'Knoxville',
+        state: 'TN',
+        zip: '37902',
+      },
+    });
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as {
+      customer?: {
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+        phoneNumber?: string;
+      };
+    };
+    expect(body.customer).toEqual({
+      firstName: 'Jane Q',
+      lastName: 'Public',
+      email: 'jane@example.com',
+    });
+    // We don't collect a phone number — never send phoneNumber.
+    expect(body.customer?.phoneNumber).toBeUndefined();
+  });
+
+  it('puts a single-token name in firstName and omits lastName', async () => {
+    setEnv({
+      CLOVER_LIVE_PAYMENTS_ENABLED: 'true',
+      CLOVER_MERCHANT_ID: 'M_PROD',
+      CLOVER_API_KEY: 'K_PROD',
+    });
+    const fetchSpy = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ href: 'x', id: 'y' }), { status: 200 })
+      );
+    await createCloverCheckoutSession({
+      orderId: 'ord_st',
+      amount: 1000,
+      deliveryAddress: {
+        name: 'Cher',
+        line1: '1 Sunset Blvd',
+        city: 'LA',
+        state: 'CA',
+        zip: '90001',
+      },
+    });
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as {
+      customer?: { firstName?: string; lastName?: string };
+    };
+    expect(body.customer).toEqual({ firstName: 'Cher' });
+  });
+
+  it('omits the customer object entirely when no email and no name are available', async () => {
+    setEnv({
+      CLOVER_LIVE_PAYMENTS_ENABLED: 'true',
+      CLOVER_MERCHANT_ID: 'M_PROD',
+      CLOVER_API_KEY: 'K_PROD',
+    });
+    const fetchSpy = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ href: 'x', id: 'y' }), { status: 200 })
+      );
+    await createCloverCheckoutSession({ orderId: 'ord_no', amount: 1000 });
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as { customer?: unknown };
+    expect(body.customer).toBeUndefined();
+  });
+
+  it('does not pre-seed a shipping address into the Clover create payload', async () => {
+    setEnv({
+      CLOVER_LIVE_PAYMENTS_ENABLED: 'true',
+      CLOVER_MERCHANT_ID: 'M_PROD',
+      CLOVER_API_KEY: 'K_PROD',
+    });
+    const fetchSpy = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ href: 'x', id: 'y' }), { status: 200 })
+      );
+    await createCloverCheckoutSession({
+      orderId: 'ord_sa',
+      amount: 1000,
+      customerEmail: 'jane@example.com',
+      deliveryAddress: {
+        name: 'Jane Public',
+        line1: '123 Main St',
+        city: 'Knoxville',
+        state: 'TN',
+        zip: '37902',
+      },
+    });
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown> & {
+      customer?: Record<string, unknown>;
+    };
+    expect(body.shippingAddress).toBeUndefined();
+    expect(body.customer?.address).toBeUndefined();
+    expect(body.customer?.address1).toBeUndefined();
+  });
+
+  it('still works against the stub (kill switch OFF) when deliveryAddress is supplied', async () => {
+    setEnv({ CLOVER_LIVE_PAYMENTS_ENABLED: undefined });
+    const fetchSpy = vi.spyOn(global, 'fetch');
+    const res = await createCloverCheckoutSession({
+      orderId: 'ord_stub',
+      amount: 1000,
+      customerEmail: 'jane@example.com',
+      deliveryAddress: {
+        name: 'Jane Public',
+        line1: '123 Main St',
+        city: 'Knoxville',
+        state: 'TN',
+        zip: '37902',
+      },
+    });
+    expect(res.provider).toBe('stub');
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('throws CloverApiError on non-2xx Clover response', async () => {
@@ -459,5 +599,38 @@ describe('getCloverOrderIdForCheckout (return-URL order-id discovery)', () => {
     expect(url).toBe(
       'https://apisandbox.dev.clover.com/invoicingcheckoutservice/v1/checkouts/s'
     );
+  });
+});
+
+describe('splitCustomerName', () => {
+  it('splits the last whitespace token as lastName', () => {
+    expect(splitCustomerName('Jane Public')).toEqual({
+      firstName: 'Jane',
+      lastName: 'Public',
+    });
+  });
+
+  it('keeps middle names with the first name', () => {
+    expect(splitCustomerName('Jane Q Public')).toEqual({
+      firstName: 'Jane Q',
+      lastName: 'Public',
+    });
+  });
+
+  it('puts a single token in firstName and omits lastName', () => {
+    expect(splitCustomerName('Cher')).toEqual({ firstName: 'Cher' });
+  });
+
+  it('trims and collapses internal whitespace', () => {
+    expect(splitCustomerName('  Jane   Public  ')).toEqual({
+      firstName: 'Jane',
+      lastName: 'Public',
+    });
+  });
+
+  it('returns {} for undefined / empty / whitespace-only input', () => {
+    expect(splitCustomerName(undefined)).toEqual({});
+    expect(splitCustomerName('')).toEqual({});
+    expect(splitCustomerName('   ')).toEqual({});
   });
 });

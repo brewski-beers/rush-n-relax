@@ -151,6 +151,8 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
       expect(cloverArg.tax).toBe(93);
       expect(cloverArg.customerEmail).toBe('jane@example.com');
       expect(cloverArg.items).toEqual(PRICED.items);
+      // Buyer name/address threaded through for Clover customer prefill.
+      expect(cloverArg.deliveryAddress).toEqual(VALID_BODY.deliveryAddress);
 
       // CheckoutSession persisted with the server-computed money fields.
       expect(createCheckoutSessionMock).toHaveBeenCalledTimes(1);

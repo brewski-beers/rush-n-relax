@@ -29,6 +29,7 @@
  * Dashboard: https://agechecker.net
  */
 import crypto from 'node:crypto';
+import type { ShippingAddress } from '@/types';
 
 /**
  * Internal normalized verification status. AgeChecker's wire statuses
@@ -79,6 +80,21 @@ export interface CreateAgeCheckerSessionInput {
    */
   callbackUrl: string;
   customerEmail?: string;
+  /**
+   * Buyer name + delivery address from our CheckoutSession. We pass this so
+   * the AgeChecker popup can prefill the buyer identity fields and the
+   * customer only has to enter their DOB. We deliberately do NOT collect
+   * DOB ourselves (sensitive PII liability we don't want).
+   *
+   * NOTE: only `email` is currently mapped into the `session/create`
+   * payload — the name/address `options.*` field names AgeChecker accepts
+   * for prefill are not confirmed from public docs (their server/client
+   * API reference is account-gated). See the `buildPrefillOptions` TODO
+   * below: once the field names are confirmed this becomes a one-line
+   * change. The data is threaded all the way here regardless so the wiring
+   * is already in place.
+   */
+  buyer?: ShippingAddress;
 }
 
 export interface CreateAgeCheckerSessionResult {
@@ -115,6 +131,54 @@ async function describeErrorResponse(res: Response): Promise<string> {
     // not JSON — fall through to raw text
   }
   return text || '(empty body)';
+}
+
+/**
+ * Build the buyer-prefill subset of `options` for `POST /v1/session/create`.
+ *
+ * STATUS: only `email` is confirmed (it's already in the live contract —
+ * see [[agechecker]] "Server-side session/create flow"). The name + address
+ * field names AgeChecker accepts for prefill are NOT confirmed from public
+ * docs — the Server API + Client API references are gated behind a merchant
+ * account (`https://agechecker.net/account/install/custom/server` /
+ * `.../client`). The popup's verification form asks for name + DOB + address,
+ * so plausible `options.*` keys are: `first_name`/`last_name` (or a single
+ * `name`), `address`/`address1`+`address2`+`city`+`state`+`zip` (or a nested
+ * `address: { ... }`), maybe `phone`. Until those are confirmed we send ONLY
+ * `email`; the rest is kept here as a commented-out template so enabling it
+ * is a one-line change once the docs are checked.
+ *
+ * TODO(prefill): confirm AgeChecker `options.*` field names for buyer
+ * name/address at https://agechecker.net/account/install/custom/server
+ * (login-gated) or via help@agechecker.net, then uncomment the mapping
+ * below. We never collect DOB — best outcome is the popup only asking for
+ * DOB.
+ */
+function buildPrefillOptions(
+  input: CreateAgeCheckerSessionInput
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (input.customerEmail) out.email = input.customerEmail;
+
+  // --- UNVERIFIED: enable once AgeChecker field names are confirmed -------
+  // const buyer = input.buyer;
+  // if (buyer?.name) {
+  //   const parts = buyer.name.trim().split(/\s+/);
+  //   if (parts.length > 1) {
+  //     out.last_name = parts[parts.length - 1];
+  //     out.first_name = parts.slice(0, -1).join(' ');
+  //   } else if (parts.length === 1) {
+  //     out.first_name = parts[0];
+  //   }
+  // }
+  // if (buyer?.line1) out.address1 = buyer.line1;
+  // if (buyer?.line2) out.address2 = buyer.line2;
+  // if (buyer?.city) out.city = buyer.city;
+  // if (buyer?.state) out.state = buyer.state;
+  // if (buyer?.zip) out.zip = buyer.zip;
+  // -----------------------------------------------------------------------
+
+  return out;
 }
 
 /**
@@ -172,7 +236,7 @@ export async function createAgeCheckerSession(
       contact_customer: false,
       callback_url: input.callbackUrl,
       metadata: { order: input.checkoutSessionId },
-      ...(input.customerEmail ? { email: input.customerEmail } : {}),
+      ...buildPrefillOptions(input),
     },
   };
 

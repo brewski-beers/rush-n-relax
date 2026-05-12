@@ -36,7 +36,7 @@
  * Docs: https://docs.clover.com/dev/docs/creating-a-hosted-checkout-session
  */
 import { isLivePaymentsEnabled } from '@/lib/test-mode';
-import type { OrderItem } from '@/types';
+import type { OrderItem, ShippingAddress } from '@/types';
 
 export interface CheckoutSessionInput {
   orderId: string;
@@ -54,6 +54,38 @@ export interface CheckoutSessionInput {
   customerEmail?: string;
   /** Line items required by Clover's shoppingCart payload. */
   items?: OrderItem[];
+  /**
+   * Buyer name + delivery address from our CheckoutSession. Used to
+   * prefill Clover's hosted-checkout `customer` object (firstName /
+   * lastName / email) so the customer doesn't re-type what they already
+   * entered in our cart. The address is intentionally NOT sent to Clover —
+   * Clover's hosted-checkout create payload has no documented field for a
+   * pre-seeded shipping address, and our app's address copy is canonical
+   * (we never read an address back from Clover). The cleanest fix for
+   * Clover still asking for an address is to disable the
+   * `HCO_CUSTOMER_INFO_FEATURE_ENABLED` flag on the merchant dashboard.
+   */
+  deliveryAddress?: ShippingAddress;
+}
+
+/**
+ * Split a full name into Clover's `firstName` / `lastName`. Last
+ * whitespace-delimited token is the last name; everything before is the
+ * first name. A single token goes in `firstName` with `lastName` omitted.
+ * Empty / whitespace-only input returns `{}` so we never send empty
+ * strings to Clover.
+ */
+export function splitCustomerName(name: string | undefined): {
+  firstName?: string;
+  lastName?: string;
+} {
+  const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return {};
+  if (parts.length === 1) return { firstName: parts[0] };
+  return {
+    firstName: parts.slice(0, -1).join(' '),
+    lastName: parts[parts.length - 1],
+  };
 }
 
 export interface CheckoutSession {
@@ -130,6 +162,22 @@ export async function createCloverCheckoutSession(
     lineItems.push({ name: 'Sales Tax', unitQty: 1, price: input.tax });
   }
 
+  // Prefill Clover's `customer` object from data the buyer already gave us
+  // in our own cart/checkout — firstName/lastName (split from the delivery
+  // address name) + email. We don't collect a phone number, so
+  // `phoneNumber` is omitted. Empty fields are omitted entirely (never send
+  // empty strings). NOTE: only `email` is confirmed against our live Clover
+  // integration; `firstName`/`lastName` follow Clover's standard Customer
+  // object schema (POST /v3/merchants/{mid}/customers) and are assumed to
+  // be accepted on the hosted-checkout `customer` object — see the PR body.
+  const { firstName, lastName } = splitCustomerName(
+    input.deliveryAddress?.name
+  );
+  const customer: Record<string, string> = {};
+  if (firstName) customer.firstName = firstName;
+  if (lastName) customer.lastName = lastName;
+  if (input.customerEmail) customer.email = input.customerEmail;
+
   // #279 — Path B return-URL reconciliation. After payment Clover
   // redirects to redirectUrls.success, substituting `{CHECKOUT_SESSION_ID}`
   // with the checkout session id (== our CheckoutSession Firestore doc
@@ -137,7 +185,7 @@ export async function createCloverCheckoutSession(
   // session to an Order. On decline Clover redirects to
   // redirectUrls.failure with `{ERROR_CODE}` substituted.
   const body = {
-    customer: input.customerEmail ? { email: input.customerEmail } : undefined,
+    customer: Object.keys(customer).length > 0 ? customer : undefined,
     shoppingCart: { lineItems },
     redirectUrls: {
       success: `${origin}/order/{CHECKOUT_SESSION_ID}/return`,

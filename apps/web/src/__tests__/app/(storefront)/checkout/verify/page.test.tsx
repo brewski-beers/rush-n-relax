@@ -170,6 +170,13 @@ describe('CheckoutVerifyPage', () => {
       checkoutSessionId: 'sess_1',
       callbackUrl: 'https://rushnrelax.com/api/webhooks/agechecker',
       customerEmail: 'jane@example.com',
+      buyer: {
+        name: 'Jane Buyer',
+        line1: '123 Main St',
+        city: 'Knoxville',
+        state: 'TN',
+        zip: '37902',
+      },
     });
     expect(setAgeCheckerSessionIdMock).toHaveBeenCalledWith(
       'sess_1',
