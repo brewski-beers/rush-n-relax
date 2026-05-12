@@ -121,6 +121,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       amount: body.total,
       ...(body.customerEmail ? { customerEmail: body.customerEmail } : {}),
       items: body.items,
+      // Prefill Clover's hosted-checkout customer object with the buyer
+      // name the customer already entered in our cart.
+      deliveryAddress: body.deliveryAddress,
     });
   } catch (err) {
     // Clover failed — release the holds we just took so reserved stock
@@ -162,7 +165,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       qty: h.qty,
     })),
     cloverCheckoutSessionId,
-    ...(cloverSession.redirectUrl ? { cloverCheckoutUrl: cloverSession.redirectUrl } : {}),
+    ...(cloverSession.redirectUrl
+      ? { cloverCheckoutUrl: cloverSession.redirectUrl }
+      : {}),
     expiresAt,
     ...(body.customerEmail ? { customerEmail: body.customerEmail } : {}),
   };

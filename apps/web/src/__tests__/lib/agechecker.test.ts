@@ -285,6 +285,60 @@ describe('createAgeCheckerSession', () => {
     expect(body.options.email).toBeUndefined();
   });
 
+  it('threads buyer name/address into the call but only maps email into options today (rest gated behind a TODO)', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ uuid: 'u-buyer' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    const { createAgeCheckerSession } = await import('@/lib/agechecker');
+    await createAgeCheckerSession({
+      checkoutSessionId: 'sess_b',
+      callbackUrl: 'https://x.test/cb',
+      customerEmail: 'jane@example.com',
+      buyer: {
+        name: 'Jane Q Public',
+        line1: '123 Main St',
+        line2: 'Apt 4',
+        city: 'Knoxville',
+        state: 'TN',
+        zip: '37902',
+      },
+    });
+    const [, init] = fetchMock.mock.calls[0];
+    const sentBody = JSON.parse(init.body);
+    // email IS mapped (confirmed contract field).
+    expect(sentBody.options.email).toBe('jane@example.com');
+    // Name/address field names are unconfirmed — must NOT be sent yet.
+    expect(sentBody.options.first_name).toBeUndefined();
+    expect(sentBody.options.last_name).toBeUndefined();
+    expect(sentBody.options.address1).toBeUndefined();
+    expect(sentBody.options.city).toBeUndefined();
+    // metadata + callback_url still intact.
+    expect(sentBody.options.metadata).toEqual({ order: 'sess_b' });
+    expect(sentBody.options.callback_url).toBe('https://x.test/cb');
+  });
+
+  it('test-mode short-circuit is unchanged when buyer fields are supplied', async () => {
+    setEnv({ AGECHECKER_TEST_MODE: 'true' });
+    const { createAgeCheckerSession } = await import('@/lib/agechecker');
+    const res = await createAgeCheckerSession({
+      checkoutSessionId: 'sess_tm',
+      callbackUrl: 'https://example.com/api/webhooks/agechecker',
+      customerEmail: 'tm@example.com',
+      buyer: {
+        name: 'Test Mode',
+        line1: '1 Test Way',
+        city: 'Testville',
+        state: 'TN',
+        zip: '00000',
+      },
+    });
+    expect(res.sessionUuid).toMatch(/^test-session-/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('accepts session_uuid or id as alternate response field names', async () => {
     const { createAgeCheckerSession } = await import('@/lib/agechecker');
     fetchMock.mockResolvedValueOnce(

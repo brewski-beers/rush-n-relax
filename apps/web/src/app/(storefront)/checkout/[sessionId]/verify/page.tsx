@@ -75,6 +75,11 @@ export default async function CheckoutVerifyPage({ params }: Props) {
         checkoutSessionId: session.id,
         callbackUrl: `${base}/api/webhooks/agechecker`,
         customerEmail: session.customerEmail,
+        // Prefill buyer name + delivery address into the popup so the
+        // customer only enters DOB. (Address field mapping is gated behind
+        // a TODO in createAgeCheckerSession until the AgeChecker field
+        // names are confirmed — email is sent today.)
+        buyer: session.deliveryAddress,
       });
       await setAgeCheckerSessionId(session.id, sessionUuid);
       ageCheckerSessionId = sessionUuid;
