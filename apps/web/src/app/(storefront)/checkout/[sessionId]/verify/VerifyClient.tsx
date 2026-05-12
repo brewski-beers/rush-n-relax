@@ -25,7 +25,7 @@
  * prod, regardless of client-side env injection.
  */
 import Script from 'next/script';
-import { useEffect, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useTransition } from 'react';
 import type { AgeCheckerConfig } from '@/types/agechecker-window';
 import '@/types/agechecker-window';
 import {
@@ -60,6 +60,54 @@ export function VerifyClient({
   showSimulator = false,
 }: Props) {
   const [isPending, startTransition] = useTransition();
+  // Guards a single confirm-POST per popup lifecycle — `onstatuschanged`
+  // may fire `accepted` more than once; we only need to confirm once.
+  const confirmedRef = useRef(false);
+
+  // POST the verification uuid to our server, which does the authoritative
+  // `GET /v1/status/{uuid}` lookup and applies the state transition. Small
+  // retry-with-backoff because if this never lands the customer is stuck at
+  // 408 on the redirect endpoint. `keepalive: true` so the request survives
+  // the imminent navigation to `/api/checkout/<id>/redirect`.
+  //
+  // Robustness choice: rather than gating navigation on this POST (which
+  // would need `defer_submit: true` + the `onclosed(done)` dance and a
+  // hard timeout if `done()` is never reached), we fire it eagerly on the
+  // `accepted` status and let the `/redirect` route's existing ~5s
+  // Firestore poll observe `ageVerifiedAt` even if the POST lands slightly
+  // late. Simpler, and the poll is the same backstop the webhook path uses.
+  const confirmAge = useCallback(
+    (verificationUuid: string): void => {
+      if (confirmedRef.current) return;
+      confirmedRef.current = true;
+      void (async () => {
+        const url = `/api/checkout/${encodeURIComponent(sessionId)}/confirm-age`;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ verificationUuid }),
+              keepalive: true,
+            });
+            // 4xx other than 422 aren't retryable; 422/5xx/network → retry.
+            if (
+              res.ok ||
+              (res.status >= 400 && res.status < 500 && res.status !== 422)
+            ) {
+              return;
+            }
+          } catch {
+            // network error — fall through to retry
+          }
+          if (attempt < 3) {
+            await new Promise(r => setTimeout(r, 250 * attempt));
+          }
+        }
+      })();
+    },
+    [sessionId]
+  );
 
   // Assign AgeCheckerConfig synchronously on the client BEFORE the popup
   // script tag mounts. `useEffect` runs after the DOM is committed but
@@ -72,9 +120,24 @@ export function VerifyClient({
       order: sessionId,
       ...(ageCheckerSessionId ? { session: ageCheckerSessionId } : {}),
       ...(customerEmail ? { email: customerEmail } : {}),
+      // Trigger: the popup hands us the verification uuid + status here.
+      // `accepted` → server marks age-verified; `denied` → server cancels +
+      // releases holds (then the popup's own logic routes the customer to
+      // /checkout/cancelled). Intermediate step-up statuses (signature /
+      // photo_id / …) need no action — the server lookup would just say
+      // `pending`. We deliberately do NOT also confirm on `oncreated`: at
+      // create time the status is still unknown, so the lookup is wasted.
+      onstatuschanged: verification => {
+        if (
+          verification.status === 'accepted' ||
+          verification.status === 'denied'
+        ) {
+          confirmAge(verification.uuid);
+        }
+      },
     };
     window.AgeCheckerConfig = config;
-  }, [apiKey, sessionId, ageCheckerSessionId, customerEmail]);
+  }, [apiKey, sessionId, ageCheckerSessionId, customerEmail, confirmAge]);
 
   const handleSimulatePass = () => {
     startTransition(async () => {
