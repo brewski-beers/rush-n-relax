@@ -15,7 +15,11 @@
  *   5. Otherwise poll Firestore via single-read GETs at 250ms backoff
  *      until `ageVerifiedAt !== null` or the timeout elapses.
  *      - On observe → 302 to Clover URL.
- *      - On timeout → 408 with retry guidance.
+ *      - On timeout → 302 to `/checkout/awaiting?session={id}` (#audit H1)
+ *        — a real holding page with a "check order status" link, rather
+ *        than a raw JSON 408 in the customer's browser. Background work
+ *        (the popup's retrying confirm-POST, the reconciler cron) keeps
+ *        going; the next attempt redirects to Clover once verified.
  *
  * Polling is intentionally single-read (not a snapshot listener):
  *   - keeps the API route stateless,
@@ -42,7 +46,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ sessionId: string }> }
 ): Promise<NextResponse> {
   const { sessionId } = await ctx.params;
@@ -109,12 +113,19 @@ export async function GET(
     }
   }
 
-  return NextResponse.json(
-    {
-      error: 'Age verification not yet received. Please retry shortly.',
-      retryAfterMs: 2_000,
-    },
-    { status: 408, headers: { 'Retry-After': '2' } }
+  // Age verification still hasn't landed within the poll window. Rather
+  // than dumping a raw JSON 408 in the customer's browser (#audit H1),
+  // hand them the holding page, which exposes a "check order status" link
+  // back through `/order/{session}/return`. The CheckoutSession reconciler
+  // and the popup's own retrying confirm-POST both keep working in the
+  // background; once `ageVerifiedAt` lands the next attempt redirects to
+  // Clover.
+  return NextResponse.redirect(
+    new URL(
+      `/checkout/awaiting?session=${encodeURIComponent(sessionId)}`,
+      req.url
+    ),
+    302
   );
 }
 

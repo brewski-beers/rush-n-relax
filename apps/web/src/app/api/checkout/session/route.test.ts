@@ -211,6 +211,31 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
       expect(createCloverCheckoutSessionMock).not.toHaveBeenCalled();
     });
 
+    it('returns 400 for an unknown locationId before holding stock (#audit M3)', async () => {
+      const res = await POST(makeReq({ ...VALID_BODY, locationId: 'narnia' }));
+      expect(res.status).toBe(400);
+      const json = (await res.json()) as { error: string };
+      expect(json.error).toMatch(/locationId/i);
+      expect(priceCartMock).not.toHaveBeenCalled();
+      expect(holdStockMock).not.toHaveBeenCalled();
+      expect(createCloverCheckoutSessionMock).not.toHaveBeenCalled();
+    });
+
+    it('accepts the ONLINE_LOCATION_ID and a real retail location slug', async () => {
+      for (const loc of ['online', 'oak-ridge']) {
+        vi.clearAllMocks();
+        priceCartMock.mockResolvedValue(PRICED);
+        createCloverCheckoutSessionMock.mockResolvedValue({
+          provider: 'clover',
+          redirectUrl: 'https://clover.com/checkout/abc',
+          cloverCheckoutSessionId: 'sess_abc',
+        });
+        createCheckoutSessionMock.mockResolvedValue('sess_abc');
+        const res = await POST(makeReq({ ...VALID_BODY, locationId: loc }));
+        expect(res.status).toBe(200);
+      }
+    });
+
     it('returns 400 when delivery address state is missing', async () => {
       const res = await POST(
         makeReq({
