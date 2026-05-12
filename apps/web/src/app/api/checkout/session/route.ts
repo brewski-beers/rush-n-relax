@@ -11,6 +11,8 @@ import {
 } from '@/lib/repositories';
 import { createCloverCheckoutSession } from '@/lib/clover/checkout';
 import { canShipToState, getShippingBlockReason } from '@/constants/shipping';
+import { getLocationBySlug } from '@/constants/locations';
+import { ONLINE_LOCATION_ID } from '@/constants/location-ids';
 import {
   priceCart,
   StaleCartError,
@@ -82,6 +84,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!body.locationId || typeof body.locationId !== 'string') {
     return NextResponse.json(
       { error: 'locationId is required.' },
+      { status: 400 }
+    );
+  }
+  // #audit M3 — reject a made-up locationId before holding stock against it.
+  if (
+    body.locationId !== ONLINE_LOCATION_ID &&
+    getLocationBySlug(body.locationId) === undefined
+  ) {
+    return NextResponse.json(
+      { error: `Unknown locationId '${body.locationId}'.` },
       { status: 400 }
     );
   }

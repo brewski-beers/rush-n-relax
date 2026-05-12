@@ -100,15 +100,14 @@ describe('GET /api/checkout/[sessionId]/redirect — webhook race (#366)', () =>
     expect(getCheckoutSessionMock.mock.calls.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('returns 408 with retry guidance when webhook never arrives within timeout', async () => {
+  it('redirects to the /checkout/awaiting holding page when verification never arrives within the poll window (#audit H1)', async () => {
     process.env.CHECKOUT_REDIRECT_TIMEOUT_MS = '500';
     getCheckoutSessionMock.mockResolvedValue(baseSession());
     const res = await GET(makeReq(), ctx());
-    expect(res.status).toBe(408);
-    const body = (await res.json()) as { error: string; retryAfterMs: number };
-    expect(body.error).toMatch(/retry/i);
-    expect(body.retryAfterMs).toBeGreaterThan(0);
-    expect(res.headers.get('retry-after')).toBe('2');
+    expect(res.status).toBe(302);
+    const loc = res.headers.get('location') ?? '';
+    expect(loc).toContain('/checkout/awaiting');
+    expect(loc).toContain(`session=${SESSION_ID}`);
   });
 
   it('returns 409 when session is expired', async () => {
