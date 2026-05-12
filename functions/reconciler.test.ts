@@ -24,9 +24,11 @@ function makeSession(
   overrides: Partial<ReconcileSession> = {}
 ): ReconcileSession {
   return {
+    // Doc id (the `cs_…` string we generate) vs Clover's own checkout id —
+    // deliberately different so a mix-up is caught.
     id: 'sess_1',
     status: 'awaiting_payment',
-    cloverCheckoutSessionId: 'sess_1',
+    cloverCheckoutSessionId: 'clover_1',
     holds: [
       { productId: 'p1', variantId: 'default', locationId: 'online', qty: 1 },
     ],
@@ -56,26 +58,31 @@ function makeDeps(overrides: Partial<ReconcilerDeps> = {}): ReconcilerDeps {
 }
 
 describe('reconcileCheckoutSessionsImpl — forward repair (#369)', () => {
-  it('Given a stale session with a Clover SUCCESS payment, When the cron runs, Then it triggers the storefront promotion and counts it', async () => {
+  it('Given a stale session with a Clover SUCCESS payment, When the cron runs, Then it triggers the storefront promotion (by session DOC id) and counts it', async () => {
     const session = makeSession();
     const triggerStorefrontPromotion = vi.fn(async () => true);
+    const lookupCloverCheckout = vi.fn(
+      async (): Promise<CloverCheckoutLookup> => ({
+        result: 'SUCCESS',
+        cloverOrderId: 'ord_clover_1',
+      })
+    );
     const deps = makeDeps({
       listStaleSessions: vi.fn(async () => [session]),
-      lookupCloverCheckout: vi.fn(
-        async (): Promise<CloverCheckoutLookup> => ({
-          result: 'SUCCESS',
-          cloverOrderId: 'ord_clover_1',
-        })
-      ),
+      lookupCloverCheckout,
       triggerStorefrontPromotion,
     });
 
     const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
 
+    // The /order/{id}/return route resolves the session by its doc id, so
+    // we pass `session.id` ('sess_1') — NOT `session.cloverCheckoutSessionId`.
     expect(triggerStorefrontPromotion).toHaveBeenCalledWith(
       'sess_1',
       'ord_clover_1'
     );
+    // The Clover lookup, on the other hand, uses Clover's own id.
+    expect(lookupCloverCheckout).toHaveBeenCalledWith('clover_1');
     expect(result.promoted).toBe(1);
     expect(result.scanned).toBe(1);
     expect(result.errors).toBe(0);
@@ -200,7 +207,7 @@ describe('reconcileCheckoutSessionsImpl — back-pointer repair (#407)', () => {
   it('Given a paid order whose linked session has no orderId, When the cron runs, Then it patches the session pointer', async () => {
     const order: ReconcileOrder = {
       id: 'ord_1',
-      cloverCheckoutSessionId: 'sess_1',
+      checkoutSessionId: 'sess_1',
       status: 'paid',
       createdAt: new Date(NOW_MS - 60 * 1000),
     };
@@ -209,14 +216,18 @@ describe('reconcileCheckoutSessionsImpl — back-pointer repair (#407)', () => {
       orderId: undefined,
     });
     const repairSessionBackPointer = vi.fn(async () => ({ repaired: true }));
+    const getSession = vi.fn(async () => session);
     const deps = makeDeps({
       listRecentOrdersWithCheckoutSession: vi.fn(async () => [order]),
-      getSession: vi.fn(async () => session),
+      getSession,
       repairSessionBackPointer,
     });
 
     const result = await reconcileCheckoutSessionsImpl(deps, NOW_MS);
 
+    // The session is looked up by the order's `checkoutSessionId`
+    // back-pointer (the session doc id), NOT by Clover's id.
+    expect(getSession).toHaveBeenCalledWith('sess_1');
     expect(repairSessionBackPointer).toHaveBeenCalledWith('sess_1', 'ord_1');
     expect(result.backPointersRepaired).toBe(1);
     expect(result.backPointerConflicts).toBe(0);
@@ -225,7 +236,7 @@ describe('reconcileCheckoutSessionsImpl — back-pointer repair (#407)', () => {
   it('Given an order whose session already points at it, When the cron runs, Then it skips the back-pointer repair', async () => {
     const order: ReconcileOrder = {
       id: 'ord_1',
-      cloverCheckoutSessionId: 'sess_1',
+      checkoutSessionId: 'sess_1',
       status: 'paid',
       createdAt: new Date(NOW_MS - 60 * 1000),
     };
@@ -246,7 +257,7 @@ describe('reconcileCheckoutSessionsImpl — back-pointer repair (#407)', () => {
   it('Given a session already linked to a DIFFERENT order, When the cron runs, Then it records a conflict and does not overwrite', async () => {
     const order: ReconcileOrder = {
       id: 'ord_2',
-      cloverCheckoutSessionId: 'sess_1',
+      checkoutSessionId: 'sess_1',
       status: 'paid',
       createdAt: new Date(NOW_MS - 60 * 1000),
     };
@@ -270,7 +281,7 @@ describe('reconcileCheckoutSessionsImpl — back-pointer repair (#407)', () => {
   it('skips back-pointer repair for cancelled orders', async () => {
     const order: ReconcileOrder = {
       id: 'ord_x',
-      cloverCheckoutSessionId: 'sess_x',
+      checkoutSessionId: 'sess_x',
       status: 'cancelled',
       createdAt: new Date(NOW_MS - 60 * 1000),
     };

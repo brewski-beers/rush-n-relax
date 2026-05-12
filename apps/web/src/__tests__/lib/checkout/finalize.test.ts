@@ -66,7 +66,9 @@ function makeSession(
   overrides: Partial<CheckoutSession> = {}
 ): CheckoutSession {
   return {
-    id: 'clover-sess-1',
+    // The doc id is the string WE generate; Clover's own checkout id is a
+    // separate stored field. Keep them different so a mix-up is caught.
+    id: 'cs_abc',
     items: [
       {
         productId: 'p1',
@@ -96,7 +98,7 @@ function makeSession(
     holds: [
       { productId: 'p1', variantId: 'default', locationId: 'online', qty: 2 },
     ],
-    cloverCheckoutSessionId: 'clover-sess-1',
+    cloverCheckoutSessionId: 'clover_xyz',
     createdAt: new Date('2026-05-01T00:00:00Z'),
     updatedAt: new Date('2026-05-01T00:00:00Z'),
     expiresAt: new Date('2026-05-02T00:00:00Z'),
@@ -128,7 +130,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       mocks.commitStock.mockResolvedValue(undefined);
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
@@ -137,12 +139,14 @@ describe('finalizeCheckoutSession (#368)', () => {
       const [orderArg] = mocks.createOrder.mock.calls[0];
       expect(orderArg.status).toBe('paid');
       expect(orderArg.cloverPaymentId).toBe('pay-123');
-      expect(orderArg.cloverCheckoutSessionId).toBe('clover-sess-1');
+      // Order carries BOTH back-pointers: our session doc id and Clover's id.
+      expect(orderArg.checkoutSessionId).toBe('cs_abc');
+      expect(orderArg.cloverCheckoutSessionId).toBe('clover_xyz');
       expect(orderArg.items).toHaveLength(1);
 
       expect(mocks.commitStock).toHaveBeenCalledOnce();
       expect(mocks.markCheckoutSessionCompleted).toHaveBeenCalledWith(
-        'clover-sess-1',
+        'cs_abc',
         'ord-1'
       );
     });
@@ -156,7 +160,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       mocks.isLivePaymentsEnabled.mockReturnValue(true);
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
@@ -173,7 +177,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       );
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
@@ -188,7 +192,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       mocks.getCloverPaymentForOrder.mockResolvedValue({ result: 'PENDING' });
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
@@ -203,15 +207,13 @@ describe('finalizeCheckoutSession (#368)', () => {
       mocks.getCloverPaymentForOrder.mockResolvedValue({ result: 'FAIL' });
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
       expect(out.kind).toBe('declined');
       expect(mocks.createOrder).not.toHaveBeenCalled();
-      expect(mocks.markCheckoutSessionCancelled).toHaveBeenCalledWith(
-        'clover-sess-1'
-      );
+      expect(mocks.markCheckoutSessionCancelled).toHaveBeenCalledWith('cs_abc');
     });
 
     it('returns awaiting when no Clover orderId is supplied and discovery also comes up empty (live mode)', async () => {
@@ -220,13 +222,13 @@ describe('finalizeCheckoutSession (#368)', () => {
       mocks.getCloverOrderIdForCheckout.mockResolvedValue(null);
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
       });
 
       expect(out.kind).toBe('awaiting');
       // Self-service discovery was attempted against the checkout session id.
       expect(mocks.getCloverOrderIdForCheckout).toHaveBeenCalledWith(
-        'clover-sess-1'
+        'clover_xyz'
       );
       expect(mocks.getCloverPaymentForOrder).not.toHaveBeenCalled();
       expect(mocks.createOrder).not.toHaveBeenCalled();
@@ -244,12 +246,12 @@ describe('finalizeCheckoutSession (#368)', () => {
       mocks.commitStock.mockResolvedValue(undefined);
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         // no cloverOrderId — must be discovered
       });
 
       expect(mocks.getCloverOrderIdForCheckout).toHaveBeenCalledWith(
-        'clover-sess-1'
+        'clover_xyz'
       );
       expect(mocks.getCloverPaymentForOrder).toHaveBeenCalledWith(
         'discovered-ord-9'
@@ -264,7 +266,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       mocks.commitStock.mockResolvedValue(undefined);
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
       });
 
       expect(mocks.getCloverOrderIdForCheckout).not.toHaveBeenCalled();
@@ -279,7 +281,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       );
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
@@ -304,13 +306,13 @@ describe('finalizeCheckoutSession (#368)', () => {
       mocks.commitStock.mockRejectedValue(new Error('insufficient stock'));
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
       expect(out).toEqual({
         kind: 'commit-failed',
-        sessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         orderId: 'ord-2',
       });
       expect(mocks.refundCloverPayment).toHaveBeenCalledWith('pay-XYZ');
@@ -322,9 +324,7 @@ describe('finalizeCheckoutSession (#368)', () => {
           reason: expect.stringContaining('commit-stock failed'),
         })
       );
-      expect(mocks.markCheckoutSessionCancelled).toHaveBeenCalledWith(
-        'clover-sess-1'
-      );
+      expect(mocks.markCheckoutSessionCancelled).toHaveBeenCalledWith('cs_abc');
       // Session was NOT marked completed.
       expect(mocks.markCheckoutSessionCompleted).not.toHaveBeenCalled();
     });
@@ -341,7 +341,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
@@ -363,7 +363,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
@@ -374,7 +374,7 @@ describe('finalizeCheckoutSession (#368)', () => {
         expect.objectContaining({
           cloverPaymentId: 'pay-QUEUE',
           orderId: 'ord-q',
-          sessionId: 'clover-sess-1',
+          sessionId: 'cs_abc',
           createdBy: 'finalize',
         })
       );
@@ -393,7 +393,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       // refundCloverPayment resolves by default (beforeEach).
 
       await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
@@ -409,7 +409,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       mocks.commitStock.mockResolvedValue(undefined);
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
       });
 
       expect(out).toEqual({ kind: 'paid', orderId: 'ord-stub' });
@@ -444,7 +444,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       );
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
@@ -474,7 +474,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       );
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
@@ -500,7 +500,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       );
 
       const out = await finalizeCheckoutSession({
-        cloverCheckoutSessionId: 'clover-sess-1',
+        sessionId: 'cs_abc',
         cloverOrderId: 'clover-ord-1',
       });
 
@@ -556,11 +556,11 @@ describe('finalizeCheckoutSession (#368)', () => {
 
       const [a, b] = await Promise.all([
         finalizeCheckoutSession({
-          cloverCheckoutSessionId: 'clover-sess-1',
+          sessionId: 'cs_abc',
           cloverOrderId: 'clover-ord-1',
         }),
         finalizeCheckoutSession({
-          cloverCheckoutSessionId: 'clover-sess-1',
+          sessionId: 'cs_abc',
           cloverOrderId: 'clover-ord-1',
         }),
       ]);
@@ -577,7 +577,7 @@ describe('finalizeCheckoutSession (#368)', () => {
       mocks.getCheckoutSession.mockResolvedValue(null);
 
       await expect(
-        finalizeCheckoutSession({ cloverCheckoutSessionId: 'nope' })
+        finalizeCheckoutSession({ sessionId: 'nope' })
       ).rejects.toThrow(/not found/);
     });
   });

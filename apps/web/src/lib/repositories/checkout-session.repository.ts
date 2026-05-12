@@ -3,8 +3,14 @@
  * `checkout-sessions/{sessionId}` collection. Server-side only via
  * Admin SDK.
  *
- * Documents are keyed by Clover Hosted Checkout session id so the
- * Clover webhook can locate the session via `getCheckoutSession(id)`.
+ * Documents are keyed by a session id WE generate (`cs_<time>_<rand>`,
+ * minted in `/api/checkout/session`) — NOT by Clover's checkout session
+ * id. Clover does not substitute the `{CHECKOUT_SESSION_ID}` token in
+ * `redirectUrls.success` (confirmed live), so the return URL has to be
+ * deterministic at create time; the only id we control then is the one
+ * we generate. Clover's own id is stored as the `cloverCheckoutSessionId`
+ * field on the doc and used only for the Clover-side lookup
+ * (`getCloverOrderIdForCheckout`).
  */
 import { getAdminFirestore, toDate } from '@/lib/firebase/admin';
 import {
@@ -22,14 +28,12 @@ function checkoutSessionsCol() {
 }
 
 export class DuplicateCheckoutSessionError extends Error {
-  readonly cloverCheckoutSessionId: string;
+  readonly sessionId: string;
 
-  constructor(cloverCheckoutSessionId: string) {
-    super(
-      `CheckoutSession already exists for cloverCheckoutSessionId '${cloverCheckoutSessionId}'`
-    );
+  constructor(sessionId: string) {
+    super(`CheckoutSession already exists with id '${sessionId}'`);
     this.name = 'DuplicateCheckoutSessionError';
-    this.cloverCheckoutSessionId = cloverCheckoutSessionId;
+    this.sessionId = sessionId;
   }
 }
 
@@ -50,6 +54,12 @@ export class InvalidCheckoutSessionTransitionError extends Error {
  * verification fields are owned by the repository.
  */
 export interface CreateCheckoutSessionInput {
+  /**
+   * The Firestore doc id for this session — a string WE generate before
+   * the Clover create call (`cs_<time>_<rand>`). Used verbatim in the
+   * Clover return URL, so it must be known at create time.
+   */
+  id: string;
   items: OrderItem[];
   subtotal: number;
   tax: number;
@@ -58,6 +68,7 @@ export interface CreateCheckoutSessionInput {
   deliveryAddress: ShippingAddress;
   customerEmail?: string;
   holds: CheckoutSessionHold[];
+  /** Clover's own checkout session id — stored as a field, NOT the doc id. */
   cloverCheckoutSessionId: string;
   /** Persisted Clover Hosted Checkout redirect URL. Optional — stub provider does not return one. */
   cloverCheckoutUrl?: string;
@@ -68,11 +79,14 @@ export interface CreateCheckoutSessionInput {
 export async function createCheckoutSession(
   input: CreateCheckoutSessionInput
 ): Promise<string> {
+  if (!input.id) {
+    throw new Error('id is required');
+  }
   if (!input.cloverCheckoutSessionId) {
     throw new Error('cloverCheckoutSessionId is required');
   }
   const now = new Date();
-  const ref = checkoutSessionsCol().doc(input.cloverCheckoutSessionId);
+  const ref = checkoutSessionsCol().doc(input.id);
   const payload: Omit<CheckoutSession, 'id'> = {
     items: input.items,
     subtotal: input.subtotal,
@@ -104,7 +118,7 @@ export async function createCheckoutSession(
     // idempotently instead of silently overwriting age-verification state.
     const code = (err as { code?: number | string } | null)?.code;
     if (code === 6 || code === 'already-exists') {
-      throw new DuplicateCheckoutSessionError(input.cloverCheckoutSessionId);
+      throw new DuplicateCheckoutSessionError(input.id);
     }
     throw err;
   }

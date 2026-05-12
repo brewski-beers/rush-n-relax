@@ -354,6 +354,7 @@ function docToOrder(id: string, d: FirebaseFirestore.DocumentData): Order {
       (d.deliveryAddress as ShippingAddress | undefined) ?? EMPTY_ADDRESS,
     status: d.status ?? 'paid',
     testMode: d.testMode === true,
+    checkoutSessionId: d.checkoutSessionId ?? undefined,
     cloverCheckoutSessionId: d.cloverCheckoutSessionId ?? undefined,
     cloverPaymentId: d.cloverPaymentId ?? undefined,
     customerEmail: d.customerEmail ?? undefined,

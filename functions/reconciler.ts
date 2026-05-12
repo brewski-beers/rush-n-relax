@@ -7,7 +7,8 @@
  *    `awaiting_payment` past the 15-minute settle window. We ask Clover for
  *    payment status:
  *      - SUCCESS → invoke the storefront's `/order/{sessionId}/return`
- *        endpoint server-side so the canonical promotion pipeline
+ *        endpoint server-side (where `sessionId` is the CheckoutSession
+ *        doc id) so the canonical promotion pipeline
  *        (`finalizeCheckoutSession`) runs. That route is idempotent — its
  *        Firestore-backed transaction guard wins the race against any
  *        concurrent customer-driven hit.
@@ -16,13 +17,14 @@
  *    Sessions whose `expiresAt` has elapsed without payment → mark expired
  *    and release the holds.
  *
- * 2. BACK-POINTER repair (#407) — orders created with `cloverCheckoutSessionId`
- *    set whose linked session does NOT have `orderId` matching back. This
- *    covers the silent Step-3 failure window in `finalizeCheckoutSession`
- *    where steps 1 (createOrder) + 2 (commitStock) succeed but the session
- *    marker write fails. We patch the session forward to `completed` with
- *    the correct orderId. We never overwrite a non-empty session.orderId
- *    with a different value — that's a true conflict and gets logged.
+ * 2. BACK-POINTER repair (#407) — orders created with `checkoutSessionId`
+ *    set (the CheckoutSession doc id) whose linked session does NOT have
+ *    `orderId` matching back. This covers the silent Step-3 failure window
+ *    in `finalizeCheckoutSession` where steps 1 (createOrder) + 2
+ *    (commitStock) succeed but the session marker write fails. We patch the
+ *    session forward to `completed` with the correct orderId. We never
+ *    overwrite a non-empty session.orderId with a different value — that's
+ *    a true conflict and gets logged.
  *
  * The reconciler is structured as pure orchestration with injectable
  * dependencies so it can be unit-tested without touching Firestore /
@@ -55,6 +57,9 @@ export interface ReconcileSession {
 
 export interface ReconcileOrder {
   id: string;
+  /** The CheckoutSession Firestore doc id this order was promoted from. */
+  checkoutSessionId?: string;
+  /** Clover's own checkout session id (kept for Clover-side reconciliation). */
   cloverCheckoutSessionId?: string;
   status: string;
   createdAt: Date;
@@ -91,7 +96,7 @@ export interface ReconcilerDeps {
    */
   listStaleSessions(staleBefore: Date): Promise<ReconcileSession[]>;
   /**
-   * Recent orders (e.g. last 24h) with `cloverCheckoutSessionId` set —
+   * Recent orders (e.g. last 24h) with `checkoutSessionId` set —
    * candidates for back-pointer repair.
    */
   listRecentOrdersWithCheckoutSession(since: Date): Promise<ReconcileOrder[]>;
@@ -108,12 +113,14 @@ export interface ReconcilerDeps {
 
   /**
    * Trigger the storefront's `/order/{sessionId}/return` endpoint so the
-   * canonical `finalizeCheckoutSession` pipeline runs. Implementations
-   * MUST not follow redirects (the route returns 3xx on success).
-   * Returns true on 2xx/3xx, false otherwise.
+   * canonical `finalizeCheckoutSession` pipeline runs. `sessionId` is the
+   * CheckoutSession Firestore doc id (NOT Clover's checkout id) — that
+   * route resolves the session by doc id. Implementations MUST not follow
+   * redirects (the route returns 3xx on success). Returns true on
+   * 2xx/3xx, false otherwise.
    */
   triggerStorefrontPromotion(
-    cloverCheckoutSessionId: string,
+    sessionId: string,
     cloverOrderId: string | undefined
   ): Promise<boolean>;
 
@@ -277,10 +284,12 @@ export async function reconcileCheckoutSessionsImpl(
       continue;
     }
 
-    // SUCCESS — delegate to storefront promotion pipeline.
+    // SUCCESS — delegate to storefront promotion pipeline. The return
+    // route resolves the session by its Firestore doc id, so pass
+    // `session.id` (NOT Clover's checkout id).
     try {
       const ok = await deps.triggerStorefrontPromotion(
-        session.cloverCheckoutSessionId,
+        session.id,
         lookup.cloverOrderId
       );
       if (ok) {
@@ -318,7 +327,7 @@ export async function reconcileCheckoutSessionsImpl(
   }
 
   for (const order of recent) {
-    if (!order.cloverCheckoutSessionId) continue;
+    if (!order.checkoutSessionId) continue;
     // Only repair pointers for orders that actually represent a paid
     // promotion. A cancelled order with a session pointer should not
     // forcibly mark its session completed.
@@ -326,7 +335,7 @@ export async function reconcileCheckoutSessionsImpl(
 
     let session: ReconcileSession | null;
     try {
-      session = await deps.getSession(order.cloverCheckoutSessionId);
+      session = await deps.getSession(order.checkoutSessionId);
     } catch (err) {
       result.errors += 1;
       deps.log('error', 'getSession failed during back-pointer scan', {

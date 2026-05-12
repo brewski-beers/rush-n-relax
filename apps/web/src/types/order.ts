@@ -70,6 +70,12 @@ export interface Order {
   testMode: boolean;
 
   // ── Provider references ───────────────────────────────────────────
+  /**
+   * The originating CheckoutSession Firestore doc id (the `cs_<time>_<rand>`
+   * string we generate). The reconciler's back-pointer repair uses this to
+   * find the session by its doc id. Distinct from `cloverCheckoutSessionId`.
+   */
+  checkoutSessionId?: string;
   /** Clover Hosted Checkout session id (created when invoking payment). */
   cloverCheckoutSessionId?: string;
   /** Clover payment id (set on successful capture). */

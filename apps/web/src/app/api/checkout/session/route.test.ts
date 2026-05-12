@@ -110,9 +110,13 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
     createCloverCheckoutSessionMock.mockResolvedValue({
       provider: 'clover',
       redirectUrl: 'https://clover.com/checkout/abc',
-      cloverCheckoutSessionId: 'sess_abc',
+      // Clover's own id — distinct from the doc id we generate.
+      cloverCheckoutSessionId: 'clover_sess_abc',
     });
-    createCheckoutSessionMock.mockResolvedValue('sess_abc');
+    // `createCheckoutSession` returns the doc id it was handed (`input.id`).
+    createCheckoutSessionMock.mockImplementation((input: { id: string }) =>
+      Promise.resolve(input.id)
+    );
   });
 
   afterEach(() => {
@@ -127,8 +131,9 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
         sessionId: string;
         redirectUrl: string;
       };
-      expect(json.sessionId).toBe('sess_abc');
-      expect(json.redirectUrl).toBe('/checkout/sess_abc/verify');
+      // The response carries OUR generated session id (the doc id).
+      expect(json.sessionId).toMatch(/^cs_\d+_[a-z0-9]+$/);
+      expect(json.redirectUrl).toBe(`/checkout/${json.sessionId}/verify`);
 
       // Re-priced against current product data, scoped to the location.
       expect(priceCartMock).toHaveBeenCalledTimes(1);
@@ -153,6 +158,9 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
       expect(cloverArg.items).toEqual(PRICED.items);
       // Buyer name/address threaded through for Clover customer prefill.
       expect(cloverArg.deliveryAddress).toEqual(VALID_BODY.deliveryAddress);
+      // The session id passed to Clover (for the return URL) is the
+      // `cs_<time>_<rand>` string we generated, NOT Clover's own id.
+      expect(cloverArg.sessionId).toMatch(/^cs_\d+_[a-z0-9]+$/);
 
       // CheckoutSession persisted with the server-computed money fields.
       expect(createCheckoutSessionMock).toHaveBeenCalledTimes(1);
@@ -162,7 +170,12 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
       expect(persistArg.tax).toBe(93);
       expect(persistArg.total).toBe(1093);
       expect(persistArg.items).toEqual(PRICED.items);
-      expect(persistArg.cloverCheckoutSessionId).toBe('sess_abc');
+      // Doc id == the generated session id we also handed to Clover.
+      expect(persistArg.id).toBe(cloverArg.sessionId);
+      expect(persistArg.id).toMatch(/^cs_\d+_[a-z0-9]+$/);
+      // Clover's own id is stored as a field, not the doc id.
+      expect(persistArg.cloverCheckoutSessionId).toBe('clover_sess_abc');
+      expect(json.sessionId).toBe(persistArg.id);
       expect(persistArg.locationId).toBe('online');
       expect(persistArg.holds).toHaveLength(1);
       const ttlMs = persistArg.expiresAt.getTime() - Date.now();
