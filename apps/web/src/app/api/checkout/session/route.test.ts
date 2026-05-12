@@ -5,11 +5,13 @@ const {
   releaseStockMock,
   createCheckoutSessionMock,
   createCloverCheckoutSessionMock,
+  priceCartMock,
 } = vi.hoisted(() => ({
   holdStockMock: vi.fn(),
   releaseStockMock: vi.fn(),
   createCheckoutSessionMock: vi.fn(),
   createCloverCheckoutSessionMock: vi.fn(),
+  priceCartMock: vi.fn(),
 }));
 
 // Re-export the real InsufficientStockError class so `instanceof` checks
@@ -40,9 +42,19 @@ vi.mock('@/lib/clover/checkout', () => ({
   createCloverCheckoutSession: createCloverCheckoutSessionMock,
 }));
 
+// Mock `priceCart` but keep the real `StaleCartError` class so the route's
+// `instanceof StaleCartError` branch matches what the mock throws.
+vi.mock('@/lib/checkout/priceCart', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/lib/checkout/priceCart')
+  >('@/lib/checkout/priceCart');
+  return { ...actual, priceCart: priceCartMock };
+});
+
 import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/checkout/session/route';
 import { InsufficientStockError } from '@/lib/repositories';
+import { StaleCartError, type PricedCart } from '@/lib/checkout/priceCart';
 
 function makeReq(body: unknown): NextRequest {
   return new NextRequest('http://localhost/api/checkout/session', {
@@ -52,20 +64,14 @@ function makeReq(body: unknown): NextRequest {
   });
 }
 
+// What the browser sends — only productId/variantId/quantity are trusted.
+// (The cart UI may still send unitPrice/lineTotal/subtotal/tax/total for its
+// own estimate; the server ignores them.)
 const VALID_BODY = {
-  items: [
-    {
-      productId: 'p1',
-      variantId: 'default',
-      productName: 'Widget',
-      quantity: 2,
-      unitPrice: 500,
-      lineTotal: 1000,
-    },
-  ],
-  subtotal: 1000,
-  tax: 100,
-  total: 1100,
+  items: [{ productId: 'p1', variantId: 'default', quantity: 2 }],
+  // NOTE: subtotal/tax/total are intentionally omitted here — they're
+  // optional on the wire and the server ignores them. Tests that exercise
+  // the client/server drift warning add `total` explicitly.
   locationId: 'online',
   deliveryAddress: {
     name: 'Jane Doe',
@@ -77,11 +83,30 @@ const VALID_BODY = {
   customerEmail: 'jane@example.com',
 };
 
+// The canonical, server-priced cart `priceCart` would return for VALID_BODY.
+// tax = round(1000 * 0.0925) = 93.
+const PRICED: PricedCart = {
+  items: [
+    {
+      productId: 'p1',
+      variantId: 'default',
+      productName: 'Widget',
+      quantity: 2,
+      unitPrice: 500,
+      lineTotal: 1000,
+    },
+  ],
+  subtotal: 1000,
+  tax: 93,
+  total: 1093,
+};
+
 describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     holdStockMock.mockResolvedValue(undefined);
     releaseStockMock.mockResolvedValue(undefined);
+    priceCartMock.mockResolvedValue(PRICED);
     createCloverCheckoutSessionMock.mockResolvedValue({
       provider: 'clover',
       redirectUrl: 'https://clover.com/checkout/abc',
@@ -95,7 +120,7 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
   });
 
   describe('happy path', () => {
-    it('holds stock, mints Clover session, persists CheckoutSession with 24h expiresAt, returns sessionId + verify redirect', async () => {
+    it('re-prices server-side, holds stock, mints Clover session for the SERVER total, persists CheckoutSession with 24h expiresAt', async () => {
       const res = await POST(makeReq(VALID_BODY));
       expect(res.status).toBe(200);
       const json = (await res.json()) as {
@@ -105,49 +130,70 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
       expect(json.sessionId).toBe('sess_abc');
       expect(json.redirectUrl).toBe('/checkout/sess_abc/verify');
 
-      // Holds taken from cart (variantId defaults to 'default')
+      // Re-priced against current product data, scoped to the location.
+      expect(priceCartMock).toHaveBeenCalledTimes(1);
+      expect(priceCartMock).toHaveBeenCalledWith(
+        [{ productId: 'p1', variantId: 'default', quantity: 2 }],
+        'online'
+      );
+
+      // Holds taken from the RE-PRICED cart.
       expect(holdStockMock).toHaveBeenCalledTimes(1);
-      const heldItems = holdStockMock.mock.calls[0][0];
-      expect(heldItems).toEqual([
-        {
-          productId: 'p1',
-          variantId: 'default',
-          locationId: 'online',
-          qty: 2,
-        },
+      expect(holdStockMock.mock.calls[0][0]).toEqual([
+        { productId: 'p1', variantId: 'default', locationId: 'online', qty: 2 },
       ]);
 
-      // Clover invoked with cart total + tax + items + email
+      // Clover invoked with the SERVER-COMPUTED total + tax + priced
+      // items — never the client's stale figures.
       expect(createCloverCheckoutSessionMock).toHaveBeenCalledTimes(1);
       const cloverArg = createCloverCheckoutSessionMock.mock.calls[0][0];
-      expect(cloverArg.amount).toBe(1100);
-      expect(cloverArg.tax).toBe(100);
+      expect(cloverArg.amount).toBe(1093);
+      expect(cloverArg.tax).toBe(93);
       expect(cloverArg.customerEmail).toBe('jane@example.com');
-      expect(cloverArg.items).toEqual(VALID_BODY.items);
+      expect(cloverArg.items).toEqual(PRICED.items);
 
-      // CheckoutSession persisted with awaiting_id (status owned by repo) +
-      // Clover session id + 24h TTL expiresAt.
+      // CheckoutSession persisted with the server-computed money fields.
       expect(createCheckoutSessionMock).toHaveBeenCalledTimes(1);
       const persistArg = createCheckoutSessionMock.mock
         .calls[0][0] as import('@/lib/repositories/checkout-session.repository').CreateCheckoutSessionInput;
+      expect(persistArg.subtotal).toBe(1000);
+      expect(persistArg.tax).toBe(93);
+      expect(persistArg.total).toBe(1093);
+      expect(persistArg.items).toEqual(PRICED.items);
       expect(persistArg.cloverCheckoutSessionId).toBe('sess_abc');
       expect(persistArg.locationId).toBe('online');
       expect(persistArg.holds).toHaveLength(1);
       const ttlMs = persistArg.expiresAt.getTime() - Date.now();
-      // Allow generous slack (test scheduling jitter): 23h–25h.
       expect(ttlMs).toBeGreaterThan(23 * 60 * 60 * 1000);
       expect(ttlMs).toBeLessThan(25 * 60 * 60 * 1000);
 
-      // Holds NOT released on the success path.
       expect(releaseStockMock).not.toHaveBeenCalled();
     });
 
+    it('warns (but proceeds with the server total) when the client total drifts from the server total', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const res = await POST(makeReq({ ...VALID_BODY, total: 99999 }));
+      expect(res.status).toBe(200);
+      expect(warn).toHaveBeenCalledWith(
+        '[checkout/session] client/server total mismatch',
+        expect.objectContaining({ clientTotal: 99999, serverTotal: 1093 })
+      );
+      // Server total still wins.
+      expect(createCloverCheckoutSessionMock.mock.calls[0][0].amount).toBe(
+        1093
+      );
+    });
+
+    it('does NOT warn when the client total matches the server total', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      await POST(makeReq({ ...VALID_BODY, total: 1093 }));
+      expect(warn).not.toHaveBeenCalled();
+    });
+
     it('does NOT write to orders/* (no order created at session creation)', async () => {
-      // No orders mock is provided; if the route attempted to call any
-      // order repo function the test would fail with `not a function`.
-      // We assert by absence: only the three expected collaborators run.
       const res = await POST(makeReq(VALID_BODY));
       expect(res.status).toBe(200);
+      expect(priceCartMock).toHaveBeenCalled();
       expect(holdStockMock).toHaveBeenCalled();
       expect(createCloverCheckoutSessionMock).toHaveBeenCalled();
       expect(createCheckoutSessionMock).toHaveBeenCalled();
@@ -158,9 +204,9 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
     it('returns 400 when cart is empty', async () => {
       const res = await POST(makeReq({ ...VALID_BODY, items: [] }));
       expect(res.status).toBe(400);
+      expect(priceCartMock).not.toHaveBeenCalled();
       expect(holdStockMock).not.toHaveBeenCalled();
       expect(createCloverCheckoutSessionMock).not.toHaveBeenCalled();
-      expect(createCheckoutSessionMock).not.toHaveBeenCalled();
     });
 
     it('returns 400 when delivery address state is missing', async () => {
@@ -171,6 +217,52 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
         })
       );
       expect(res.status).toBe(400);
+      expect(priceCartMock).not.toHaveBeenCalled();
+      expect(holdStockMock).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when a cart line has a non-positive or non-integer quantity', async () => {
+      for (const bad of [0, -1, 1.5]) {
+        vi.clearAllMocks();
+        priceCartMock.mockResolvedValue(PRICED);
+        const res = await POST(
+          makeReq({
+            ...VALID_BODY,
+            items: [{ productId: 'p1', variantId: 'default', quantity: bad }],
+          })
+        );
+        expect(res.status).toBe(400);
+        expect(priceCartMock).not.toHaveBeenCalled();
+        expect(holdStockMock).not.toHaveBeenCalled();
+      }
+    });
+  });
+
+  describe('stale cart (server re-pricing fails)', () => {
+    it('returns 400 with reason=stale_cart and never holds stock or calls Clover', async () => {
+      priceCartMock.mockRejectedValueOnce(
+        new StaleCartError('Product gone.', 'p1', 'default')
+      );
+      const res = await POST(makeReq(VALID_BODY));
+      expect(res.status).toBe(400);
+      const json = (await res.json()) as {
+        error: string;
+        reason: string;
+        productId: string;
+        variantId: string;
+      };
+      expect(json.reason).toBe('stale_cart');
+      expect(json.productId).toBe('p1');
+      expect(json.variantId).toBe('default');
+      expect(holdStockMock).not.toHaveBeenCalled();
+      expect(createCloverCheckoutSessionMock).not.toHaveBeenCalled();
+      expect(createCheckoutSessionMock).not.toHaveBeenCalled();
+      expect(releaseStockMock).not.toHaveBeenCalled();
+    });
+
+    it('rethrows a non-StaleCartError from priceCart', async () => {
+      priceCartMock.mockRejectedValueOnce(new Error('firestore exploded'));
+      await expect(POST(makeReq(VALID_BODY))).rejects.toThrow(/firestore/);
       expect(holdStockMock).not.toHaveBeenCalled();
     });
   });
@@ -180,17 +272,15 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
       const res = await POST(
         makeReq({
           ...VALID_BODY,
-          // Idaho is on the SHIPPING_STATES blocked list.
           deliveryAddress: { ...VALID_BODY.deliveryAddress, state: 'ID' },
         })
       );
       expect(res.status).toBe(422);
       const json = (await res.json()) as { error: string };
       expect(json.error).toBeTruthy();
-      // No side effects when shipping is blocked.
+      expect(priceCartMock).not.toHaveBeenCalled();
       expect(holdStockMock).not.toHaveBeenCalled();
       expect(createCloverCheckoutSessionMock).not.toHaveBeenCalled();
-      expect(createCheckoutSessionMock).not.toHaveBeenCalled();
     });
   });
 
@@ -212,8 +302,6 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
       expect(json.requested).toBe(2);
       expect(createCloverCheckoutSessionMock).not.toHaveBeenCalled();
       expect(createCheckoutSessionMock).not.toHaveBeenCalled();
-      // No release needed — the failed hold was rolled back atomically
-      // inside `holdStock` itself.
       expect(releaseStockMock).not.toHaveBeenCalled();
     });
   });
@@ -226,14 +314,8 @@ describe('POST /api/checkout/session — cart → CheckoutSession + Clover (#364
       await expect(POST(makeReq(VALID_BODY))).rejects.toThrow(/Clover/);
       expect(holdStockMock).toHaveBeenCalledTimes(1);
       expect(releaseStockMock).toHaveBeenCalledTimes(1);
-      const released = releaseStockMock.mock.calls[0][0];
-      expect(released).toEqual([
-        {
-          productId: 'p1',
-          variantId: 'default',
-          locationId: 'online',
-          qty: 2,
-        },
+      expect(releaseStockMock.mock.calls[0][0]).toEqual([
+        { productId: 'p1', variantId: 'default', locationId: 'online', qty: 2 },
       ]);
       expect(createCheckoutSessionMock).not.toHaveBeenCalled();
     });
