@@ -221,21 +221,11 @@ export async function reconcileCheckoutSessionsImpl(
       continue;
     }
 
-    // Expiry takes precedence over payment lookup.
-    if (session.expiresAt.getTime() <= nowMs) {
-      try {
-        await deps.expireSessionAndReleaseHolds(session);
-        result.expired += 1;
-        deps.log('info', 'session expired', { sessionId: session.id });
-      } catch (err) {
-        result.errors += 1;
-        deps.log('error', 'expireSession failed', {
-          sessionId: session.id,
-          err: String(err),
-        });
-      }
-      continue;
-    }
+    // NOTE (#audit B3): payment status is checked BEFORE expiry. If a
+    // session has both elapsed `expiresAt` AND a successful Clover payment,
+    // expiring it would release stock and strand the customer's money with
+    // no Order and no refund. So we only fall through to expiry below once
+    // we know there's no resolvable payment.
 
     let lookup: CloverCheckoutLookup | null;
     try {
@@ -250,6 +240,22 @@ export async function reconcileCheckoutSessionsImpl(
     }
 
     if (!lookup || lookup.result === 'PENDING' || lookup.result === 'UNKNOWN') {
+      // No resolvable payment yet. NOW it's safe to expire — we won't be
+      // pulling stock out from under a SUCCESS payment (#audit B3).
+      if (session.expiresAt.getTime() <= nowMs) {
+        try {
+          await deps.expireSessionAndReleaseHolds(session);
+          result.expired += 1;
+          deps.log('info', 'session expired', { sessionId: session.id });
+        } catch (err) {
+          result.errors += 1;
+          deps.log('error', 'expireSession failed', {
+            sessionId: session.id,
+            err: String(err),
+          });
+        }
+        continue;
+      }
       result.pending += 1;
       continue;
     }
