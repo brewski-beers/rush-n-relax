@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CloverApiError,
   createCloverCheckoutSession,
+  getCloverOrderIdForCheckout,
   getCloverPaymentForOrder,
   refundCloverPayment,
   splitCustomerName,
@@ -80,7 +81,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
     );
   });
 
-  it('calls the real Clover API when kill switch ON + credentials present and points redirectUrl at /return (#279)', async () => {
+  it('calls the real Clover API with redirectUrls (success/failure) using the {CHECKOUT_SESSION_ID} token', async () => {
     setEnv({
       CLOVER_LIVE_PAYMENTS_ENABLED: 'true',
       CLOVER_MERCHANT_ID: 'M_PROD',
@@ -122,16 +123,102 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
       shoppingCart: {
         lineItems: Array<{ name: string; unitQty: number; price: number }>;
       };
-      redirectUrl: string;
+      redirectUrl?: string;
+      redirectUrls: { success: string; failure: string };
     };
     expect(body.customer?.email).toBe('buyer@example.com');
     expect(body.shoppingCart.lineItems).toEqual([
       { name: 'Widget', unitQty: 2, price: 750 },
     ]);
-    expect(body.redirectUrl).toBe('https://rushnrelax.com/order/ord_3/return');
+    // Legacy singular field must NOT be sent — Clover ignores it.
+    expect(body.redirectUrl).toBeUndefined();
+    expect(body.redirectUrls.success).toBe(
+      'https://rushnrelax.com/order/{CHECKOUT_SESSION_ID}/return'
+    );
+    expect(body.redirectUrls.failure).toBe(
+      'https://rushnrelax.com/checkout/cancelled?error={ERROR_CODE}'
+    );
     expect(res.provider).toBe('clover');
     expect(res.redirectUrl).toBe('https://clover.com/checkout/abc');
     expect(res.cloverCheckoutSessionId).toBe('sess_abc');
+  });
+
+  it('appends a "Sales Tax" line item so the cart total equals the session total', async () => {
+    setEnv({
+      CLOVER_LIVE_PAYMENTS_ENABLED: 'true',
+      CLOVER_MERCHANT_ID: 'M_PROD',
+      CLOVER_API_KEY: 'K_PROD',
+      VERCEL_URL: 'rushnrelax.com',
+    });
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ href: 'h', checkoutSessionId: 's' }), {
+        status: 200,
+      })
+    );
+    // 2 × $10.00 = $20.00 subtotal + $1.85 tax = $21.85 total.
+    await createCloverCheckoutSession({
+      orderId: 'ord_tax',
+      amount: 2185,
+      tax: 185,
+      items: [
+        {
+          productId: 'p1',
+          variantId: 'default',
+          productName: 'Gummy',
+          quantity: 2,
+          unitPrice: 1000,
+          lineTotal: 2000,
+        },
+      ],
+    });
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as {
+      shoppingCart: {
+        lineItems: Array<{ name: string; unitQty: number; price: number }>;
+      };
+    };
+    expect(body.shoppingCart.lineItems).toEqual([
+      { name: 'Gummy', unitQty: 2, price: 1000 },
+      { name: 'Sales Tax', unitQty: 1, price: 185 },
+    ]);
+    const cartTotal = body.shoppingCart.lineItems.reduce(
+      (sum, li) => sum + li.unitQty * li.price,
+      0
+    );
+    expect(cartTotal).toBe(2185);
+  });
+
+  it('does not add a tax line item when tax is zero or omitted', async () => {
+    setEnv({
+      CLOVER_LIVE_PAYMENTS_ENABLED: 'true',
+      CLOVER_MERCHANT_ID: 'M_PROD',
+      CLOVER_API_KEY: 'K_PROD',
+    });
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ href: 'h', checkoutSessionId: 's' }), {
+        status: 200,
+      })
+    );
+    await createCloverCheckoutSession({
+      orderId: 'ord_notax',
+      amount: 2000,
+      tax: 0,
+      items: [
+        {
+          productId: 'p1',
+          variantId: 'default',
+          productName: 'Gummy',
+          quantity: 2,
+          unitPrice: 1000,
+          lineTotal: 2000,
+        },
+      ],
+    });
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as {
+      shoppingCart: { lineItems: Array<{ name: string }> };
+    };
+    expect(body.shoppingCart.lineItems.map(li => li.name)).toEqual(['Gummy']);
   });
 
   it('prefills the customer object with split firstName/lastName + email from deliveryAddress', async () => {
@@ -442,6 +529,75 @@ describe('refundCloverPayment (#279 / #283)', () => {
     );
     await expect(refundCloverPayment('pay_x', 1)).rejects.toBeInstanceOf(
       CloverApiError
+    );
+  });
+});
+
+describe('getCloverOrderIdForCheckout (return-URL order-id discovery)', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    process.env = { ...ORIGINAL_ENV };
+    process.env.CLOVER_MERCHANT_ID = 'M_PROD';
+    process.env.CLOVER_API_KEY = 'K_PROD';
+    delete process.env.CLOVER_BASE_URL;
+  });
+  afterEach(() => {
+    process.env = { ...ORIGINAL_ENV };
+  });
+
+  it('returns null when credentials are missing (no fetch)', async () => {
+    delete process.env.CLOVER_MERCHANT_ID;
+    delete process.env.CLOVER_API_KEY;
+    const fetchSpy = vi.spyOn(global, 'fetch');
+    const res = await getCloverOrderIdForCheckout('sess_1');
+    expect(res).toBeNull();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('GETs /invoicingcheckoutservice/v1/checkouts/{id} and returns orderId once linked', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ orderId: 'CLV_ORD_9', status: 'PAID' }), {
+        status: 200,
+      })
+    );
+    const res = await getCloverOrderIdForCheckout('sess_abc');
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      'https://api.clover.com/invoicingcheckoutservice/v1/checkouts/sess_abc'
+    );
+    expect(init.method).toBe('GET');
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer K_PROD');
+    expect(headers['X-Clover-Merchant-Id']).toBe('M_PROD');
+    expect(res).toBe('CLV_ORD_9');
+  });
+
+  it('returns null when Clover has not yet linked an order to the checkout', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ status: 'OPEN' }), { status: 200 })
+    );
+    expect(await getCloverOrderIdForCheckout('sess_pending')).toBeNull();
+  });
+
+  it('returns null on a non-2xx response rather than throwing', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response('not found', { status: 404 })
+    );
+    expect(await getCloverOrderIdForCheckout('sess_404')).toBeNull();
+  });
+
+  it('honors CLOVER_BASE_URL override', async () => {
+    process.env.CLOVER_BASE_URL = 'https://apisandbox.dev.clover.com';
+    const fetchSpy = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ orderId: 'O1' }), { status: 200 })
+      );
+    await getCloverOrderIdForCheckout('s');
+    const [url] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      'https://apisandbox.dev.clover.com/invoicingcheckoutservice/v1/checkouts/s'
     );
   });
 });

@@ -45,6 +45,7 @@
 import { isLivePaymentsEnabled } from '@/lib/test-mode';
 import {
   CloverApiError,
+  getCloverOrderIdForCheckout,
   getCloverPaymentForOrder,
   refundCloverPayment,
   type CloverPaymentSnapshot,
@@ -113,12 +114,20 @@ export async function finalizeCheckoutSession(
     return { kind: 'declined', sessionId: session.id };
   }
 
-  // 2. Confirm payment with Clover. Without a Clover order id we cannot
-  //    look up the payment — assume the customer abandoned and leave the
-  //    session for the reconciler.
+  // 2. Confirm payment with Clover. The return URL is NOT guaranteed to
+  //    carry the Clover order id as a query param, so when it's absent we
+  //    self-serve: ask Clover for the order id linked to this checkout
+  //    session, then look up its payment(s). Only if we still can't get
+  //    one do we leave the session for the reconciler.
+  let cloverOrderId = input.cloverOrderId;
+  if (!cloverOrderId && isLivePaymentsEnabled()) {
+    cloverOrderId =
+      (await getCloverOrderIdForCheckout(session.cloverCheckoutSessionId)) ??
+      undefined;
+  }
   let payment: CloverPaymentSnapshot | null = null;
-  if (input.cloverOrderId) {
-    payment = await getCloverPaymentForOrder(input.cloverOrderId);
+  if (cloverOrderId) {
+    payment = await getCloverPaymentForOrder(cloverOrderId);
   }
 
   if (!payment) {
