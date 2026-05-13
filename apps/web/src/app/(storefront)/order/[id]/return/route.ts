@@ -20,11 +20,13 @@
  *   - missing session             → redirect home
  *
  * We opportunistically forward an `?orderId=` query param if Clover
- * appends one — but it is NOT guaranteed. When absent, `finalizeCheckoutSession`
- * discovers the Clover order id itself via
- * `GET /invoicingcheckoutservice/v1/checkouts/{id}` before falling back
- * to `awaiting`. When the live-payments kill switch is OFF the finalizer
- * takes the stub success path so dev flows work without real credentials.
+ * appends one — but it is NOT guaranteed (confirmed live 2026-05-13: Clover
+ * appends NO query params to the success redirect). When absent,
+ * `finalizeCheckoutSession` discovers the Clover order id itself via a
+ * three-leg waterfall (`/checkouts/{id}` → tagged orders-list lookup →
+ * heuristic orders-list lookup) before falling back to `awaiting`. When
+ * the live-payments kill switch is OFF the finalizer takes the stub
+ * success path so dev flows work without real credentials.
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { finalizeCheckoutSession } from '@/lib/checkout/finalize';
@@ -43,17 +45,6 @@ export async function GET(
     url.searchParams.get('orderId') ??
     url.searchParams.get('cloverOrderId') ??
     undefined;
-
-  // TEMP DIAGNOSTIC (#clover-return-url): we still don't know what query
-  // params (if any) Clover Hosted Checkout appends to the success redirect.
-  // Log the full incoming URL so the next sandbox round-trip reveals it.
-  // Remove once the redirect contract is confirmed.
-  console.warn('[order/return] incoming', {
-    id,
-    url: req.url,
-    search: url.search,
-    cloverOrderIdParam: cloverOrderId ?? null,
-  });
 
   let outcome: Awaited<ReturnType<typeof finalizeCheckoutSession>>;
   try {

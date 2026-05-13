@@ -53,6 +53,10 @@ export interface ReconcileSession {
   createdAt: Date;
   expiresAt: Date;
   orderId?: string;
+  /** cents — required for the heuristic Clover order-id lookup. */
+  total: number;
+  /** Buyer email — heuristic match in the Clover order-id lookup. */
+  customerEmail?: string;
 }
 
 export interface ReconcileOrder {
@@ -104,11 +108,14 @@ export interface ReconcilerDeps {
   getSession(id: string): Promise<ReconcileSession | null>;
 
   /**
-   * Ask Clover for the payment status of a hosted-checkout session. The
-   * implementation owns Clover credentials.
+   * Ask Clover for the payment status of a hosted-checkout session. Takes
+   * the full session context so the underlying order-id lookup can run its
+   * three-leg waterfall (documented `/checkouts/{id}` → tagged orders-list
+   * lookup → heuristic orders-list lookup). The implementation owns Clover
+   * credentials.
    */
   lookupCloverCheckout(
-    cloverCheckoutSessionId: string
+    session: ReconcileSession
   ): Promise<CloverCheckoutLookup | null>;
 
   /**
@@ -236,7 +243,7 @@ export async function reconcileCheckoutSessionsImpl(
 
     let lookup: CloverCheckoutLookup | null;
     try {
-      lookup = await deps.lookupCloverCheckout(session.cloverCheckoutSessionId);
+      lookup = await deps.lookupCloverCheckout(session);
     } catch (err) {
       result.errors += 1;
       deps.log('error', 'lookupCloverCheckout failed', {

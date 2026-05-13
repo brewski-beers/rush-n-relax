@@ -146,8 +146,13 @@ export async function finalizeCheckoutSession(
   let cloverOrderId = input.cloverOrderId;
   if (!cloverOrderId && isLivePaymentsEnabled()) {
     cloverOrderId =
-      (await getCloverOrderIdForCheckout(session.cloverCheckoutSessionId)) ??
-      undefined;
+      (await getCloverOrderIdForCheckout({
+        cloverCheckoutSessionId: session.cloverCheckoutSessionId,
+        sessionId: session.id,
+        expectedTotalCents: session.total,
+        customerEmail: session.customerEmail,
+        createdAfter: session.createdAt,
+      })) ?? undefined;
   }
   let payment: CloverPaymentSnapshot | null = null;
   if (cloverOrderId) {
