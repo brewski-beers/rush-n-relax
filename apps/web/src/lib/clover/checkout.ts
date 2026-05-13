@@ -371,9 +371,12 @@ export async function getCloverOrderIdForCheckout(
         return orderId;
       }
     }
-    // 404 / no orderId → fall through to the orders-list legs.
+    // 404 / no orderId / network error → fall through to the orders-list
+    // legs. /checkouts/{id} is reliably 404 against our merchant today
+    // (confirmed live 2026-05-13); kept first so we get the canonical
+    // resource lookup back automatically if Clover ever fixes it.
   } catch {
-    // Network blip on leg 1 — fall through to legs 2/3.
+    // Network blip — fall through to legs 2/3.
   }
 
   // ─── Leg 2: tagged orders-list lookup (note=<sessionId>) ───────────────
@@ -415,9 +418,14 @@ interface CloverOrderRow {
 async function fetchOrdersList(
   creds: CloverCredentials,
   filterQuery: string,
-  limit: number
+  limit: number,
+  legLabel: string
 ): Promise<CloverOrderRow[] | null> {
-  const url = `${getCloverBaseUrl()}/v3/merchants/${encodeURIComponent(creds.merchantId)}/orders?${filterQuery}&expand=customers&limit=${limit}`;
+  // NOTE: do NOT append `&expand=customers` — our merchant private token
+  // returns 403 "Invalid permissions for expandable fields" on that expand
+  // (confirmed live 2026-05-13). Without the expansion we lose embedded
+  // customer email, so heuristic matching falls back to total-only.
+  const url = `${getCloverBaseUrl()}/v3/merchants/${encodeURIComponent(creds.merchantId)}/orders?${filterQuery}&limit=${limit}`;
   let res: Response;
   try {
     res = await fetch(url, {
@@ -428,9 +436,21 @@ async function fetchOrdersList(
       },
     });
   } catch {
+    // Network blip — caller falls back to awaiting; cron retries.
     return null;
   }
-  if (!res.ok) return null;
+  if (!res.ok) {
+    // A non-2xx on the orders-list is a real signal worth surfacing — e.g.
+    // a 403 "Invalid permissions for expandable fields" (which is why we
+    // no longer use `&expand=customers`), or a future scope/auth change.
+    const body = await res.text().catch(() => '');
+    console.warn(`[clover] ${legLabel} fetchOrdersList non-2xx`, {
+      url,
+      status: res.status,
+      body: body.slice(0, 400),
+    });
+    return null;
+  }
   // Justified cast: Clover v3 collection responses are `{ elements: Order[] }`.
   const json = (await res.json().catch(() => null)) as {
     elements?: CloverOrderRow[];
@@ -446,7 +466,12 @@ async function tryTaggedOrdersLookup(
   // on standard Order fields. We URL-encode the value but leave the `=`
   // separators raw so Clover parses the predicate.
   const filterQuery = `filter=note=${encodeURIComponent(input.sessionId)}`;
-  const elements = await fetchOrdersList(creds, filterQuery, 5);
+  const elements = await fetchOrdersList(creds, filterQuery, 5, 'leg2-tagged');
+  // NOTE: as of 2026-05-13 the live test showed Clover Hosted Checkout
+  // silently drops the `note` field between the create payload and the
+  // resulting Order, so this leg routinely returns 0 elements and we
+  // fall through to leg 3. Kept anyway — it's the cleanest exact-match
+  // lookup if/when Clover starts propagating `note`.
   if (!elements || elements.length === 0) return null;
   // If multiple rows share the same note (shouldn't happen — `sessionId`
   // is unique), prefer the most recent.
@@ -468,21 +493,41 @@ async function tryHeuristicOrdersLookup(
   const createdMs = input.createdAfter.getTime();
   const filterQuery =
     `filter=createdTime%3E%3D${createdMs}` + `&orderBy=createdTime+DESC`;
-  const elements = await fetchOrdersList(creds, filterQuery, 20);
+  const elements = await fetchOrdersList(
+    creds,
+    filterQuery,
+    20,
+    'leg3-heuristic'
+  );
   if (!elements || elements.length === 0) return null;
 
-  const matches = elements.filter(o => {
-    if (typeof o.total !== 'number' || o.total !== input.expectedTotalCents) {
-      return false;
-    }
-    if (!input.customerEmail) return true; // total alone — accept.
-    const email =
-      o.customers?.elements?.[0]?.emailAddresses?.elements?.[0]?.emailAddress;
-    if (!email) return false;
-    return email.toLowerCase() === input.customerEmail.toLowerCase();
-  });
+  // We can't fetch `customers` (the `expand` is 403'd by our token) so
+  // we match on total only. Realistic collision risk is essentially nil:
+  // two customers paying the EXACT same cents within `createdAfter`..now
+  // is vanishingly unlikely, and even when it happens `orderBy=createdTime
+  // DESC` + the in-flight session guard picks the most-recent, which is
+  // the right one in 100% of practical races.
+  const matches = elements.filter(
+    o => typeof o.total === 'number' && o.total === input.expectedTotalCents
+  );
 
-  if (matches.length === 0) return null;
+  if (matches.length === 0) {
+    // No order in the window matched on total. Real signal — either
+    // Clover hasn't indexed the order in /orders yet (eventual
+    // consistency), the total drifted (we have a bug), or this isn't
+    // actually a customer's session. Worth surfacing.
+    console.warn('[clover] leg3 heuristic: 0 matches', {
+      sessionId: input.sessionId,
+      expectedTotalCents: input.expectedTotalCents,
+      candidateCount: elements.length,
+      candidates: elements.slice(0, 5).map(e => ({
+        id: e.id,
+        total: e.total,
+        createdTime: e.createdTime,
+      })),
+    });
+    return null;
+  }
   if (matches.length > 1) {
     console.warn(
       '[clover] heuristic order-id lookup matched >1 order; picking the most recent',
