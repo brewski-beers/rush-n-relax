@@ -196,9 +196,22 @@ export async function createCloverCheckoutSession(
   // session to an Order. On decline Clover redirects to
   // redirectUrls.failure with the same session id as a query param.
   const sessionIdEnc = encodeURIComponent(input.sessionId);
+
+  // Annotate the Clover order with our session id so we can find it later
+  // via the orders-list endpoint. `GET /invoicingcheckoutservice/v1/checkouts/{id}`
+  // 404s in practice for sessions we just created (confirmed live, sandbox
+  // round-trip 2026-05-13), so we cannot rely on it to discover the linked
+  // Clover order id. Instead we tag the order with `note: <our sessionId>`
+  // and query `GET /v3/merchants/{mid}/orders?filter=note=…` on the return
+  // path. The `note` field is part of the standard Clover Order schema
+  // (https://docs.clover.com/dev/reference/orders) and is the most likely
+  // field to propagate from the hosted-checkout payload onto the resulting
+  // Order. If Clover silently drops it, the heuristic createdAt/total/email
+  // match in `getCloverOrderIdForCheckout` is the fallback.
   const body = {
     customer: Object.keys(customer).length > 0 ? customer : undefined,
     shoppingCart: { lineItems },
+    note: input.sessionId,
     redirectUrls: {
       success: `${origin}/order/${sessionIdEnc}/return`,
       failure: `${origin}/checkout/cancelled?session=${sessionIdEnc}`,
@@ -270,32 +283,72 @@ function getCloverCreds(): CloverCredentials | null {
 }
 
 /**
+ * Context for finding the Clover order id linked to a Hosted Checkout
+ * session. The historical single-arg signature
+ * (`getCloverOrderIdForCheckout(cloverCheckoutSessionId)`) couldn't survive
+ * the discovery that `GET /invoicingcheckoutservice/v1/checkouts/{id}` 404s
+ * in practice for the very session id Clover handed us at create time
+ * (confirmed live, sandbox round-trip 2026-05-13). The new lookup waterfall
+ * needs more than just Clover's checkout id — it needs our session doc id
+ * (to match the `note` annotation), the expected total in cents (heuristic
+ * exact-amount match), the customer email (heuristic match), and the
+ * session createdAt (heuristic time-window bound).
+ */
+export interface CloverOrderLookupInput {
+  /** Clover's own checkout session id (from `cloverCheckoutSessionId`). */
+  cloverCheckoutSessionId: string;
+  /** Our CheckoutSession Firestore doc id — annotated as `note` at create. */
+  sessionId: string;
+  /** cents — must equal Clover's `order.total` for the heuristic match. */
+  expectedTotalCents: number;
+  /** Buyer email — heuristic match. Optional (some sessions lack it). */
+  customerEmail?: string;
+  /** Session createdAt — lower bound for the heuristic time window. */
+  createdAfter: Date;
+}
+
+/**
  * Look up the Clover **order id** linked to a Hosted Checkout session.
  *
- * Endpoint per Clover docs:
- *   GET {CLOVER_BASE_URL}/invoicingcheckoutservice/v1/checkouts/{checkoutSessionId}
+ * Three-leg waterfall, in priority order:
  *
- * The response carries an `orderId` once Clover has captured payment and
- * linked an order to the checkout. This is the robust way to discover the
- * Clover order id on the return path — we do NOT rely on Clover appending
- * an `?orderId=` query param to the success redirect (unconfirmed).
+ *   1. `GET /invoicingcheckoutservice/v1/checkouts/{id}` (the documented
+ *      endpoint). Cleanest path when it works — but in practice this 404s
+ *      for the very session id Clover gives us at create time (live
+ *      sandbox confirmed 2026-05-13). We try it first anyway because if /
+ *      when Clover fixes it, we get back to the canonical lookup with no
+ *      code change.
+ *
+ *   2. Tagged orders-list lookup —
+ *      `GET /v3/merchants/{mid}/orders?filter=note=<our sessionId>`.
+ *      We annotate every Clover create call with `note: <our sessionId>`
+ *      so this filter narrows to exactly the matching order. Best-case
+ *      working path post-the-404-issue.
+ *
+ *   3. Heuristic orders-list lookup —
+ *      `GET /v3/merchants/{mid}/orders?filter=createdTime>=<createdAt-ms>&orderBy=createdTime DESC`,
+ *      then match client-side on `total === expectedTotalCents` AND (when
+ *      we have an email on the session) `customers[0].emailAddresses[0].emailAddress`.
+ *      Required fallback if Clover silently drops `note` from the
+ *      hosted-checkout payload.
  *
  * Returns:
- *   - `string`  — the Clover order id, once linked.
- *   - `null`    — credentials missing, order not yet linked, or a non-2xx
- *                 response (caller treats all of these as "can't resolve
- *                 yet → leave the session awaiting").
+ *   - `string`  — the Clover order id (whichever leg won).
+ *   - `null`    — credentials missing, or all three legs returned empty.
+ *
+ * The leg that wins is logged at `console.warn` so we can see in prod logs
+ * which path is actually carrying us.
  */
 export async function getCloverOrderIdForCheckout(
-  cloverCheckoutSessionId: string
+  input: CloverOrderLookupInput
 ): Promise<string | null> {
   const creds = getCloverCreds();
   if (!creds) return null;
 
-  const url = `${getCloverBaseUrl()}/invoicingcheckoutservice/v1/checkouts/${encodeURIComponent(cloverCheckoutSessionId)}`;
-  let res: Response;
+  // ─── Leg 1: documented /checkouts/{id} ─────────────────────────────────
   try {
-    res = await fetch(url, {
+    const url = `${getCloverBaseUrl()}/invoicingcheckoutservice/v1/checkouts/${encodeURIComponent(input.cloverCheckoutSessionId)}`;
+    const res = await fetch(url, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${creds.apiKey}`,
@@ -303,39 +356,149 @@ export async function getCloverOrderIdForCheckout(
         'X-Clover-Merchant-Id': creds.merchantId,
       },
     });
+    if (res.ok) {
+      // Justified cast: Clover checkout resource shape is documented but
+      // not typed in our codebase. We only read the `orderId` field.
+      const json = (await res.json().catch(() => null)) as {
+        orderId?: string;
+      } | null;
+      const orderId = json?.orderId;
+      if (typeof orderId === 'string' && orderId.length > 0) {
+        console.warn('[clover] order-id lookup won via /checkouts/{id}', {
+          sessionId: input.sessionId,
+          orderId,
+        });
+        return orderId;
+      }
+    }
+    // 404 / no orderId → fall through to the orders-list legs.
   } catch {
-    // Network blip — caller falls back to awaiting; cron retries.
-    return null;
-  }
-  if (!res.ok) {
-    // TEMP DIAGNOSTIC (#clover-return-url): surface why the order-id lookup
-    // keeps coming up empty against real Clover. Remove once confirmed.
-    const body = await res.text().catch(() => '');
-    console.warn('[clover] getCloverOrderIdForCheckout non-2xx', {
-      url,
-      status: res.status,
-      body: body.slice(0, 600),
-    });
-    return null;
+    // Network blip on leg 1 — fall through to legs 2/3.
   }
 
-  // Justified cast: Clover checkout resource shape is documented but not
-  // typed in our codebase. We only read the `orderId` field.
-  const json = (await res.json().catch(() => null)) as {
-    orderId?: string;
-  } | null;
-  const orderId = json?.orderId;
-  if (typeof orderId !== 'string' || orderId.length === 0) {
-    // TEMP DIAGNOSTIC: log the shape of the checkout resource so we can see
-    // which field actually carries the linked order id (if any).
-    console.warn('[clover] getCloverOrderIdForCheckout no orderId', {
-      url,
-      keys: json && typeof json === 'object' ? Object.keys(json) : null,
-      json: JSON.stringify(json).slice(0, 800),
+  // ─── Leg 2: tagged orders-list lookup (note=<sessionId>) ───────────────
+  const tagged = await tryTaggedOrdersLookup(creds, input);
+  if (tagged) {
+    console.warn('[clover] order-id lookup won via tagged note', {
+      sessionId: input.sessionId,
+      orderId: tagged,
     });
+    return tagged;
+  }
+
+  // ─── Leg 3: heuristic orders-list (createdAt + total + email) ──────────
+  const heuristic = await tryHeuristicOrdersLookup(creds, input);
+  if (heuristic) {
+    console.warn('[clover] order-id lookup won via heuristic match', {
+      sessionId: input.sessionId,
+      orderId: heuristic,
+    });
+    return heuristic;
+  }
+
+  return null;
+}
+
+interface CloverOrderRow {
+  id?: string;
+  total?: number;
+  createdTime?: number;
+  customers?: {
+    elements?: Array<{
+      emailAddresses?: {
+        elements?: Array<{ emailAddress?: string }>;
+      };
+    }>;
+  };
+}
+
+async function fetchOrdersList(
+  creds: CloverCredentials,
+  filterQuery: string,
+  limit: number
+): Promise<CloverOrderRow[] | null> {
+  const url = `${getCloverBaseUrl()}/v3/merchants/${encodeURIComponent(creds.merchantId)}/orders?${filterQuery}&expand=customers&limit=${limit}`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${creds.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  } catch {
     return null;
   }
-  return orderId;
+  if (!res.ok) return null;
+  // Justified cast: Clover v3 collection responses are `{ elements: Order[] }`.
+  const json = (await res.json().catch(() => null)) as {
+    elements?: CloverOrderRow[];
+  } | null;
+  return Array.isArray(json?.elements) ? json.elements : [];
+}
+
+async function tryTaggedOrdersLookup(
+  creds: CloverCredentials,
+  input: CloverOrderLookupInput
+): Promise<string | null> {
+  // `filter=note=<value>` — Clover Orders v3 supports filter expressions
+  // on standard Order fields. We URL-encode the value but leave the `=`
+  // separators raw so Clover parses the predicate.
+  const filterQuery = `filter=note=${encodeURIComponent(input.sessionId)}`;
+  const elements = await fetchOrdersList(creds, filterQuery, 5);
+  if (!elements || elements.length === 0) return null;
+  // If multiple rows share the same note (shouldn't happen — `sessionId`
+  // is unique), prefer the most recent.
+  const sorted = [...elements].sort(
+    (a, b) => (b.createdTime ?? 0) - (a.createdTime ?? 0)
+  );
+  const first = sorted[0];
+  return typeof first.id === 'string' && first.id.length > 0 ? first.id : null;
+}
+
+async function tryHeuristicOrdersLookup(
+  creds: CloverCredentials,
+  input: CloverOrderLookupInput
+): Promise<string | null> {
+  // Bound the time window to the session's createdAt to keep the result
+  // set small and avoid matching orders from unrelated days. `orderBy`
+  // newest-first so the most-recent same-total/email order wins when there
+  // are concurrent same-cents checkouts (vanishingly unlikely).
+  const createdMs = input.createdAfter.getTime();
+  const filterQuery =
+    `filter=createdTime%3E%3D${createdMs}` + `&orderBy=createdTime+DESC`;
+  const elements = await fetchOrdersList(creds, filterQuery, 20);
+  if (!elements || elements.length === 0) return null;
+
+  const matches = elements.filter(o => {
+    if (typeof o.total !== 'number' || o.total !== input.expectedTotalCents) {
+      return false;
+    }
+    if (!input.customerEmail) return true; // total alone — accept.
+    const email =
+      o.customers?.elements?.[0]?.emailAddresses?.elements?.[0]?.emailAddress;
+    if (!email) return false;
+    return email.toLowerCase() === input.customerEmail.toLowerCase();
+  });
+
+  if (matches.length === 0) return null;
+  if (matches.length > 1) {
+    console.warn(
+      '[clover] heuristic order-id lookup matched >1 order; picking the most recent',
+      {
+        sessionId: input.sessionId,
+        matchCount: matches.length,
+        ids: matches.map(m => m.id ?? null).slice(0, 5),
+      }
+    );
+  }
+  // `fetchOrdersList` requests `orderBy=createdTime DESC`, so element[0]
+  // is already the most recent.
+  const chosen = matches[0];
+  return typeof chosen.id === 'string' && chosen.id.length > 0
+    ? chosen.id
+    : null;
 }
 
 function normalizeResult(raw: unknown): CloverPaymentResult {

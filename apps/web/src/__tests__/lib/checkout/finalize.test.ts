@@ -226,9 +226,16 @@ describe('finalizeCheckoutSession (#368)', () => {
       });
 
       expect(out.kind).toBe('awaiting');
-      // Self-service discovery was attempted against the checkout session id.
+      // Self-service discovery was attempted with the full session context
+      // (the waterfall needs all of these to fall back from `/checkouts/{id}`
+      // to the tagged + heuristic orders-list lookups).
       expect(mocks.getCloverOrderIdForCheckout).toHaveBeenCalledWith(
-        'clover_xyz'
+        expect.objectContaining({
+          cloverCheckoutSessionId: 'clover_xyz',
+          sessionId: 'cs_abc',
+          expectedTotalCents: 3270,
+          customerEmail: 'b@example.com',
+        })
       );
       expect(mocks.getCloverPaymentForOrder).not.toHaveBeenCalled();
       expect(mocks.createOrder).not.toHaveBeenCalled();
@@ -251,7 +258,11 @@ describe('finalizeCheckoutSession (#368)', () => {
       });
 
       expect(mocks.getCloverOrderIdForCheckout).toHaveBeenCalledWith(
-        'clover_xyz'
+        expect.objectContaining({
+          cloverCheckoutSessionId: 'clover_xyz',
+          sessionId: 'cs_abc',
+          expectedTotalCents: 3270,
+        })
       );
       expect(mocks.getCloverPaymentForOrder).toHaveBeenCalledWith(
         'discovered-ord-9'

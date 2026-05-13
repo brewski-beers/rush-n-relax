@@ -144,6 +144,12 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
     expect(res.provider).toBe('clover');
     expect(res.redirectUrl).toBe('https://clover.com/checkout/abc');
     expect(res.cloverCheckoutSessionId).toBe('sess_abc');
+
+    // Annotation: our session id is embedded as `note` so the orders-list
+    // tagged lookup can find this Clover order later when /checkouts/{id}
+    // 404s (the live-confirmed Clover bug).
+    const bodyWithNote = body as typeof body & { note?: string };
+    expect(bodyWithNote.note).toBe('ord_3');
   });
 
   it('appends a "Sales Tax" line item so the cart total equals the session total', async () => {
@@ -536,7 +542,7 @@ describe('refundCloverPayment (#279 / #283)', () => {
   });
 });
 
-describe('getCloverOrderIdForCheckout (return-URL order-id discovery)', () => {
+describe('getCloverOrderIdForCheckout (return-URL order-id discovery — waterfall)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     process.env = { ...ORIGINAL_ENV };
@@ -548,60 +554,201 @@ describe('getCloverOrderIdForCheckout (return-URL order-id discovery)', () => {
     process.env = { ...ORIGINAL_ENV };
   });
 
-  it('returns null when credentials are missing (no fetch)', async () => {
+  const baseInput = {
+    cloverCheckoutSessionId: 'sess_abc',
+    sessionId: 'cs_abc',
+    expectedTotalCents: 2185,
+    customerEmail: 'jane@example.com',
+    createdAfter: new Date('2026-05-13T10:00:00Z'),
+  };
+
+  function mockSequence(
+    handlers: Array<(url: string) => Response | Promise<Response>>
+  ) {
+    const spy = vi.spyOn(global, 'fetch');
+    handlers.forEach(h => {
+      spy.mockImplementationOnce(async input => {
+        const url = typeof input === 'string' ? input : (input as Request).url;
+        return h(url);
+      });
+    });
+    return spy;
+  }
+
+  it('Given credentials are missing, Then it returns null and makes no fetch', async () => {
     delete process.env.CLOVER_MERCHANT_ID;
     delete process.env.CLOVER_API_KEY;
     const fetchSpy = vi.spyOn(global, 'fetch');
-    const res = await getCloverOrderIdForCheckout('sess_1');
+    const res = await getCloverOrderIdForCheckout(baseInput);
     expect(res).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('GETs /invoicingcheckoutservice/v1/checkouts/{id} and returns orderId once linked', async () => {
-    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ orderId: 'CLV_ORD_9', status: 'PAID' }), {
-        status: 200,
-      })
-    );
-    const res = await getCloverOrderIdForCheckout('sess_abc');
-    expect(fetchSpy).toHaveBeenCalledOnce();
-    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(
-      'https://api.clover.com/invoicingcheckoutservice/v1/checkouts/sess_abc'
-    );
-    expect(init.method).toBe('GET');
-    const headers = init.headers as Record<string, string>;
-    expect(headers.Authorization).toBe('Bearer K_PROD');
-    expect(headers['X-Clover-Merchant-Id']).toBe('M_PROD');
+  it('Given /checkouts/{id} returns SUCCESS with orderId, Then that leg wins (no further calls)', async () => {
+    const spy = mockSequence([
+      () =>
+        new Response(JSON.stringify({ orderId: 'CLV_ORD_9' }), { status: 200 }),
+    ]);
+    const res = await getCloverOrderIdForCheckout(baseInput);
     expect(res).toBe('CLV_ORD_9');
+    expect(spy).toHaveBeenCalledOnce();
+    const [url] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/invoicingcheckoutservice/v1/checkouts/sess_abc');
   });
 
-  it('returns null when Clover has not yet linked an order to the checkout', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ status: 'OPEN' }), { status: 200 })
+  it('Given /checkouts/{id} 404s and tagged lookup returns 1 hit, Then the tagged leg wins', async () => {
+    const spy = mockSequence([
+      () => new Response('not found', { status: 404 }),
+      () =>
+        new Response(
+          JSON.stringify({
+            elements: [{ id: 'CLV_ORD_TAGGED', createdTime: 1 }],
+          }),
+          { status: 200 }
+        ),
+    ]);
+    const res = await getCloverOrderIdForCheckout(baseInput);
+    expect(res).toBe('CLV_ORD_TAGGED');
+    expect(spy).toHaveBeenCalledTimes(2);
+    const [taggedUrl] = spy.mock.calls[1] as [string, RequestInit];
+    expect(taggedUrl).toContain('/v3/merchants/M_PROD/orders?');
+    expect(taggedUrl).toContain('filter=note=cs_abc');
+  });
+
+  it('Given /checkouts/{id} 404s and tagged returns 0, When heuristic finds 1 exact total+email match, Then the heuristic leg wins', async () => {
+    const spy = mockSequence([
+      () => new Response('not found', { status: 404 }),
+      () => new Response(JSON.stringify({ elements: [] }), { status: 200 }),
+      () =>
+        new Response(
+          JSON.stringify({
+            elements: [
+              {
+                id: 'CLV_ORD_OTHER',
+                total: 999,
+                createdTime: 2,
+              },
+              {
+                id: 'CLV_ORD_HEUR',
+                total: 2185,
+                createdTime: 1,
+                customers: {
+                  elements: [
+                    {
+                      emailAddresses: {
+                        elements: [{ emailAddress: 'jane@example.com' }],
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+          { status: 200 }
+        ),
+    ]);
+    const res = await getCloverOrderIdForCheckout(baseInput);
+    expect(res).toBe('CLV_ORD_HEUR');
+    expect(spy).toHaveBeenCalledTimes(3);
+    const [heurUrl] = spy.mock.calls[2] as [string, RequestInit];
+    expect(heurUrl).toContain('filter=createdTime%3E%3D');
+    expect(heurUrl).toContain('orderBy=createdTime+DESC');
+  });
+
+  it('Given all three legs return empty, Then it returns null (caller leaves session awaiting)', async () => {
+    mockSequence([
+      () => new Response('not found', { status: 404 }),
+      () => new Response(JSON.stringify({ elements: [] }), { status: 200 }),
+      () => new Response(JSON.stringify({ elements: [] }), { status: 200 }),
+    ]);
+    expect(await getCloverOrderIdForCheckout(baseInput)).toBeNull();
+  });
+
+  it('Given heuristic returns multiple exact matches, Then it logs a warning and returns the most recent', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockSequence([
+      () => new Response('not found', { status: 404 }),
+      () => new Response(JSON.stringify({ elements: [] }), { status: 200 }),
+      () =>
+        new Response(
+          JSON.stringify({
+            // Already sorted DESC by createdTime per orderBy=createdTime DESC.
+            elements: [
+              {
+                id: 'CLV_ORD_NEW',
+                total: 2185,
+                createdTime: 200,
+                customers: {
+                  elements: [
+                    {
+                      emailAddresses: {
+                        elements: [{ emailAddress: 'jane@example.com' }],
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                id: 'CLV_ORD_OLD',
+                total: 2185,
+                createdTime: 100,
+                customers: {
+                  elements: [
+                    {
+                      emailAddresses: {
+                        elements: [{ emailAddress: 'jane@example.com' }],
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+          { status: 200 }
+        ),
+    ]);
+    const res = await getCloverOrderIdForCheckout(baseInput);
+    expect(res).toBe('CLV_ORD_NEW');
+    expect(
+      warn.mock.calls.some(c => String(c[0] ?? '').includes('matched >1 order'))
+    ).toBe(true);
+  });
+
+  it('Given a network error on leg 1, Then it catches and falls through to the tagged leg', async () => {
+    const spy = vi.spyOn(global, 'fetch');
+    spy.mockImplementationOnce(async () => {
+      throw new TypeError('network down');
+    });
+    spy.mockImplementationOnce(
+      async () =>
+        new Response(
+          JSON.stringify({ elements: [{ id: 'CLV_ORD_TAGGED_NET' }] }),
+          { status: 200 }
+        )
     );
-    expect(await getCloverOrderIdForCheckout('sess_pending')).toBeNull();
+    const res = await getCloverOrderIdForCheckout(baseInput);
+    expect(res).toBe('CLV_ORD_TAGGED_NET');
   });
 
-  it('returns null on a non-2xx response rather than throwing', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue(
-      new Response('not found', { status: 404 })
-    );
-    expect(await getCloverOrderIdForCheckout('sess_404')).toBeNull();
+  it('Given a network error on every leg, Then it returns null rather than throwing', async () => {
+    vi.spyOn(global, 'fetch').mockImplementation(async () => {
+      throw new TypeError('network down');
+    });
+    expect(await getCloverOrderIdForCheckout(baseInput)).toBeNull();
   });
 
-  it('honors CLOVER_BASE_URL override', async () => {
+  it('honors CLOVER_BASE_URL override on all three legs', async () => {
     process.env.CLOVER_BASE_URL = 'https://apisandbox.dev.clover.com';
-    const fetchSpy = vi
-      .spyOn(global, 'fetch')
-      .mockResolvedValue(
-        new Response(JSON.stringify({ orderId: 'O1' }), { status: 200 })
-      );
-    await getCloverOrderIdForCheckout('s');
-    const [url] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(
-      'https://apisandbox.dev.clover.com/invoicingcheckoutservice/v1/checkouts/s'
-    );
+    const spy = mockSequence([
+      () => new Response('not found', { status: 404 }),
+      () => new Response(JSON.stringify({ elements: [] }), { status: 200 }),
+      () => new Response(JSON.stringify({ elements: [] }), { status: 200 }),
+    ]);
+    await getCloverOrderIdForCheckout(baseInput);
+    for (const call of spy.mock.calls) {
+      const [url] = call as [string, RequestInit];
+      expect(url.startsWith('https://apisandbox.dev.clover.com/')).toBe(true);
+    }
   });
 });
 
