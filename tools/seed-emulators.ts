@@ -22,6 +22,7 @@ import {
   buildProductDocuments,
   buildCategoryDocuments,
   buildVariantTemplateDocuments,
+  buildOrderDocuments,
   AUTH_USER_FIXTURES,
 } from '../apps/web/src/lib/fixtures';
 
@@ -131,6 +132,12 @@ async function seedFirestoreDocuments() {
       .doc(tpl.id)
       .set({ ...tpl });
     console.log(`✓ Firestore seeded: variant-templates/${tpl.id}`);
+  }
+
+  for (const order of buildOrderDocuments(now)) {
+    const { id, ...orderData } = order;
+    await db.collection('orders').doc(id).set(orderData);
+    console.log(`✓ Firestore seeded: orders/${id}`);
   }
 }
 

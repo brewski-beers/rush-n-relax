@@ -392,6 +392,88 @@ describe('listProducts', () => {
       expect(result.nextCursor).toBeNull();
     });
   });
+
+  describe('given a full page of results', () => {
+    it('returns nextCursor as the orderBy `name` value (not the slug)', async () => {
+      const docs = ['a', 'b', 'c'].map((letter, i) =>
+        makeDocSnapshot(`slug-${i}`, {
+          slug: `slug-${i}`,
+          name: `Name ${letter.toUpperCase()}`,
+          category: 'flower',
+          description: '',
+          status: 'active',
+          availableAt: [],
+        })
+      );
+      colGetMock.mockResolvedValue({ docs });
+
+      const result = await listProducts({ limit: 3 });
+
+      expect(result.items).toHaveLength(3);
+      expect(result.nextCursor).toBe('Name C');
+    });
+  });
+
+  describe('given a search filter', () => {
+    beforeEach(() => {
+      // Docs are returned in `orderBy('name')` order — the repository trusts
+      // Firestore's ordering and does not re-sort in memory.
+      const docs = [
+        ['blue-dream', 'Blue Dream'],
+        ['gelato', 'Gelato'],
+        ['mango-fizz', 'Mango Fizz'],
+        ['mango-kush', 'Mango Kush'],
+        ['og-kush', 'OG Kush'],
+      ].map(([slug, name]) =>
+        makeDocSnapshot(slug, {
+          slug,
+          name,
+          category: 'flower',
+          description: '',
+          status: 'active',
+          availableAt: [],
+        })
+      );
+      colGetMock.mockResolvedValue({ docs });
+    });
+
+    it('filters by case-insensitive substring on name', async () => {
+      const result = await listProducts({ search: 'mango' });
+
+      expect(result.items.map(p => p.name)).toEqual([
+        'Mango Fizz',
+        'Mango Kush',
+      ]);
+      expect(result.nextCursor).toBeNull();
+    });
+
+    it('trims whitespace and matches mixed case', async () => {
+      const result = await listProducts({ search: '  KUSH  ' });
+
+      expect(result.items.map(p => p.name)).toEqual(['Mango Kush', 'OG Kush']);
+    });
+
+    it('paginates filtered results via the name cursor', async () => {
+      const firstPage = await listProducts({ search: 'kush', limit: 1 });
+      expect(firstPage.items.map(p => p.name)).toEqual(['Mango Kush']);
+      expect(firstPage.nextCursor).toBe('Mango Kush');
+
+      const nextPage = await listProducts({
+        search: 'kush',
+        limit: 1,
+        cursor: 'Mango Kush',
+      });
+      expect(nextPage.items.map(p => p.name)).toEqual(['OG Kush']);
+      expect(nextPage.nextCursor).toBeNull();
+    });
+
+    it('returns no items when nothing matches', async () => {
+      const result = await listProducts({ search: 'nope' });
+
+      expect(result.items).toEqual([]);
+      expect(result.nextCursor).toBeNull();
+    });
+  });
 });
 
 // ── listAllProducts ────────────────────────────────────────────────────────

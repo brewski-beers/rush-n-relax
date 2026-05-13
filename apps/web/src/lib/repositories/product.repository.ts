@@ -77,22 +77,58 @@ export async function listArchivedProducts(
 }
 
 export async function listProducts(
-  opts: { limit?: number; cursor?: string } = {}
+  opts: {
+    limit?: number;
+    cursor?: string;
+    category?: string;
+    search?: string;
+  } = {}
 ): Promise<PageResult<ProductSummary>> {
   const limit = opts.limit ?? 50;
-  let query = productsCol()
+  const search = opts.search?.trim().toLowerCase() ?? '';
+
+  // Search mode: pull the full filtered set (status + optional category)
+  // and apply a case-insensitive substring filter on `name` in memory.
+  // The active-product catalog is small enough (~200 docs) that this is
+  // cheaper than maintaining a `nameLower` field + composite indexes.
+  if (search) {
+    let query: FirebaseFirestore.Query = productsCol()
+      .where('status', '==', 'active')
+      .orderBy('name');
+    if (opts.category) query = query.where('category', '==', opts.category);
+
+    const snap = await query.get();
+    const matched = snap.docs
+      .map(doc => docToProductSummary(doc.id, doc.data()))
+      .filter(p => p.name.toLowerCase().includes(search));
+
+    const startIdx = opts.cursor
+      ? matched.findIndex(p => p.name === opts.cursor) + 1
+      : 0;
+    const page = matched.slice(startIdx, startIdx + limit);
+    const hasMore = startIdx + limit < matched.length;
+    return {
+      items: page,
+      nextCursor: hasMore ? (page.at(-1)?.name ?? null) : null,
+    };
+  }
+
+  // Normal mode: value-based cursor on the orderBy field (`name`). Using the
+  // value directly (rather than a doc-id snapshot lookup) means a stale or
+  // deleted slug in the URL no longer silently falls back to page 1.
+  let query: FirebaseFirestore.Query = productsCol()
     .where('status', '==', 'active')
     .orderBy('name')
     .limit(limit);
-
-  const afterSnap = await resolveCursor(opts.cursor);
-  if (afterSnap) query = query.startAfter(afterSnap);
+  if (opts.category) query = query.where('category', '==', opts.category);
+  if (opts.cursor) query = query.startAfter(opts.cursor);
 
   const snap = await query.get();
   const items = snap.docs.map(doc => docToProductSummary(doc.id, doc.data()));
   return {
     items,
-    nextCursor: items.length < limit ? null : (snap.docs.at(-1)?.id ?? null),
+    nextCursor:
+      items.length < limit ? null : (snap.docs.at(-1)?.data().name ?? null),
   };
 }
 
