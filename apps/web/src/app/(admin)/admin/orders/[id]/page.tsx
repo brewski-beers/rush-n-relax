@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
+import { formatOrderStatus } from '@/lib/orders/formatOrderStatus';
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
 import { getOrder, listOrderEvents } from '@/lib/repositories';
@@ -62,7 +63,7 @@ export default async function AdminOrderDetailPage({ params }: Props) {
         <h2>Status</h2>
         <p>
           <span className={`admin-status-badge admin-status-${order.status}`}>
-            {order.status}
+            {formatOrderStatus(order.status)}
           </span>
         </p>
         <AdminOrderActions

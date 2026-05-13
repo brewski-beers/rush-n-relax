@@ -12,6 +12,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ALLOWED_TRANSITIONS, type Order, type OrderStatus } from '@/types';
+import { formatOrderStatus } from '@/lib/orders/formatOrderStatus';
 import { refundOrderAction, transitionOrderAction } from './actions';
 
 interface Props {
@@ -38,7 +39,7 @@ export function AdminOrderActions({ order }: Props) {
     setError(null);
     if (DESTRUCTIVE_TRANSITIONS.has(to)) {
       const ok = window.confirm(
-        `Confirm transition: ${order.status} → ${to}? This is destructive.`
+        `Confirm transition: ${formatOrderStatus(order.status)} → ${formatOrderStatus(to)}? This is destructive.`
       );
       if (!ok) return;
     }
@@ -82,12 +83,12 @@ export function AdminOrderActions({ order }: Props) {
                 : 'admin-btn-secondary'
             }
           >
-            → {to}
+            → {formatOrderStatus(to)}
           </button>
         ))}
         {allowedNext.length === 0 ? (
           <span className="admin-empty">
-            No transitions available from {order.status}.
+            No transitions available from {formatOrderStatus(order.status)}.
           </span>
         ) : null}
       </div>

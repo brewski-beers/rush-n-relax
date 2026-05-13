@@ -7,6 +7,7 @@ import { LOCATIONS } from '@/constants/locations';
 import { AdminTablePagination } from '@/components/admin/AdminTablePagination';
 import { OrdersFilters } from './OrdersFilters';
 import type { OrderStatus } from '@/types';
+import { formatOrderStatus } from '@/lib/orders/formatOrderStatus';
 
 interface SearchParams {
   status?: string;
@@ -139,10 +140,10 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                   <span
                     className={`admin-status-badge admin-status-${order.status}`}
                   >
-                    {order.status}
+                    {formatOrderStatus(order.status)}
                   </span>
                 </td>
-                <td>{order.locationId}</td>
+                <td>{LOCATIONS.find(l => l.slug === order.locationId)?.name ?? order.locationId}</td>
                 <td>{order.customerEmail ?? '—'}</td>
                 <td>{formatCents(order.total)}</td>
               </tr>

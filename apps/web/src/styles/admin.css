@@ -147,6 +147,19 @@
   --admin-status-sent-color: #b5f0d6;
   --admin-status-failed-bg: rgba(255, 127, 148, 0.18);
   --admin-status-failed-color: #ffc5ce;
+  /* Order status badge colors (#438) */
+  --admin-status-paid-bg: rgba(47, 178, 124, 0.18);
+  --admin-status-paid-color: #b5f0d6;
+  --admin-status-preparing-bg: rgba(213, 179, 106, 0.2);
+  --admin-status-preparing-color: #f4dfaf;
+  --admin-status-out-for-delivery-bg: rgba(70, 103, 169, 0.22);
+  --admin-status-out-for-delivery-color: #bcd4ff;
+  --admin-status-completed-bg: rgba(120, 200, 140, 0.22);
+  --admin-status-completed-color: #c8efd0;
+  --admin-status-cancelled-bg: rgba(170, 170, 170, 0.18);
+  --admin-status-cancelled-color: #d8d8d8;
+  --admin-status-refunded-bg: rgba(255, 127, 148, 0.18);
+  --admin-status-refunded-color: #ffc5ce;
   --admin-email-container-list-gap: 0.8rem;
   --admin-email-container-padding: 0.7rem;
   --admin-email-container-bg: rgba(255, 255, 255, 0.03);
@@ -1419,6 +1432,60 @@
   color: var(--admin-status-failed-color);
 }
 
+.admin-status-paid {
+  background: var(--admin-status-paid-bg);
+  color: var(--admin-status-paid-color);
+}
+
+.admin-status-preparing {
+  background: var(--admin-status-preparing-bg);
+  color: var(--admin-status-preparing-color);
+}
+
+.admin-status-out_for_delivery {
+  background: var(--admin-status-out-for-delivery-bg);
+  color: var(--admin-status-out-for-delivery-color);
+}
+
+.admin-status-completed {
+  background: var(--admin-status-completed-bg);
+  color: var(--admin-status-completed-color);
+}
+
+.admin-status-cancelled {
+  background: var(--admin-status-cancelled-bg);
+  color: var(--admin-status-cancelled-color);
+}
+
+.admin-status-refunded {
+  background: var(--admin-status-refunded-bg);
+  color: var(--admin-status-refunded-color);
+}
+
+/* Promos table active/inactive badge */
+.admin-promo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  border-radius: 999px;
+  padding: var(--admin-status-badge-padding);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-promo-badge--active {
+  background: var(--admin-status-paid-bg);
+  color: var(--admin-status-paid-color);
+}
+
+.admin-promo-badge--inactive {
+  background: var(--admin-status-cancelled-bg);
+  color: var(--admin-status-cancelled-color);
+}
+
 .admin-badge-leafly {
   display: inline-flex;
   align-items: center;
@@ -2671,4 +2738,45 @@
   font-style: italic;
   font-weight: 400;
   color: var(--color-accent);
+}
+
+/* ── Admin loading skeleton (#438) ───────────────────────────────────────── */
+.admin-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 0;
+}
+
+.admin-loading__bar {
+  height: 1rem;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: admin-loading-shimmer 1.4s ease-in-out infinite;
+}
+
+.admin-loading__bar--title {
+  height: 1.6rem;
+  width: 40%;
+}
+
+.admin-loading__bar--short {
+  width: 60%;
+}
+
+@keyframes admin-loading-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-loading__bar {
+    animation: none;
+  }
 }
