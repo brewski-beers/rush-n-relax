@@ -897,6 +897,10 @@ function docToReconcileSession(
     holds,
     createdAt: tsToDate(d.createdAt),
     expiresAt: tsToDate(d.expiresAt),
+    total: typeof d.total === 'number' ? d.total : 0,
+    ...(typeof d.customerEmail === 'string'
+      ? { customerEmail: d.customerEmail }
+      : {}),
     ...(typeof d.orderId === 'string' ? { orderId: d.orderId } : {}),
   };
 }
@@ -972,56 +976,166 @@ function getCloverBase(): string {
   return process.env.CLOVER_BASE_URL || DEFAULT_CLOVER_API_BASE;
 }
 
+interface CloverOrderRow {
+  id?: string;
+  total?: number;
+  createdTime?: number;
+  customers?: {
+    elements?: Array<{
+      emailAddresses?: {
+        elements?: Array<{ emailAddress?: string }>;
+      };
+    }>;
+  };
+}
+
+async function fetchCloverOrdersList(
+  merchantId: string,
+  apiKey: string,
+  filterQuery: string,
+  limit: number
+): Promise<CloverOrderRow[] | null> {
+  const url = `${getCloverBase()}/v3/merchants/${encodeURIComponent(merchantId)}/orders?${filterQuery}&expand=customers&limit=${limit}`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null;
+  const json = (await res.json().catch(() => null)) as {
+    elements?: CloverOrderRow[];
+  } | null;
+  return Array.isArray(json?.elements) ? json.elements : [];
+}
+
+async function discoverCloverOrderId(
+  merchantId: string,
+  apiKey: string,
+  session: ReconcileSession
+): Promise<string | null> {
+  // Leg 1 — documented /checkouts/{id}. Known to 404 in practice (live
+  // sandbox confirmed 2026-05-13) but try it first: if/when Clover fixes
+  // it we get back to the canonical path with no code change.
+  try {
+    const url = `${getCloverBase()}/invoicingcheckoutservice/v1/checkouts/${encodeURIComponent(session.cloverCheckoutSessionId)}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'X-Clover-Merchant-Id': merchantId,
+      },
+    });
+    if (res.ok) {
+      const json = (await res.json().catch(() => null)) as {
+        orderId?: string;
+      } | null;
+      if (typeof json?.orderId === 'string' && json.orderId.length > 0) {
+        logger.warn('lookupCloverCheckout won via /checkouts/{id}', {
+          sessionId: session.id,
+          orderId: json.orderId,
+        });
+        return json.orderId;
+      }
+    }
+  } catch {
+    // Fall through to legs 2/3.
+  }
+
+  // Leg 2 — tagged orders-list lookup (`note=<session id>`).
+  const taggedFilter = `filter=note=${encodeURIComponent(session.id)}`;
+  const tagged = await fetchCloverOrdersList(
+    merchantId,
+    apiKey,
+    taggedFilter,
+    5
+  );
+  if (tagged && tagged.length > 0) {
+    const sorted = [...tagged].sort(
+      (a, b) => (b.createdTime ?? 0) - (a.createdTime ?? 0)
+    );
+    const first = sorted[0];
+    if (typeof first.id === 'string' && first.id.length > 0) {
+      logger.warn('lookupCloverCheckout won via tagged note', {
+        sessionId: session.id,
+        orderId: first.id,
+      });
+      return first.id;
+    }
+  }
+
+  // Leg 3 — heuristic createdAt + total + email match.
+  const createdMs = session.createdAt.getTime();
+  const heuristicFilter =
+    `filter=createdTime%3E%3D${createdMs}` + `&orderBy=createdTime+DESC`;
+  const candidates = await fetchCloverOrdersList(
+    merchantId,
+    apiKey,
+    heuristicFilter,
+    20
+  );
+  if (candidates && candidates.length > 0) {
+    const matches = candidates.filter(o => {
+      if (typeof o.total !== 'number' || o.total !== session.total) {
+        return false;
+      }
+      if (!session.customerEmail) return true;
+      const email =
+        o.customers?.elements?.[0]?.emailAddresses?.elements?.[0]?.emailAddress;
+      if (!email) return false;
+      return email.toLowerCase() === session.customerEmail.toLowerCase();
+    });
+    if (matches.length > 1) {
+      logger.warn(
+        'lookupCloverCheckout heuristic matched >1 order; picking most recent',
+        {
+          sessionId: session.id,
+          matchCount: matches.length,
+          ids: matches.map(m => m.id ?? null).slice(0, 5),
+        }
+      );
+    }
+    if (matches.length > 0) {
+      const chosen = matches[0];
+      if (typeof chosen.id === 'string' && chosen.id.length > 0) {
+        logger.warn('lookupCloverCheckout won via heuristic match', {
+          sessionId: session.id,
+          orderId: chosen.id,
+        });
+        return chosen.id;
+      }
+    }
+  }
+
+  return null;
+}
+
 async function lookupCloverCheckout(
-  cloverCheckoutSessionId: string
+  session: ReconcileSession
 ): Promise<CloverCheckoutLookup | null> {
   const merchantId = CLOVER_MERCHANT_ID.value();
   const apiKey = CLOVER_API_KEY.value();
   if (!merchantId || !apiKey) return null;
 
-  // Hosted Checkout exposes the linked order id on the checkout resource.
-  // Endpoint per Clover docs:
-  //   GET /invoicingcheckoutservice/v1/checkouts/{checkoutSessionId}
-  // Response includes `orderId` once Clover has captured payment.
-  const checkoutUrl = `${getCloverBase()}/invoicingcheckoutservice/v1/checkouts/${encodeURIComponent(cloverCheckoutSessionId)}`;
-  const checkoutRes = await fetch(checkoutUrl, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'X-Clover-Merchant-Id': merchantId,
-    },
-  });
-
-  if (!checkoutRes.ok) {
-    // TEMP DIAGNOSTIC (#clover-return-url): why does the order-id lookup keep
-    // coming up empty for stranded sessions? Remove once confirmed.
-    const body = await checkoutRes.text().catch(() => '');
-    logger.warn('lookupCloverCheckout non-2xx', {
-      checkoutUrl,
-      status: checkoutRes.status,
-      body: body.slice(0, 600),
-    });
-    if (checkoutRes.status === 404) {
-      return { result: 'UNKNOWN' };
-    }
-    return null;
-  }
-
-  const checkoutJson = (await checkoutRes.json()) as {
-    orderId?: string;
-    status?: string;
-  };
-
-  const cloverOrderId = checkoutJson.orderId;
+  // Discover the Clover order id via the three-leg waterfall. The
+  // documented `/invoicingcheckoutservice/v1/checkouts/{id}` 404s in
+  // practice (confirmed live 2026-05-13), so the working legs are usually
+  // the tagged orders-list lookup (via `note=<sessionId>`) and the
+  // heuristic createdAt/total/email match. See `discoverCloverOrderId`.
+  const cloverOrderId = await discoverCloverOrderId(
+    merchantId,
+    apiKey,
+    session
+  );
   if (!cloverOrderId) {
-    // TEMP DIAGNOSTIC: log the checkout-resource shape so we can see which
-    // field carries the linked order id.
-    logger.warn('lookupCloverCheckout no orderId in checkout resource', {
-      checkoutUrl,
-      keys: Object.keys(checkoutJson ?? {}),
-      json: JSON.stringify(checkoutJson).slice(0, 800),
-    });
+    // No order linked yet — still pending. Next cron tick retries.
     return { result: 'PENDING' };
   }
 

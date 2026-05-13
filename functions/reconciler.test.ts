@@ -34,6 +34,8 @@ function makeSession(
     ],
     createdAt: new Date(NOW_MS - 30 * 60 * 1000),
     expiresAt: new Date(NOW_MS + 60 * 60 * 1000),
+    total: 3270,
+    customerEmail: 'buyer@example.com',
     ...overrides,
   };
 }
@@ -81,8 +83,16 @@ describe('reconcileCheckoutSessionsImpl — forward repair (#369)', () => {
       'sess_1',
       'ord_clover_1'
     );
-    // The Clover lookup, on the other hand, uses Clover's own id.
-    expect(lookupCloverCheckout).toHaveBeenCalledWith('clover_1');
+    // The Clover lookup receives the full session context — the underlying
+    // waterfall needs all of (cloverCheckoutSessionId, sessionId, total,
+    // customerEmail, createdAt) to fall back from /checkouts/{id} to the
+    // tagged + heuristic orders-list lookups.
+    expect(lookupCloverCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'sess_1',
+        cloverCheckoutSessionId: 'clover_1',
+      })
+    );
     expect(result.promoted).toBe(1);
     expect(result.scanned).toBe(1);
     expect(result.errors).toBe(0);
@@ -142,7 +152,7 @@ describe('reconcileCheckoutSessionsImpl — forward repair (#369)', () => {
     // Payment status is checked before expiry now — only because there is
     // no resolvable payment do we go ahead and expire.
     expect(lookupCloverCheckout).toHaveBeenCalledWith(
-      session.cloverCheckoutSessionId
+      expect.objectContaining({ id: session.id })
     );
     expect(expireSessionAndReleaseHolds).toHaveBeenCalledWith(session);
     expect(result.expired).toBe(1);
