@@ -59,8 +59,12 @@ interface SessionRequestBody {
  *   4. Atomically hold stock for the cart — short-circuit 409 on shortage.
  *   5. Mint a Clover Hosted Checkout session for the server-computed total.
  *      On failure, RELEASE holds so we never leave reserved stock dangling.
- *   6. Persist a CheckoutSession doc keyed by the Clover session id with
- *      status `awaiting_id` and a 24h `expiresAt`. No Order is created
+ *      The Clover return URL is built from `checkoutSessionId` — the id we
+ *      generated in step 0, NOT a Clover-side template token (Clover does
+ *      not substitute `{CHECKOUT_SESSION_ID}`).
+ *   6. Persist a CheckoutSession doc keyed by `checkoutSessionId` (the id we
+ *      generated) with Clover's own id stored as a field. Status
+ *      `awaiting_id` and a 24h `expiresAt`. No Order is created
  *      at this stage — Order is born only after a successful payment
  *      (#368). VerificationId arrives later via the AgeChecker popup
  *      webhook.
@@ -196,16 +200,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // ── Step 2: mint Clover Hosted Checkout session. ───────────────────
-  // `provisionalOrderId` is the doc-id fallback for the *stub* provider
-  // (which never calls Clover — see `cloverCheckoutSessionId` below) and
-  // backs `stubResponse()`'s `/checkout/stub?order=` URL. The LIVE
-  // success redirect is assembled by Clover from the
-  // `{CHECKOUT_SESSION_ID}` token, so it never uses this synthetic id.
-  const provisionalOrderId = `cs_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  // `checkoutSessionId` is the id we generate up front and use for BOTH
+  // the CheckoutSession Firestore doc id AND the Clover return URL.
+  // Clover does NOT substitute `{CHECKOUT_SESSION_ID}` in
+  // `redirectUrls.success` (confirmed live — the customer landed on
+  // `/order/%7BCHECKOUT_SESSION_ID%7D/return`), so the return URL must be
+  // deterministic at create time. The only id we control then is this one.
+  const checkoutSessionId = `cs_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
   let cloverSession;
   try {
     cloverSession = await createCloverCheckoutSession({
-      orderId: provisionalOrderId,
+      sessionId: checkoutSessionId,
       amount: priced.total,
       tax: priced.tax,
       ...(body.customerEmail ? { customerEmail: body.customerEmail } : {}),
@@ -229,18 +234,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     throw err;
   }
 
-  // The stub provider does not return a real session id; fall back to
-  // the provisional one so CheckoutSession docs are still uniquely keyed
-  // in dev/preview. Production with the kill switch ON always returns
-  // a Clover-issued id.
+  // The stub provider does not return a real Clover session id; fall back
+  // to our generated id so the field is always populated. Production with
+  // the kill switch ON always returns a Clover-issued id.
   const cloverCheckoutSessionId =
-    cloverSession.cloverCheckoutSessionId ?? provisionalOrderId;
+    cloverSession.cloverCheckoutSessionId ?? checkoutSessionId;
 
   // ── Step 3: persist CheckoutSession doc. ───────────────────────────
   const now = Date.now();
   const expiresAt = new Date(now + HOLD_TTL_MS);
 
   const createInput: CreateCheckoutSessionInput = {
+    id: checkoutSessionId,
     items: priced.items,
     subtotal: priced.subtotal,
     tax: priced.tax,

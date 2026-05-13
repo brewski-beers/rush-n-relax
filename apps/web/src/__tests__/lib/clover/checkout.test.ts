@@ -39,7 +39,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
     });
     const fetchSpy = vi.spyOn(global, 'fetch');
     const res = await createCloverCheckoutSession({
-      orderId: 'ord_1',
+      sessionId: 'ord_1',
       amount: 1000,
     });
     expect(res.provider).toBe('stub');
@@ -58,7 +58,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
     });
     const fetchSpy = vi.spyOn(global, 'fetch');
     const res = await createCloverCheckoutSession({
-      orderId: 'ord_2',
+      sessionId: 'ord_2',
       amount: 1000,
     });
     expect(res.provider).toBe('stub');
@@ -72,7 +72,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
       VERCEL_URL: 'rnr-abc123.vercel.app',
     });
     const res = await createCloverCheckoutSession({
-      orderId: 'ord_v',
+      sessionId: 'ord_v',
       amount: 100,
     });
     expect(res.provider).toBe('stub');
@@ -81,7 +81,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
     );
   });
 
-  it('calls the real Clover API with redirectUrls (success/failure) using the {CHECKOUT_SESSION_ID} token', async () => {
+  it('calls the real Clover API with redirectUrls built from our generated session id (no Clover template token)', async () => {
     setEnv({
       CLOVER_LIVE_PAYMENTS_ENABLED: 'true',
       CLOVER_MERCHANT_ID: 'M_PROD',
@@ -98,7 +98,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
       )
     );
     const res = await createCloverCheckoutSession({
-      orderId: 'ord_3',
+      sessionId: 'ord_3',
       amount: 1500,
       customerEmail: 'buyer@example.com',
       items: [
@@ -132,11 +132,14 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
     ]);
     // Legacy singular field must NOT be sent — Clover ignores it.
     expect(body.redirectUrl).toBeUndefined();
+    // The success/failure URLs are fully resolved from the session id we
+    // generated — Clover does NOT substitute the {CHECKOUT_SESSION_ID} /
+    // {ERROR_CODE} tokens, so we never put them in the payload.
     expect(body.redirectUrls.success).toBe(
-      'https://rushnrelax.com/order/{CHECKOUT_SESSION_ID}/return'
+      'https://rushnrelax.com/order/ord_3/return'
     );
     expect(body.redirectUrls.failure).toBe(
-      'https://rushnrelax.com/checkout/cancelled?error={ERROR_CODE}'
+      'https://rushnrelax.com/checkout/cancelled?session=ord_3'
     );
     expect(res.provider).toBe('clover');
     expect(res.redirectUrl).toBe('https://clover.com/checkout/abc');
@@ -157,7 +160,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
     );
     // 2 × $10.00 = $20.00 subtotal + $1.85 tax = $21.85 total.
     await createCloverCheckoutSession({
-      orderId: 'ord_tax',
+      sessionId: 'ord_tax',
       amount: 2185,
       tax: 185,
       items: [
@@ -200,7 +203,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
       })
     );
     await createCloverCheckoutSession({
-      orderId: 'ord_notax',
+      sessionId: 'ord_notax',
       amount: 2000,
       tax: 0,
       items: [
@@ -234,7 +237,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
         new Response(JSON.stringify({ href: 'x', id: 'y' }), { status: 200 })
       );
     await createCloverCheckoutSession({
-      orderId: 'ord_pf',
+      sessionId: 'ord_pf',
       amount: 1000,
       customerEmail: 'jane@example.com',
       deliveryAddress: {
@@ -275,7 +278,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
         new Response(JSON.stringify({ href: 'x', id: 'y' }), { status: 200 })
       );
     await createCloverCheckoutSession({
-      orderId: 'ord_st',
+      sessionId: 'ord_st',
       amount: 1000,
       deliveryAddress: {
         name: 'Cher',
@@ -303,7 +306,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
       .mockResolvedValue(
         new Response(JSON.stringify({ href: 'x', id: 'y' }), { status: 200 })
       );
-    await createCloverCheckoutSession({ orderId: 'ord_no', amount: 1000 });
+    await createCloverCheckoutSession({ sessionId: 'ord_no', amount: 1000 });
     const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(init.body as string) as { customer?: unknown };
     expect(body.customer).toBeUndefined();
@@ -321,7 +324,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
         new Response(JSON.stringify({ href: 'x', id: 'y' }), { status: 200 })
       );
     await createCloverCheckoutSession({
-      orderId: 'ord_sa',
+      sessionId: 'ord_sa',
       amount: 1000,
       customerEmail: 'jane@example.com',
       deliveryAddress: {
@@ -345,7 +348,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
     setEnv({ CLOVER_LIVE_PAYMENTS_ENABLED: undefined });
     const fetchSpy = vi.spyOn(global, 'fetch');
     const res = await createCloverCheckoutSession({
-      orderId: 'ord_stub',
+      sessionId: 'ord_stub',
       amount: 1000,
       customerEmail: 'jane@example.com',
       deliveryAddress: {
@@ -370,7 +373,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
       new Response('forbidden', { status: 403 })
     );
     await expect(
-      createCloverCheckoutSession({ orderId: 'ord_4', amount: 1000 })
+      createCloverCheckoutSession({ sessionId: 'ord_4', amount: 1000 })
     ).rejects.toBeInstanceOf(CloverApiError);
   });
 
@@ -386,7 +389,7 @@ describe('createCloverCheckoutSession — kill switch behavior', () => {
       .mockResolvedValue(
         new Response(JSON.stringify({ href: 'x', id: 'y' }), { status: 200 })
       );
-    await createCloverCheckoutSession({ orderId: 'o', amount: 1 });
+    await createCloverCheckoutSession({ sessionId: 'o', amount: 1 });
     const [url] = fetchSpy.mock.calls[0] as [string, RequestInit];
     expect(url.startsWith('https://apisandbox.dev.clover.com/')).toBe(true);
   });

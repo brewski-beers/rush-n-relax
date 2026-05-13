@@ -1,13 +1,16 @@
 /**
  * GET /order/[id]/return — Clover Hosted Checkout return URL (#368).
  *
- * `[id]` is the Clover Hosted Checkout session id, which is also the
- * Firestore doc id of the corresponding `CheckoutSession` (#360). Clover
- * substitutes the `{CHECKOUT_SESSION_ID}` token in `redirectUrls.success`
- * (set in `lib/clover/checkout.ts`) with that id when it redirects the
- * customer here. This route is the PRIMARY moment an Order document is
- * created — see `lib/checkout/finalize.ts` for the orchestration,
- * idempotency story, and refund-on-commit-failure compensation.
+ * `[id]` is the CheckoutSession Firestore doc id — a string WE generate
+ * in `/api/checkout/session` (`cs_<time>_<rand>`) and bake into
+ * `redirectUrls.success` before the Clover create call. It is NOT Clover's
+ * own checkout session id (Clover does not substitute the
+ * `{CHECKOUT_SESSION_ID}` template token — confirmed live). Clover's own
+ * id lives on the session doc's `cloverCheckoutSessionId` field and is
+ * used only for the Clover-side payment lookup. This route is the PRIMARY
+ * moment an Order document is created — see `lib/checkout/finalize.ts` for
+ * the orchestration, idempotency story, and refund-on-commit-failure
+ * compensation.
  *
  * Behavior:
  *   - paid (and not yet promoted) → create order, redirect to /order/{orderId}
@@ -44,7 +47,7 @@ export async function GET(
   let outcome: Awaited<ReturnType<typeof finalizeCheckoutSession>>;
   try {
     outcome = await finalizeCheckoutSession({
-      cloverCheckoutSessionId: id,
+      sessionId: id,
       cloverOrderId,
     });
   } catch (err) {

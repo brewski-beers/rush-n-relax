@@ -82,7 +82,13 @@ import type {
   CheckoutSessionStatus,
 } from '@/types/checkout-session';
 
+// The doc id is a string WE generate; Clover's own id is a stored field.
+// Keep them deliberately different so a mix-up is caught.
+const OUR_SESSION_ID = 'cs_abc';
+const CLOVER_SESSION_ID = 'clover-sess-xyz';
+
 const baseInput = {
+  id: OUR_SESSION_ID,
   items: [
     {
       productId: 'prod-1',
@@ -107,7 +113,7 @@ const baseInput = {
   holds: [
     { productId: 'prod-1', variantId: 'default', locationId: 'online', qty: 2 },
   ],
-  cloverCheckoutSessionId: 'clover-sess-abc',
+  cloverCheckoutSessionId: CLOVER_SESSION_ID,
   expiresAt: new Date('2026-06-01T00:00:00Z'),
 };
 
@@ -117,7 +123,7 @@ function makeSnap(
 ): FakeDocSnap {
   return {
     exists: true,
-    id: 'clover-sess-abc',
+    id: OUR_SESSION_ID,
     data: () => ({
       ...baseInput,
       status,
@@ -136,16 +142,17 @@ describe('checkout-session.repository', () => {
   });
 
   describe('createCheckoutSession', () => {
-    it('uses cloverCheckoutSessionId as the document id and writes status=awaiting_id', async () => {
+    it('uses our generated id as the document id, stores cloverCheckoutSessionId as a field, and writes status=awaiting_id', async () => {
       const id = await createCheckoutSession(baseInput);
 
-      expect(id).toBe('clover-sess-abc');
+      expect(id).toBe(OUR_SESSION_ID);
       expect(collectionMock).toHaveBeenCalledWith('checkout-sessions');
-      expect(docFnMock).toHaveBeenCalledWith('clover-sess-abc');
+      expect(docFnMock).toHaveBeenCalledWith(OUR_SESSION_ID);
       expect(docCreateMock).toHaveBeenCalledOnce();
 
       const [payload] = docCreateMock.mock.calls[0];
       expect(payload.status).toBe('awaiting_id');
+      expect(payload.cloverCheckoutSessionId).toBe(CLOVER_SESSION_ID);
       expect(payload.ageVerifiedAt).toBeNull();
       expect(payload.verificationId).toBeNull();
       expect(payload.ageCheckerSessionId).toBeNull();
@@ -153,6 +160,13 @@ describe('checkout-session.repository', () => {
       expect(payload.updatedAt).toBeInstanceOf(Date);
       expect(payload.expiresAt).toEqual(baseInput.expiresAt);
       expect(payload.holds).toHaveLength(1);
+    });
+
+    it('throws when id is missing', async () => {
+      await expect(
+        createCheckoutSession({ ...baseInput, id: '' })
+      ).rejects.toThrow(/id is required/);
+      expect(docCreateMock).not.toHaveBeenCalled();
     });
 
     it('throws when cloverCheckoutSessionId is missing', async () => {
@@ -211,9 +225,9 @@ describe('checkout-session.repository', () => {
 
     it('hydrates a CheckoutSession with defaults applied', async () => {
       docGetMock.mockResolvedValueOnce(makeSnap('awaiting_id'));
-      const session = await getCheckoutSession('clover-sess-abc');
+      const session = await getCheckoutSession(OUR_SESSION_ID);
       expect(session).not.toBeNull();
-      expect(session!.id).toBe('clover-sess-abc');
+      expect(session!.id).toBe(OUR_SESSION_ID);
       expect(session!.status).toBe('awaiting_id');
       expect(session!.ageVerifiedAt).toBeNull();
       expect(session!.verificationId).toBeNull();
@@ -229,7 +243,7 @@ describe('checkout-session.repository', () => {
       const verifiedAt = new Date('2026-05-02T12:00:00Z');
 
       const result = await markAgeVerified(
-        'clover-sess-abc',
+        OUR_SESSION_ID,
         'agechecker-xyz',
         verifiedAt
       );
@@ -246,7 +260,7 @@ describe('checkout-session.repository', () => {
     it('throws InvalidCheckoutSessionTransitionError when current status is completed', async () => {
       txGetMock.mockResolvedValueOnce(makeSnap('completed'));
       await expect(
-        markAgeVerified('clover-sess-abc', 'v', new Date())
+        markAgeVerified(OUR_SESSION_ID, 'v', new Date())
       ).rejects.toThrow(InvalidCheckoutSessionTransitionError);
       expect(txUpdateMock).not.toHaveBeenCalled();
     });
@@ -262,7 +276,7 @@ describe('checkout-session.repository', () => {
   describe('markCheckoutSessionInFlight (#405)', () => {
     it('atomically claims awaiting_payment → in_flight', async () => {
       txGetMock.mockResolvedValueOnce(makeSnap('awaiting_payment'));
-      const result = await markCheckoutSessionInFlight('clover-sess-abc');
+      const result = await markCheckoutSessionInFlight(OUR_SESSION_ID);
       const [, patch] = txUpdateMock.mock.calls[0];
       expect(patch.status).toBe('in_flight');
       expect(result.status).toBe('in_flight');
@@ -270,16 +284,16 @@ describe('checkout-session.repository', () => {
 
     it('rejects a second concurrent claim (in_flight is not a legal source)', async () => {
       txGetMock.mockResolvedValueOnce(makeSnap('in_flight'));
-      await expect(
-        markCheckoutSessionInFlight('clover-sess-abc')
-      ).rejects.toThrow(InvalidCheckoutSessionTransitionError);
+      await expect(markCheckoutSessionInFlight(OUR_SESSION_ID)).rejects.toThrow(
+        InvalidCheckoutSessionTransitionError
+      );
     });
 
     it('rejects claim from awaiting_id (must verify ID first)', async () => {
       txGetMock.mockResolvedValueOnce(makeSnap('awaiting_id'));
-      await expect(
-        markCheckoutSessionInFlight('clover-sess-abc')
-      ).rejects.toThrow(InvalidCheckoutSessionTransitionError);
+      await expect(markCheckoutSessionInFlight(OUR_SESSION_ID)).rejects.toThrow(
+        InvalidCheckoutSessionTransitionError
+      );
     });
   });
 
@@ -287,7 +301,7 @@ describe('checkout-session.repository', () => {
     it('transitions in_flight → completed and stamps orderId (#405)', async () => {
       txGetMock.mockResolvedValueOnce(makeSnap('in_flight'));
       const result = await markCheckoutSessionCompleted(
-        'clover-sess-abc',
+        OUR_SESSION_ID,
         'order-123'
       );
       const [, patch] = txUpdateMock.mock.calls[0];
@@ -301,14 +315,14 @@ describe('checkout-session.repository', () => {
       // race-claim is the only place an Order id is minted.
       txGetMock.mockResolvedValueOnce(makeSnap('awaiting_payment'));
       await expect(
-        markCheckoutSessionCompleted('clover-sess-abc', 'order-123')
+        markCheckoutSessionCompleted(OUR_SESSION_ID, 'order-123')
       ).rejects.toThrow(InvalidCheckoutSessionTransitionError);
     });
 
     it('rejects illegal direct awaiting_id → completed transition', async () => {
       txGetMock.mockResolvedValueOnce(makeSnap('awaiting_id'));
       await expect(
-        markCheckoutSessionCompleted('clover-sess-abc', 'order-123')
+        markCheckoutSessionCompleted(OUR_SESSION_ID, 'order-123')
       ).rejects.toThrow(InvalidCheckoutSessionTransitionError);
     });
   });
@@ -316,28 +330,28 @@ describe('checkout-session.repository', () => {
   describe('markCheckoutSessionExpired', () => {
     it('transitions awaiting_id → expired', async () => {
       txGetMock.mockResolvedValueOnce(makeSnap('awaiting_id'));
-      const result = await markCheckoutSessionExpired('clover-sess-abc');
+      const result = await markCheckoutSessionExpired(OUR_SESSION_ID);
       expect(result.status).toBe('expired');
     });
 
     it('refuses to expire an already-completed session', async () => {
       txGetMock.mockResolvedValueOnce(makeSnap('completed'));
-      await expect(
-        markCheckoutSessionExpired('clover-sess-abc')
-      ).rejects.toThrow(InvalidCheckoutSessionTransitionError);
+      await expect(markCheckoutSessionExpired(OUR_SESSION_ID)).rejects.toThrow(
+        InvalidCheckoutSessionTransitionError
+      );
     });
   });
 
   describe('markCheckoutSessionCancelled', () => {
     it('transitions awaiting_payment → cancelled', async () => {
       txGetMock.mockResolvedValueOnce(makeSnap('awaiting_payment'));
-      const result = await markCheckoutSessionCancelled('clover-sess-abc');
+      const result = await markCheckoutSessionCancelled(OUR_SESSION_ID);
       expect(result.status).toBe('cancelled');
     });
 
     it('transitions in_flight → cancelled (compensation path, #405)', async () => {
       txGetMock.mockResolvedValueOnce(makeSnap('in_flight'));
-      const result = await markCheckoutSessionCancelled('clover-sess-abc');
+      const result = await markCheckoutSessionCancelled(OUR_SESSION_ID);
       expect(result.status).toBe('cancelled');
     });
   });
@@ -347,7 +361,7 @@ describe('checkout-session.repository', () => {
       txGetMock.mockResolvedValueOnce(
         makeSnap('awaiting_id', { ageCheckerSessionId: null })
       );
-      await setAgeCheckerSessionId('clover-sess-abc', 'ac-uuid-new');
+      await setAgeCheckerSessionId(OUR_SESSION_ID, 'ac-uuid-new');
       expect(txUpdateMock).toHaveBeenCalledOnce();
       const [, patch] = txUpdateMock.mock.calls[0];
       expect(patch.ageCheckerSessionId).toBe('ac-uuid-new');
@@ -358,7 +372,7 @@ describe('checkout-session.repository', () => {
       txGetMock.mockResolvedValueOnce(
         makeSnap('awaiting_id', { ageCheckerSessionId: 'ac-existing' })
       );
-      await setAgeCheckerSessionId('clover-sess-abc', 'ac-new');
+      await setAgeCheckerSessionId(OUR_SESSION_ID, 'ac-new');
       expect(txUpdateMock).not.toHaveBeenCalled();
     });
 
@@ -370,9 +384,9 @@ describe('checkout-session.repository', () => {
     });
 
     it('throws when ageCheckerSessionId arg is empty', async () => {
-      await expect(
-        setAgeCheckerSessionId('clover-sess-abc', '')
-      ).rejects.toThrow(/required/);
+      await expect(setAgeCheckerSessionId(OUR_SESSION_ID, '')).rejects.toThrow(
+        /required/
+      );
     });
   });
 
@@ -382,7 +396,7 @@ describe('checkout-session.repository', () => {
       async terminal => {
         txGetMock.mockResolvedValueOnce(makeSnap(terminal));
         await expect(
-          markCheckoutSessionCancelled('clover-sess-abc')
+          markCheckoutSessionCancelled(OUR_SESSION_ID)
         ).rejects.toThrow(InvalidCheckoutSessionTransitionError);
       }
     );
@@ -392,7 +406,8 @@ describe('checkout-session.repository', () => {
   // with the CheckoutSession contract.
   it('hydrated session matches CheckoutSession type', async () => {
     docGetMock.mockResolvedValueOnce(makeSnap('awaiting_id'));
-    const s = (await getCheckoutSession('clover-sess-abc')) as CheckoutSession;
-    expect(s.cloverCheckoutSessionId).toBe('clover-sess-abc');
+    const s = (await getCheckoutSession(OUR_SESSION_ID)) as CheckoutSession;
+    expect(s.id).toBe(OUR_SESSION_ID);
+    expect(s.cloverCheckoutSessionId).toBe(CLOVER_SESSION_ID);
   });
 });
