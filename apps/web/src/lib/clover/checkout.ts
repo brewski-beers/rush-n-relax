@@ -370,10 +370,27 @@ export async function getCloverOrderIdForCheckout(
         });
         return orderId;
       }
+      // TEMP DIAGNOSTIC (#clover-lookup-r3): 200 but no orderId in body.
+      console.warn('[clover] leg1 200 with no orderId', {
+        sessionId: input.sessionId,
+        keys: json && typeof json === 'object' ? Object.keys(json) : null,
+      });
+    } else {
+      // TEMP DIAGNOSTIC (#clover-lookup-r3): non-2xx on /checkouts/{id}.
+      const body = await res.text().catch(() => '');
+      console.warn('[clover] leg1 non-2xx', {
+        sessionId: input.sessionId,
+        status: res.status,
+        body: body.slice(0, 400),
+      });
     }
     // 404 / no orderId → fall through to the orders-list legs.
-  } catch {
-    // Network blip on leg 1 — fall through to legs 2/3.
+  } catch (err) {
+    // TEMP DIAGNOSTIC (#clover-lookup-r3): network/fetch error on leg 1.
+    console.warn('[clover] leg1 threw', {
+      sessionId: input.sessionId,
+      err: err instanceof Error ? err.message : String(err),
+    });
   }
 
   // ─── Leg 2: tagged orders-list lookup (note=<sessionId>) ───────────────
@@ -415,7 +432,8 @@ interface CloverOrderRow {
 async function fetchOrdersList(
   creds: CloverCredentials,
   filterQuery: string,
-  limit: number
+  limit: number,
+  legLabel: string
 ): Promise<CloverOrderRow[] | null> {
   const url = `${getCloverBaseUrl()}/v3/merchants/${encodeURIComponent(creds.merchantId)}/orders?${filterQuery}&expand=customers&limit=${limit}`;
   let res: Response;
@@ -427,15 +445,43 @@ async function fetchOrdersList(
         'Content-Type': 'application/json',
       },
     });
-  } catch {
+  } catch (err) {
+    // TEMP DIAGNOSTIC (#clover-lookup-r3): orders-list fetch threw.
+    console.warn(`[clover] ${legLabel} fetchOrdersList threw`, {
+      url,
+      err: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
-  if (!res.ok) return null;
+  if (!res.ok) {
+    // TEMP DIAGNOSTIC (#clover-lookup-r3): non-2xx on orders-list — likely
+    // tells us if our filter syntax is being rejected.
+    const body = await res.text().catch(() => '');
+    console.warn(`[clover] ${legLabel} fetchOrdersList non-2xx`, {
+      url,
+      status: res.status,
+      body: body.slice(0, 400),
+    });
+    return null;
+  }
   // Justified cast: Clover v3 collection responses are `{ elements: Order[] }`.
   const json = (await res.json().catch(() => null)) as {
     elements?: CloverOrderRow[];
   } | null;
-  return Array.isArray(json?.elements) ? json.elements : [];
+  const elements = Array.isArray(json?.elements) ? json.elements : [];
+  // TEMP DIAGNOSTIC (#clover-lookup-r3): always log the leg's result count
+  // and a tiny shape sample so we can see what Clover actually returns.
+  console.warn(`[clover] ${legLabel} fetchOrdersList ok`, {
+    url,
+    count: elements.length,
+    sample: elements.slice(0, 3).map(e => ({
+      id: e.id,
+      total: e.total,
+      createdTime: e.createdTime,
+      hasCustomers: Boolean(e.customers?.elements?.length),
+    })),
+  });
+  return elements;
 }
 
 async function tryTaggedOrdersLookup(
@@ -446,8 +492,16 @@ async function tryTaggedOrdersLookup(
   // on standard Order fields. We URL-encode the value but leave the `=`
   // separators raw so Clover parses the predicate.
   const filterQuery = `filter=note=${encodeURIComponent(input.sessionId)}`;
-  const elements = await fetchOrdersList(creds, filterQuery, 5);
-  if (!elements || elements.length === 0) return null;
+  const elements = await fetchOrdersList(creds, filterQuery, 5, 'leg2-tagged');
+  if (!elements || elements.length === 0) {
+    if (elements && elements.length === 0) {
+      console.warn('[clover] leg2 tagged search returned 0 elements', {
+        sessionId: input.sessionId,
+        filterQuery,
+      });
+    }
+    return null;
+  }
   // If multiple rows share the same note (shouldn't happen — `sessionId`
   // is unique), prefer the most recent.
   const sorted = [...elements].sort(
@@ -468,7 +522,12 @@ async function tryHeuristicOrdersLookup(
   const createdMs = input.createdAfter.getTime();
   const filterQuery =
     `filter=createdTime%3E%3D${createdMs}` + `&orderBy=createdTime+DESC`;
-  const elements = await fetchOrdersList(creds, filterQuery, 20);
+  const elements = await fetchOrdersList(
+    creds,
+    filterQuery,
+    20,
+    'leg3-heuristic'
+  );
   if (!elements || elements.length === 0) return null;
 
   const matches = elements.filter(o => {
@@ -482,7 +541,25 @@ async function tryHeuristicOrdersLookup(
     return email.toLowerCase() === input.customerEmail.toLowerCase();
   });
 
-  if (matches.length === 0) return null;
+  if (matches.length === 0) {
+    // TEMP DIAGNOSTIC (#clover-lookup-r3): had candidates but none matched.
+    // Surface what we got so we can see whether Clover stores total/email
+    // differently than we assume.
+    console.warn('[clover] leg3 heuristic: 0 matches out of N candidates', {
+      sessionId: input.sessionId,
+      expectedTotalCents: input.expectedTotalCents,
+      customerEmail: input.customerEmail ?? null,
+      candidateCount: elements.length,
+      candidates: elements.slice(0, 5).map(e => ({
+        id: e.id,
+        total: e.total,
+        email:
+          e.customers?.elements?.[0]?.emailAddresses?.elements?.[0]
+            ?.emailAddress ?? null,
+      })),
+    });
+    return null;
+  }
   if (matches.length > 1) {
     console.warn(
       '[clover] heuristic order-id lookup matched >1 order; picking the most recent',
