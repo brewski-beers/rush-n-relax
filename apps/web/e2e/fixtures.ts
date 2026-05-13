@@ -18,13 +18,6 @@ import { Page } from '@playwright/test';
  *          Cross-cutting concerns (like age-gate) belong here.
  */
 
-/** Default legal birthdate values for age verification bypass */
-const LEGAL_DOB = {
-  month: '01',
-  day: '15',
-  year: '1990',
-};
-
 const PLAYWRIGHT_FIREBASE_APP_NAME = 'playwright-auth-emulator';
 const TEST_ADMIN_ACTOR = {
   email: 'kb@rushnrelax.com',
@@ -84,16 +77,12 @@ function extractSessionCookie(setCookieHeader: string | null): string | null {
 export async function verifyAge(page: Page): Promise<void> {
   const overlay = page.locator('.age-gate-overlay');
 
-  // If already verified (localStorage persisted), skip
+  // If already verified (cookie persisted), skip
   const isVisible = await overlay.isVisible().catch(() => false);
   if (!isVisible) return;
 
-  await page.locator('input[id="month"]').fill(LEGAL_DOB.month);
-  await page.locator('input[id="day"]').fill(LEGAL_DOB.day);
-  // Filling a 4-digit year triggers auto-submit — no button click needed
-  await page.locator('input[id="year"]').fill(LEGAL_DOB.year);
+  await page.getByRole('button', { name: /yes, i'?m 21( or older)?/i }).click();
 
-  // Wait for gate to close — targeted check, not networkidle
   await overlay.waitFor({ state: 'hidden', timeout: 3000 });
 }
 

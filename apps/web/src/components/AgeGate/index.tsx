@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useRef } from 'react';
 import './AgeGate.css';
 
 interface Props {
@@ -10,92 +9,19 @@ interface Props {
 const COOKIE = 'ageVerified=true; max-age=31536000; path=/; SameSite=Strict';
 
 /**
- * Pure age validation — returns null on pass, error string on fail.
- * Extracted so the submit button, Enter key, and auto-submit on year
- * complete all use the same logic without stale-state issues.
+ * Entry-gate age affirmation. A single "Yes, I'm 21+" CTA persists a cookie
+ * and calls `onVerified`; "No, exit" redirects away. Actual ID verification
+ * happens at checkout via AgeChecker.net — this gate is friction-only.
  */
-function checkAge(month: string, day: string, year: string): string | null {
-  if (!month || !day || !year) {
-    return 'Please enter your complete birth date';
-  }
-
-  const m = parseInt(month, 10);
-  const d = parseInt(day, 10);
-  const y = parseInt(year, 10);
-
-  if (
-    m < 1 ||
-    m > 12 ||
-    d < 1 ||
-    d > 31 ||
-    y < 1900 ||
-    y > new Date().getFullYear()
-  ) {
-    return 'Please enter a valid birth date';
-  }
-
-  const birthDate = new Date(y, m - 1, d);
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < birthDate.getDate())
-  ) {
-    age--;
-  }
-
-  if (age < 21) {
-    return 'You must be 21 or older to enter';
-  }
-
-  return null;
-}
-
 export function AgeGate({ onVerified }: Props) {
-  const [userMonth, setUserMonth] = useState('');
-  const [userDay, setUserDay] = useState('');
-  const [userYear, setUserYear] = useState('');
-  const [error, setError] = useState('');
-  const monthRef = useRef<HTMLInputElement>(null);
-  const dayRef = useRef<HTMLInputElement>(null);
-  const yearRef = useRef<HTMLInputElement>(null);
-
-  const handleSubmit = (month = userMonth, day = userDay, year = userYear) => {
-    setError('');
-    const err = checkAge(month, day, year);
-    if (err) {
-      setError(err);
-      return;
-    }
+  const handleAffirm = () => {
     document.cookie = COOKIE;
     onVerified();
   };
 
-  const handleMonthChange = (value: string) => {
-    const capped = value.slice(0, 2);
-    setUserMonth(capped);
-    if (capped.length === 2) {
-      setTimeout(() => dayRef.current?.focus(), 50);
-    }
-  };
-
-  const handleDayChange = (value: string) => {
-    const capped = value.slice(0, 2);
-    setUserDay(capped);
-    if (capped.length === 2) {
-      setTimeout(() => yearRef.current?.focus(), 50);
-    }
-  };
-
-  const handleYearChange = (value: string) => {
-    const capped = value.slice(0, 4);
-    setUserYear(capped);
-    // Auto-submit once year is complete — use local value to avoid stale state
-    if (capped.length === 4) {
-      handleSubmit(userMonth, userDay, capped);
-    }
+  const handleDeny = () => {
+    // Redirect away from the site for visitors who are not 21+
+    window.location.href = 'https://www.google.com';
   };
 
   return (
@@ -106,65 +32,22 @@ export function AgeGate({ onVerified }: Props) {
           <p>You must be 21 or older to enter</p>
         </div>
 
-        <form
-          className="age-gate-form"
-          onSubmit={e => {
-            e.preventDefault();
-            handleSubmit();
-          }}
-        >
-          <div className="date-inputs">
-            <div className="date-input-group">
-              <label htmlFor="month">Month</label>
-              <input
-                ref={monthRef}
-                id="month"
-                type="number"
-                placeholder="MM"
-                inputMode="numeric"
-                maxLength={2}
-                value={userMonth}
-                onChange={e => handleMonthChange(e.target.value)}
-              />
-            </div>
-            <div className="date-input-group">
-              <label htmlFor="day">Day</label>
-              <input
-                ref={dayRef}
-                id="day"
-                type="number"
-                placeholder="DD"
-                inputMode="numeric"
-                maxLength={2}
-                value={userDay}
-                onChange={e => handleDayChange(e.target.value)}
-              />
-            </div>
-            <div className="date-input-group">
-              <label htmlFor="year">Year</label>
-              <input
-                ref={yearRef}
-                id="year"
-                type="number"
-                placeholder="YYYY"
-                inputMode="numeric"
-                maxLength={4}
-                value={userYear}
-                onChange={e => handleYearChange(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {error && (
-            <p className="age-gate-error" role="alert" aria-live="polite">
-              {error}
-            </p>
-          )}
-
-          <button type="submit" className="btn btn-primary age-gate-button">
-            Enter
+        <div className="age-gate-actions">
+          <button
+            type="button"
+            className="btn btn-primary age-gate-button"
+            onClick={handleAffirm}
+          >
+            Yes, I&apos;m 21 or older
           </button>
-        </form>
+          <button
+            type="button"
+            className="btn btn-secondary age-gate-button age-gate-button-secondary"
+            onClick={handleDeny}
+          >
+            No, exit
+          </button>
+        </div>
 
         <p className="age-gate-disclaimer">
           By entering, you certify that you are of legal age to purchase
