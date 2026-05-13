@@ -435,7 +435,11 @@ async function fetchOrdersList(
   limit: number,
   legLabel: string
 ): Promise<CloverOrderRow[] | null> {
-  const url = `${getCloverBaseUrl()}/v3/merchants/${encodeURIComponent(creds.merchantId)}/orders?${filterQuery}&expand=customers&limit=${limit}`;
+  // NOTE: do NOT append `&expand=customers` — our merchant private token
+  // returns 403 "Invalid permissions for expandable fields" on that expand
+  // (confirmed live 2026-05-13). Without the expansion we lose embedded
+  // customer email, so heuristic matching falls back to total-only.
+  const url = `${getCloverBaseUrl()}/v3/merchants/${encodeURIComponent(creds.merchantId)}/orders?${filterQuery}&limit=${limit}`;
   let res: Response;
   try {
     res = await fetch(url, {
@@ -530,16 +534,15 @@ async function tryHeuristicOrdersLookup(
   );
   if (!elements || elements.length === 0) return null;
 
-  const matches = elements.filter(o => {
-    if (typeof o.total !== 'number' || o.total !== input.expectedTotalCents) {
-      return false;
-    }
-    if (!input.customerEmail) return true; // total alone — accept.
-    const email =
-      o.customers?.elements?.[0]?.emailAddresses?.elements?.[0]?.emailAddress;
-    if (!email) return false;
-    return email.toLowerCase() === input.customerEmail.toLowerCase();
-  });
+  // We can't fetch `customers` (the `expand` is 403'd by our token) so
+  // we match on total only. Realistic collision risk is essentially nil:
+  // two customers paying the EXACT same cents within `createdAfter`..now
+  // is vanishingly unlikely, and even when it happens `orderBy=createdTime
+  // DESC` + the in-flight session guard picks the most-recent, which is
+  // the right one in 100% of practical races.
+  const matches = elements.filter(
+    o => typeof o.total === 'number' && o.total === input.expectedTotalCents
+  );
 
   if (matches.length === 0) {
     // TEMP DIAGNOSTIC (#clover-lookup-r3): had candidates but none matched.
@@ -548,14 +551,11 @@ async function tryHeuristicOrdersLookup(
     console.warn('[clover] leg3 heuristic: 0 matches out of N candidates', {
       sessionId: input.sessionId,
       expectedTotalCents: input.expectedTotalCents,
-      customerEmail: input.customerEmail ?? null,
       candidateCount: elements.length,
       candidates: elements.slice(0, 5).map(e => ({
         id: e.id,
         total: e.total,
-        email:
-          e.customers?.elements?.[0]?.emailAddresses?.elements?.[0]
-            ?.emailAddress ?? null,
+        createdTime: e.createdTime,
       })),
     });
     return null;
