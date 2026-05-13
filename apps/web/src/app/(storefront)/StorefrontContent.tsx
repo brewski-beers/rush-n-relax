@@ -169,6 +169,17 @@ export function StorefrontContent({
     window.scrollTo(0, 0);
   }, [pathname]);
 
+  // Bypass the entry age-gate for users who are mid-checkout. /checkout/*
+  // and /order/* are post-cart routes that always carry an active session
+  // id — the customer reached them only by passing both this entry gate
+  // *and* AgeChecker.Net during checkout, so re-prompting after a
+  // cross-origin return (e.g. Clover redirecting back into a fresh tab,
+  // where sessionStorage is empty / cookies didn't propagate) is pure
+  // friction. The AgeChecker.Net verification is the stronger gate anyway.
+  const isMidCheckout =
+    pathname.startsWith('/checkout/') || pathname.startsWith('/order/');
+  const showEntryGate = !isAgeVerified && !isMidCheckout;
+
   return (
     <CartProvider>
       <div className="root-layout">
@@ -176,7 +187,7 @@ export function StorefrontContent({
         <AmbientOverlay />
         <div id="ambient-portal" />
 
-        {!isAgeVerified ? (
+        {showEntryGate ? (
           <div className="age-gate-screen">
             <AgeGate onVerified={() => setIsAgeVerified(true)} />
           </div>
