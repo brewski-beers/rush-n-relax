@@ -21,6 +21,7 @@ const ALL_LINKS: NavLink[] = [
   { label: 'Variant Groups', href: '/admin/variant-groups' },
   { label: 'Categories', href: '/admin/categories' },
   { label: 'Users', href: '/admin/users' },
+  { label: 'Orders', href: '/admin/orders', group: 'Ops' },
   { label: 'Promos', href: '/admin/promos', group: 'Ops' },
   { label: 'Email Templates', href: '/admin/email-templates', group: 'Ops' },
   { label: 'Email Queue', href: '/admin/email-queue', group: 'Ops' },

@@ -15,7 +15,10 @@ interface Props {
 }
 
 export function ProductsTable({ initialProducts }: Props) {
-  const [activeProducts] = useState<ProductSummary[]>(initialProducts);
+  // Render directly from the prop — caching in useState would freeze the
+  // first page's snapshot across client navigations (filter/pagination URL
+  // changes re-run the Server Component but reuse this client instance).
+  const activeProducts = initialProducts;
   const [archivedProducts, setArchivedProducts] = useState<
     ProductSummary[] | null
   >(null);
