@@ -4,14 +4,18 @@
  * Admin order actions (#283) — client UI for the order detail page.
  *
  * Renders only the destination states allowed by ALLOWED_TRANSITIONS for
- * the order's current status. Calls the matching Server Action. Cancel and
- * refund are gated behind a window.confirm() guard. Refund additionally
- * shows the Clover payment id + amount in the prompt.
+ * the order's current status. Calls the matching Server Action.
+ *
+ * Destructive transitions (cancel, refund) are gated behind the accessible
+ * AdminConfirmDialog (#440) instead of native window.confirm. The dialog
+ * implements role="alertdialog", focus trap, ESC-to-cancel, and focus restore.
  */
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ALLOWED_TRANSITIONS, type Order, type OrderStatus } from '@/types';
+import { formatOrderStatus } from '@/lib/orders/formatOrderStatus';
+import { AdminConfirmDialog } from '@/components/admin/AdminConfirmDialog';
 import { refundOrderAction, transitionOrderAction } from './actions';
 
 interface Props {
@@ -27,21 +31,20 @@ function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+type PendingConfirm =
+  | { kind: 'transition'; to: OrderStatus }
+  | { kind: 'refund' }
+  | null;
+
 export function AdminOrderActions({ order }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<PendingConfirm>(null);
 
   const allowedNext = ALLOWED_TRANSITIONS[order.status] ?? [];
 
-  function runTransition(to: OrderStatus) {
-    setError(null);
-    if (DESTRUCTIVE_TRANSITIONS.has(to)) {
-      const ok = window.confirm(
-        `Confirm transition: ${order.status} → ${to}? This is destructive.`
-      );
-      if (!ok) return;
-    }
+  function executeTransition(to: OrderStatus) {
     startTransition(async () => {
       const res = await transitionOrderAction(order.id, to);
       if (!res.ok) setError(res.error ?? 'Transition failed');
@@ -49,14 +52,7 @@ export function AdminOrderActions({ order }: Props) {
     });
   }
 
-  function runRefund() {
-    setError(null);
-    const ok = window.confirm(
-      `Refund Clover payment ${order.cloverPaymentId ?? '(none)'} for ${formatCents(
-        order.total
-      )}? This is irreversible.`
-    );
-    if (!ok) return;
+  function executeRefund() {
     startTransition(async () => {
       const res = await refundOrderAction(order.id);
       if (!res.ok) setError(res.error ?? 'Refund failed');
@@ -64,7 +60,46 @@ export function AdminOrderActions({ order }: Props) {
     });
   }
 
+  function runTransition(to: OrderStatus) {
+    setError(null);
+    if (DESTRUCTIVE_TRANSITIONS.has(to)) {
+      setConfirm({ kind: 'transition', to });
+      return;
+    }
+    executeTransition(to);
+  }
+
+  function runRefund() {
+    setError(null);
+    setConfirm({ kind: 'refund' });
+  }
+
+  function handleConfirm() {
+    const c = confirm;
+    setConfirm(null);
+    if (!c) return;
+    if (c.kind === 'transition') executeTransition(c.to);
+    else executeRefund();
+  }
+
+  function handleCancel() {
+    setConfirm(null);
+  }
+
   const showRefund = order.status === 'paid';
+
+  let dialogTitle = '';
+  let dialogMessage = '';
+  let confirmLabel = 'Confirm';
+  if (confirm?.kind === 'transition') {
+    dialogTitle = 'Confirm destructive transition';
+    dialogMessage = `Transition order from ${formatOrderStatus(order.status)} to ${formatOrderStatus(confirm.to)}? This is destructive.`;
+    confirmLabel = formatOrderStatus(confirm.to);
+  } else if (confirm?.kind === 'refund') {
+    dialogTitle = 'Refund payment';
+    dialogMessage = `Refund Clover payment ${order.cloverPaymentId ?? '(none)'} for ${formatCents(order.total)}? This is irreversible.`;
+    confirmLabel = 'Refund';
+  }
 
   return (
     <div data-testid="admin-order-actions" className="admin-order-actions">
@@ -82,12 +117,12 @@ export function AdminOrderActions({ order }: Props) {
                 : 'admin-btn-secondary'
             }
           >
-            → {to}
+            → {formatOrderStatus(to)}
           </button>
         ))}
         {allowedNext.length === 0 ? (
           <span className="admin-empty">
-            No transitions available from {order.status}.
+            No transitions available from {formatOrderStatus(order.status)}.
           </span>
         ) : null}
       </div>
@@ -113,6 +148,15 @@ export function AdminOrderActions({ order }: Props) {
           {error}
         </p>
       ) : null}
+      <AdminConfirmDialog
+        open={confirm !== null}
+        title={dialogTitle}
+        message={dialogMessage}
+        confirmLabel={confirmLabel}
+        destructive
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }

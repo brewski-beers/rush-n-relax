@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import type { OrderStatus } from '@/types';
+import { formatOrderStatus } from '@/lib/orders/formatOrderStatus';
 
 const STATUS_OPTIONS: OrderStatus[] = [
   'paid',
@@ -89,7 +90,7 @@ export function OrdersFilters({ locations, initial }: Props) {
           <option value="">All</option>
           {STATUS_OPTIONS.map(s => (
             <option key={s} value={s}>
-              {s}
+              {formatOrderStatus(s)}
             </option>
           ))}
         </select>

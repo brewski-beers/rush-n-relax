@@ -17,3 +17,5 @@ export {
 } from './storefront';
 
 export { AUTH_USER_FIXTURES } from './auth';
+
+export { ORDER_FIXTURES, buildOrderDocuments } from './orders';

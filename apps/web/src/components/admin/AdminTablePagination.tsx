@@ -35,7 +35,9 @@ export function AdminTablePagination({
     if (cursor) params.set('cursor', cursor);
     if (stack.length > 0) params.set('prevCursors', stack.join(','));
     const qs = params.toString();
-    return qs ? `${baseHref}?${qs}` : baseHref;
+    if (!qs) return baseHref;
+    const sep = baseHref.includes('?') ? '&' : '?';
+    return `${baseHref}${sep}${qs}`;
   }
 
   const prevUrl = buildUrl(prevCursor, prevCursorsStack);
@@ -48,7 +50,10 @@ export function AdminTablePagination({
           &larr; Previous
         </Link>
       ) : (
-        <span className="admin-btn-secondary admin-btn-disabled" aria-disabled="true">
+        <span
+          className="admin-btn-secondary admin-btn-disabled"
+          aria-disabled="true"
+        >
           &larr; Previous
         </span>
       )}
@@ -57,7 +62,10 @@ export function AdminTablePagination({
           Next &rarr;
         </Link>
       ) : (
-        <span className="admin-btn-secondary admin-btn-disabled" aria-disabled="true">
+        <span
+          className="admin-btn-secondary admin-btn-disabled"
+          aria-disabled="true"
+        >
           Next &rarr;
         </span>
       )}

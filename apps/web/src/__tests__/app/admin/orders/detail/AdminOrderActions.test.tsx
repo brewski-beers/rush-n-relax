@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 
 const { transitionOrderActionMock, refundOrderActionMock, routerRefreshMock } =
   vi.hoisted(() => ({
@@ -45,7 +45,6 @@ describe('AdminOrderActions — only renders allowed transitions', () => {
     expect(screen.getByTestId('transition-btn-preparing')).toBeInTheDocument();
     expect(screen.getByTestId('transition-btn-refunded')).toBeInTheDocument();
     expect(screen.getByTestId('transition-btn-cancelled')).toBeInTheDocument();
-    // Should NOT show terminal-only or earlier states
     expect(screen.queryByTestId('transition-btn-paid')).toBeNull();
     expect(screen.queryByTestId('transition-btn-completed')).toBeNull();
   });
@@ -70,40 +69,64 @@ describe('AdminOrderActions — only renders allowed transitions', () => {
   });
 });
 
-describe('AdminOrderActions — confirmation gating', () => {
+describe('AdminOrderActions — accessible confirmation dialog (#440)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     transitionOrderActionMock.mockResolvedValue({ ok: true });
     refundOrderActionMock.mockResolvedValue({ ok: true });
   });
 
-  it('cancel transition requires window.confirm; cancelling the dialog skips the action', () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('destructive transition opens an alertdialog instead of window.confirm', () => {
     render(<AdminOrderActions order={order('paid')} />);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     fireEvent.click(screen.getByTestId('transition-btn-cancelled'));
-    expect(confirmSpy).toHaveBeenCalled();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(transitionOrderActionMock).not.toHaveBeenCalled();
   });
 
-  it('non-destructive transitions (preparing) skip the confirm dialog', () => {
-    const confirmSpy = vi.spyOn(window, 'confirm');
+  it('cancelling the dialog skips the action', () => {
     render(<AdminOrderActions order={order('paid')} />);
-    fireEvent.click(screen.getByTestId('transition-btn-preparing'));
-    expect(confirmSpy).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('transition-btn-cancelled'));
+    fireEvent.click(screen.getByTestId('admin-confirm-cancel'));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(transitionOrderActionMock).not.toHaveBeenCalled();
   });
 
-  it('refund button always shows a confirm dialog with payment id + amount', () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('confirming the dialog runs the transition', () => {
+    render(<AdminOrderActions order={order('paid')} />);
+    fireEvent.click(screen.getByTestId('transition-btn-cancelled'));
+    fireEvent.click(screen.getByTestId('admin-confirm-ok'));
+    expect(transitionOrderActionMock).toHaveBeenCalledWith('ord_1', 'cancelled');
+  });
+
+  it('non-destructive transitions (preparing) skip the dialog', () => {
+    render(<AdminOrderActions order={order('paid')} />);
+    fireEvent.click(screen.getByTestId('transition-btn-preparing'));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(transitionOrderActionMock).toHaveBeenCalledWith('ord_1', 'preparing');
+  });
+
+  it('refund button opens a dialog containing the payment id and amount', () => {
     render(
       <AdminOrderActions
         order={order('paid', { cloverPaymentId: 'pay_X', total: 1234 })}
       />
     );
     fireEvent.click(screen.getByTestId('refund-btn'));
-    expect(confirmSpy).toHaveBeenCalledOnce();
-    const message = confirmSpy.mock.calls[0][0] as string;
-    expect(message).toContain('pay_X');
-    expect(message).toContain('$12.34');
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog.textContent).toContain('pay_X');
+    expect(dialog.textContent).toContain('$12.34');
     expect(refundOrderActionMock).not.toHaveBeenCalled();
+  });
+
+  it('ESC key closes the dialog without running the action', () => {
+    render(<AdminOrderActions order={order('paid')} />);
+    fireEvent.click(screen.getByTestId('transition-btn-cancelled'));
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(transitionOrderActionMock).not.toHaveBeenCalled();
   });
 });

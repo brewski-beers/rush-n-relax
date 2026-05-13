@@ -2,33 +2,51 @@ export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
 import { requireRole } from '@/lib/admin-auth';
-import { listProducts } from '@/lib/repositories';
+import { listProducts, listActiveCategories } from '@/lib/repositories';
 import { ProductsTable } from './ProductsTable';
+import { ProductsFilters } from './ProductsFilters';
 import { AdminTablePagination } from '@/components/admin/AdminTablePagination';
 
 interface Props {
-  searchParams: Promise<{ cursor?: string; prevCursors?: string }>;
+  searchParams: Promise<{
+    cursor?: string;
+    prevCursors?: string;
+    category?: string;
+    q?: string;
+  }>;
 }
 
 export default async function AdminProductsPage({ searchParams }: Props) {
   await requireRole('staff');
 
-  const { cursor, prevCursors: prevCursorsRaw } = await searchParams;
+  const {
+    cursor,
+    prevCursors: prevCursorsRaw,
+    category,
+    q,
+  } = await searchParams;
   const prevCursors = prevCursorsRaw
     ? prevCursorsRaw.split(',').filter(Boolean)
     : [];
 
-  const { items: products, nextCursor } = await listProducts({
-    limit: 50,
-    cursor,
-  });
+  const [{ items: products, nextCursor }, { items: categoryList }] =
+    await Promise.all([
+      listProducts({ limit: 50, cursor, category, search: q }),
+      listActiveCategories({ limit: 100 }),
+    ]);
 
-  // Build prev URL: pop the last cursor off the stack
   const prevCursor = prevCursors.at(-1);
   const prevStack = prevCursors.slice(0, -1);
-
-  // Build next URL: push current cursor onto the stack
   const nextStack = cursor ? [...prevCursors, cursor] : prevCursors;
+
+  // Filters need to round-trip through the pagination links so paging within
+  // a filtered view preserves the filter.
+  const filterParams = new URLSearchParams();
+  if (category) filterParams.set('category', category);
+  if (q) filterParams.set('q', q);
+  const baseHref = filterParams.toString()
+    ? `/admin/products?${filterParams.toString()}`
+    : '/admin/products';
 
   return (
     <>
@@ -38,9 +56,13 @@ export default async function AdminProductsPage({ searchParams }: Props) {
           New Product
         </Link>
       </div>
+      <ProductsFilters
+        categories={categoryList.map(c => ({ slug: c.slug, name: c.label }))}
+        initial={{ category, q }}
+      />
       <ProductsTable initialProducts={products} />
       <AdminTablePagination
-        baseHref="/admin/products"
+        baseHref={baseHref}
         prevCursor={prevCursor}
         nextCursor={nextCursor}
         prevCursorsStack={prevStack}

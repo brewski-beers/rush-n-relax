@@ -26,6 +26,7 @@ const ALL_CARDS: DashboardCard[] = [
   { id: 'vendors', label: 'Manage Vendors', href: '/admin/vendors' },
   { id: 'categories', label: 'Manage Categories', href: '/admin/categories' },
   { id: 'users', label: 'Manage Users', href: '/admin/users' },
+  { id: 'orders', label: 'Manage Orders', href: '/admin/orders' },
   { id: 'coa', label: 'Certificates of Analysis', href: '/admin/coa' },
   {
     id: 'variant-groups',

@@ -36,7 +36,11 @@ export default async function AdminPromosPage() {
                 <td>{promo.name}</td>
                 <td>{promo.tagline}</td>
                 <td>{promo.locationSlug ?? 'All'}</td>
-                <td>{promo.active ? 'Yes' : 'No'}</td>
+                <td>
+                  <span className={`admin-promo-badge ${promo.active ? 'admin-promo-badge--active' : 'admin-promo-badge--inactive'}`}>
+                    {promo.active ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
                 <td className="admin-actions">
                   <Link href={`/admin/promos/${promo.slug}/edit`}>Edit</Link>
                   <ConfirmButton
