@@ -50,6 +50,7 @@ All deep engineering documentation lives in the **Obsidian vault** at `~/Documen
 - `products.md` — product schema, variants, per-location stock
 - `agechecker.md` — AgeChecker.Net runbook
 - `clover-hosted-checkout.md` — Clover Path A vs B, current handler state
+- `money-path-audit.md` — cart → checkout → age verify → Clover → Order state-machine audit, path matrix, and resolution log
 - `firebase-deploy-iam.md` — GHA WIF + Vercel runtime SA roles + rotation runbook
 - `firebase-credentials-architecture.md` — full credential migration history
 
