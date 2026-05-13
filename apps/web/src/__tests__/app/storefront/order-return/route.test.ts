@@ -35,14 +35,15 @@ describe('GET /order/[id]/return — BDD (#368)', () => {
     finalizeMock.mockResolvedValue({ kind: 'paid', orderId: 'ord-1' });
 
     const res = await GET(
-      makeReq('/order/clover-sess-A/return?orderId=clover-ord-A'),
-      { params: Promise.resolve({ id: 'clover-sess-A' }) }
+      makeReq('/order/cs_sessA/return?orderId=clover-ord-A'),
+      { params: Promise.resolve({ id: 'cs_sessA' }) }
     );
 
     expect(res.status).toBe(307); // Next redirect
     expect(res.headers.get('location')).toContain('/order/ord-1');
+    // [id] is the CheckoutSession doc id we generated (NOT Clover's id).
     expect(finalizeMock).toHaveBeenCalledWith({
-      cloverCheckoutSessionId: 'clover-sess-A',
+      sessionId: 'cs_sessA',
       cloverOrderId: 'clover-ord-A',
     });
   });

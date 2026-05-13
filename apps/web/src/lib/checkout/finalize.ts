@@ -2,8 +2,11 @@
  * Finalize a Clover-paid CheckoutSession into a real Order (#368).
  *
  * This is the PRIMARY moment an Order document is created in the new
- * checkout flow. Called from `GET /order/{cloverCheckoutSessionId}/return`
- * after the customer is redirected back from Clover Hosted Checkout.
+ * checkout flow. Called from `GET /order/{sessionId}/return` after the
+ * customer is redirected back from Clover Hosted Checkout, where
+ * `sessionId` is the CheckoutSession Firestore doc id we generated
+ * ourselves (NOT Clover's checkout id — Clover doesn't substitute the
+ * `{CHECKOUT_SESSION_ID}` token).
  *
  * ## Idempotency & concurrency
  *
@@ -72,8 +75,11 @@ export type FinalizeOutcome =
   | { kind: 'commit-failed'; sessionId: string; orderId: string };
 
 export interface FinalizeInput {
-  /** Clover Hosted Checkout session id — also our Firestore doc id. */
-  cloverCheckoutSessionId: string;
+  /**
+   * The CheckoutSession Firestore doc id — the `cs_<time>_<rand>` string
+   * we generated in `/api/checkout/session`. NOT Clover's checkout id.
+   */
+  sessionId: string;
   /**
    * Clover order id passed back via the redirect query string. Required to
    * look up the payment(s) for this checkout. When absent we treat the
@@ -82,11 +88,11 @@ export interface FinalizeInput {
   cloverOrderId?: string;
 }
 
-/** Lookup a `CheckoutSession` by its Clover-issued id. Exposed for tests. */
+/** Lookup a `CheckoutSession` by its Firestore doc id. Exposed for tests. */
 export async function loadSession(
-  cloverCheckoutSessionId: string
+  sessionId: string
 ): Promise<CheckoutSession | null> {
-  return getCheckoutSession(cloverCheckoutSessionId);
+  return getCheckoutSession(sessionId);
 }
 
 /**
@@ -96,12 +102,10 @@ export async function loadSession(
 export async function finalizeCheckoutSession(
   input: FinalizeInput
 ): Promise<FinalizeOutcome> {
-  const session = await loadSession(input.cloverCheckoutSessionId);
+  const session = await loadSession(input.sessionId);
   if (!session) {
     // No session means we cannot create an order — caller should 404 / redirect home.
-    throw new Error(
-      `CheckoutSession '${input.cloverCheckoutSessionId}' not found`
-    );
+    throw new Error(`CheckoutSession '${input.sessionId}' not found`);
   }
 
   // 1. Idempotency: if the session is already promoted, return its order.
@@ -216,6 +220,10 @@ async function promote(
       deliveryAddress: session.deliveryAddress,
       status: 'paid',
       paidAt: new Date(),
+      // Both pointers: `checkoutSessionId` is our doc id (the reconciler's
+      // back-pointer repair finds the session by this), `cloverCheckoutSessionId`
+      // is Clover's id (downstream Clover reconciliation reads it).
+      checkoutSessionId: session.id,
       cloverCheckoutSessionId: session.cloverCheckoutSessionId,
       ...(cloverPaymentId ? { cloverPaymentId } : {}),
       ...(session.customerEmail

@@ -15,23 +15,26 @@
  *
  * Path B notes (#279): payment confirmation cannot rely on app-level
  * webhooks. The Hosted Checkout `redirectUrls.success` is set to the
- * return route at `/order/{CHECKOUT_SESSION_ID}/return` — Clover
- * substitutes the `{CHECKOUT_SESSION_ID}` token with the checkout
- * session id at redirect time, which is also our CheckoutSession
- * Firestore doc id. That route reconciles status by GETting the payment
+ * return route at `/order/{sessionId}/return` where `sessionId` is the
+ * CheckoutSession doc id WE generate before this create call — Clover
+ * does NOT substitute the `{CHECKOUT_SESSION_ID}` template token
+ * (confirmed live: the customer was redirected to the literal
+ * `/order/%7BCHECKOUT_SESSION_ID%7D/return`), so the URL must be fully
+ * resolved here. That route reconciles status by GETting the payment
  * from the merchant's orders endpoint. A 5-min recovery cron
  * (functions/index.ts) catches sessions where the customer never returns.
  *
  * Redirect contract (per Clover Hosted Checkout docs — see
- * https://docs.clover.com/dev/docs/redirecting-customers):
+ * https://docs.clover.com/dev/docs/redirecting-customers — but note the
+ * `{CHECKOUT_SESSION_ID}` / `{ERROR_CODE}` tokens are NOT actually
+ * substituted by Clover for this merchant, so we don't use them):
  *   "redirectUrls": {
- *     "success": "https://store.example/order/{CHECKOUT_SESSION_ID}/return",
- *     "failure": "https://store.example/checkout/cancelled?error={ERROR_CODE}"
+ *     "success": "https://store.example/order/<our-session-id>/return",
+ *     "failure": "https://store.example/checkout/cancelled?session=<our-session-id>"
  *   }
  * Both must be HTTPS. The legacy singular `redirectUrl` string is NOT
  * honoured by Hosted Checkout — Clover silently ignores it and the
- * customer is stranded on Clover's "Payment Received" page (the bug this
- * change fixes).
+ * customer is stranded on Clover's "Payment Received" page.
  *
  * Docs: https://docs.clover.com/dev/docs/creating-a-hosted-checkout-session
  */
@@ -39,7 +42,13 @@ import { isLivePaymentsEnabled } from '@/lib/test-mode';
 import type { OrderItem, ShippingAddress } from '@/types';
 
 export interface CheckoutSessionInput {
-  orderId: string;
+  /**
+   * The CheckoutSession doc id we generated before this call. Used
+   * verbatim in `redirectUrls.success` (`/order/{sessionId}/return`) and
+   * in the stub redirect — Clover does not substitute a template token,
+   * so the URL is built from this value directly.
+   */
+  sessionId: string;
   /** cents — the total amount Clover should charge (subtotal + tax). */
   amount: number;
   /**
@@ -121,12 +130,12 @@ function resolveSiteOrigin(): string {
   return 'http://localhost:3000';
 }
 
-function stubResponse(orderId: string): CheckoutSession {
+function stubResponse(sessionId: string): CheckoutSession {
   // Must be absolute — `NextResponse.redirect()` rejects relative URLs and
   // throws at the redirect handler, surfacing as a 500 in preview/dev.
   const origin = resolveSiteOrigin();
   return {
-    redirectUrl: `${origin}/checkout/stub?order=${encodeURIComponent(orderId)}`,
+    redirectUrl: `${origin}/checkout/stub?order=${encodeURIComponent(sessionId)}`,
     provider: 'stub',
   };
 }
@@ -137,14 +146,14 @@ export async function createCloverCheckoutSession(
   // GATE 1 — kill switch. Closed by default; anything other than the exact
   // env-var value 'true' returns the stub even with prod creds present.
   if (!isLivePaymentsEnabled()) {
-    return stubResponse(input.orderId);
+    return stubResponse(input.sessionId);
   }
 
   // GATE 2 — credentials. Without both we cannot call the real API.
   const merchantId = process.env.CLOVER_MERCHANT_ID;
   const apiKey = process.env.CLOVER_API_KEY;
   if (!merchantId || !apiKey) {
-    return stubResponse(input.orderId);
+    return stubResponse(input.sessionId);
   }
 
   const origin = resolveSiteOrigin();
@@ -179,17 +188,20 @@ export async function createCloverCheckoutSession(
   if (input.customerEmail) customer.email = input.customerEmail;
 
   // #279 — Path B return-URL reconciliation. After payment Clover
-  // redirects to redirectUrls.success, substituting `{CHECKOUT_SESSION_ID}`
-  // with the checkout session id (== our CheckoutSession Firestore doc
-  // id). That route calls Clover to read payment status and promotes the
+  // redirects to redirectUrls.success. The URL is fully resolved here from
+  // `input.sessionId` (the CheckoutSession doc id we generated before this
+  // call) — Clover does NOT substitute the `{CHECKOUT_SESSION_ID}` /
+  // `{ERROR_CODE}` template tokens for this merchant, so we cannot use
+  // them. That route calls Clover to read payment status and promotes the
   // session to an Order. On decline Clover redirects to
-  // redirectUrls.failure with `{ERROR_CODE}` substituted.
+  // redirectUrls.failure with the same session id as a query param.
+  const sessionIdEnc = encodeURIComponent(input.sessionId);
   const body = {
     customer: Object.keys(customer).length > 0 ? customer : undefined,
     shoppingCart: { lineItems },
     redirectUrls: {
-      success: `${origin}/order/{CHECKOUT_SESSION_ID}/return`,
-      failure: `${origin}/checkout/cancelled?error={ERROR_CODE}`,
+      success: `${origin}/order/${sessionIdEnc}/return`,
+      failure: `${origin}/checkout/cancelled?session=${sessionIdEnc}`,
     },
   };
 
@@ -222,7 +234,9 @@ export async function createCloverCheckoutSession(
 
   return {
     redirectUrl:
-      json.href ?? json.redirectUrl ?? stubResponse(input.orderId).redirectUrl,
+      json.href ??
+      json.redirectUrl ??
+      stubResponse(input.sessionId).redirectUrl,
     provider: 'clover',
     cloverCheckoutSessionId: json.checkoutSessionId ?? json.id,
   };

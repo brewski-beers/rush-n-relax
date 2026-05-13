@@ -907,6 +907,8 @@ function docToReconcileOrder(
 ): ReconcileOrder {
   return {
     id,
+    checkoutSessionId:
+      typeof d.checkoutSessionId === 'string' ? d.checkoutSessionId : undefined,
     cloverCheckoutSessionId:
       typeof d.cloverCheckoutSessionId === 'string'
         ? d.cloverCheckoutSessionId
@@ -941,7 +943,9 @@ async function listRecentOrdersWithCheckoutSession(
   since: Date
 ): Promise<ReconcileOrder[]> {
   // We only care about orders whose pointer *might* be stale. Pull recent
-  // paid/preparing orders and filter out the ones missing the field.
+  // paid/preparing orders and keep the ones carrying a CheckoutSession
+  // doc-id back-pointer (`checkoutSessionId`) — that's what the reconciler
+  // looks the session up by.
   const snap = await db
     .collection('orders')
     .where('createdAt', '>=', since)
@@ -951,7 +955,7 @@ async function listRecentOrdersWithCheckoutSession(
   const out: ReconcileOrder[] = [];
   for (const doc of snap.docs) {
     const order = docToReconcileOrder(doc.id, doc.data());
-    if (order.cloverCheckoutSessionId) out.push(order);
+    if (order.checkoutSessionId) out.push(order);
   }
   return out;
 }
@@ -1034,7 +1038,7 @@ async function lookupCloverCheckout(
 }
 
 async function triggerStorefrontPromotion(
-  cloverCheckoutSessionId: string,
+  sessionId: string,
   cloverOrderId: string | undefined
 ): Promise<boolean> {
   const siteUrl = RECONCILER_SITE_URL.value();
@@ -1048,7 +1052,9 @@ async function triggerStorefrontPromotion(
   const qs = cloverOrderId
     ? `?orderId=${encodeURIComponent(cloverOrderId)}`
     : '';
-  const url = `${base}/order/${encodeURIComponent(cloverCheckoutSessionId)}/return${qs}`;
+  // `sessionId` is the CheckoutSession Firestore doc id — the return route
+  // resolves the session by doc id.
+  const url = `${base}/order/${encodeURIComponent(sessionId)}/return${qs}`;
   const res = await fetch(url, {
     method: 'GET',
     redirect: 'manual',
