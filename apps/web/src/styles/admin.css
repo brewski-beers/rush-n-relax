@@ -2780,3 +2780,44 @@
     animation: none;
   }
 }
+
+/* ── Admin confirm dialog (#440) ─────────────────────────────────────────── */
+.admin-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.admin-confirm-dialog {
+  background: rgba(12, 18, 28, 0.98);
+  border: 1px solid rgba(213, 179, 106, 0.4);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  max-width: 28rem;
+  width: 100%;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color: #e8eaed;
+}
+
+.admin-confirm-dialog__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.admin-confirm-dialog__message {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.admin-confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

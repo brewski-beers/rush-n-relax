@@ -361,7 +361,7 @@ export function ProductWizardForm({
         className={
           isHidden(1) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(1)}
+        inert={isHidden(1)}
       >
         <fieldset className="admin-fieldset">
           <legend>Category &amp; Name</legend>
@@ -443,7 +443,7 @@ export function ProductWizardForm({
         className={
           isHidden(2) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(2)}
+        inert={isHidden(2)}
       >
         <fieldset className="admin-fieldset">
           <legend>Details</legend>
@@ -495,7 +495,7 @@ export function ProductWizardForm({
         className={
           isHidden(3) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(3)}
+        inert={isHidden(3)}
       >
         <fieldset className="admin-fieldset">
           <legend>Cannabis Profile</legend>
@@ -607,7 +607,7 @@ export function ProductWizardForm({
         className={
           isHidden(4) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(4)}
+        inert={isHidden(4)}
       >
         {showStatusField && (
           <fieldset className="admin-fieldset">
@@ -665,7 +665,7 @@ export function ProductWizardForm({
         className={
           isHidden(5) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(5)}
+        inert={isHidden(5)}
       >
         <fieldset className="admin-fieldset">
           <legend>Images</legend>
@@ -683,7 +683,7 @@ export function ProductWizardForm({
         className={
           isHidden(6) ? 'wizard-step wizard-step--hidden' : 'wizard-step'
         }
-        aria-hidden={isHidden(6)}
+        inert={isHidden(6)}
       >
         {review && (
           <div className="wizard-review">
