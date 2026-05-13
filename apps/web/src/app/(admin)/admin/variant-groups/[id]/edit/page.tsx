@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requireRole } from '@/lib/admin-auth';
 import { listVariantTemplates } from '@/lib/repositories';
+import { AdminBackLink } from '@/components/admin/AdminBackLink';
 import { VariantGroupForm } from '../../VariantGroupForm';
 import { updateVariantGroupAction } from '../../actions';
 
@@ -19,6 +20,7 @@ export default async function EditVariantGroupPage({ params }: Props) {
 
   return (
     <>
+      <AdminBackLink href="/admin/variant-groups" label="Variant Groups" />
       <div className="admin-page-header">
         <h1>Edit Variant Group: {template.label}</h1>
       </div>
