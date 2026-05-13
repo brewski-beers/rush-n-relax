@@ -370,27 +370,13 @@ export async function getCloverOrderIdForCheckout(
         });
         return orderId;
       }
-      // TEMP DIAGNOSTIC (#clover-lookup-r3): 200 but no orderId in body.
-      console.warn('[clover] leg1 200 with no orderId', {
-        sessionId: input.sessionId,
-        keys: json && typeof json === 'object' ? Object.keys(json) : null,
-      });
-    } else {
-      // TEMP DIAGNOSTIC (#clover-lookup-r3): non-2xx on /checkouts/{id}.
-      const body = await res.text().catch(() => '');
-      console.warn('[clover] leg1 non-2xx', {
-        sessionId: input.sessionId,
-        status: res.status,
-        body: body.slice(0, 400),
-      });
     }
-    // 404 / no orderId → fall through to the orders-list legs.
-  } catch (err) {
-    // TEMP DIAGNOSTIC (#clover-lookup-r3): network/fetch error on leg 1.
-    console.warn('[clover] leg1 threw', {
-      sessionId: input.sessionId,
-      err: err instanceof Error ? err.message : String(err),
-    });
+    // 404 / no orderId / network error → fall through to the orders-list
+    // legs. /checkouts/{id} is reliably 404 against our merchant today
+    // (confirmed live 2026-05-13); kept first so we get the canonical
+    // resource lookup back automatically if Clover ever fixes it.
+  } catch {
+    // Network blip — fall through to legs 2/3.
   }
 
   // ─── Leg 2: tagged orders-list lookup (note=<sessionId>) ───────────────
@@ -449,17 +435,14 @@ async function fetchOrdersList(
         'Content-Type': 'application/json',
       },
     });
-  } catch (err) {
-    // TEMP DIAGNOSTIC (#clover-lookup-r3): orders-list fetch threw.
-    console.warn(`[clover] ${legLabel} fetchOrdersList threw`, {
-      url,
-      err: err instanceof Error ? err.message : String(err),
-    });
+  } catch {
+    // Network blip — caller falls back to awaiting; cron retries.
     return null;
   }
   if (!res.ok) {
-    // TEMP DIAGNOSTIC (#clover-lookup-r3): non-2xx on orders-list — likely
-    // tells us if our filter syntax is being rejected.
+    // A non-2xx on the orders-list is a real signal worth surfacing — e.g.
+    // a 403 "Invalid permissions for expandable fields" (which is why we
+    // no longer use `&expand=customers`), or a future scope/auth change.
     const body = await res.text().catch(() => '');
     console.warn(`[clover] ${legLabel} fetchOrdersList non-2xx`, {
       url,
@@ -472,20 +455,7 @@ async function fetchOrdersList(
   const json = (await res.json().catch(() => null)) as {
     elements?: CloverOrderRow[];
   } | null;
-  const elements = Array.isArray(json?.elements) ? json.elements : [];
-  // TEMP DIAGNOSTIC (#clover-lookup-r3): always log the leg's result count
-  // and a tiny shape sample so we can see what Clover actually returns.
-  console.warn(`[clover] ${legLabel} fetchOrdersList ok`, {
-    url,
-    count: elements.length,
-    sample: elements.slice(0, 3).map(e => ({
-      id: e.id,
-      total: e.total,
-      createdTime: e.createdTime,
-      hasCustomers: Boolean(e.customers?.elements?.length),
-    })),
-  });
-  return elements;
+  return Array.isArray(json?.elements) ? json.elements : [];
 }
 
 async function tryTaggedOrdersLookup(
@@ -497,15 +467,12 @@ async function tryTaggedOrdersLookup(
   // separators raw so Clover parses the predicate.
   const filterQuery = `filter=note=${encodeURIComponent(input.sessionId)}`;
   const elements = await fetchOrdersList(creds, filterQuery, 5, 'leg2-tagged');
-  if (!elements || elements.length === 0) {
-    if (elements && elements.length === 0) {
-      console.warn('[clover] leg2 tagged search returned 0 elements', {
-        sessionId: input.sessionId,
-        filterQuery,
-      });
-    }
-    return null;
-  }
+  // NOTE: as of 2026-05-13 the live test showed Clover Hosted Checkout
+  // silently drops the `note` field between the create payload and the
+  // resulting Order, so this leg routinely returns 0 elements and we
+  // fall through to leg 3. Kept anyway — it's the cleanest exact-match
+  // lookup if/when Clover starts propagating `note`.
+  if (!elements || elements.length === 0) return null;
   // If multiple rows share the same note (shouldn't happen — `sessionId`
   // is unique), prefer the most recent.
   const sorted = [...elements].sort(
@@ -545,10 +512,11 @@ async function tryHeuristicOrdersLookup(
   );
 
   if (matches.length === 0) {
-    // TEMP DIAGNOSTIC (#clover-lookup-r3): had candidates but none matched.
-    // Surface what we got so we can see whether Clover stores total/email
-    // differently than we assume.
-    console.warn('[clover] leg3 heuristic: 0 matches out of N candidates', {
+    // No order in the window matched on total. Real signal — either
+    // Clover hasn't indexed the order in /orders yet (eventual
+    // consistency), the total drifted (we have a bug), or this isn't
+    // actually a customer's session. Worth surfacing.
+    console.warn('[clover] leg3 heuristic: 0 matches', {
       sessionId: input.sessionId,
       expectedTotalCents: input.expectedTotalCents,
       candidateCount: elements.length,
