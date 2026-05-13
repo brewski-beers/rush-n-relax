@@ -307,7 +307,17 @@ export async function getCloverOrderIdForCheckout(
     // Network blip — caller falls back to awaiting; cron retries.
     return null;
   }
-  if (!res.ok) return null;
+  if (!res.ok) {
+    // TEMP DIAGNOSTIC (#clover-return-url): surface why the order-id lookup
+    // keeps coming up empty against real Clover. Remove once confirmed.
+    const body = await res.text().catch(() => '');
+    console.warn('[clover] getCloverOrderIdForCheckout non-2xx', {
+      url,
+      status: res.status,
+      body: body.slice(0, 600),
+    });
+    return null;
+  }
 
   // Justified cast: Clover checkout resource shape is documented but not
   // typed in our codebase. We only read the `orderId` field.
@@ -315,7 +325,17 @@ export async function getCloverOrderIdForCheckout(
     orderId?: string;
   } | null;
   const orderId = json?.orderId;
-  return typeof orderId === 'string' && orderId.length > 0 ? orderId : null;
+  if (typeof orderId !== 'string' || orderId.length === 0) {
+    // TEMP DIAGNOSTIC: log the shape of the checkout resource so we can see
+    // which field actually carries the linked order id (if any).
+    console.warn('[clover] getCloverOrderIdForCheckout no orderId', {
+      url,
+      keys: json && typeof json === 'object' ? Object.keys(json) : null,
+      json: JSON.stringify(json).slice(0, 800),
+    });
+    return null;
+  }
+  return orderId;
 }
 
 function normalizeResult(raw: unknown): CloverPaymentResult {
