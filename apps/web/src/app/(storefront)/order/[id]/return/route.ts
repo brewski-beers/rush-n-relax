@@ -44,6 +44,17 @@ export async function GET(
     url.searchParams.get('cloverOrderId') ??
     undefined;
 
+  // TEMP DIAGNOSTIC (#clover-return-url): we still don't know what query
+  // params (if any) Clover Hosted Checkout appends to the success redirect.
+  // Log the full incoming URL so the next sandbox round-trip reveals it.
+  // Remove once the redirect contract is confirmed.
+  console.warn('[order/return] incoming', {
+    id,
+    url: req.url,
+    search: url.search,
+    cloverOrderIdParam: cloverOrderId ?? null,
+  });
+
   let outcome: Awaited<ReturnType<typeof finalizeCheckoutSession>>;
   try {
     outcome = await finalizeCheckoutSession({

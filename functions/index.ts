@@ -994,6 +994,14 @@ async function lookupCloverCheckout(
   });
 
   if (!checkoutRes.ok) {
+    // TEMP DIAGNOSTIC (#clover-return-url): why does the order-id lookup keep
+    // coming up empty for stranded sessions? Remove once confirmed.
+    const body = await checkoutRes.text().catch(() => '');
+    logger.warn('lookupCloverCheckout non-2xx', {
+      checkoutUrl,
+      status: checkoutRes.status,
+      body: body.slice(0, 600),
+    });
     if (checkoutRes.status === 404) {
       return { result: 'UNKNOWN' };
     }
@@ -1007,6 +1015,13 @@ async function lookupCloverCheckout(
 
   const cloverOrderId = checkoutJson.orderId;
   if (!cloverOrderId) {
+    // TEMP DIAGNOSTIC: log the checkout-resource shape so we can see which
+    // field carries the linked order id.
+    logger.warn('lookupCloverCheckout no orderId in checkout resource', {
+      checkoutUrl,
+      keys: Object.keys(checkoutJson ?? {}),
+      json: JSON.stringify(checkoutJson).slice(0, 800),
+    });
     return { result: 'PENDING' };
   }
 
